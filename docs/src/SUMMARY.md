@@ -106,6 +106,7 @@
   * [Validator Timestamp Oracle](implemented-proposals/validator-timestamp-oracle.md)
   * [Commitment](implemented-proposals/commitment.md)
   * [Snapshot Verification](implemented-proposals/snapshot-verification.md)
+  * [ABI Management](implemented-proposals/abi-management.md)
 * [Accepted Design Proposals](proposals/README.md)
   * [Ledger Replication](proposals/ledger-replication-to-implement.md)
   * [Secure Vote Signing](proposals/vote-signing-to-implement.md)
@@ -119,4 +120,3 @@
   * [Slashing](proposals/slashing.md)
   * [Tick Verification](proposals/tick-verification.md)
   * [Block Confirmation](proposals/block-confirmation.md)
-  * [ABI Management](proposals/abi-management.md)

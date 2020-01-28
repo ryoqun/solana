@@ -4,7 +4,7 @@ use solana_sdk::{
 };
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, AbiSample)]
 struct HashAge {
     fee_calculator: FeeCalculator,
     hash_height: u64,
@@ -12,7 +12,8 @@ struct HashAge {
 }
 
 /// Low memory overhead, so can be cloned for every checkpoint
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[frozen_abi(digest = "BqUw2QNxCaARKdxauA8GVw8RjLR3GXtxFeAHCBfUG5C")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, AbiSample)]
 pub struct BlockhashQueue {
     /// updated whenever an hash is registered
     hash_height: u64,

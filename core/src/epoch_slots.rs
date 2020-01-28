@@ -5,14 +5,14 @@ use flate2::{Compress, Compression, Decompress, FlushCompress, FlushDecompress};
 use solana_sdk::clock::Slot;
 use solana_sdk::pubkey::Pubkey;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigest, AbiSample)]
 pub struct Uncompressed {
     pub first_slot: Slot,
     pub num: usize,
     pub slots: BitVec<u8>,
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, AbiDigest, AbiSample)]
 pub struct Flate2 {
     pub first_slot: Slot,
     pub num: usize,
@@ -108,7 +108,7 @@ impl Uncompressed {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample, AbiDigest)]
 pub enum CompressedSlots {
     Flate2(Flate2),
     Uncompressed(Uncompressed),
@@ -168,7 +168,7 @@ impl CompressedSlots {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, AbiDigest, AbiSample)]
 pub struct EpochSlots {
     pub from: Pubkey,
     pub slots: Vec<CompressedSlots>,

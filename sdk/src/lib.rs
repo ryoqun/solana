@@ -1,5 +1,10 @@
+#![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
+
 // Allows macro expansion of `use ::solana_sdk::*` to work within this crate
 extern crate self as solana_sdk;
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+pub mod abi_digester;
 
 pub mod account;
 pub mod account_utils;
@@ -86,3 +91,6 @@ pub mod transport;
 extern crate serde_derive;
 pub extern crate bs58;
 extern crate log as logger;
+
+#[macro_use]
+extern crate solana_sdk_macro_frozen_abi;

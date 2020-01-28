@@ -21,7 +21,7 @@ use solana_sdk::{
 use solana_vote_program::vote_state::{VoteState, VoteStateVersions};
 use std::collections::HashSet;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 #[allow(clippy::large_enum_variant)]
 pub enum StakeState {
     Uninitialized,
@@ -79,13 +79,13 @@ impl StakeState {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 pub enum StakeAuthorize {
     Staker,
     Withdrawer,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 pub struct Lockup {
     /// UnixTimestamp at which this stake will allow withdrawal, or
     ///   changes to authorized staker or withdrawer, unless the
@@ -108,13 +108,13 @@ impl Lockup {
     }
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 pub struct Authorized {
     pub staker: Pubkey,
     pub withdrawer: Pubkey,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 pub struct Meta {
     pub rent_exempt_reserve: u64,
     pub authorized: Authorized,
@@ -159,7 +159,7 @@ impl Meta {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 pub struct Delegation {
     /// to whom the stake is delegated
     pub voter_pubkey: Pubkey,
@@ -320,7 +320,7 @@ impl Delegation {
     }
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy, AbiSample)]
 pub struct Stake {
     pub delegation: Delegation,
     /// credits observed is credits from vote account state when delegated or redeemed

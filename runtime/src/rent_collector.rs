@@ -3,7 +3,7 @@ use solana_sdk::{
     account::Account, clock::Epoch, epoch_schedule::EpochSchedule, rent::Rent, sysvar,
 };
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone, AbiSample)]
 pub struct RentCollector {
     pub epoch: Epoch,
     pub epoch_schedule: EpochSchedule,

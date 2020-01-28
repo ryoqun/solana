@@ -163,6 +163,16 @@ pub struct MessageProcessor {
     #[serde(skip)]
     native_loader: NativeLoader,
 }
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+impl ::solana_sdk::abi_digester::AbiSample for MessageProcessor {
+    fn sample() -> Self {
+        // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
+        // so, just rely on Default anyway.
+        MessageProcessor::default()
+    }
+}
+
 impl Default for MessageProcessor {
     fn default() -> Self {
         let instruction_processors: Vec<(Pubkey, ProcessInstruction)> = vec![(

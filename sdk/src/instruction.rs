@@ -6,7 +6,8 @@ use serde::Serialize;
 use thiserror::Error;
 
 /// Reasons the runtime might have rejected an instruction.
-#[derive(Serialize, Deserialize, Debug, Error, PartialEq, Eq, Clone)]
+#[frozen_abi(digest = "8zxo2ahaaY1KtDZYLLci4dHU2pc8ZZnq3ZyqgXE3fto")]
+#[derive(Serialize, Deserialize, Debug, Error, PartialEq, Eq, Clone, AbiSample)]
 pub enum InstructionError {
     /// Deprecated! Use CustomError instead!
     /// The program instruction returned an error
@@ -219,7 +220,7 @@ impl WithSigner for Vec<AccountMeta> {
 }
 
 /// An instruction to execute a program
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct CompiledInstruction {
     /// Index into the transaction keys array indicating the program account that executes this instruction

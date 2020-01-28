@@ -7,6 +7,7 @@ repository = "https://github.com/solana-labs/solana"
 homepage = "https://solana.com/"
 license = "Apache-2.0"
 edition = "2018"
+build = "../sdk/build.rs"
 
 [lib]
 name = "solana_sdk_c"
@@ -23,3 +24,4 @@ ed25519-dalek = "1.0.0-pre.1"
 
 [build-dependencies]
 cbindgen = "0.14.0"
+rustc_version = "0.2"

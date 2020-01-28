@@ -3,12 +3,12 @@ use num_derive::FromPrimitive;
 
 crate::declare_id!("NativeLoader1111111111111111111111111111111");
 
-#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq, Serialize, AbiSample)]
 pub struct Info {
     pub kind: Kind,
     pub name: String,
 }
-#[derive(Debug, Clone, Copy, Deserialize, Eq, FromPrimitive, Hash, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Eq, FromPrimitive, Hash, PartialEq, Serialize, AbiSample, AbiDigest)]
 pub enum Kind {
     Program = 1,
     Loader = 2,

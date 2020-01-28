@@ -3,7 +3,7 @@ use solana_sdk::{account::Account, account_utils::StateMut, pubkey::Pubkey};
 use solana_storage_program::storage_contract::StorageContract;
 use std::collections::{HashMap, HashSet};
 
-#[derive(Default, Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, PartialEq, Debug, Deserialize, Serialize, AbiSample)]
 pub struct StorageAccounts {
     /// validator storage accounts and their credits
     validator_accounts: HashSet<Pubkey>,
