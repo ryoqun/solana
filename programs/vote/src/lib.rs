@@ -8,3 +8,6 @@ solana_sdk::declare_program!(
     solana_vote_program,
     process_instruction
 );
+
+#[macro_use]
+extern crate solana_sdk_macro;

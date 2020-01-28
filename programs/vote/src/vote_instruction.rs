@@ -20,6 +20,7 @@ use solana_sdk::{
 use thiserror::Error;
 
 /// Reasons the stake might have had an error
+#[frozen_abi(digest = "ByLc61HbxwBPJ54fQZQFmjyzD4qywr5MuhrN9eHhgsT")]
 #[derive(Error, Debug, Clone, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum VoteError {
     #[error("vote already recorded or not in slot hashes history")]

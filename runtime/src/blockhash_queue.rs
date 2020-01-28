@@ -10,6 +10,7 @@ struct HashAge {
 }
 
 /// Low memory overhead, so can be cloned for every checkpoint
+#[frozen_abi(digest = "9DUDF2sdZnh8ha8LQ42d5Bir9egotd5NL2VdEsZmZtsN")]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct BlockhashQueue {
     /// updated whenever an hash is registered

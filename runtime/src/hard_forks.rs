@@ -5,10 +5,12 @@ use byteorder::{ByteOrder, LittleEndian};
 use solana_sdk::clock::Slot;
 use std::ops::Add;
 
+#[frozen_abi(digest = "2vR5GzbvHHTKWA2odaV9FpSh9UdQuV4KFBbYCKYgnivz")]
 #[derive(Default, Clone, Deserialize, Serialize)]
 pub struct HardForks {
     hard_forks: Vec<(Slot, usize)>,
 }
+
 impl HardForks {
     // Register a fork to occur at all slots >= `slot` with a parent slot < `slot`
     pub fn register(&mut self, new_slot: Slot) {
