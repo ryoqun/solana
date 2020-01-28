@@ -3961,6 +3961,7 @@ dependencies = [
  "rayon",
  "regex",
  "reqwest",
+ "rustc_version",
  "serde",
  "serde_derive",
  "serde_json",
@@ -3981,6 +3982,7 @@ dependencies = [
  "solana-rayon-threadlimit",
  "solana-runtime",
  "solana-sdk",
+ "solana-sdk-macro-frozen-abi",
  "solana-stake-program",
  "solana-streamer",
  "solana-sys-tuner",
@@ -4548,6 +4550,7 @@ dependencies = [
  "num_cpus",
  "rand 0.7.3",
  "rayon",
+ "rustc_version",
  "serde",
  "serde_derive",
  "solana-config-program",
@@ -4557,6 +4560,7 @@ dependencies = [
  "solana-noop-program",
  "solana-rayon-threadlimit",
  "solana-sdk",
+ "solana-sdk-macro-frozen-abi",
  "solana-stake-program",
  "solana-vote-program",
  "tempfile",
@@ -4593,6 +4597,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
+ "rustc_version",
  "serde",
  "serde_bytes",
  "serde_derive",
@@ -4601,6 +4606,7 @@ dependencies = [
  "solana-crate-features",
  "solana-logger",
  "solana-sdk-macro",
+ "solana-sdk-macro-frozen-abi",
  "thiserror",
  "tiny-bip39",
 ]
@@ -4612,6 +4618,17 @@ dependencies = [
  "bs58 0.3.1",
  "proc-macro2 1.0.12",
  "quote 1.0.1",
+ "syn 1.0.19",
+]
+
+[[package]]
+name = "solana-sdk-macro-frozen-abi"
+version = "1.2.0"
+dependencies = [
+ "lazy_static",
+ "proc-macro2 1.0.12",
+ "quote 1.0.1",
+ "rustc_version",
  "syn 1.0.19",
 ]
 
@@ -4680,12 +4697,14 @@ dependencies = [
  "log 0.4.8",
  "num-derive 0.3.0",
  "num-traits",
+ "rustc_version",
  "serde",
  "serde_derive",
  "solana-config-program",
  "solana-logger",
  "solana-metrics",
  "solana-sdk",
+ "solana-sdk-macro-frozen-abi",
  "solana-vote-program",
  "thiserror",
 ]
@@ -4799,9 +4818,13 @@ dependencies = [
 name = "solana-version"
 version = "1.2.0"
 dependencies = [
+ "log 0.4.8",
+ "rustc_version",
  "serde",
  "serde_derive",
+ "solana-logger",
  "solana-sdk",
+ "solana-sdk-macro-frozen-abi",
 ]
 
 [[package]]
@@ -4828,10 +4851,13 @@ dependencies = [
  "log 0.4.8",
  "num-derive 0.3.0",
  "num-traits",
+ "rustc_version",
  "serde",
  "serde_derive",
+ "solana-logger",
  "solana-metrics",
  "solana-sdk",
+ "solana-sdk-macro-frozen-abi",
  "thiserror",
 ]
 

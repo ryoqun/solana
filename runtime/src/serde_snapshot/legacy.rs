@@ -2,7 +2,7 @@ use {super::*, solana_measure::measure::Measure, std::cell::RefCell};
 
 // Serializable version of AccountStorageEntry for snapshot format
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
-pub(super) struct SerializableAccountStorageEntry {
+pub(crate) struct SerializableAccountStorageEntry {
     id: AppendVecId,
     accounts: SerializableAppendVec,
     count_and_status: (usize, AccountStorageStatus),
@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for SerializableAppendVec {
     }
 }
 
-pub(super) struct Context {}
+pub(crate) struct Context {}
 impl<'a> TypeContext<'a> for Context {
     type SerializableAccountStorageEntry = SerializableAccountStorageEntry;
 

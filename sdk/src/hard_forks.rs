@@ -4,7 +4,7 @@
 use byteorder::{ByteOrder, LittleEndian};
 use solana_sdk::clock::Slot;
 
-#[derive(Default, Clone, Deserialize, Serialize)]
+#[derive(Default, Clone, Deserialize, Serialize, AbiSample)]
 pub struct HardForks {
     hard_forks: Vec<(Slot, usize)>,
 }
