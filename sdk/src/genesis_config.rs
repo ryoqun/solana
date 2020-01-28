@@ -27,14 +27,15 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, AbiDigest, AbiSample)]
 pub enum OperatingMode {
     Preview,     // Next set of cluster features to be promoted to Stable
     Stable,      // Stable cluster features
     Development, // All features (including experimental features)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[frozen_abi(digest = "FNd3s99UYsDTni15mzhvoHCEnP3ddgoo7dp5v4LSr2Re")]
+#[derive(Serialize, Deserialize, Debug, Clone, AbiSample)]
 pub struct GenesisConfig {
     /// when the network (bootstrap validator) was started relative to the UNIX Epoch
     pub creation_time: UnixTimestamp,

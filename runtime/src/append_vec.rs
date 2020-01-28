@@ -103,7 +103,7 @@ impl<'a> StoredAccount<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, AbiSample)]
 #[allow(clippy::mutex_atomic)]
 pub struct AppendVec {
     path: PathBuf,

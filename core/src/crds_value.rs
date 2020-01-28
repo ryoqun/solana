@@ -27,7 +27,7 @@ pub type EpochSlotsIndex = u8;
 pub const MAX_EPOCH_SLOTS: EpochSlotsIndex = 255;
 
 /// CrdsValue that is replicated across the cluster
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample)]
 pub struct CrdsValue {
     pub signature: Signature,
     pub data: CrdsData,
@@ -67,7 +67,7 @@ impl Signable for CrdsValue {
 /// * Merge Strategy - Latest wallclock is picked
 /// * LowestSlot index is deprecated
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample, AbiDigest)]
 pub enum CrdsData {
     ContactInfo(ContactInfo),
     Vote(VoteIndex, Vote),
@@ -105,7 +105,7 @@ impl Sanitize for CrdsData {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample)]
 pub struct SnapshotHash {
     pub from: Pubkey,
     pub hashes: Vec<(Slot, Hash)>,
@@ -135,7 +135,7 @@ impl SnapshotHash {
         }
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample)]
 pub struct LowestSlot {
     pub from: Pubkey,
     root: Slot, //deprecated
@@ -179,7 +179,7 @@ impl Sanitize for LowestSlot {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample)]
 pub struct Vote {
     pub from: Pubkey,
     pub transaction: Transaction,

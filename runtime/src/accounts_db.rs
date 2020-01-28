@@ -182,7 +182,7 @@ impl<'de> Deserialize<'de> for AccountStorage {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Copy, Clone, Deserialize, Serialize, AbiSample, AbiDigest)]
 pub enum AccountStorageStatus {
     Available = 0,
     Full = 1,
@@ -197,7 +197,8 @@ pub enum BankHashVerificationError {
 }
 
 /// Persistent storage structure holding the accounts
-#[derive(Debug, Serialize, Deserialize)]
+#[frozen_abi(digest = "G3KVhf8S7fhFp2hwXXN37ehf1EeZVDiG397tY6eC3c1h")]
+#[derive(Debug, Serialize, Deserialize, AbiSample)]
 pub struct AccountStorageEntry {
     id: AppendVecId,
 
@@ -365,6 +366,29 @@ impl<'a, 'b> AccountsDBSerialize<'a, 'b> {
     }
 }
 
+#[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
+mod test_accounts_db_serialize {
+    use super::*;
+
+    // These some what long test harness is required to freeze the ABI of
+    // AccountsDB's serialization logic (AccontsDBSerialize) because
+    // AccountsDBSerialize takes a ref(&) to an AccountsDB.
+    #[frozen_abi(digest = "EpX1HbzgTKh1jki8aVJKzTL3dWoA5cknxn6qr6WDrwm")]
+    #[derive(Serialize, AbiSample)]
+    pub struct AccountsDBSerializeAbiTestWrapper {
+        #[serde(serialize_with = "wrapper")]
+        owned: AccountsDB,
+    }
+
+    pub fn wrapper<S>(accounts_db: &AccountsDB, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let snapshot_storages = accounts_db.get_snapshot_storages(0);
+        AccountsDBSerialize::new(accounts_db, 0, &snapshot_storages).serialize(s)
+    }
+}
+
 impl<'a, 'b> Serialize for AccountsDBSerialize<'a, 'b> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -499,6 +523,21 @@ fn make_min_priority_thread_pool() -> ThreadPool {
         .num_threads(num_threads)
         .build()
         .unwrap()
+}
+
+#[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
+impl solana_sdk::abi_digester::AbiSample for AccountsDB {
+    fn sample() -> Self {
+        let accounts_db = AccountsDB::new_single();
+        let key = Pubkey::default();
+        let some_data_len = 5;
+        let some_slot: Slot = 0;
+        let account = Account::new(1, some_data_len, &key);
+        accounts_db.store(some_slot, &[(&key, &account)]);
+        accounts_db.add_root(0);
+
+        accounts_db
+    }
 }
 
 impl Default for AccountsDB {

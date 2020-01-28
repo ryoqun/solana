@@ -75,6 +75,7 @@ pub const MAX_SNAPSHOT_DATA_FILE_SIZE: u64 = 32 * 1024 * 1024 * 1024; // 32 GiB
 pub const MAX_LEADER_SCHEDULE_STAKES: Epoch = 5;
 
 type BankStatusCache = StatusCache<Result<()>>;
+#[frozen_abi(digest = "2bnBp5CPgfEBEhJCWHnSJi6zGgJg1XXS9JHLvFYy3xRy")]
 pub type BankSlotDelta = SlotDelta<Result<()>>;
 type TransactionAccountRefCells = Vec<Rc<RefCell<Account>>>;
 type TransactionLoaderRefCells = Vec<Vec<(Pubkey, RefCell<Account>)>>;
@@ -89,6 +90,20 @@ pub struct BankRc {
 
     /// Current slot
     slot: Slot,
+}
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+use solana_sdk::abi_digester::AbiSample;
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+impl AbiSample for BankRc {
+    fn sample() -> Self {
+        BankRc {
+            // Set parent to None to cut the recursion into another Bank
+            parent: RwLock::new(None),
+            accounts: AbiSample::sample(),
+            slot: AbiSample::sample(),
+        }
+    }
 }
 
 impl BankRc {
@@ -219,7 +234,8 @@ impl HashAgeKind {
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-#[derive(Default, Deserialize, Serialize)]
+#[frozen_abi(digest = "GjQmPzpj3RJHmP1ADjZEPwqCcPJneDuRQVDL7sB3az3Z")]
+#[derive(Default, Deserialize, Serialize, AbiSample)]
 pub struct Bank {
     /// References to accounts, parent and signature status
     #[serde(skip)]

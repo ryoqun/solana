@@ -8,7 +8,8 @@ use std::{
 
 /// An Account with data that is stored on chain
 #[repr(C)]
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[frozen_abi(digest = "By9FhuLAM947tkLxbTVQru9ZKTrRQuvCR5W387nPSLNu")]
+#[derive(Serialize, Deserialize, Clone, Default, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
     /// lamports in the account
