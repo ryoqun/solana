@@ -41,7 +41,7 @@ pub struct SignatureConfirmationStatus<T> {
     pub status: T,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, AbiSample)]
 pub struct StatusCache<T: Serialize + Clone> {
     cache: StatusMap<T>,
     roots: HashSet<Slot>,
