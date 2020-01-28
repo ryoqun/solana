@@ -31,13 +31,13 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, AbiSample)]
 pub(crate) struct ReadonlyLock {
     lock_count: Mutex<u64>,
 }
 
 /// This structure handles synchronization for db
-#[derive(Default, Debug)]
+#[derive(Default, Debug, AbiSample)]
 pub struct Accounts {
     /// my slot
     pub slot: Slot,

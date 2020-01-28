@@ -231,6 +231,16 @@ impl Clone for MessageProcessor {
         }
     }
 }
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+impl ::solana_sdk::abi_digester::AbiSample for MessageProcessor {
+    fn sample() -> Self {
+        // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
+        // so, just rely on Default anyway.
+        MessageProcessor::default()
+    }
+}
+
 impl MessageProcessor {
     /// Add a static entrypoint to intercept instructions before the dynamic loader.
     pub fn add_program(&mut self, program_id: Pubkey, process_instruction: ProcessInstruction) {

@@ -55,7 +55,7 @@ fields.
 # Example
 
 ```patch
-+#[frozen_abi(digest="1c6a53e9")]
++#[frozen_abi(digest="eXSMM7b89VY72V...")]
  #[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Clone)]
  pub struct Vote {
      /// A stack of votes starting with the oldest vote
@@ -73,15 +73,83 @@ digest from the assertion test error message.
 
 In general, once we add `frozen_abi` and its change is published in the stable
 release channel, its digest should never change. If such a change is needed, we
-should opt for defining a new struct like `FooV1`. And special release flow like
-hard forks should be approached.
+should opt for defining a new `struct` like `FooV1`. And special release flow
+like hard forks should be approached.
 
 # Implementation remarks
 
 We use some degree of macro machinery to automatically generate unit tests
 and calculate a digest from ABI items. This is doable by clever use of
-`serde::Serialize` (`[1]`) and `any::typename` (`[2]`). For a precedent for similar
+`serde::Serialize` (`[1]`) and `any::type_name` (`[2]`). For a precedent for similar
 implementation, `ink` from the Parity Technologies `[3]` could be informational.
+
+# Implementation details
+
+The implementation's goal is to detect unintended ABI changes automatically as
+much as possible. To that end, the digest of structural ABI information is
+calculated with best-effort accuracy and stability.
+
+When the ABI digest check is run, it dynamically computes an ABI digest by
+recursively digesting the ABI of fields of the ABI item, by re-using the
+`serde`'s serialization functionality, proc macro and generic specialization.
+And then, the check `assert!`s that it finalized digest value is identical as
+what is specified in the `frozen_abi` attribute.
+
+To realize that, it creates a sample instance of the type and a custom
+`Serializer` instance for `serde` to recursively traverse its fields as if
+serializing the sample for real. This traversing must be done via `serde` to
+really capture what kinds of data actually would be serialized by `serde`, even
+considering custom non-`derive`d `Serialize` trait implementations.
+
+# The ABI digesting process
+
+This part is a bit complex. There is three inter-depending parts: `AbiSample`,
+`AbiDigester` and `AbiDigest`.
+
+First, the generated test creates a sample instance of the digested type with a
+trait called `AbiSample`, which should be implemented for all of digested types,
+much like `Serialize`. Usually, it's provided via generic trait specialization
+for most of common types. Also it is possible to `derive` for `struct` and
+`enum` and can be hand-written if needed.
+
+The custom `Serializer` is called `AbiDigester`. And when it's called by `serde`
+to serialize some data, it recursively collects ABI information as much as
+possible. `AbiDigester`'s internal state for the ABI item digest is updated
+differentially depending on the type of data. This logic is held by yet another
+trait called `AbiDigest`. This again should be implemented for all digested
+types. This is already provided for all of types and uses cases and should not
+be overridden.
+
+To summarize this interplay, `serde` handles the recursive serialization control
+flow in tandem with `AbiDigester`. The test entry point and `AbiDigester`
+uses `AbiSample` recursively to create a sample object hierarchal graph. And
+`AbiDigester` uses `AbiDigest` to inquiry the actual ABI information using
+acquired samples.
+
+`Default` isn't enough for `AbiSample`. Various collection's `::default()` is
+empty, yet, we want to digest them with actual items. And, ABI digesting can't
+be realized only with `AbiDigest`. `AbiSample` is required because an actual
+instance of type is needed to actually traverse the data via `serde`.
+
+On the other hand, ABI digesting can't be done only with `AbiSample`, either.
+`AbiDigest` is required because all variants of an `enum` cannot be traversed
+just with a single variant of it as a ABI sample.
+
+Digestable information:
+
+- rust's type name
+- `serde`'s data type name
+- all fields in `struct`
+- all variants in `enum`
+- `struct`: normal(`struct {...}`) and tuple-style (`struct(...)`)
+- `enum`: normal variants and `struct`- and `tuple`- styles.
+- attributes: `serde(serialize_with=...)` and `serde(skip)`
+
+Not digestable information:
+
+- Any custom serialize code path not touched by the sample provided by
+  `AbiSample`. (technically not possible)
+- generics (must be a concrete type; use `frozen_abi` on type aliases)
 
 # References
 
