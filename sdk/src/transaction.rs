@@ -71,7 +71,7 @@ impl std::fmt::Display for TransactionError {
 }
 
 /// An atomic transaction
-#[frozen_abi(digest = "DEQrAvkoDLxnRDkyJExBxHu5BbWi3gARJJBdvKZZNdQv")]
+#[frozen_abi(digest = "GhEJbH7TUhyW2tBRAbgrBqqSHwwyr5WDP9aRWk3av1zS")]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     /// A set of digital signatures of `account_keys`, `program_ids`, `recent_blockhash`, and `instructions`, signed by the first

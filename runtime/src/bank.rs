@@ -204,7 +204,7 @@ impl HashAgeKind {
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-#[frozen_abi(digest = "GiXofopTVhEBmm1zrmuPjjBtPGCpbTMfF7jbyjAw97aS")]
+#[frozen_abi(digest = "A4rAf66FMvNNmPswAnQBQxTRKXvXGyeCEJDYbnBbwfAm")]
 #[derive(Default, Deserialize, Serialize)]
 pub struct Bank {
     /// References to accounts, parent and signature status

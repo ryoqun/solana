@@ -5,15 +5,19 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenTree::Group};
+use proc_macro2::Span;
+#[cfg(RUSTC_IS_NIGHTLY)]
+use proc_macro2::TokenTree::Group;
 use quote::{quote, ToTokens};
 use std::convert::TryFrom;
 use syn::{
     parse::{Parse, ParseStream, Result},
-    parse_macro_input,
-    punctuated::Punctuated,
-    token::Comma,
-    Attribute, AttributeArgs, Expr, Ident, LitByte, LitStr, NestedMeta, Variant, Visibility,
+    parse_macro_input, Expr, LitByte, LitStr,
+};
+#[cfg(RUSTC_IS_NIGHTLY)]
+use syn::{
+    punctuated::Punctuated, token::Comma, Attribute, AttributeArgs, Ident, NestedMeta, Variant,
+    Visibility,
 };
 
 struct Id(proc_macro2::TokenStream);
@@ -75,6 +79,7 @@ pub fn declare_id(input: TokenStream) -> TokenStream {
     TokenStream::from(quote! {#id})
 }
 
+#[cfg(RUSTC_IS_NIGHTLY)]
 fn filter_serde_attrs(attrs: &mut Vec<Attribute>) -> bool {
     let mut skip = false;
 
@@ -98,6 +103,13 @@ fn filter_serde_attrs(attrs: &mut Vec<Attribute>) -> bool {
     skip
 }
 
+#[cfg(RUSTC_IS_STABLE)]
+#[proc_macro_attribute]
+pub fn frozen_abi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+#[cfg(RUSTC_IS_NIGHTLY)]
 #[proc_macro_attribute]
 pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attrs as AttributeArgs);
@@ -122,6 +134,10 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             &format!("frozen_abi_tests_{}", name.to_string()),
             Span::call_site(),
         );
+        /*let struct_name = Ident::new(
+            &format!("{}ForAbiDigest", name.to_string()),
+            Span::call_site(),
+        );*/
 
         let mut header = input.clone();
         filter_serde_attrs(&mut header.attrs);
@@ -130,7 +146,28 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
         let mut body = quote! {
             digester.update(&["attrs", stringify!(#header)]);
         };
-        for mut field in input.fields.clone() {
+        let fields = &input.fields;
+        let mut struct_body = quote! {};
+        let mut struct_body2 = quote! {};
+        let mut struct_body3 = quote! {};
+        for mut field in fields.clone() {
+            let field_ident = &field.ident;
+            let field_type = &field.ty;
+            match fields {
+                syn::Fields::Named(_) => {
+                    struct_body2 = quote! {
+                        #struct_body2
+                        #field_ident: AbiDigestSample::sample(),
+                    };
+                }
+                syn::Fields::Unnamed(_) => {
+                    struct_body2 = quote! {
+                        #struct_body2
+                        AbiDigestSample::sample(),
+                    };
+                }
+                _ => panic!("bad"),
+            }
             if filter_serde_attrs(&mut field.attrs) {
                 continue;
             }
@@ -139,18 +176,84 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             body = quote! {
                 #body;
                 digester.update(&["field", stringify!(#field)]);
+            };
+            struct_body = quote! {
+                #struct_body
+                #field,
+            };
+            struct_body3 = quote! {
+                #struct_body3
+                //let #field_ident: #field_type = ::solana_sdk::abi_digester::AbiDigest::abi_digest();
+                //#field_ident: ::solana_sdk::abi_digester::AbiDigest::abi_digest(),
+                //::solana_sdk::abi_digester::AbiDigest::abi_digest::<#field_type>();
+                digester.update_with_type2::<#field_type>(concat!("field ", stringify!(#field_ident)));
+                <#field_type>::abi_digest(&mut digester.child_digester());
+            };
+        }
+        match fields {
+            syn::Fields::Named(_) => {
+                struct_body2 = quote! {
+                    { #struct_body2 }
+                }
             }
+            syn::Fields::Unnamed(_) => {
+                struct_body2 = quote! {
+                    ( #struct_body2 )
+                }
+            }
+            _ => panic!("bad"),
         }
 
         let result = quote! {
             #input
+            #[automatically_derived]
+            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
+                fn sample() -> #name {
+                    eprintln!(
+                        "AbiDigestSample for struct: {}",
+                        std::any::type_name::<#name>()
+                    );
+                    use ::solana_sdk::abi_digester::AbiDigestSample;
+                    #name #struct_body2
+                }
+            }
+            #[automatically_derived]
+            impl ::solana_sdk::abi_digester::AbiDigest for #name {
+                fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
+                    eprintln!("AbiDigest for (struct): {}", std::any::type_name::<#name>());
+                    #struct_body3
+                    //return #name {
+                    //    #struct_body3
+                    //};
+                }
+            }
             #[cfg(test)]
             mod #mod_name {
                 use super::*;
+                use serde::ser::Serialize;
+
                 #[test]
                 fn test_frozen_abi() {
-                    let mut digester = ::solana_sdk::abi_digester::AbiDigester::default();
+                    let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
+                    /*
+                    #[derive(Default, Serialize)]
+                    struct #struct_name {
+                      #struct_body
+                    };
+                    impl AbiDigestSample for #struct_name {
+                        fn sample() -> #struct_name {
+                            return #struct_name {
+                                #struct_body2
+                            };
+                        }
+                    };*/
+                    use ::solana_sdk::abi_digester::AbiDigest;
+                    <#name>::abi_digest(&mut digester);
+                    /*
+                    let value = #name::sample();
+                    digester = value.serialize(digester).unwrap();
                     #body
+                    */
                     let mut hash = digester.finalize();
                     assert_eq!(#expected_digest, format!("{}", hash));
                 }
@@ -170,26 +273,112 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
         let mut body = quote! {
             digester.update(&["attrs", stringify!(#header)]);
         };
+        let mut struct_body3 = quote! {};
+        let mut enum_body2 = quote! {};
+        let mut enum_body2_found = false;
         for mut variant in input.variants.clone() {
             if filter_serde_attrs(&mut variant.attrs) {
                 continue;
-            }
+            };
             body = quote! {
                 #body;
                 digester.update(&["variant", stringify!(#variant)]);
+            };
+            let vi = &variant.ident;
+            let vt = &variant.fields;
+            if *vt == syn::Fields::Unit {
+                struct_body3 = quote! {
+                    #struct_body3;
+                    let v = #name::#vi;
+                }
+            } else if let syn::Fields::Unnamed(vt) = vt {
+                //eprintln!("{:#?}", vt);
+                let mut uc = quote! {};
+                for u in &vt.unnamed {
+                    if !(u.ident.is_none() && u.colon_token.is_none()) {
+                        unimplemented!();
+                    }
+                    let ty = &u.ty;
+                    uc = quote! {
+                        #uc
+                        <#ty>::sample(),
+                    };
+                }
+                struct_body3 = quote! {
+                    #struct_body3;
+                    let v = #name::#vi(#uc);
+                    //let v: #vt = Default::default();
+                    //let v = #name::#vi::default();
+                }
+            } else if let syn::Fields::Named(vt) = vt {
+                let mut uc = quote! {};
+                for u in &vt.named {
+                    if u.ident.is_none() || u.colon_token.is_none() {
+                        unimplemented!();
+                    }
+                    let ty = &u.ty;
+                    let ident = &u.ident;
+                    uc = quote! {
+                        #uc
+                        #ident: <#ty>::sample(),
+                    };
+                }
+                struct_body3 = quote! {
+                    #struct_body3;
+                    let v = #name::#vi{#uc};
+                    //let v: #vt = Default::default();
+                    //let v = #name::#vi::default();
+                }
+            } else {
+                unimplemented!("{:?}", vt);
+            }
+            if !enum_body2_found {
+                enum_body2_found = true;
+                enum_body2 = quote! {
+                    #struct_body3;
+                }
+            }
+            struct_body3 = quote! {
+                #struct_body3;
+                v.serialize(digester.forced_child_digester()).unwrap();
             }
         }
 
         let result = quote! {
             #input
+            #[automatically_derived]
+            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
+                fn sample() -> #name {
+                    eprintln!(
+                        "AbiDigestSample for enum: {}",
+                        std::any::type_name::<#name>()
+                    );
+                    #enum_body2;
+                    v
+                }
+            }
+            #[automatically_derived]
+            impl ::solana_sdk::abi_digester::AbiDigest for #name {
+                fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
+                    use serde::ser::Serialize;
+                    use ::solana_sdk::abi_digester::AbiDigestSample;
+                    eprintln!("AbiDigest for (enum): {}", std::any::type_name::<#name>());
+                    #struct_body3
+                    //return #name {
+                    //    #struct_body3
+                    //};
+                }
+            }
             #[cfg(test)]
             mod #mod_name {
                 use super::*;
                 use serde::ser::Serialize;
                 #[test]
                 fn test_frozen_abi() {
-                    let mut digester = ::solana_sdk::abi_digester::AbiDigester::default();
-                    #body
+                    let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
+                    //#body
+                    use ::solana_sdk::abi_digester::AbiDigest;
+                    <#name>::abi_digest(&mut digester);
                     let hash = digester.finalize();
                     assert_eq!(#expected_digest, format!("{}", hash));
                 }

@@ -5,7 +5,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use solana_sdk::clock::Slot;
 use std::ops::Add;
 
-#[frozen_abi(digest = "2vR5GzbvHHTKWA2odaV9FpSh9UdQuV4KFBbYCKYgnivz")]
+#[frozen_abi(digest = "8gzt5VSWvoVTjubsjawzysMvsBZVdjYkUSh2usT8GVXu")]
 #[derive(Default, Clone, Deserialize, Serialize)]
 pub struct HardForks {
     hard_forks: Vec<(Slot, usize)>,

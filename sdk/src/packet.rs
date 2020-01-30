@@ -12,7 +12,7 @@ use std::{
 ///   8 bytes is the size of the fragment header
 pub const PACKET_DATA_SIZE: usize = 1280 - 40 - 8;
 
-#[frozen_abi(digest = "8hKWvzL7TeV1FhEF7mDiBsw9Txq53RWNwwPbQoihKBqn")]
+#[frozen_abi(digest = "BupregkJ8YcGzZ5ooHix2sVicZSua7fJ7DMGccXwD67k")]
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Meta {

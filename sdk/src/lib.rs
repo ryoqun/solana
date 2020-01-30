@@ -1,7 +1,11 @@
+#![cfg_attr(RUSTC_IS_NIGHTLY, feature(specialization))]
+
 // Allows macro expansion of `use ::solana_sdk::*` to work within this crate
 extern crate self as solana_sdk;
 
+#[cfg(RUSTC_IS_NIGHTLY)]
 pub mod abi_digester;
+
 pub mod account;
 pub mod account_utils;
 pub mod bpf_loader;
