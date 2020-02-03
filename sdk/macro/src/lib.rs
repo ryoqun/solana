@@ -209,7 +209,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
                 fn sample() -> #name {
-                    eprintln!(
+                    logger::info!(
                         "AbiDigestSample for struct: {}",
                         std::any::type_name::<#name>()
                     );
@@ -220,7 +220,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigest for #name {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
-                    eprintln!("AbiDigest for (struct): {}", std::any::type_name::<#name>());
+                    logger::info!("AbiDigest for (struct): {}", std::any::type_name::<#name>());
                     #struct_body3
                     //return #name {
                     //    #struct_body3
@@ -234,6 +234,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
                 #[test]
                 fn test_frozen_abi() {
+                    ::solana_logger::setup();
                     let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
                     /*
                     #[derive(Default, Serialize)]
@@ -292,7 +293,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                     let v = #name::#vi;
                 }
             } else if let syn::Fields::Unnamed(vt) = vt {
-                //eprintln!("{:#?}", vt);
+                //logger::info!("{:#?}", vt);
                 let mut uc = quote! {};
                 for u in &vt.unnamed {
                     if !(u.ident.is_none() && u.colon_token.is_none()) {
@@ -307,8 +308,6 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 struct_body3 = quote! {
                     #struct_body3;
                     let v = #name::#vi(#uc);
-                    //let v: #vt = Default::default();
-                    //let v = #name::#vi::default();
                 }
             } else if let syn::Fields::Named(vt) = vt {
                 let mut uc = quote! {};
@@ -326,8 +325,6 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 struct_body3 = quote! {
                     #struct_body3;
                     let v = #name::#vi{#uc};
-                    //let v: #vt = Default::default();
-                    //let v = #name::#vi::default();
                 }
             } else {
                 unimplemented!("{:?}", vt);
@@ -349,7 +346,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
                 fn sample() -> #name {
-                    eprintln!(
+                    logger::info!(
                         "AbiDigestSample for enum: {}",
                         std::any::type_name::<#name>()
                     );
@@ -362,7 +359,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
                     use serde::ser::Serialize;
                     use ::solana_sdk::abi_digester::AbiDigestSample;
-                    eprintln!("AbiDigest for (enum): {}", std::any::type_name::<#name>());
+                    logger::info!("AbiDigest for (enum): {}", std::any::type_name::<#name>());
                     #struct_body3
                     //return #name {
                     //    #struct_body3
@@ -375,6 +372,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 use serde::ser::Serialize;
                 #[test]
                 fn test_frozen_abi() {
+                    ::solana_logger::setup();
                     let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
                     //#body
                     use ::solana_sdk::abi_digester::AbiDigest;

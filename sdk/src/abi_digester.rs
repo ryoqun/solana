@@ -1,5 +1,7 @@
 use crate::hash::{Hash, Hasher};
 
+use log::*;
+
 use serde::ser::Error as SerdeError;
 use serde::Serialize;
 
@@ -195,7 +197,7 @@ macro_rules! atomic_int {
     ($atomic_type: ident) => {
         impl AbiDigestSample for $atomic_type {
             fn sample() -> Self {
-                Self::new(Default::default())
+                Self::new(AbiDigestSample::sample())
             }
         }
     };
@@ -233,7 +235,7 @@ impl<T: Default> DDD<T> for () {
 /*
 impl<T: Serialize + Sized, U: Serialize + Sized, V: Serialize + Sized> AbiDigestSample for (T, U, V) {
     default fn sample() -> (T, U, V) {
-        eprintln!(
+        info!(
             "AbiDigestSample for (T, U, V): ({}, {}, {})",
             std::any::type_name::<T>(),
             std::any::type_name::<U>(),
@@ -246,7 +248,7 @@ impl<T: Serialize + Sized, U: Serialize + Sized, V: Serialize + Sized> AbiDigest
 
 impl<T: AbiDigestSample> AbiDigestSample for Option<T> {
     fn sample() -> Option<T> {
-        eprintln!(
+        info!(
             "AbiDigestSample for (Option<T>): {}",
             std::any::type_name::<Option<T>>()
         );
@@ -269,7 +271,7 @@ impl<T: Serialize + ?Sized> AbiDigest for T {
 
 impl<T: Serialize + ?Sized + AbiDigestSample> AbiDigest for T {
     default fn abi_digest(digester: &mut AbiDigester) {
-        eprintln!("AbiDigest for (default): {}", std::any::type_name::<T>());
+        info!("AbiDigest for (default): {}", std::any::type_name::<T>());
         let v = T::sample();
         v.serialize(digester.child_digester()).unwrap();
     }
@@ -279,7 +281,7 @@ impl<T: Serialize + ?Sized + AbiDigestSample, U: Serialize + ?Sized + AbiDigestS
     for (T, U)
 {
     default fn abi_digest(digester: &mut AbiDigester) {
-        eprintln!(
+        info!(
             "AbiDigest for (default): {}",
             std::any::type_name::<(T, U)>()
         );
@@ -290,7 +292,7 @@ impl<T: Serialize + ?Sized + AbiDigestSample, U: Serialize + ?Sized + AbiDigestS
 
 impl<T: AbiDigest> AbiDigest for Option<T> {
     fn abi_digest(digester: &mut AbiDigester) {
-        eprintln!(
+        info!(
             "AbiDigest for (Option<T>): {}",
             std::any::type_name::<Option<T>>()
         );
@@ -592,7 +594,7 @@ impl serde::ser::Serializer for AbiDigester {
 
     fn serialize_struct(self, name: Sstr, len: usize) -> DigestResult {
         //self.hash(999);
-        eprintln!("serialize_struct {} {}", name, len);
+        info!("serialize_struct {} {}", name, len);
         Ok(self)
     }
 
@@ -626,7 +628,7 @@ impl serde::ser::SerializeTuple for AbiDigester {
 
     fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
         self.update_with_type("element", v);
-        //eprintln!("aaaaa: {:?}", (&v).abi_digest());
+        //info!("aaaaa: {:?}", (&v).abi_digest());
         <T>::abi_digest(&mut self.child_digester());
         Ok(())
     }
@@ -654,9 +656,9 @@ impl serde::ser::SerializeTupleVariant for AbiDigester {
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
         self.update_with_type("tuple", v);
-        eprintln!("enum: variant: tuple");
-        eprintln!("typename: {}", std::any::type_name::<T>());
-        //eprintln!("AAAAA: {:?}", T::sample());
+        info!("enum: variant: tuple");
+        info!("typename: {}", std::any::type_name::<T>());
+        //info!("AAAAA: {:?}", T::sample());
         v.serialize(self.child_digester()).unwrap();
         Ok(())
     }
@@ -689,9 +691,9 @@ impl serde::ser::SerializeStruct for AbiDigester {
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
         self.update_with_type(&format!("field {}", key), v);
-        //eprintln!("struct: field: {}", key);
-        //eprintln!("typename: {}", std::any::type_name::<T>());
-        //eprintln!("AAAAA: {:?}", T::sample());
+        //info!("struct: field: {}", key);
+        //info!("typename: {}", std::any::type_name::<T>());
+        //info!("AAAAA: {:?}", T::sample());
         //v.serialize(self.child_digester()).unwrap();
         <T>::abi_digest(&mut self.child_digester());
         Ok(())
