@@ -90,5 +90,10 @@ extern crate serde_derive;
 pub extern crate bs58;
 extern crate log as logger;
 
+#[cfg(all(not(feature = "program")))]
 #[macro_use]
-extern crate solana_sdk_macro;
+extern crate solana_sdk_macro_frozen_abi;
+
+#[cfg(all(feature = "program"))]
+#[macro_use]
+extern crate solana_sdk_macro_frozen_abi_dummy;

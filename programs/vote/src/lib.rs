@@ -11,4 +11,4 @@ solana_sdk::declare_program!(
 );
 
 #[macro_use]
-extern crate solana_sdk_macro;
+extern crate solana_sdk_macro_frozen_abi;
