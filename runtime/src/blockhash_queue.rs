@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use solana_sdk::{fee_calculator::FeeCalculator, hash::Hash, timing::timestamp};
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, AbiDigestSample)]
 struct HashAge {
     fee_calculator: FeeCalculator,
     hash_height: u64,

@@ -19,6 +19,8 @@ _ cargo +"$rust_stable" fmt --all -- --check
 # See https://github.com/solana-labs/solana/issues/5503
 _ cargo +"$rust_stable" clippy --version
 _ cargo +"$rust_stable" clippy --all --exclude solana-sdk-c -- --deny=warnings
+# there is moderate amount of nightly-only code for frozen_abi
+_ cargo +"$rust_nightly" clippy -p solana-sdk -- --deny=warnings
 _ cargo +"$rust_stable" clippy --manifest-path sdk-c/Cargo.toml -- --deny=warnings
 
 _ cargo +"$rust_stable" audit --version

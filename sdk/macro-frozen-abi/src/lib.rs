@@ -1,6 +1,21 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
+
+// Define dummy macro_attribute and macro_derive for stable rustc
+
+#[cfg(RUSTC_IS_STABLE)]
+#[proc_macro_attribute]
+pub fn frozen_abi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+
+#[cfg(RUSTC_IS_STABLE)]
+#[proc_macro_derive(AbiDigestSample)]
+pub fn derive_abi_digest_sample(_item: TokenStream) -> TokenStream {
+    "".parse().unwrap()
+}
+
 #[cfg(RUSTC_IS_NIGHTLY)]
 use proc_macro2::{Span, TokenTree::Group};
 #[cfg(RUSTC_IS_NIGHTLY)]
@@ -35,10 +50,183 @@ fn filter_serde_attrs(attrs: &mut Vec<Attribute>) -> bool {
     skip
 }
 
-#[cfg(RUSTC_IS_STABLE)]
-#[proc_macro_attribute]
-pub fn frozen_abi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
-    item
+#[cfg(RUSTC_IS_NIGHTLY)]
+fn adjust_derive_for_sample(attrs: &mut Vec<Attribute>) -> bool {
+    let mut inserted = false;
+    let mut found = false;
+    for attr in attrs.iter_mut() {
+        let ss = &attr.path.segments.first().unwrap().ident.to_string();
+        if ss == "derive" {
+            //let aaa = attr.tokens;
+            //let args = parse_macro_input!(tokens as AttributeArgs);
+            if inserted {
+                unimplemented!("double #[derive(...)]s; just unify them");
+            }
+            let mut derives = vec![];
+            for token in attr.tokens.clone() {
+                if let Group(token) = token {
+                    for ident in token.stream() {
+                        if ident.to_string() == "AbiDigestSample" {
+                            inserted = true;
+                            found = true;
+                        }
+                        if ident.to_string() != "," {
+                            derives.push(Ident::new(&ident.to_string(), Span::call_site()));
+                        }
+                    }
+                } else {
+                    panic!("unsupported");
+                }
+            }
+            if !inserted {
+                inserted = true;
+                derives.push(Ident::new("AbiDigestSample", Span::call_site()));
+            }
+            attr.tokens = quote! {
+                ( #( #derives ),* )
+            };
+        }
+    }
+
+    found
+}
+
+#[cfg(RUSTC_IS_NIGHTLY)]
+#[proc_macro_derive(AbiDigestSample)]
+pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
+    let item = syn::parse_macro_input!(item as syn::Item);
+
+    if let syn::Item::Struct(input) = item {
+        let name = &input.ident;
+        let mut struct_body2 = quote! {};
+        let fields = &input.fields;
+        for field in fields {
+            let field_ident = &field.ident;
+            match fields {
+                syn::Fields::Named(_) => {
+                    struct_body2 = quote! {
+                        #struct_body2
+                        #field_ident: AbiDigestSample::sample(),
+                    };
+                }
+                syn::Fields::Unnamed(_) => {
+                    struct_body2 = quote! {
+                        #struct_body2
+                        AbiDigestSample::sample(),
+                    };
+                }
+                _ => panic!("bad"),
+            }
+        }
+
+        match fields {
+            syn::Fields::Named(_) => {
+                struct_body2 = quote! {
+                    { #struct_body2 }
+                }
+            }
+            syn::Fields::Unnamed(_) => {
+                struct_body2 = quote! {
+                    ( #struct_body2 )
+                }
+            }
+            _ => panic!("bad"),
+        }
+
+        let result = quote! {
+            #[automatically_derived]
+            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
+                fn sample() -> #name {
+                    ::log::info!(
+                        "AbiDigestSample for struct: {}",
+                        std::any::type_name::<#name>()
+                    );
+                    use ::solana_sdk::abi_digester::AbiDigestSample;
+                    #name #struct_body2
+                }
+            }
+        };
+
+        result.into()
+    } else if let syn::Item::Enum(input) = item {
+        let name = &input.ident;
+        let mut struct_body3 = quote! {};
+        let mut enum_body2_found = false;
+        let mut enum_body2 = quote! {};
+        for mut variant in input.variants.clone() {
+            if filter_serde_attrs(&mut variant.attrs) {
+                continue;
+            };
+
+            let vi = &variant.ident;
+            let vt = &variant.fields;
+            if *vt == syn::Fields::Unit {
+                struct_body3 = quote! {
+                    #struct_body3;
+                    let v = #name::#vi;
+                }
+            } else if let syn::Fields::Unnamed(vt) = vt {
+                //::_logger::info!("{:#?}", vt);
+                let mut uc = quote! {};
+                for u in &vt.unnamed {
+                    if !(u.ident.is_none() && u.colon_token.is_none()) {
+                        unimplemented!();
+                    }
+                    let ty = &u.ty;
+                    uc = quote! {
+                        #uc
+                        <#ty>::sample(),
+                    };
+                }
+                struct_body3 = quote! {
+                    #struct_body3;
+                    let v = #name::#vi(#uc);
+                }
+            } else if let syn::Fields::Named(vt) = vt {
+                let mut uc = quote! {};
+                for u in &vt.named {
+                    if u.ident.is_none() || u.colon_token.is_none() {
+                        unimplemented!();
+                    }
+                    let ty = &u.ty;
+                    let ident = &u.ident;
+                    uc = quote! {
+                        #uc
+                        #ident: <#ty>::sample(),
+                    };
+                }
+                struct_body3 = quote! {
+                    #struct_body3;
+                    let v = #name::#vi{#uc};
+                }
+            } else {
+                unimplemented!("{:?}", vt);
+            }
+            if !enum_body2_found {
+                enum_body2_found = true;
+                enum_body2 = quote! {
+                    #struct_body3;
+                }
+            }
+        }
+
+        let result = quote! {
+            #[automatically_derived]
+            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
+                fn sample() -> #name {
+                    ::log::info!(
+                        "AbiDigestSample for enum: {}",
+                        std::any::type_name::<#name>()
+                    );
+                    #enum_body2;
+                    v
+                }
+            }
+        };
+        result.into()
+    } else {
+        unimplemented!("unrecognized");
+    }
 }
 
 #[cfg(RUSTC_IS_NIGHTLY)]
@@ -80,26 +268,10 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
         };
         let fields = &input.fields;
         let mut struct_body = quote! {};
-        let mut struct_body2 = quote! {};
         let mut struct_body3 = quote! {};
         for mut field in fields.clone() {
             let field_ident = &field.ident;
             let field_type = &field.ty;
-            match fields {
-                syn::Fields::Named(_) => {
-                    struct_body2 = quote! {
-                        #struct_body2
-                        #field_ident: AbiDigestSample::sample(),
-                    };
-                }
-                syn::Fields::Unnamed(_) => {
-                    struct_body2 = quote! {
-                        #struct_body2
-                        AbiDigestSample::sample(),
-                    };
-                }
-                _ => panic!("bad"),
-            }
             if filter_serde_attrs(&mut field.attrs) {
                 continue;
             }
@@ -122,47 +294,32 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 <#field_type>::abi_digest(&mut digester.child_digester());
             };
         }
-        match fields {
-            syn::Fields::Named(_) => {
-                struct_body2 = quote! {
-                    { #struct_body2 }
-                }
-            }
-            syn::Fields::Unnamed(_) => {
-                struct_body2 = quote! {
-                    ( #struct_body2 )
-                }
-            }
-            _ => panic!("bad"),
+        let mut input2 = input.clone();
+        let found = adjust_derive_for_sample(&mut input2.attrs);
+        if found {
+            unimplemented!("abi_frozen and derive(AbiDigestSample) is redundant; remove the derive for root structs")
         }
 
         let result = quote! {
-            #input
-            #[automatically_derived]
-            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
-                fn sample() -> #name {
-                    ::log::info!(
-                        "AbiDigestSample for struct: {}",
-                        std::any::type_name::<#name>()
-                    );
-                    use ::solana_sdk::abi_digester::AbiDigestSample;
-                    #name #struct_body2
-                }
-            }
+            #input2
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigest for #name {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
                     ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#name>());
-                    #struct_body3
+                    //#struct_body3
                     //return #name {
                     //    #struct_body3
                     //};
+                    use ::solana_sdk::abi_digester::AbiDigestSample;
+                    use ::serde::ser::Serialize;
+                    let v = <#name>::sample();
+                    v.serialize(digester.forced_child_digester()).unwrap();
                 }
             }
             #[cfg(test)]
             mod #mod_name {
                 use super::*;
-                use serde::ser::Serialize;
+                use ::serde::ser::Serialize;
 
                 #[test]
                 fn test_frozen_abi() {
@@ -207,8 +364,6 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             digester.update(&["attrs", stringify!(#header)]);
         };
         let mut struct_body3 = quote! {};
-        let mut enum_body2 = quote! {};
-        let mut enum_body2_found = false;
         for mut variant in input.variants.clone() {
             if filter_serde_attrs(&mut variant.attrs) {
                 continue;
@@ -261,31 +416,20 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 unimplemented!("{:?}", vt);
             }
-            if !enum_body2_found {
-                enum_body2_found = true;
-                enum_body2 = quote! {
-                    #struct_body3;
-                }
-            }
             struct_body3 = quote! {
                 #struct_body3;
                 v.serialize(digester.forced_child_digester()).unwrap();
             }
         }
 
+        let mut input2 = input.clone();
+        let found = adjust_derive_for_sample(&mut input2.attrs);
+        if found {
+            unimplemented!("abi_frozen and derive(AbiDigestSample) is redundant; remove the derive for root enums")
+        }
+
         let result = quote! {
-            #input
-            #[automatically_derived]
-            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
-                fn sample() -> #name {
-                    ::log::info!(
-                        "AbiDigestSample for enum: {}",
-                        std::any::type_name::<#name>()
-                    );
-                    #enum_body2;
-                    v
-                }
-            }
+            #input2
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigest for #name {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {

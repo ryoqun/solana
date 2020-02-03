@@ -232,20 +232,6 @@ impl<T: Default> DDD<T> for () {
     }
 }
 
-/*
-impl<T: Serialize + Sized, U: Serialize + Sized, V: Serialize + Sized> AbiDigestSample for (T, U, V) {
-    default fn sample() -> (T, U, V) {
-        info!(
-            "AbiDigestSample for (T, U, V): ({}, {}, {})",
-            std::any::type_name::<T>(),
-            std::any::type_name::<U>(),
-            std::any::type_name::<V>(),
-        );
-        (T::sample(), U::sample(), V::sample())
-    }
-}
-*/
-
 impl<T: AbiDigestSample> AbiDigestSample for Option<T> {
     fn sample() -> Option<T> {
         info!(
@@ -253,6 +239,93 @@ impl<T: AbiDigestSample> AbiDigestSample for Option<T> {
             std::any::type_name::<Option<T>>()
         );
         Some(T::sample())
+    }
+}
+
+/*
+trait AbiDigestSample2 {
+    const V: Self;
+}
+
+impl<T> AbiDigestSample2 for T {
+    default const V: Self = panic!();
+}
+
+impl<T: Default> AbiDigestSample2 for T {
+    const V: Self = T::default();
+}
+*/
+
+/*
+const C: u64 = 2323;
+const D: usize = 2323;
+const E: solana_sdk::pubkey::Pubkey = solana_sdk::pubkey::Pubkey([0; 32]);
+
+impl AbiDigestSample for &u64 {
+    fn sample() -> &'static u64 {
+        info!(
+            "AbiDigestSample for &T: {}",
+            std::any::type_name::<&u64>()
+        );
+        &C
+    }
+}
+
+impl AbiDigestSample for &usize {
+    fn sample() -> &'static usize {
+        info!(
+            "AbiDigestSample for &T: {}",
+            std::any::type_name::<&usize>()
+        );
+        &D
+    }
+}
+*/
+
+use std::collections::{HashMap, HashSet};
+
+impl<T: std::cmp::Eq + std::hash::Hash + AbiDigestSample, S: AbiDigestSample, H: ::std::hash::BuildHasher + Default> AbiDigestSample
+    for HashMap<T, S, H>
+{
+    fn sample() -> Self {
+        info!(
+            "AbiDigestSample for (HashMap<T, S, H>): {}",
+            std::any::type_name::<Self>()
+        );
+        let mut v = HashMap::new();
+        v.insert(T::sample(), S::sample());
+        v
+        //vec![[S::sample(), T::sample()]].into()
+    }
+}
+
+impl<T: AbiDigestSample> AbiDigestSample for Vec<T> {
+    fn sample() -> Vec<T> {
+        info!(
+            "AbiDigestSample for (Vec<T>): {}",
+            std::any::type_name::<Vec<T>>()
+        );
+        let v: Vec<T> = vec![T::sample()];
+        v
+    }
+}
+
+impl<T: std::cmp::Eq + std::hash::Hash + AbiDigestSample, H: ::std::hash::BuildHasher + Default> AbiDigestSample for HashSet<T> {
+    fn sample() -> Self {
+        info!(
+            "AbiDigestSample for (HashSet<T>): {}",
+            std::any::type_name::<Self>()
+        );
+        let mut v: HashSet<T> = HashSet::new();
+        v.insert(T::sample());
+        v
+    }
+}
+
+use memmap::MmapMut;
+impl solana_sdk::abi_digester::AbiDigestSample for MmapMut {
+    fn sample() -> Self {
+        MmapMut::map_anon(1).expect("failed to map the data file")
     }
 }
 
@@ -266,6 +339,14 @@ impl<T: Serialize + ?Sized> AbiDigest for T {
             "AbiDigest must be implemented for {}",
             std::any::type_name::<T>()
         );
+    }
+}
+
+impl<T: Serialize + Sized> AbiDigest for &T {
+    default fn abi_digest(digester: &mut AbiDigester) {
+        digester.update(&["ref", std::any::type_name::<T>()]);
+        let v = T::sample();
+        v.serialize(digester.child_digester()).unwrap();
     }
 }
 
@@ -347,6 +428,7 @@ impl AbiDigester {
             start = false;
         }
         buf = format!("{:0width$}{}\n", "", buf, width = self.depth * INDENT_WIDTH);
+        info!("updating with: {}", buf.trim_end());
         (*self.data_types.borrow_mut()).push(buf);
     }
 
@@ -478,8 +560,9 @@ impl serde::ser::Serializer for AbiDigester {
         self.update_with_pritimive(v)
     }
 
-    fn serialize_bytes(self, v: &[u8]) -> DigestResult {
-        self.update_with_pritimive(v)
+    fn serialize_bytes(mut self, v: &[u8]) -> DigestResult {
+        self.update_with_type2::<&[u8]>(&v.len().to_string());
+        Ok(self)
     }
 
     fn serialize_none(mut self) -> DigestResult {
@@ -508,14 +591,19 @@ impl serde::ser::Serializer for AbiDigester {
         unimplemented!();
     }
 
-    fn serialize_unit_variant(mut self, name: Sstr, _index: u32, variant: Sstr) -> DigestResult {
+    fn serialize_unit_variant(mut self, name: Sstr, index: u32, variant: Sstr) -> DigestResult {
         if !self.forced {
             panic!(
                 "unit_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
                 name, variant
             );
         }
-        self.update(&["variant", name, "unit", variant]);
+        self.update(&[
+            "variant",
+            name,
+            &format!("unit({})", &index.to_string()),
+            variant,
+        ]);
         Ok(self)
     }
 
@@ -524,6 +612,7 @@ impl serde::ser::Serializer for AbiDigester {
         T: ?Sized + Serialize,
     {
         self.update(&["newtype", name, "struct", std::any::type_name::<T>()]);
+        <T>::abi_digest(&mut self);
         Ok(self)
     }
 
@@ -614,7 +703,9 @@ impl serde::ser::SerializeSeq for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_element<T: ?Sized + Serialize>(&mut self, _v: &T) -> NoResult {
+    fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
+        self.update_with_type("element", v);
+        <T>::abi_digest(&mut self.child_digester());
         Ok(())
     }
 
@@ -672,12 +763,16 @@ impl serde::ser::SerializeMap for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_key<T: ?Sized + Serialize>(&mut self, _key: &T) -> NoResult {
-        panic!("should not happen when digesting for abi");
+    fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> NoResult {
+        self.update_with_type("key", key);
+        <T>::abi_digest(&mut self.child_digester());
+        Ok(())
     }
 
-    fn serialize_value<T: ?Sized + Serialize>(&mut self, _value: &T) -> NoResult {
-        panic!("should not happen when digesting for abi");
+    fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> NoResult {
+        self.update_with_type("value", value);
+        <T>::abi_digest(&mut self.child_digester());
+        Ok(())
     }
 
     fn end(self) -> DigestResult {
@@ -694,8 +789,12 @@ impl serde::ser::SerializeStruct for AbiDigester {
         //info!("struct: field: {}", key);
         //info!("typename: {}", std::any::type_name::<T>());
         //info!("AAAAA: {:?}", T::sample());
-        //v.serialize(self.child_digester()).unwrap();
-        <T>::abi_digest(&mut self.child_digester());
+        let aa = std::any::type_name::<T>();
+        if aa.ends_with("__SerializeWith") {
+            v.serialize(self.child_digester()).unwrap();
+        } else {
+            <T>::abi_digest(&mut self.child_digester());
+        }
         Ok(())
     }
 
