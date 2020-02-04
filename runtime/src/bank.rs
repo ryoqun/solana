@@ -67,7 +67,8 @@ pub const MAX_SNAPSHOT_DATA_FILE_SIZE: u64 = 32 * 1024 * 1024 * 1024; // 32 GiB
 pub const MAX_LEADER_SCHEDULE_STAKES: Epoch = 5;
 
 type BankStatusCache = StatusCache<Result<()>>;
-pub type BankSlotDelta = SlotDelta<Result<()>>;
+#[frozen_abi(digest = "3ZTCTaZcJMZr3JMZP3AF4aMqhnePZnUDoF9SySUXxvg9")]
+pub type BankSlotDelta = SlotDelta<Result<()>>; // used as root of a snapshot file
 type TransactionAccountRefCells = Vec<Rc<RefCell<Account>>>;
 type TransactionLoaderRefCells = Vec<Vec<(Pubkey, RefCell<Account>)>>;
 

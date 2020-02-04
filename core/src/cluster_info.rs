@@ -176,6 +176,7 @@ struct PullData {
 }
 
 // TODO These messages should go through the gpu pipeline for spam filtering
+#[frozen_abi(digest = "8uD4QsX1zwpAaGNSDTvgXsDRbmpARLnB8s5QreGAqATU")]
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(clippy::large_enum_variant)]
 enum Protocol {

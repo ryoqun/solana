@@ -59,12 +59,14 @@ fn filter_allow_attrs(attrs: &mut Vec<Attribute>) {
 }
 
 #[cfg(RUSTC_IS_NIGHTLY)]
-fn adjust_derive_for_sample(attrs: &mut Vec<Attribute>) -> bool {
+fn adjust_derive_for_sample(attrs: &mut Vec<Attribute>) -> (bool, proc_macro2::TokenStream) {
     let mut inserted = false;
-    let mut found = false;
+    let mut sample_found = false;
+    let mut derive_found = false;
     for attr in attrs.iter_mut() {
         let ss = &attr.path.segments.first().unwrap().ident.to_string();
         if ss == "derive" {
+            derive_found = true;
             //let aaa = attr.tokens;
             //let args = parse_macro_input!(tokens as AttributeArgs);
             if inserted {
@@ -76,7 +78,7 @@ fn adjust_derive_for_sample(attrs: &mut Vec<Attribute>) -> bool {
                     for ident in token.stream() {
                         if ident.to_string() == "AbiDigestSample" {
                             inserted = true;
-                            found = true;
+                            sample_found = true;
                         }
                         if ident.to_string() != "," {
                             derives.push(Ident::new(&ident.to_string(), Span::call_site()));
@@ -95,8 +97,21 @@ fn adjust_derive_for_sample(attrs: &mut Vec<Attribute>) -> bool {
             };
         }
     }
-
-    found
+    if derive_found {
+        (
+            sample_found,
+            quote! {
+              #( #attrs )*
+            },
+        )
+    } else {
+        (
+            sample_found,
+            quote! {
+              #[derive(AbiDigestSample)]
+            },
+        )
+    }
 }
 
 #[cfg(RUSTC_IS_NIGHTLY)]
@@ -143,11 +158,11 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
 
         let mut attrs = input.attrs.clone();
         filter_allow_attrs(&mut attrs);
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
         let result = quote! {
-            #[cfg(test)]
             #[automatically_derived]
             #( #attrs )*
-            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
+            impl #impl_generics ::solana_sdk::abi_digester::AbiDigestSample for #name #ty_generics #where_clause {
                 fn sample() -> #name {
                     ::log::info!(
                         "AbiDigestSample for struct: {}",
@@ -224,11 +239,11 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
 
         let mut attrs = input.attrs.clone();
         filter_allow_attrs(&mut attrs);
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
         let result = quote! {
-            #[cfg(test)]
             #[automatically_derived]
             #( #attrs )*
-            impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
+            impl #impl_generics ::solana_sdk::abi_digester::AbiDigestSample for #name #ty_generics #where_clause {
                 fn sample() -> #name {
                     ::log::info!(
                         "AbiDigestSample for enum: {}",
@@ -265,7 +280,6 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let item = syn::parse_macro_input!(item as syn::Item);
     if let syn::Item::Struct(input) = item {
         let name = &input.ident;
-
         let mod_name = Ident::new(
             &format!("frozen_abi_tests_{}", name.to_string()),
             Span::call_site(),
@@ -310,26 +324,28 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 <#field_type>::abi_digest(&mut digester.child_digester());
             };
         }
-        let mut input2 = input.clone();
-        let found = adjust_derive_for_sample(&mut input2.attrs);
+        /*let (found, attrs) = adjust_derive_for_sample(&mut input2.attrs);
         if found {
             unimplemented!("abi_frozen and derive(AbiDigestSample) is redundant; remove the derive for root structs")
         }
+        input2.attrs = vec![];
+        */
 
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
         let result = quote! {
-            #input2
-            #[cfg(test)]
+            //#attrs
+            #input
             #[automatically_derived]
-            impl ::solana_sdk::abi_digester::AbiDigest for #name {
+            impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #name #ty_generics #where_clause {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
-                    ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#name>());
+                    ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#name #ty_generics>());
                     //#struct_body3
                     //return #name {
                     //    #struct_body3
                     //};
                     use ::solana_sdk::abi_digester::AbiDigestSample;
                     use ::serde::ser::Serialize;
-                    let v = <#name>::sample();
+                    let v = <#name #ty_generics>::sample();
                     v.serialize(digester.forced_child_digester()).unwrap();
                 }
             }
@@ -440,16 +456,18 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         let mut input2 = input.clone();
-        let found = adjust_derive_for_sample(&mut input2.attrs);
+        let (found, attrs) = adjust_derive_for_sample(&mut input2.attrs);
         if found {
             unimplemented!("abi_frozen and derive(AbiDigestSample) is redundant; remove the derive for root enums")
         }
+        input2.attrs = vec![];
 
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
         let result = quote! {
+            #attrs
             #input2
-            #[cfg(test)]
             #[automatically_derived]
-            impl ::solana_sdk::abi_digester::AbiDigest for #name {
+            impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #name #ty_generics #where_clause {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
                     use serde::ser::Serialize;
                     use ::solana_sdk::abi_digester::AbiDigestSample;
@@ -477,7 +495,32 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
             }
         };
         result.into()
+    } else if let syn::Item::Type(input) = item {
+        let name = &input.ident;
+        let mod_name = Ident::new(
+            &format!("frozen_abi_tests_{}", name.to_string()),
+            Span::call_site(),
+        );
+        let result = quote! {
+            #input
+            #[cfg(test)]
+            mod #mod_name {
+                use super::*;
+                use serde::ser::Serialize;
+                #[test]
+                fn test_frozen_abi() {
+                    ::solana_logger::setup();
+                    let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
+                    //#body
+                    use ::solana_sdk::abi_digester::AbiDigest;
+                    <#name>::abi_digest(&mut digester);
+                    let hash = digester.finalize();
+                    assert_eq!(#expected_digest, format!("{}", hash));
+                }
+            }
+        };
+        result.into()
     } else {
-        panic!("not applicable to ????");
+        panic!("not applicable to {:#?}", item);
     }
 }

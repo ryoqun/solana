@@ -14,6 +14,7 @@ use std::result;
 use thiserror::Error;
 
 /// Reasons a transaction might be rejected.
+#[frozen_abi(digest = "aahaa")]
 #[derive(Error, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum TransactionError {
     /// An account is already being processed in another transaction in a way

@@ -332,6 +332,43 @@ pub struct AccountsDBSerialize<'a> {
     slot: Slot,
 }
 
+#[cfg(all(test, RUSTC_IS_NIGHTLY))]
+mod test_accounts_db_serialize {
+    use super::*;
+
+    #[frozen_abi(digest = "8v4mdibj47jvPmaK2XW8jbTcVtdxuXxUZ7nQF8U6CqaS")]
+    #[derive(Serialize)]
+    pub struct AccountsDBSerializeAbiTestWrapper {
+        #[serde(serialize_with = "serialize_from_test_wrapper")]
+        owned: AccountsDB,
+    }
+
+    pub fn serialize_from_test_wrapper<S>(x: &AccountsDB, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        (AccountsDBSerialize {
+            accounts_db: &*x,
+            slot: 0,
+        })
+        .serialize(s)
+    }
+
+    impl solana_sdk::abi_digester::AbiDigestSample for AccountsDBSerializeAbiTestWrapper {
+        fn sample() -> Self {
+            let accounts_db = AccountsDB::new_single();
+            let key = Pubkey::default();
+            let some_data_len = 5;
+            let some_slot: Slot = 0;
+            let account = Account::new(1, some_data_len, &key);
+            accounts_db.store(some_slot, &[(&key, &account)]);
+            accounts_db.add_root(0);
+
+            AccountsDBSerializeAbiTestWrapper { owned: accounts_db }
+        }
+    }
+}
+
 impl<'a> AccountsDBSerialize<'a> {
     pub fn new(accounts_db: &'a AccountsDB, slot: Slot) -> Self {
         Self { accounts_db, slot }

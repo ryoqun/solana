@@ -7,16 +7,6 @@ use serde::Serialize;
 
 use std::io::Write;
 
-pub trait DefaultForAbiDigest: Sized {
-    fn default_for_abi_digest() -> Self;
-}
-
-impl<T: Default> DefaultForAbiDigest for T {
-    fn default_for_abi_digest() -> Self {
-        T::default()
-    }
-}
-
 pub trait AbiDigestSample: Sized {
     fn sample() -> Self;
 }
@@ -242,6 +232,46 @@ impl<T: AbiDigestSample> AbiDigestSample for Option<T> {
     }
 }
 
+impl<T: AbiDigestSample> AbiDigestSample for Box<T> {
+    fn sample() -> Box<T> {
+        info!(
+            "AbiDigestSample for (Box<T>): {}",
+            std::any::type_name::<Box<T>>()
+        );
+        Box::new(T::sample())
+    }
+}
+
+impl<T: AbiDigestSample> AbiDigestSample for std::sync::Arc<T> {
+    fn sample() -> std::sync::Arc<T> {
+        info!(
+            "AbiDigestSample for (Arc<T>): {}",
+            std::any::type_name::<std::sync::Arc<T>>()
+        );
+        std::sync::Arc::new(T::sample())
+    }
+}
+
+impl<T: AbiDigestSample> AbiDigestSample for std::rc::Rc<T> {
+    fn sample() -> std::rc::Rc<T> {
+        info!(
+            "AbiDigestSample for (Rc<T>): {}",
+            std::any::type_name::<std::rc::Rc<T>>()
+        );
+        std::rc::Rc::new(T::sample())
+    }
+}
+
+impl<T: AbiDigestSample> AbiDigestSample for std::sync::Mutex<T> {
+    fn sample() -> std::sync::Mutex<T> {
+        info!(
+            "AbiDigestSample for (Mutex<T>): {}",
+            std::any::type_name::<std::sync::Mutex<T>>()
+        );
+        std::sync::Mutex::new(T::sample())
+    }
+}
+
 /*
 trait AbiDigestSample2 {
     const V: Self;
@@ -282,7 +312,7 @@ impl AbiDigestSample for &usize {
 }
 */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 impl<
         T: std::cmp::Eq + std::hash::Hash + AbiDigestSample,
@@ -296,6 +326,19 @@ impl<
             std::any::type_name::<Self>()
         );
         let mut v = HashMap::default();
+        v.insert(T::sample(), S::sample());
+        v
+        //vec![[S::sample(), T::sample()]].into()
+    }
+}
+
+impl<T: std::cmp::Ord + AbiDigestSample, S: AbiDigestSample> AbiDigestSample for BTreeMap<T, S> {
+    fn sample() -> BTreeMap<T, S> {
+        info!(
+            "AbiDigestSample for (BTreeMap<T, S>): {}",
+            std::any::type_name::<Self>()
+        );
+        let mut v = BTreeMap::default();
         v.insert(T::sample(), S::sample());
         v
         //vec![[S::sample(), T::sample()]].into()
@@ -329,10 +372,29 @@ impl<
     }
 }
 
+impl<T: std::cmp::Ord + AbiDigestSample> AbiDigestSample for BTreeSet<T> {
+    fn sample() -> BTreeSet<T> {
+        info!(
+            "AbiDigestSample for (BTreeSet<T>): {}",
+            std::any::type_name::<Self>()
+        );
+        let mut v: BTreeSet<T> = BTreeSet::default();
+        v.insert(T::sample());
+        v
+    }
+}
+
 use memmap::MmapMut;
 impl solana_sdk::abi_digester::AbiDigestSample for MmapMut {
     fn sample() -> Self {
         MmapMut::map_anon(1).expect("failed to map the data file")
+    }
+}
+
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+impl solana_sdk::abi_digester::AbiDigestSample for SocketAddr {
+    fn sample() -> Self {
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 0)
     }
 }
 
@@ -365,19 +427,6 @@ impl<T: Serialize + ?Sized + AbiDigestSample> AbiDigest for T {
     }
 }
 
-impl<T: Serialize + ?Sized + AbiDigestSample, U: Serialize + ?Sized + AbiDigestSample> AbiDigest
-    for (T, U)
-{
-    default fn abi_digest(digester: &mut AbiDigester) {
-        info!(
-            "AbiDigest for (default): {}",
-            std::any::type_name::<(T, U)>()
-        );
-        let v = (T::sample(), U::sample());
-        v.serialize(digester.child_digester()).unwrap();
-    }
-}
-
 impl<T: AbiDigest> AbiDigest for Option<T> {
     fn abi_digest(digester: &mut AbiDigester) {
         info!(
@@ -385,6 +434,40 @@ impl<T: AbiDigest> AbiDigest for Option<T> {
             std::any::type_name::<Option<T>>()
         );
         <T>::abi_digest(&mut digester.child_digester());
+    }
+}
+
+impl<E: AbiDigestSample> AbiDigestSample for ::core::result::Result<(), E> {
+    fn sample() -> Self {
+        /*
+        panic!("aaa");
+        info!(
+            "AbiDigest for (Result<(), E>): {}",
+            std::any::type_name::<Result<(), E>>()
+        );
+        digester.update(&["result ok", std::any::type_name::<()>()]);
+        <()>::abi_digest(&mut digester.child_digester());
+        digester.update(&["result error", std::any::type_name::<E>()]);
+        <E>::abi_digest(&mut digester.child_digester());
+        */
+        Err(E::sample())
+    }
+}
+
+impl<O: AbiDigest, E: AbiDigest> AbiDigest for ::core::result::Result<O, E> {
+    fn abi_digest(digester: &mut AbiDigester) {
+        info!(
+            "AbiDigest for (Result<O, E>): {}",
+            std::any::type_name::<Result<O, E>>()
+        );
+
+        digester.update(&["result ok", std::any::type_name::<O>()]);
+        let v: ::core::result::Result<O, E> = Result::Ok(O::sample());
+        v.serialize(digester.forced_child_digester()).unwrap();
+
+        digester.update(&["result error", std::any::type_name::<E>()]);
+        let v: ::core::result::Result<O, E> = Result::Err(E::sample());
+        v.serialize(digester.forced_child_digester()).unwrap();
     }
 }
 
@@ -447,7 +530,7 @@ impl AbiDigester {
         self.update(&[label, std::any::type_name::<T>()]);
     }
 
-    fn update_with_pritimive<T>(mut self, v: T) -> Result<AbiDigester, DigestError> {
+    fn update_with_primitive<T>(mut self, v: T) -> Result<AbiDigester, DigestError> {
         self.update_with_type("primitive", v);
         Ok(self)
     }
@@ -508,67 +591,71 @@ impl serde::ser::Serializer for AbiDigester {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_i8(self, v: i8) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_i16(self, v: i16) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_i32(self, v: i32) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_i64(self, v: i64) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_i128(self, v: i128) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_u8(self, v: u8) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_u16(self, v: u16) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_u32(self, v: u32) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_u64(self, v: u64) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_u128(self, v: u128) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_f32(self, v: f32) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_f64(self, v: f64) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_char(self, v: char) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
     }
 
     fn serialize_str(self, v: &str) -> DigestResult {
-        self.update_with_pritimive(v)
+        self.update_with_primitive(v)
+    }
+
+    fn serialize_unit(self) -> DigestResult {
+        self.update_with_primitive(())
     }
 
     fn serialize_bytes(mut self, v: &[u8]) -> DigestResult {
-        self.update_with_type2::<&[u8]>(&v.len().to_string());
+        self.update_with_type2::<&[u8]>(&format!("bytes {}", v.len()));
         Ok(self)
     }
 
@@ -590,20 +677,24 @@ impl serde::ser::Serializer for AbiDigester {
         Ok(self)
     }
 
-    fn serialize_unit(self) -> DigestResult {
-        unimplemented!();
-    }
-
-    fn serialize_unit_struct(self, _name: Sstr) -> DigestResult {
-        unimplemented!();
+    fn serialize_unit_struct(mut self, name: Sstr) -> DigestResult {
+        // enable this?
+        //if !self.forced {
+        //    panic!(
+        //        "unit_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
+        //        name, variant
+        //    );
+        //}
+        self.update(&["unit struct", name]);
+        Ok(self)
     }
 
     fn serialize_unit_variant(mut self, name: Sstr, index: u32, variant: Sstr) -> DigestResult {
         if !self.forced {
-            panic!(
-                "unit_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
-                name, variant
-            );
+            //panic!(
+            //    "unit_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
+            //    name, variant
+            //);
         }
         self.update(&[
             "variant",
@@ -633,12 +724,12 @@ impl serde::ser::Serializer for AbiDigester {
     where
         T: ?Sized + Serialize,
     {
-        if !self.forced {
+        /*if !self.forced {
             panic!(
                 "newtype_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
                 name, variant
             );
-        }
+        }*/
         self.update(&[
             "variant",
             name,
@@ -797,9 +888,17 @@ impl serde::ser::SerializeStruct for AbiDigester {
         //info!("typename: {}", std::any::type_name::<T>());
         //info!("AAAAA: {:?}", T::sample());
         let aa = std::any::type_name::<T>();
-        if aa.ends_with("__SerializeWith") {
+        if aa.ends_with("__SerializeWith") || aa.starts_with("bv::bit_vec") {
             v.serialize(self.child_digester()).unwrap();
         } else {
+            /*let by_rust_type_tree = std::panic::catch_unwind(|| {
+                T::sample();
+            });
+            if by_rust_type_tree.is_ok() {
+                <T>::abi_digest(&mut self.child_digester());
+            } else if by_rust_type_tree.is_err() && !aa.contains("solana") {
+                v.serialize(self.child_digester()).unwrap();
+            }*/
             <T>::abi_digest(&mut self.child_digester());
         }
         Ok(())

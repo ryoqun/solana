@@ -19,7 +19,7 @@ pub const MAX_VOTES: VoteIndex = 32;
 pub type EpochSlotIndex = u8;
 
 /// CrdsValue that is replicated across the cluster
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(AbiDigestSample, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct CrdsValue {
     pub signature: Signature,
     pub data: CrdsData,
@@ -57,7 +57,7 @@ impl Signable for CrdsValue {
 /// CrdsData that defines the different types of items CrdsValues can hold
 /// * Merge Strategy - Latest wallclock is picked
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigestSample)]
 pub enum CrdsData {
     ContactInfo(ContactInfo),
     Vote(VoteIndex, Vote),
@@ -102,7 +102,7 @@ impl SnapshotHash {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(AbiDigestSample, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct EpochSlots {
     pub from: Pubkey,
     pub root: Slot,
@@ -132,7 +132,7 @@ impl EpochSlots {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(AbiDigestSample, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Vote {
     pub from: Pubkey,
     pub transaction: Transaction,
