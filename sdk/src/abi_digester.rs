@@ -290,12 +290,12 @@ impl<
         H: ::std::hash::BuildHasher + Default,
     > AbiDigestSample for HashMap<T, S, H>
 {
-    fn sample() -> Self {
+    fn sample() -> HashMap<T, S, H> {
         info!(
             "AbiDigestSample for (HashMap<T, S, H>): {}",
             std::any::type_name::<Self>()
         );
-        let mut v = HashMap::new();
+        let mut v = HashMap::default();
         v.insert(T::sample(), S::sample());
         v
         //vec![[S::sample(), T::sample()]].into()
@@ -316,14 +316,14 @@ impl<T: AbiDigestSample> AbiDigestSample for Vec<T> {
 impl<
         T: std::cmp::Eq + std::hash::Hash + AbiDigestSample,
         H: ::std::hash::BuildHasher + Default,
-    > AbiDigestSample for HashSet<T>
+    > AbiDigestSample for HashSet<T, H>
 {
-    fn sample() -> Self {
+    fn sample() -> HashSet<T, H> {
         info!(
-            "AbiDigestSample for (HashSet<T>): {}",
+            "AbiDigestSample for (HashSet<T, H>): {}",
             std::any::type_name::<Self>()
         );
-        let mut v: HashSet<T> = HashSet::new();
+        let mut v: HashSet<T, H> = HashSet::default();
         v.insert(T::sample());
         v
     }

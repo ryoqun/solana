@@ -51,6 +51,14 @@ fn filter_serde_attrs(attrs: &mut Vec<Attribute>) -> bool {
 }
 
 #[cfg(RUSTC_IS_NIGHTLY)]
+fn filter_allow_attrs(attrs: &mut Vec<Attribute>) {
+    attrs.retain(|attr| {
+        let ss = &attr.path.segments.first().unwrap().ident.to_string();
+        ss.starts_with("allow")
+    });
+}
+
+#[cfg(RUSTC_IS_NIGHTLY)]
 fn adjust_derive_for_sample(attrs: &mut Vec<Attribute>) -> bool {
     let mut inserted = false;
     let mut found = false;
@@ -133,8 +141,11 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
             _ => panic!("bad"),
         }
 
+        let mut attrs = input.attrs.clone();
+        filter_allow_attrs(&mut attrs);
         let result = quote! {
             #[automatically_derived]
+            #( #attrs )*
             impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
                 fn sample() -> #name {
                     ::log::info!(
@@ -210,8 +221,11 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
             }
         }
 
+        let mut attrs = input.attrs.clone();
+        filter_allow_attrs(&mut attrs);
         let result = quote! {
             #[automatically_derived]
+            #( #attrs )*
             impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
                 fn sample() -> #name {
                     ::log::info!(
