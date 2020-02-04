@@ -144,6 +144,7 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
         let mut attrs = input.attrs.clone();
         filter_allow_attrs(&mut attrs);
         let result = quote! {
+            #[cfg(test)]
             #[automatically_derived]
             #( #attrs )*
             impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
@@ -224,6 +225,7 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
         let mut attrs = input.attrs.clone();
         filter_allow_attrs(&mut attrs);
         let result = quote! {
+            #[cfg(test)]
             #[automatically_derived]
             #( #attrs )*
             impl ::solana_sdk::abi_digester::AbiDigestSample for #name {
@@ -316,6 +318,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
         let result = quote! {
             #input2
+            #[cfg(test)]
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigest for #name {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
@@ -444,6 +447,7 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
         let result = quote! {
             #input2
+            #[cfg(test)]
             #[automatically_derived]
             impl ::solana_sdk::abi_digester::AbiDigest for #name {
                 fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
