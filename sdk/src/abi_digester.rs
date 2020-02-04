@@ -284,8 +284,11 @@ impl AbiDigestSample for &usize {
 
 use std::collections::{HashMap, HashSet};
 
-impl<T: std::cmp::Eq + std::hash::Hash + AbiDigestSample, S: AbiDigestSample, H: ::std::hash::BuildHasher + Default> AbiDigestSample
-    for HashMap<T, S, H>
+impl<
+        T: std::cmp::Eq + std::hash::Hash + AbiDigestSample,
+        S: AbiDigestSample,
+        H: ::std::hash::BuildHasher + Default,
+    > AbiDigestSample for HashMap<T, S, H>
 {
     fn sample() -> Self {
         info!(
@@ -310,7 +313,11 @@ impl<T: AbiDigestSample> AbiDigestSample for Vec<T> {
     }
 }
 
-impl<T: std::cmp::Eq + std::hash::Hash + AbiDigestSample, H: ::std::hash::BuildHasher + Default> AbiDigestSample for HashSet<T> {
+impl<
+        T: std::cmp::Eq + std::hash::Hash + AbiDigestSample,
+        H: ::std::hash::BuildHasher + Default,
+    > AbiDigestSample for HashSet<T>
+{
     fn sample() -> Self {
         info!(
             "AbiDigestSample for (HashSet<T>): {}",
