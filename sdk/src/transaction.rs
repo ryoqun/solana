@@ -15,7 +15,7 @@ use thiserror::Error;
 
 /// Reasons a transaction might be rejected.
 #[frozen_abi(digest = "437EXvUzTJ1ejeXqshBQXoqtcX73YsbXhSqmqR6x9XPg")]
-#[derive(Error, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Error, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiDigestSample)]
 pub enum TransactionError {
     /// An account is already being processed in another transaction in a way
     /// that does not support parallelism
