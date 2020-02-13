@@ -393,7 +393,10 @@ impl<T: std::cmp::Ord + AbiDigestSample> AbiDigestSample for BTreeSet<T> {
     }
 }
 
+#[cfg(all(not(feature = "program")))]
 use memmap::MmapMut;
+
+#[cfg(all(not(feature = "program")))]
 impl solana_sdk::abi_digester::AbiDigestSample for MmapMut {
     fn sample() -> Self {
         MmapMut::map_anon(1).expect("failed to map the data file")

@@ -3,7 +3,7 @@
 // Allows macro expansion of `use ::solana_sdk::*` to work within this crate
 extern crate self as solana_sdk;
 
-#[cfg(all(RUSTC_IS_NIGHTLY, not(feature = "program")))]
+#[cfg(RUSTC_IS_NIGHTLY)]
 pub mod abi_digester;
 
 pub mod account;
@@ -90,10 +90,5 @@ extern crate serde_derive;
 pub extern crate bs58;
 extern crate log as logger;
 
-#[cfg(all(not(feature = "program")))]
 #[macro_use]
 extern crate solana_sdk_macro_frozen_abi;
-
-#[cfg(all(feature = "program"))]
-#[macro_use]
-extern crate solana_sdk_macro_frozen_abi_dummy;
