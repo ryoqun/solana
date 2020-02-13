@@ -55,7 +55,7 @@ fields.
 # Example
 
 ```patch
-+#[frozen_abi(digest="1c6a53e9")]
++#[frozen_abi(digest="eXSMM7b89VY72V...")]
  #[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Clone)]
  pub struct Vote {
      /// A stack of votes starting with the oldest vote
@@ -82,6 +82,76 @@ We use some degree of macro machinery to automatically generate unit tests
 and calculate a digest from ABI items. This is doable by clever use of
 `serde::Serialize` ([1]) and `any::typename` ([2]). For a precedent for similar
 implementation, `ink` from the Parity Technologies [3] could be informational.
+
+# Implementation details
+
+The implementation detects unintended ABI changes automatically as much as
+possible. Generated unit-test checks the digest of recursive structural ABI
+information with best-effort accuracy and stability for the tested serializable
+type (like `struct` and `enums`).
+
+When the generated test is run, it dynamically creates an ABI digest by
+recursively digesting the ABI of fields of the tested `struct` and `enum`, by
+facilitating the `serde`'s serialization functionality, proc macro and generic
+specialization.
+
+Once a type is annotated with the attribute `#[frozen_abi(digest="...")]`,
+the attribute generates a test to run the ABI digesting process and `assert!`
+that it's same as what is specified in the `frozen_abi` attr.
+
+When the test is run, it creates a sample instance of the type and a custom
+serializer for `serde` to traverse its fields as if serializing recursively for
+real. After that, the computed ABI digest is finalized and extracted from the
+serializer and assert to be same as in the attribute.
+
+The traversing is done via `serde` to really capture what kinds of data
+actually would be serialized by `serde`.
+
+# The digesting process
+
+This part is a bit complex.
+
+First, the generated test creates such a sample instance of a type with a trait
+called `AbiDigestSample`, which should be implemented for all of serialized
+types, much like `Serialize`. Usually, it's provided via generic trait
+specialization for most of common types. Also it is easy to `derive` for
+`struct` and `enum` and can be hand-written if needed.
+
+The custom serializer is called `AbiDigester`. And when it's called by `serde`
+to serialize some data, it recursively collects ABI information as much as
+possible. `AbiDigester`'s internal state for the ABI item digest is updated
+differentially depending on the exact type of data. This is realized by yet
+another trait called `AbiDigest`. This again should be implemented for all of
+serialized types. This is already provided for all of types and should not be
+expected to be overridden by custom trait implementations or generic
+specializations.
+
+Technically, this ABI management mechanism can't be realized only with
+`AbiDigest`. `AbiDigestSample` is required because an actual instance of type
+is needed to actually traverse the data via `serde`.
+
+To summarize this interplay, `serde` handles the recursive serialization control
+flow in tandem with `AbiDigester`. The test entry point and `AbiDigester` uses
+`AbiDigestSample` to create a sample instances as the traversal process digs
+deeper into the serialized structure. And `AbiDigester` uses `AbiDigest` to
+inquiry the actual ABI information relying on such samples.
+
+Digested type information:
+
+- rust's type name (including type alias)
+- `serde`'s data type name
+- all fields in `struct`
+- all variants in `enum`
+- `struct`: normal(`struct { ... }`) and tuple-style (`struct { ... }`)
+- `enum`: normal variant and `struct`- and `tuple`- styles.
+- attributes: serde(serialize_with=) field's serde(skip)
+
+Not digested type information:
+
+- The type name itself (intended as the digest for the content of type)
+- Any custom serialize code path not touched by the sample provided by
+  `AbiDigestSample`. (technically not possible)
+- generics (must always be a concrete type; `type` aliases are supported)
 
 # References
 
