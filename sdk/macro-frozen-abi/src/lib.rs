@@ -11,7 +11,7 @@ use proc_macro::TokenStream;
     not(RUSTC_IS_NIGHTLY),
     not(RUSTC_IS_DEV)
 ))]
-const FOO: RustcVersionIsMissingInBuildRs = {};
+panic!("rustc_version is missing in build dependency and build.rs is not specified");
 
 #[cfg(RUSTC_IS_STABLE)]
 #[proc_macro_attribute]
