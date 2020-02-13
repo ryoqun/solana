@@ -85,26 +85,25 @@ implementation, `ink` from the Parity Technologies [3] could be informational.
 
 # Implementation details
 
-The implementation detects unintended ABI changes automatically as much as
-possible. Generated unit-test checks the digest of recursive structural ABI
-information with best-effort accuracy and stability for the tested serializable
-type (like `struct` and `enums`).
+The implementation's goal is to detect unintended ABI changes automatically as much as
+possible. To that end, the digest of structural ABI
+information is calculated with best-effort accuracy and stability.
 
-When the generated test is run, it dynamically creates an ABI digest by
-recursively digesting the ABI of fields of the tested `struct` and `enum`, by
-facilitating the `serde`'s serialization functionality, proc macro and generic
+When the ABI digest check is run, it dynamically computes an ABI digest by
+recursively digesting the ABI of fields of the ABI item, by
+re-using the `serde`'s serialization functionality, proc macro and generic
 specialization.
 
-Once a type is annotated with the attribute `#[frozen_abi(digest="...")]`,
+To realize it, if a type is annotated with the attribute `#[frozen_abi(digest="...")]`,
 the attribute generates a test to run the ABI digesting process and `assert!`
-that it's same as what is specified in the `frozen_abi` attr.
+that it's same as what is specified in the `frozen_abi` attribute.
 
 When the test is run, it creates a sample instance of the type and a custom
-serializer for `serde` to traverse its fields as if serializing recursively for
+serializer instance for `serde` to traverse its fields as if serializing the sample recursively for
 real. After that, the computed ABI digest is finalized and extracted from the
-serializer and assert to be same as in the attribute.
+serializer and the test asserts the digest to be same as in the attribute.
 
-The traversing is done via `serde` to really capture what kinds of data
+The traversing is required to be via `serde` to really capture what kinds of data
 actually would be serialized by `serde`.
 
 # The digesting process
