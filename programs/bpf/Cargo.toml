@@ -17,6 +17,7 @@ bpf_rust = []
 
 [build-dependencies]
 walkdir = "2"
+rustc_version = "0.2"
 
 [dependencies]
 bincode = "1.1.4"

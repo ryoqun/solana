@@ -4,6 +4,15 @@ use proc_macro::TokenStream;
 
 // Define dummy macro_attribute and macro_derive for stable rustc
 
+// This file littered with these essential cfgs so ensure them.
+#[cfg(all(
+    not(RUSTC_IS_STABLE),
+    not(RUSTC_IS_BETA),
+    not(RUSTC_IS_NIGHTLY),
+    not(RUSTC_IS_DEV)
+))]
+const FOO: RustcVersionIsMissingInBuildRs = {};
+
 #[cfg(RUSTC_IS_STABLE)]
 #[proc_macro_attribute]
 pub fn frozen_abi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
