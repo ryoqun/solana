@@ -16,7 +16,7 @@ pub trait AbiDigestSample: Sized {
 // These are licensed under Apache-2.0 + MIT (compatible because we're Apache-2.0)
 
 // Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/tuple.rs#L7
-macro_rules! tuple_impls {
+macro_rules! tuple_sample_impls {
     ($(
         $Tuple:ident {
             $(($idx:tt) -> $T:ident)+
@@ -33,7 +33,7 @@ macro_rules! tuple_impls {
 }
 
 // Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/tuple.rs#L110
-tuple_impls! {
+tuple_sample_impls! {
     Tuple1 {
         (0) -> A
     }
@@ -139,14 +139,14 @@ tuple_impls! {
 }
 
 // Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/array/mod.rs#L417
-macro_rules! array_impl_default {
+macro_rules! array_sample_impls {
     {$n:expr, $t:ident $($ts:ident)*} => {
         impl<T> AbiDigestSample for [T; $n] where T: AbiDigestSample {
             fn sample() -> [T; $n] {
                 [$t::sample(), $($ts::sample()),*]
             }
         }
-        array_impl_default!{($n - 1), $($ts)*}
+        array_sample_impls!{($n - 1), $($ts)*}
     };
     {$n:expr,} => {
         impl<T> AbiDigestSample for [T; $n] {
@@ -155,10 +155,10 @@ macro_rules! array_impl_default {
     };
 }
 
-array_impl_default! {32, T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T}
+array_sample_impls! {32, T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T}
 
 // Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/default.rs#L137
-macro_rules! default_impl {
+macro_rules! sample_impls {
     ($t:ty, $v:expr) => {
         impl AbiDigestSample for $t {
             fn sample() -> $t {
@@ -168,31 +168,31 @@ macro_rules! default_impl {
     };
 }
 
-default_impl! { (), () }
-default_impl! { bool, false }
-default_impl! { char, '\x00' }
+sample_impls! { (), () }
+sample_impls! { bool, false }
+sample_impls! { char, '\x00' }
 
-default_impl! { usize, 0 }
-default_impl! { u8, 0 }
-default_impl! { u16, 0 }
-default_impl! { u32, 0 }
-default_impl! { u64, 0 }
-default_impl! { u128, 0 }
+sample_impls! { usize, 0 }
+sample_impls! { u8, 0 }
+sample_impls! { u16, 0 }
+sample_impls! { u32, 0 }
+sample_impls! { u64, 0 }
+sample_impls! { u128, 0 }
 
-default_impl! { isize, 0 }
-default_impl! { i8, 0 }
-default_impl! { i16, 0 }
-default_impl! { i32, 0 }
-default_impl! { i64, 0 }
-default_impl! { i128, 0 }
+sample_impls! { isize, 0 }
+sample_impls! { i8, 0 }
+sample_impls! { i16, 0 }
+sample_impls! { i32, 0 }
+sample_impls! { i64, 0 }
+sample_impls! { i128, 0 }
 
-default_impl! { f32, 0.0f32 }
-default_impl! { f64, 0.0f64 }
+sample_impls! { f32, 0.0f32 }
+sample_impls! { f64, 0.0f64 }
 
 use std::sync::atomic::*;
 
 // Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/sync/atomic.rs#L1199
-macro_rules! atomic_int {
+macro_rules! atomic_sample_impls {
     ($atomic_type: ident) => {
         impl AbiDigestSample for $atomic_type {
             fn sample() -> Self {
@@ -201,23 +201,23 @@ macro_rules! atomic_int {
         }
     };
 }
-atomic_int! { AtomicU32 }
-atomic_int! { AtomicU64 }
+atomic_sample_impls! { AtomicU32 }
+atomic_sample_impls! { AtomicU64 }
 
-// this works like a type erasure and a hatch to escape type error to runtime error
 impl<T: Sized> AbiDigestSample for T {
     default fn sample() -> T {
-        let v: T = <()>::aaaa();
+        let v: T = <()>::type_erased_sample();
         v
     }
 }
 
-trait DDD<T> {
-    fn aaaa() -> T;
+// this works like a type erasure and a hatch to escape type error to runtime error
+trait TypeErasedSample<T> {
+    fn type_erased_sample() -> T;
 }
 
-impl<T: Sized> DDD<T> for () {
-    default fn aaaa() -> T {
+impl<T: Sized> TypeErasedSample<T> for () {
+    default fn type_erased_sample() -> T {
         panic!(
             "implement AbiDigestSample for {}",
             std::any::type_name::<T>()
@@ -225,8 +225,8 @@ impl<T: Sized> DDD<T> for () {
     }
 }
 
-impl<T: Default> DDD<T> for () {
-    default fn aaaa() -> T {
+impl<T: Default> TypeErasedSample<T> for () {
+    default fn type_erased_sample() -> T {
         T::default()
     }
 }
@@ -281,46 +281,6 @@ impl<T: AbiDigestSample> AbiDigestSample for std::sync::Mutex<T> {
     }
 }
 
-/*
-trait AbiDigestSample2 {
-    const V: Self;
-}
-
-impl<T> AbiDigestSample2 for T {
-    default const V: Self = panic!();
-}
-
-impl<T: Default> AbiDigestSample2 for T {
-    const V: Self = T::default();
-}
-*/
-
-/*
-const C: u64 = 2323;
-const D: usize = 2323;
-const E: solana_sdk::pubkey::Pubkey = solana_sdk::pubkey::Pubkey([0; 32]);
-
-impl AbiDigestSample for &u64 {
-    fn sample() -> &'static u64 {
-        info!(
-            "AbiDigestSample for &T: {}",
-            std::any::type_name::<&u64>()
-        );
-        &C
-    }
-}
-
-impl AbiDigestSample for &usize {
-    fn sample() -> &'static usize {
-        info!(
-            "AbiDigestSample for &T: {}",
-            std::any::type_name::<&usize>()
-        );
-        &D
-    }
-}
-*/
-
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 impl<
@@ -337,7 +297,6 @@ impl<
         let mut v = HashMap::default();
         v.insert(T::sample(), S::sample());
         v
-        //vec![[S::sample(), T::sample()]].into()
     }
 }
 
@@ -350,7 +309,6 @@ impl<T: std::cmp::Ord + AbiDigestSample, S: AbiDigestSample> AbiDigestSample for
         let mut v = BTreeMap::default();
         v.insert(T::sample(), S::sample());
         v
-        //vec![[S::sample(), T::sample()]].into()
     }
 }
 
@@ -451,17 +409,6 @@ impl<T: AbiDigest> AbiDigest for Option<T> {
 
 impl<E: AbiDigestSample> AbiDigestSample for ::core::result::Result<(), E> {
     fn sample() -> Self {
-        /*
-        panic!("aaa");
-        info!(
-            "AbiDigest for (Result<(), E>): {}",
-            std::any::type_name::<Result<(), E>>()
-        );
-        digester.update(&["result ok", std::any::type_name::<()>()]);
-        <()>::abi_digest(&mut digester.child_digester());
-        digester.update(&["result error", std::any::type_name::<E>()]);
-        <E>::abi_digest(&mut digester.child_digester());
-        */
         Err(E::sample())
     }
 }
@@ -505,6 +452,8 @@ impl AbiDigester {
         }
     }
 
+    // must be created separate instance because we can't pass the single instnace to
+    // `.serialize()` multiple times
     pub fn child_digester(&self) -> Self {
         Self {
             data_types: self.data_types.clone(),
@@ -581,13 +530,13 @@ pub struct DigestError();
 
 impl SerdeError for DigestError {
     fn custom<T: std::fmt::Display>(_msg: T) -> DigestError {
-        unimplemented!();
+        unreachable!("This error should never be used");
     }
 }
 impl std::error::Error for DigestError {}
 impl std::fmt::Display for DigestError {
     fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        unimplemented!();
+        unreachable!("This error should never be used");
     }
 }
 
@@ -684,30 +633,16 @@ impl serde::ser::Serializer for AbiDigester {
         T: ?Sized + Serialize,
     {
         self.update_with_type("some", v);
-        //v.serialize(self.child_digester()).unwrap();
         <T>::abi_digest(&mut self);
         Ok(self)
     }
 
     fn serialize_unit_struct(mut self, name: Sstr) -> DigestResult {
-        // enable this?
-        //if !self.forced {
-        //    panic!(
-        //        "unit_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
-        //        name, variant
-        //    );
-        //}
         self.update(&["unit struct", name]);
         Ok(self)
     }
 
     fn serialize_unit_variant(mut self, name: Sstr, index: u32, variant: Sstr) -> DigestResult {
-        if !self.forced {
-            //panic!(
-            //    "unit_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
-            //    name, variant
-            //);
-        }
         self.update(&[
             "variant",
             name,
@@ -736,12 +671,6 @@ impl serde::ser::Serializer for AbiDigester {
     where
         T: ?Sized + Serialize,
     {
-        /*if !self.forced {
-            panic!(
-                "newtype_variant: SHOULD NOT HAPPEN DERIVE AbiDigestSample FOR THE ABOVE TYPE! {} {}",
-                name, variant
-            );
-        }*/
         self.update(&[
             "variant",
             name,
@@ -768,8 +697,9 @@ impl serde::ser::Serializer for AbiDigester {
         Ok(self)
     }
 
-    fn serialize_tuple_struct(self, _name: Sstr, _len: usize) -> DigestResult {
-        unimplemented!();
+    fn serialize_tuple_struct(mut self, name: Sstr, len: usize) -> DigestResult {
+        self.update(&["tuple struct", name, len.to_string().as_ref()]);
+        Ok(self)
     }
 
     fn serialize_tuple_variant(
@@ -792,7 +722,7 @@ impl serde::ser::Serializer for AbiDigester {
     }
 
     fn serialize_struct(self, name: Sstr, len: usize) -> DigestResult {
-        //self.hash(999);
+        // export struct name
         info!("serialize_struct {} {}", name, len);
         Ok(self)
     }
@@ -829,7 +759,6 @@ impl serde::ser::SerializeTuple for AbiDigester {
 
     fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
         self.update_with_type("element", v);
-        //info!("aaaaa: {:?}", (&v).abi_digest());
         <T>::abi_digest(&mut self.child_digester());
         Ok(())
     }
@@ -842,12 +771,14 @@ impl serde::ser::SerializeTupleStruct for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_field<T: ?Sized + Serialize>(&mut self, _v: &T) -> NoResult {
-        unimplemented!();
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
+        self.update_with_type("tuple struct field", v);
+        <T>::abi_digest(&mut self.child_digester());
+        Ok(())
     }
 
     fn end(self) -> DigestResult {
-        unimplemented!();
+        Ok(self)
     }
 }
 
@@ -859,7 +790,6 @@ impl serde::ser::SerializeTupleVariant for AbiDigester {
         self.update_with_type("tuple", v);
         info!("enum: variant: tuple");
         info!("typename: {}", std::any::type_name::<T>());
-        //info!("AAAAA: {:?}", T::sample());
         v.serialize(self.child_digester()).unwrap();
         Ok(())
     }
@@ -896,21 +826,10 @@ impl serde::ser::SerializeStruct for AbiDigester {
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
         self.update_with_type(&format!("field {}", key), v);
-        //info!("struct: field: {}", key);
-        //info!("typename: {}", std::any::type_name::<T>());
-        //info!("AAAAA: {:?}", T::sample());
         let aa = std::any::type_name::<T>();
         if aa.ends_with("__SerializeWith") || aa.starts_with("bv::bit_vec") {
             v.serialize(self.child_digester()).unwrap();
         } else {
-            /*let by_rust_type_tree = std::panic::catch_unwind(|| {
-                T::sample();
-            });
-            if by_rust_type_tree.is_ok() {
-                <T>::abi_digest(&mut self.child_digester());
-            } else if by_rust_type_tree.is_err() && !aa.contains("solana") {
-                v.serialize(self.child_digester()).unwrap();
-            }*/
             <T>::abi_digest(&mut self.child_digester());
         }
         Ok(())
@@ -933,5 +852,57 @@ impl serde::ser::SerializeStructVariant for AbiDigester {
 
     fn end(self) -> DigestResult {
         Ok(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[frozen_abi(digest = "72U9RN7GyAN8WfyZekwDjmgNNVqpRr62WYpX69HcSQpT")]
+    type TestTypeAlias = i32;
+
+    #[frozen_abi(digest = "ALpAoMcoY2rGD9A593HTZkjnQA91G3fP9edZ4NSWAMQW")]
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestTupleStruct(i8, i8);
+
+    #[frozen_abi(digest = "3613ebsYR7Wz777WfRtpbb4QyY7qZRQ8xdtea1B1uD1H")]
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestNewtypeStruct(i8);
+
+    #[frozen_abi(digest = "54fUCH3yCdTRyg9KGgtA8iM1oEasfGagn2Rdx3xvQNsB")]
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestStruct {
+        test_field: i8,
+        test_field2: i8,
+    }
+
+    #[frozen_abi(digest = "3CMjKdDzuGBiN3dAZEd2LuPnewxnSUUnRJZGSif7iwGA")]
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestStructReversed {
+        test_field2: i8,
+        test_field: i8,
+    }
+
+    #[frozen_abi(digest = "Hty5GomFYWGkYzfBxHBfznT944y6ivt8iuyuEx8MGvXR")]
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestStructAnotherType {
+        test_field: i16,
+        test_field2: i8,
+    }
+
+    #[frozen_abi(digest = "9uJk94f2q1h7gXv6LNbaZgWwG2ma8kdG8HRoRZWFZt4n")]
+    type TestUnitStruct = std::marker::PhantomData<i8>;
+
+    mod skip_should_be_same {
+        #[frozen_abi(digest = "ALpAoMcoY2rGD9A593HTZkjnQA91G3fP9edZ4NSWAMQW")]
+        #[derive(Serialize, AbiDigestSample)]
+        struct TestTupleStruct(i8, i8, #[serde(skip)] i8);
+
+        #[frozen_abi(digest = "EbKnnf5eJLYqvAaV2rL4M9Ejh7GBfwXvd3bTEpeojj3G")]
+        #[derive(Serialize, AbiDigestSample)]
+        struct TestStruct {
+            test_field: i8,
+            #[serde(skip)]
+            _skipped_test_field: i8,
+        }
     }
 }
