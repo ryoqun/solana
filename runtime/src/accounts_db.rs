@@ -332,7 +332,7 @@ pub struct AccountsDBSerialize<'a> {
     slot: Slot,
 }
 
-#[cfg(all(test, RUSTC_IS_NIGHTLY))]
+#[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
 mod test_accounts_db_serialize {
     use super::*;
 

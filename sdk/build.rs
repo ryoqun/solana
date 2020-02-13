@@ -7,16 +7,16 @@ fn main() {
     // Licensed under Apache-2.0 + MIT (compatible because we're Apache-2.0)
     match version_meta().unwrap().channel {
         Channel::Stable => {
-            println!("cargo:rustc-cfg=RUSTC_IS_STABLE");
+            println!("cargo:rustc-cfg=RUSTC_WITHOUT_SPECIALIZATION");
         }
         Channel::Beta => {
-            println!("cargo:rustc-cfg=RUSTC_IS_BETA");
+            println!("cargo:rustc-cfg=RUSTC_WITH_SPECIALIZATION");
         }
         Channel::Nightly => {
-            println!("cargo:rustc-cfg=RUSTC_IS_NIGHTLY");
+            println!("cargo:rustc-cfg=RUSTC_WITH_SPECIALIZATION");
         }
         Channel::Dev => {
-            println!("cargo:rustc-cfg=RUSTC_IS_DEV");
+            println!("cargo:rustc-cfg=RUSTC_WITH_SPECIALIZATION");
         }
     }
 }

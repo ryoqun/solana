@@ -1,4 +1,4 @@
-#![cfg_attr(RUSTC_IS_NIGHTLY, feature(specialization))]
+#![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
 pub mod accounts;
 pub mod accounts_db;
 pub mod accounts_index;

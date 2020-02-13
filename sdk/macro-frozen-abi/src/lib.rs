@@ -1,36 +1,36 @@
 extern crate proc_macro;
 
+// This file littered with these essential cfgs so ensure them.
+#[cfg(not(any(RUSTC_WITH_SPECIALIZATION, RUSTC_WITHOUT_SPECIALIZATION)))]
+panic!("rustc_version is missing in build dependency and build.rs is not specified");
+
 use proc_macro::TokenStream;
 
 // Define dummy macro_attribute and macro_derive for stable rustc
 
-// This file littered with these essential cfgs so ensure them.
-#[cfg(not(any(RUSTC_IS_STABLE, RUSTC_IS_BETA, RUSTC_IS_NIGHTLY, RUSTC_IS_DEV,)))]
-panic!("rustc_version is missing in build dependency and build.rs is not specified");
-
-#[cfg(RUSTC_IS_STABLE)]
+#[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
 #[proc_macro_attribute]
 pub fn frozen_abi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
 
-#[cfg(RUSTC_IS_STABLE)]
+#[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
 #[proc_macro_derive(AbiDigestSample)]
 pub fn derive_abi_digest_sample(_item: TokenStream) -> TokenStream {
     "".parse().unwrap()
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 use proc_macro2::{Span, TokenStream as TokenStream2, TokenTree::Group};
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 use quote::quote;
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 use syn::{
     parse_macro_input, Attribute, AttributeArgs, Fields, Ident, Item, ItemEnum, ItemStruct,
     ItemType, Lit, Meta, NestedMeta, Variant,
 };
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn filter_serde_attrs(attrs: &[Attribute]) -> bool {
     let mut skip = false;
 
@@ -52,7 +52,7 @@ fn filter_serde_attrs(attrs: &[Attribute]) -> bool {
     skip
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn filter_allow_attrs(attrs: &mut Vec<Attribute>) {
     attrs.retain(|attr| {
         let ss = &attr.path.segments.first().unwrap().ident.to_string();
@@ -60,7 +60,7 @@ fn filter_allow_attrs(attrs: &mut Vec<Attribute>) {
     });
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn derive_abi_digest_sample_enum_type(input: ItemEnum) -> TokenStream {
     let type_name = &input.ident;
 
@@ -136,7 +136,7 @@ fn derive_abi_digest_sample_enum_type(input: ItemEnum) -> TokenStream {
     result.into()
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn derive_abi_digest_sample_struct_type(input: ItemStruct) -> TokenStream {
     let type_name = &input.ident;
     let mut sample_fields = quote! {};
@@ -188,7 +188,7 @@ fn derive_abi_digest_sample_struct_type(input: ItemStruct) -> TokenStream {
     result.into()
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 #[proc_macro_derive(AbiDigestSample)]
 pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as Item);
@@ -200,7 +200,7 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
     }
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn quote_for_test(
     test_mod_ident: &Ident,
     type_name: &Ident,
@@ -224,7 +224,7 @@ fn quote_for_test(
     }
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn test_mod_name(type_name: &Ident) -> Ident {
     Ident::new(
         &format!("{}_frozen_abi", type_name.to_string()),
@@ -232,7 +232,7 @@ fn test_mod_name(type_name: &Ident) -> Ident {
     )
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn frozen_abi_type_alias(input: ItemType, expected_digest: &str) -> TokenStream {
     let type_name = &input.ident;
     let test = quote_for_test(&test_mod_name(type_name), type_name, &expected_digest);
@@ -243,7 +243,7 @@ fn frozen_abi_type_alias(input: ItemType, expected_digest: &str) -> TokenStream 
     result.into()
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn frozen_abi_struct_type(input: ItemStruct, expected_digest: &str) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let type_name = &input.ident;
@@ -265,7 +265,7 @@ fn frozen_abi_struct_type(input: ItemStruct, expected_digest: &str) -> TokenStre
     result.into()
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn quote_sample_variant(type_name: &Ident, variant: &Variant) -> TokenStream2 {
     let variant_name = &variant.ident;
     let variant = &variant.fields;
@@ -307,7 +307,7 @@ fn quote_sample_variant(type_name: &Ident, variant: &Variant) -> TokenStream2 {
     }
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn frozen_abi_enum_type(input: ItemEnum, expected_digest: &str) -> TokenStream {
     let type_name = &input.ident;
     let mut serialized_variants = quote! {};
@@ -341,7 +341,7 @@ fn frozen_abi_enum_type(input: ItemEnum, expected_digest: &str) -> TokenStream {
     result.into()
 }
 
-#[cfg(RUSTC_IS_NIGHTLY)]
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 #[proc_macro_attribute]
 pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let args = parse_macro_input!(attrs as AttributeArgs);

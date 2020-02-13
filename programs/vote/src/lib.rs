@@ -1,4 +1,4 @@
-#![cfg_attr(RUSTC_IS_NIGHTLY, feature(specialization))]
+#![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
 pub mod vote_instruction;
 pub mod vote_state;
 
