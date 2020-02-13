@@ -11,6 +11,11 @@ pub trait AbiDigestSample: Sized {
     fn sample() -> Self;
 }
 
+// Following code snippets are copied and adapted from the official rustc implementation to
+// implement AbiDigestSample trait for most of basic types.
+// These are licensed under Apache-2.0 + MIT (compatible because we're Apache-2.0)
+
+// Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/tuple.rs#L7
 macro_rules! tuple_impls {
     ($(
         $Tuple:ident {
@@ -27,6 +32,7 @@ macro_rules! tuple_impls {
     }
 }
 
+// Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/tuple.rs#L110
 tuple_impls! {
     Tuple1 {
         (0) -> A
@@ -132,6 +138,7 @@ tuple_impls! {
     }
 }
 
+// Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/array/mod.rs#L417
 macro_rules! array_impl_default {
     {$n:expr, $t:ident $($ts:ident)*} => {
         impl<T> AbiDigestSample for [T; $n] where T: AbiDigestSample {
@@ -150,6 +157,7 @@ macro_rules! array_impl_default {
 
 array_impl_default! {32, T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T}
 
+// Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/default.rs#L137
 macro_rules! default_impl {
     ($t:ty, $v:expr) => {
         impl AbiDigestSample for $t {
@@ -183,6 +191,7 @@ default_impl! { f64, 0.0f64 }
 
 use std::sync::atomic::*;
 
+// Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/sync/atomic.rs#L1199
 macro_rules! atomic_int {
     ($atomic_type: ident) => {
         impl AbiDigestSample for $atomic_type {
