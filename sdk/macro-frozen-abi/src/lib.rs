@@ -5,12 +5,7 @@ use proc_macro::TokenStream;
 // Define dummy macro_attribute and macro_derive for stable rustc
 
 // This file littered with these essential cfgs so ensure them.
-#[cfg(all(
-    not(RUSTC_IS_STABLE),
-    not(RUSTC_IS_BETA),
-    not(RUSTC_IS_NIGHTLY),
-    not(RUSTC_IS_DEV)
-))]
+#[cfg(not(any(RUSTC_IS_STABLE, RUSTC_IS_BETA, RUSTC_IS_NIGHTLY, RUSTC_IS_DEV,)))]
 panic!("rustc_version is missing in build dependency and build.rs is not specified");
 
 #[cfg(RUSTC_IS_STABLE)]
