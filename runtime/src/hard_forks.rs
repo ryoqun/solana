@@ -10,7 +10,6 @@ use std::ops::Add;
 pub struct HardForks {
     hard_forks: Vec<(Slot, usize)>,
 }
-
 impl HardForks {
     // Register a fork to occur at all slots >= `slot` with a parent slot < `slot`
     pub fn register(&mut self, new_slot: Slot) {

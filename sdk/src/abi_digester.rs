@@ -354,7 +354,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 impl<
         T: std::cmp::Eq + std::hash::Hash + AbiDigestSample,
         S: AbiDigestSample,
-        H: ::std::hash::BuildHasher + Default,
+        H: std::hash::BuildHasher + Default,
     > AbiDigestSample for HashMap<T, S, H>
 {
     fn sample() -> Self {
@@ -388,10 +388,8 @@ impl<T: AbiDigestSample> AbiDigestSample for Vec<T> {
     }
 }
 
-impl<
-        T: std::cmp::Eq + std::hash::Hash + AbiDigestSample,
-        H: ::std::hash::BuildHasher + Default,
-    > AbiDigestSample for HashSet<T, H>
+impl<T: std::cmp::Eq + std::hash::Hash + AbiDigestSample, H: std::hash::BuildHasher + Default>
+    AbiDigestSample for HashSet<T, H>
 {
     fn sample() -> Self {
         info!(
@@ -536,12 +534,21 @@ impl AbiDigester {
         }
     }
 
-    pub fn digest_value<T: ?Sized + Serialize>(&self, value: &T) -> DigestResult {
-        let aa = type_name::<T>();
-        if aa.ends_with("__SerializeWith") || aa.starts_with("bv::bit_vec") {
+    pub fn digest_data<T: ?Sized + Serialize>(&self, value: &T) -> DigestResult {
+        let type_name = type_name::<T>();
+        if type_name.ends_with("__SerializeWith") || type_name.starts_with("bv::bit_vec") {
             value.serialize(self.child_digester())
         } else {
             <T>::abi_digest(&mut self.child_digester())
+        }
+    }
+
+    pub fn digest_data_old<T: ?Sized + Serialize>(mut self, value: &T) -> DigestResult {
+        let type_name = type_name::<T>();
+        if type_name.ends_with("__SerializeWith") || type_name.starts_with("bv::bit_vec") {
+            value.serialize(self.child_digester())
+        } else {
+            <T>::abi_digest(&mut self)
         }
     }
 
@@ -600,8 +607,8 @@ impl AbiDigester {
             let mut file = std::fs::File::create(path).unwrap();
             for buf in (*self.data_types.borrow()).iter() {
                 file.write_all(buf.as_bytes()).unwrap();
-                file.sync_data().unwrap();
             }
+            file.sync_data().unwrap();
         }
 
         r
@@ -714,7 +721,7 @@ impl Serializer for AbiDigester {
         T: ?Sized + Serialize,
     {
         self.update_with_type("some", v);
-        <T>::abi_digest(&mut self)
+        self.digest_data_old(v)
     }
 
     fn serialize_unit_struct(mut self, name: Sstr) -> DigestResult {
@@ -738,12 +745,13 @@ impl Serializer for AbiDigester {
         Ok(self)
     }
 
-    fn serialize_newtype_struct<T>(mut self, name: Sstr, _v: &T) -> DigestResult
+    fn serialize_newtype_struct<T>(mut self, name: Sstr, v: &T) -> DigestResult
     where
         T: ?Sized + Serialize,
     {
         self.update(&["newtype", name, "struct", type_name::<T>()]);
-        <T>::abi_digest(&mut self).map_err(|e| DigestError::wrap_by_str(e, "newtype_struct"))
+        self.digest_data_old(v)
+            .map_err(|e| DigestError::wrap_by_str(e, "newtype_struct"))
     }
 
     fn serialize_newtype_variant<T>(
@@ -751,7 +759,7 @@ impl Serializer for AbiDigester {
         name: Sstr,
         _i: u32,
         variant: Sstr,
-        _val: &T,
+        v: &T,
     ) -> DigestResult
     where
         T: ?Sized + Serialize,
@@ -763,7 +771,7 @@ impl Serializer for AbiDigester {
             ));
         }
         self.update(&["variant", name, "newtype", variant, type_name::<T>()]);
-        <T>::abi_digest(&mut self)
+        self.digest_data_old(v)
     }
 
     fn serialize_seq(mut self, len: Option<usize>) -> DigestResult {
@@ -831,7 +839,7 @@ impl SerializeSeq for AbiDigester {
 
     fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
         self.update_with_type("element", v);
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(v).map(|r| r.into())
     }
 
     fn end(self) -> DigestResult {
@@ -844,7 +852,7 @@ impl SerializeTuple for AbiDigester {
 
     fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
         self.update_with_type("element", v);
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(v).map(|r| r.into())
     }
 
     fn end(self) -> DigestResult {
@@ -857,7 +865,7 @@ impl SerializeTupleStruct for AbiDigester {
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
         self.update_with_type("tuple struct field", v);
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(v).map(|r| r.into())
     }
 
     fn end(self) -> DigestResult {
@@ -873,7 +881,7 @@ impl SerializeTupleVariant for AbiDigester {
         self.update_with_type("tuple", v);
         info!("enum: variant: tuple");
         info!("typename: {}", type_name::<T>());
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(v).map(|r| r.into())
     }
 
     fn end(self) -> DigestResult {
@@ -887,12 +895,12 @@ impl SerializeMap for AbiDigester {
 
     fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> NoResult {
         self.update_with_type("key", key);
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(key).map(|r| r.into())
     }
 
     fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> NoResult {
         self.update_with_type("value", value);
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(value).map(|r| r.into())
     }
 
     fn end(self) -> DigestResult {
@@ -906,7 +914,7 @@ impl SerializeStruct for AbiDigester {
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
         self.update_with_type(&format!("field {}", key), v);
-        self.digest_value(v)
+        self.digest_data(v)
             .map(|r| r.into())
             .map_err(|e| DigestError::wrap_by_str(e, key))
     }
@@ -922,7 +930,9 @@ impl SerializeStructVariant for AbiDigester {
 
     fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
         self.update_with_type(&format!("field {}", key), v);
-        <T>::abi_digest(&mut self.child_digester()).map(|r| r.into())
+        self.digest_data(v)
+            .map(|r| r.into())
+            .map_err(|e| DigestError::wrap_by_str(e, key))
     }
 
     fn end(self) -> DigestResult {
