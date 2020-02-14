@@ -285,7 +285,7 @@ fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
             fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
                 use ::serde::ser::Serialize;
                 use ::solana_sdk::abi_digester::AbiDigestSample;
-                ::log::info!("AbiDigest for (enum): {}", std::any::type_name::<#type_name>());
+                ::log::info!("AbiDigest for (enum): {}", std::any::type_name::<#type_name #ty_generics>());
                 #serialized_variants
                 Ok(digester.child_digester())
             }
@@ -323,6 +323,9 @@ fn quote_for_test(
                 let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
                 let r = <#type_name>::abi_digest(&mut digester);
                 let mut hash = digester.finalize();
+                if r.is_err() {
+                    ::log::error!("digest error: {:#?}", r);
+                }
                 r.unwrap();
                 assert_eq!(#expected_digest, format!("{}", hash));
             }

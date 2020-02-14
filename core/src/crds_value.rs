@@ -57,7 +57,7 @@ impl Signable for CrdsValue {
 /// CrdsData that defines the different types of items CrdsValues can hold
 /// * Merge Strategy - Latest wallclock is picked
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigestSample)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigestSample, AbiDigest)]
 pub enum CrdsData {
     ContactInfo(ContactInfo),
     Vote(VoteIndex, Vote),
