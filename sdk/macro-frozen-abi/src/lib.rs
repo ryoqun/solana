@@ -31,7 +31,7 @@ pub fn derive_abi_digest_sample(_item: TokenStream) -> TokenStream {
 
 #[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
 #[proc_macro_derive(AbiDigest)]
-pub fn derive_abi_digest_sample(_item: TokenStream) -> TokenStream {
+pub fn derive_abi_digest(_item: TokenStream) -> TokenStream {
     "".parse().unwrap()
 }
 
