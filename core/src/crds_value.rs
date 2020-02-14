@@ -19,7 +19,7 @@ pub const MAX_VOTES: VoteIndex = 32;
 pub type EpochSlotIndex = u8;
 
 /// CrdsValue that is replicated across the cluster
-#[derive(AbiDigestSample, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigestSample)]
 pub struct CrdsValue {
     pub signature: Signature,
     pub data: CrdsData,
@@ -102,7 +102,7 @@ impl SnapshotHash {
     }
 }
 
-#[derive(AbiDigestSample, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigestSample)]
 pub struct EpochSlots {
     pub from: Pubkey,
     pub root: Slot,
@@ -132,7 +132,7 @@ impl EpochSlots {
     }
 }
 
-#[derive(AbiDigestSample, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiDigestSample)]
 pub struct Vote {
     pub from: Pubkey,
     pub transaction: Transaction,

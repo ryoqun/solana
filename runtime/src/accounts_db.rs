@@ -174,7 +174,7 @@ impl<'de> Deserialize<'de> for AccountStorage {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Copy, Clone, Deserialize, Serialize, AbiDigestSample, AbiDigest)]
 pub enum AccountStorageStatus {
     Available = 0,
     Full = 1,
@@ -189,7 +189,8 @@ pub enum BankHashVerificationError {
 }
 
 /// Persistent storage structure holding the accounts
-#[derive(Debug, Serialize, Deserialize)]
+#[frozen_abi(digest = "DosBKtjgNCuEdi7e1KGTnBSPJULxprbHuxVjxKv5T5YC")]
+#[derive(Debug, Serialize, Deserialize, AbiDigestSample)]
 pub struct AccountStorageEntry {
     id: AppendVecId,
 

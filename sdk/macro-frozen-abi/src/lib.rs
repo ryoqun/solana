@@ -29,6 +29,12 @@ pub fn derive_abi_digest_sample(_item: TokenStream) -> TokenStream {
     "".parse().unwrap()
 }
 
+#[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
+#[proc_macro_derive(AbiDigest)]
+pub fn derive_abi_digest_sample(_item: TokenStream) -> TokenStream {
+    "".parse().unwrap()
+}
+
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 use proc_macro2::{Span, TokenStream as TokenStream2, TokenTree::Group};
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
@@ -158,7 +164,7 @@ fn derive_abi_digest_sample_enum_type(input: ItemEnum) -> TokenStream {
         #[automatically_derived]
         #( #attrs )*
         impl #impl_generics ::solana_sdk::abi_digester::AbiDigestSample for #type_name #ty_generics #where_clause {
-            fn sample() -> #type_name #ty_generics {
+            fn sample() -> Self {
                 ::log::info!(
                     "AbiDigestSample for enum: {}",
                     std::any::type_name::<#type_name #ty_generics>()
@@ -212,7 +218,7 @@ fn derive_abi_digest_sample_struct_type(input: ItemStruct) -> TokenStream {
         #[automatically_derived]
         #( #attrs )*
         impl #impl_generics ::solana_sdk::abi_digester::AbiDigestSample for #type_name #ty_generics #where_clause {
-            fn sample() -> #type_name #ty_generics {
+            fn sample() -> Self {
                 ::log::info!(
                     "AbiDigestSample for struct: {}",
                     std::any::type_name::<#type_name #ty_generics>()
@@ -240,6 +246,66 @@ pub fn derive_abi_digest_sample(item: TokenStream) -> TokenStream {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
+fn derive_abi_digest_struct_type(input: ItemStruct) -> TokenStream {
+    let type_name = &input.ident;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+
+    (quote! {
+        impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
+            fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
+                ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#type_name #ty_generics>());
+                use ::solana_sdk::abi_digester::AbiDigestSample;
+                use ::serde::ser::Serialize;
+                let tested_value = <#type_name #ty_generics>::sample();
+                tested_value.serialize(digester.forced_child_digester())
+            }
+        }
+    }).into()
+}
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
+    let type_name = &input.ident;
+    let mut serialized_variants = quote! {};
+    for variant in &input.variants {
+        // Don't digest a variant with serde(skip)
+        if filter_serde_attrs(&variant.attrs) {
+            continue;
+        };
+        let sample_variant = quote_sample_variant(&type_name, &variant);
+        serialized_variants.extend(quote! {
+            #sample_variant;
+            sample_variant.serialize(digester.forced_child_digester())?;
+        });
+    }
+
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    (quote! {
+        impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
+            fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
+                use ::serde::ser::Serialize;
+                use ::solana_sdk::abi_digester::AbiDigestSample;
+                ::log::info!("AbiDigest for (enum): {}", std::any::type_name::<#type_name>());
+                #serialized_variants
+                Ok(digester.child_digester())
+            }
+        }
+    }).into()
+}
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
+#[proc_macro_derive(AbiDigest)]
+pub fn derive_abi_digest(item: TokenStream) -> TokenStream {
+    let item = parse_macro_input!(item as Item);
+
+    match item {
+        Item::Struct(input) => derive_abi_digest_struct_type(input),
+        Item::Enum(input) => derive_abi_digest_enum_type(input),
+        _ => panic!("not applicable to {:#?}", item),
+    }
+}
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn quote_for_test(
     test_mod_ident: &Ident,
     type_name: &Ident,
@@ -255,8 +321,9 @@ fn quote_for_test(
             fn test_digest() {
                 ::solana_logger::setup();
                 let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
-                <#type_name>::abi_digest(&mut digester);
+                let r = <#type_name>::abi_digest(&mut digester);
                 let mut hash = digester.finalize();
+                r.unwrap();
                 assert_eq!(#expected_digest, format!("{}", hash));
             }
         }
@@ -284,21 +351,11 @@ fn frozen_abi_type_alias(input: ItemType, expected_digest: &str) -> TokenStream 
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn frozen_abi_struct_type(input: ItemStruct, expected_digest: &str) -> TokenStream {
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let type_name = &input.ident;
     let test = quote_for_test(&test_mod_name(type_name), type_name, &expected_digest);
     let result = quote! {
+        #[derive(AbiDigest)]
         #input
-        #[automatically_derived]
-        impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
-            fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
-                ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#type_name #ty_generics>());
-                use ::solana_sdk::abi_digester::AbiDigestSample;
-                use ::serde::ser::Serialize;
-                let tested_value = <#type_name #ty_generics>::sample();
-                tested_value.serialize(digester.forced_child_digester()).unwrap();
-            }
-        }
         #test
     };
     result.into()
@@ -349,32 +406,10 @@ fn quote_sample_variant(type_name: &Ident, variant: &Variant) -> TokenStream2 {
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn frozen_abi_enum_type(input: ItemEnum, expected_digest: &str) -> TokenStream {
     let type_name = &input.ident;
-    let mut serialized_variants = quote! {};
-    for variant in &input.variants {
-        // Don't digest a variant with serde(skip)
-        if filter_serde_attrs(&variant.attrs) {
-            continue;
-        };
-        let sample_variant = quote_sample_variant(&type_name, &variant);
-        serialized_variants.extend(quote! {
-            #sample_variant;
-            sample_variant.serialize(digester.forced_child_digester()).unwrap();
-        });
-    }
-
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let test = quote_for_test(&test_mod_name(type_name), type_name, &expected_digest);
     let result = quote! {
+        #[derive(AbiDigest)]
         #input
-        #[automatically_derived]
-        impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
-            fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) {
-                use ::serde::ser::Serialize;
-                use ::solana_sdk::abi_digester::AbiDigestSample;
-                ::log::info!("AbiDigest for (enum): {}", std::any::type_name::<#type_name>());
-                #serialized_variants
-            }
-        }
         #test
     };
     result.into()
