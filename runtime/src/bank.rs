@@ -84,7 +84,9 @@ pub struct BankRc {
     slot: Slot,
 }
 
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 use solana_sdk::abi_digester::AbiDigestSample;
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 impl AbiDigestSample for BankRc {
     fn sample() -> Self {
         BankRc {

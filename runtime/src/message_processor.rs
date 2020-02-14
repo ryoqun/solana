@@ -135,6 +135,7 @@ pub struct MessageProcessor {
     symbol_cache: SymbolCache,
 }
 
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 impl ::solana_sdk::abi_digester::AbiDigestSample for MessageProcessor {
     fn sample() -> Self {
         MessageProcessor::default()
