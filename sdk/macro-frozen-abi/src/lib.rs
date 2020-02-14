@@ -2,8 +2,9 @@ extern crate proc_macro;
 
 // This file littered with these essential cfgs so ensure them.
 #[cfg(not(any(RUSTC_WITH_SPECIALIZATION, RUSTC_WITHOUT_SPECIALIZATION)))]
-panic!("rustc_version is missing in build dependency and build.rs is not specified");
+compile_error!("rustc_version is missing in build dependency and build.rs is not specified");
 
+#[cfg(any(RUSTC_WITH_SPECIALIZATION, RUSTC_WITHOUT_SPECIALIZATION))]
 use proc_macro::TokenStream;
 
 // Define dummy macro_attribute and macro_derive for stable rustc
@@ -213,7 +214,7 @@ fn quote_for_test(
             use ::solana_sdk::abi_digester::AbiDigest;
 
             #[test]
-            fn test_frozen_abi_digest() {
+            fn test_digest() {
                 ::solana_logger::setup();
                 let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
                 <#type_name>::abi_digest(&mut digester);

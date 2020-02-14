@@ -2229,7 +2229,6 @@ dependencies = [
  "solana-logger 0.24.0",
  "solana-sdk-macro 0.24.0",
  "solana-sdk-macro-frozen-abi 0.24.0",
- "solana-sdk-macro-frozen-abi-dummy 0.24.0",
  "thiserror 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -2255,16 +2254,6 @@ dependencies = [
  "proc-macro2 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc_version 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "solana-sdk-macro-frozen-abi-dummy"
-version = "0.24.0"
-dependencies = [
- "bs58 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

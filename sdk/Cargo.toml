@@ -7,7 +7,6 @@ repository = "https://github.com/solana-labs/solana"
 homepage = "https://solana.com/"
 license = "Apache-2.0"
 edition = "2018"
-build = "build.rs"
 
 [features]
 # On-chain program specific dependencies
@@ -53,7 +52,6 @@ solana-crate-features = { path = "../crate-features", version = "0.24.0", option
 solana-logger = { path = "../logger", version = "0.24.0", optional = true }
 solana-sdk-macro = { path = "macro", version = "0.24.0" }
 solana-sdk-macro-frozen-abi = { path = "macro-frozen-abi", version = "0.24.0" }
-solana-sdk-macro-frozen-abi-dummy = { path = "macro-frozen-abi-dummy", version = "0.24.0" }
 
 [dev-dependencies]
 tiny-bip39 = "0.7.0"
