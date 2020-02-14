@@ -84,6 +84,17 @@ pub struct BankRc {
     slot: Slot,
 }
 
+use solana_sdk::abi_digester::AbiDigestSample;
+impl AbiDigestSample for BankRc {
+    fn sample() -> Self {
+        BankRc {
+            accounts: AbiDigestSample::sample(),
+            parent: RwLock::new(None),
+            slot: AbiDigestSample::sample(),
+        }
+    }
+}
+
 impl BankRc {
     pub fn new(account_paths: Vec<PathBuf>, id: AppendVecId, slot: Slot) -> Self {
         let accounts = Accounts::new(account_paths);
@@ -205,8 +216,8 @@ impl HashAgeKind {
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-#[frozen_abi(digest = "9VuZM6BQw49GCLspu2FpVVWnu24YwQ69WqwykcrGR2R4")]
-#[derive(Default, Deserialize, Serialize)]
+#[frozen_abi(digest = "4mDEhW3F8q2rQSEzj5R1A97zEhMaCwMahWhyT9vWhd6v")]
+#[derive(Default, Deserialize, Serialize, AbiDigestSample)]
 pub struct Bank {
     /// References to accounts, parent and signature status
     #[serde(skip)]

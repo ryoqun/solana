@@ -135,6 +135,12 @@ pub struct MessageProcessor {
     symbol_cache: SymbolCache,
 }
 
+impl ::solana_sdk::abi_digester::AbiDigestSample for MessageProcessor {
+    fn sample() -> Self {
+        MessageProcessor::default()
+    }
+}
+
 impl Default for MessageProcessor {
     fn default() -> Self {
         let instruction_processors: Vec<(Pubkey, ProcessInstruction)> = vec![(

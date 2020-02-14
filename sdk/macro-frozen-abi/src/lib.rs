@@ -1,5 +1,13 @@
 extern crate proc_macro;
 
+#[macro_use]
+extern crate lazy_static;
+
+lazy_static! {
+    static ref SPECIALIZATION_DETECTOR_INJECTED: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
+}
+
 // This file littered with these essential cfgs so ensure them.
 #[cfg(not(any(RUSTC_WITH_SPECIALIZATION, RUSTC_WITHOUT_SPECIALIZATION)))]
 compile_error!("rustc_version is missing in build dependency and build.rs is not specified");
@@ -62,6 +70,28 @@ fn filter_allow_attrs(attrs: &mut Vec<Attribute>) {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
+fn quote_for_specialization_detection() -> TokenStream2 {
+    if !SPECIALIZATION_DETECTOR_INJECTED.load(std::sync::atomic::Ordering::Relaxed) {
+        SPECIALIZATION_DETECTOR_INJECTED.store(true, std::sync::atomic::Ordering::Relaxed);
+        quote! {
+            mod specialization_detector {
+                trait SpecializedTrait {
+                    fn specialized_fn() {}
+                }
+                impl<T: Sized> SpecializedTrait for T {
+                    default fn specialized_fn() {}
+                }
+                impl<T: Sized + Default> SpecializedTrait for T {
+                    fn specialized_fn() {}
+                }
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+#[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn derive_abi_digest_sample_enum_type(input: ItemEnum) -> TokenStream {
     let type_name = &input.ident;
 
@@ -121,14 +151,17 @@ fn derive_abi_digest_sample_enum_type(input: ItemEnum) -> TokenStream {
     let mut attrs = input.attrs.clone();
     filter_allow_attrs(&mut attrs);
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let injection = quote_for_specialization_detection();
+
     let result = quote! {
+        #injection
         #[automatically_derived]
         #( #attrs )*
         impl #impl_generics ::solana_sdk::abi_digester::AbiDigestSample for #type_name #ty_generics #where_clause {
-            fn sample() -> #type_name {
+            fn sample() -> #type_name #ty_generics {
                 ::log::info!(
                     "AbiDigestSample for enum: {}",
-                    std::any::type_name::<#type_name>()
+                    std::any::type_name::<#type_name #ty_generics>()
                 );
                 #sample_variant
             }
@@ -171,17 +204,22 @@ fn derive_abi_digest_sample_struct_type(input: ItemStruct) -> TokenStream {
     let mut attrs = input.attrs.clone();
     filter_allow_attrs(&mut attrs);
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let ty_generics2 = ty_generics.as_turbofish();
+    let injection = quote_for_specialization_detection();
+
     let result = quote! {
+        #injection
         #[automatically_derived]
         #( #attrs )*
         impl #impl_generics ::solana_sdk::abi_digester::AbiDigestSample for #type_name #ty_generics #where_clause {
-            fn sample() -> #type_name {
+            fn sample() -> #type_name #ty_generics {
                 ::log::info!(
                     "AbiDigestSample for struct: {}",
-                    std::any::type_name::<#type_name>()
+                    std::any::type_name::<#type_name #ty_generics>()
                 );
                 use ::solana_sdk::abi_digester::AbiDigestSample;
-                #type_name #sample_fields
+
+                #type_name #ty_generics2 #sample_fields
             }
         }
     };

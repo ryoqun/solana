@@ -188,6 +188,7 @@ sample_impls! { i128, 0 }
 
 sample_impls! { f32, 0.0f32 }
 sample_impls! { f64, 0.0f64 }
+sample_impls! { String, String::new() }
 
 use std::sync::atomic::*;
 
@@ -201,8 +202,17 @@ macro_rules! atomic_sample_impls {
         }
     };
 }
+atomic_sample_impls! { AtomicU8 }
+atomic_sample_impls! { AtomicU16 }
 atomic_sample_impls! { AtomicU32 }
 atomic_sample_impls! { AtomicU64 }
+atomic_sample_impls! { AtomicUsize }
+atomic_sample_impls! { AtomicI8 }
+atomic_sample_impls! { AtomicI16 }
+atomic_sample_impls! { AtomicI32 }
+atomic_sample_impls! { AtomicI64 }
+atomic_sample_impls! { AtomicIsize }
+atomic_sample_impls! { AtomicBool }
 
 impl<T: Sized> AbiDigestSample for T {
     default fn sample() -> T {
@@ -231,6 +241,22 @@ impl<T: Default> TypeErasedSample<T> for () {
     }
 }
 
+impl<T: Default + Serialize> TypeErasedSample<T> for () {
+    default fn type_erased_sample() -> T {
+        let type_name = std::any::type_name::<T>();
+
+        if type_name.starts_with("solana") {
+            panic!("explicitly derive AbiDigestSample: {}", type_name)
+        } else if type_name.starts_with("bv::bit_vec::BitVec")
+            || type_name.starts_with("generic_array::GenericArray")
+        {
+            T::default()
+        } else {
+            panic!("new unrecognized type for ABI digest!: {}", type_name)
+        }
+    }
+}
+
 impl<T: AbiDigestSample> AbiDigestSample for Option<T> {
     fn sample() -> Option<T> {
         info!(
@@ -248,6 +274,38 @@ impl<T: AbiDigestSample> AbiDigestSample for Box<T> {
             std::any::type_name::<Box<T>>()
         );
         Box::new(T::sample())
+    }
+}
+
+impl<T> AbiDigestSample for Box<dyn Fn(&mut T) -> () + Sync + Send> {
+    fn sample() -> Self {
+        info!(
+            "AbiDigestSample for (Box<T>): {}",
+            std::any::type_name::<Box<T>>()
+        );
+        Box::new(move |_t: &mut T| {})
+    }
+}
+
+impl<T: AbiDigestSample> AbiDigestSample for Box<[T]> {
+    fn sample() -> Box<[T]> {
+        info!(
+            "AbiDigestSample for (Box<[T]>): {}",
+            std::any::type_name::<Box<[T]>>()
+        );
+        Box::new([T::sample()])
+    }
+}
+
+use std::marker::PhantomData;
+
+impl<T: AbiDigestSample> AbiDigestSample for PhantomData<T> {
+    fn sample() -> Self {
+        info!(
+            "AbiDigestSample for (PhantomData<T>): {}",
+            std::any::type_name::<PhantomData<T>>()
+        );
+        <PhantomData<T>>::default()
     }
 }
 
@@ -278,6 +336,16 @@ impl<T: AbiDigestSample> AbiDigestSample for std::sync::Mutex<T> {
             std::any::type_name::<std::sync::Mutex<T>>()
         );
         std::sync::Mutex::new(T::sample())
+    }
+}
+
+impl<T: AbiDigestSample> AbiDigestSample for std::sync::RwLock<T> {
+    fn sample() -> Self {
+        info!(
+            "AbiDigestSample for (RwLock<T>): {}",
+            std::any::type_name::<Self>()
+        );
+        std::sync::RwLock::new(T::sample())
     }
 }
 
@@ -525,17 +593,15 @@ impl AbiDigester {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct DigestError();
+use thiserror::Error;
 
+#[derive(Debug, Error)]
+pub enum DigestError {
+    #[error("should never happen")]
+    ShouldNeverHappen,
+}
 impl SerdeError for DigestError {
     fn custom<T: std::fmt::Display>(_msg: T) -> DigestError {
-        unreachable!("This error should never be used");
-    }
-}
-impl std::error::Error for DigestError {}
-impl std::fmt::Display for DigestError {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unreachable!("This error should never be used");
     }
 }
@@ -857,6 +923,9 @@ impl serde::ser::SerializeStructVariant for AbiDigester {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::sync::atomic::AtomicIsize;
+
     #[frozen_abi(digest = "72U9RN7GyAN8WfyZekwDjmgNNVqpRr62WYpX69HcSQpT")]
     type TestTypeAlias = i32;
 
@@ -889,8 +958,62 @@ mod tests {
         test_field2: i8,
     }
 
+    #[frozen_abi(digest = "9UUDRfwbqU4XMCyaLZnPGQqigmV8cr5FAXM9Dyd3hR9n")]
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestNest {
+        nested_field: [TestStruct; 5],
+    }
+
     #[frozen_abi(digest = "9uJk94f2q1h7gXv6LNbaZgWwG2ma8kdG8HRoRZWFZt4n")]
     type TestUnitStruct = std::marker::PhantomData<i8>;
+
+    #[frozen_abi(digest = "BnHtuDevCVYuPu6JzKiCz7gyAWjWnDougeLtCbQyizJd")]
+    #[derive(Serialize, AbiDigestSample)]
+    enum TestEnum {
+        VARIANT1,
+        VARIANT2,
+    }
+
+    #[frozen_abi(digest = "EhLJ8e4SsU7Qo6NhN5wkykYxTouA8bxBEaiRjzbpDsSX")]
+    #[derive(Serialize, AbiDigestSample)]
+    enum TestTupleVariant {
+        VARIANT1(u8, u16),
+        VARIANT2(u8, u16),
+    }
+
+    #[derive(Serialize, AbiDigestSample)]
+    struct TestGenericStruct<T: Ord> {
+        test_field: T,
+    }
+
+    #[frozen_abi(digest = "8UTxNGWuPJqQ8fRrCjR5W6uEHHYPzP7y8rQeYppiRetf")]
+    type TestConcreteStruct = TestGenericStruct<i64>;
+
+    #[derive(Serialize, AbiDigestSample)]
+    enum TestGenericEnum<T: Ord> {
+        TestVariant(T),
+    }
+
+    #[frozen_abi(digest = "9byTyrBsk3AaRmiEkt9PjNBm71YcHp22AqrcWo6y7enj")]
+    type TestConcreteEnum = TestGenericEnum<u128>;
+
+    #[frozen_abi(digest = "DL3KTotmMgUB9FzKc7tyPU3QrG5Qq3LdoRQ7396rciYs")]
+    type TestMap = HashMap<char, i128>;
+
+    #[frozen_abi(digest = "GwfBKtcTeAypFpAw1ExXxAcvcnjwS8Tbnos8asMTUbjA")]
+    type TestVec = Vec<f32>;
+
+    #[frozen_abi(digest = "6A7R1JRu5ui77qq1NbNhwXaAMwErXppXGRhFC2HN5656")]
+    type TestArray = [f64; 10];
+
+    #[frozen_abi(digest = "BEh8ii8iA4iBJvidDkRoTKgjUvZv82SS64iFmSL5Cik3")]
+    type TestUnit = ();
+
+    #[frozen_abi(digest = "GNrWKQH6KYpaNoW3usmXM2dMX5a6SdBjuih4HbZroejP")]
+    type TestResult = ::core::result::Result<u8, u16>;
+
+    #[frozen_abi(digest = "Fcp6HvvGA8PYtoNF1eyg7X6zRdCf3Cb3sX6qqk6LAa6A")]
+    type TestAtomic = AtomicIsize;
 
     mod skip_should_be_same {
         #[frozen_abi(digest = "ALpAoMcoY2rGD9A593HTZkjnQA91G3fP9edZ4NSWAMQW")]
@@ -903,6 +1026,23 @@ mod tests {
             test_field: i8,
             #[serde(skip)]
             _skipped_test_field: i8,
+        }
+
+        #[frozen_abi(digest = "BnHtuDevCVYuPu6JzKiCz7gyAWjWnDougeLtCbQyizJd")]
+        #[derive(Serialize, AbiDigestSample)]
+        enum TestEnum {
+            VARIANT1,
+            VARIANT2,
+            #[serde(skip)]
+            #[allow(dead_code)]
+            VARIANT3,
+        }
+
+        #[frozen_abi(digest = "EhLJ8e4SsU7Qo6NhN5wkykYxTouA8bxBEaiRjzbpDsSX")]
+        #[derive(Serialize, AbiDigestSample)]
+        enum TestTupleVariant {
+            VARIANT1(u8, u16),
+            VARIANT2(u8, u16, #[serde(skip)] u32),
         }
     }
 }

@@ -10,7 +10,7 @@ fn main() {
             println!("cargo:rustc-cfg=RUSTC_WITHOUT_SPECIALIZATION");
         }
         Channel::Beta => {
-            println!("cargo:rustc-cfg=RUSTC_WITH_SPECIALIZATION");
+            println!("cargo:rustc-cfg=RUSTC_WITHOUT_SPECIALIZATION");
         }
         Channel::Nightly => {
             println!("cargo:rustc-cfg=RUSTC_WITH_SPECIALIZATION");

@@ -46,7 +46,19 @@ impl Keypair {
 }
 
 #[repr(transparent)]
-#[derive(Serialize, Deserialize, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    AbiDigestSample,
+)]
 pub struct Signature(GenericArray<u8, U64>);
 
 impl Signature {

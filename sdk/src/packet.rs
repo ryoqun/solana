@@ -13,7 +13,7 @@ use std::{
 pub const PACKET_DATA_SIZE: usize = 1280 - 40 - 8;
 
 #[frozen_abi(digest = "SR4DtEXhAxETPDR6pZFj2CGtkLL4VQz6RojNp8Dvjrp")]
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, AbiDigestSample)]
 #[repr(C)]
 pub struct Meta {
     pub size: usize,

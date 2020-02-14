@@ -124,7 +124,7 @@ impl fmt::Debug for Locality {
     }
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize, AbiDigestSample)]
 pub struct PruneData {
     /// Pubkey of the node that sent this prune data
     pub pubkey: Pubkey,
@@ -176,7 +176,7 @@ struct PullData {
 }
 
 // TODO These messages should go through the gpu pipeline for spam filtering
-#[frozen_abi(digest = "8uD4QsX1zwpAaGNSDTvgXsDRbmpARLnB8s5QreGAqATU")]
+#[frozen_abi(digest = "Gm5mSuUV4mDrDSLX2ezC2TYo6ipEaPkhcN9hJDfL1Z7m")]
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(clippy::large_enum_variant)]
 enum Protocol {

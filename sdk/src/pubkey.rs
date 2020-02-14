@@ -3,7 +3,19 @@ use std::{convert::TryFrom, error, fmt, mem, str::FromStr};
 pub use bs58;
 
 #[repr(transparent)]
-#[derive(Serialize, Deserialize, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    AbiDigestSample,
+)]
 pub struct Pubkey([u8; 32]);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
