@@ -6,7 +6,7 @@ use solana_sdk::clock::Slot;
 use std::ops::Add;
 
 #[frozen_abi(digest = "En8VwAnRozX6c8uuSyjtnRPHuqnWTdJ8a3b936GZcJkH")]
-#[derive(Default, Clone, Deserialize, Serialize, AbiDigestSample)]
+#[derive(Default, Clone, Deserialize, Serialize, AbiSample)]
 pub struct HardForks {
     hard_forks: Vec<(Slot, usize)>,
 }

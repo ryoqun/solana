@@ -4,17 +4,7 @@ pub use bs58;
 
 #[repr(transparent)]
 #[derive(
-    Serialize,
-    Deserialize,
-    Clone,
-    Copy,
-    Default,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    AbiDigestSample,
+    Serialize, Deserialize, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash, AbiSample,
 )]
 pub struct Pubkey([u8; 32]);
 

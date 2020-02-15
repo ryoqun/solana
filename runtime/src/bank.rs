@@ -67,7 +67,7 @@ pub const MAX_SNAPSHOT_DATA_FILE_SIZE: u64 = 32 * 1024 * 1024 * 1024; // 32 GiB
 pub const MAX_LEADER_SCHEDULE_STAKES: Epoch = 5;
 
 type BankStatusCache = StatusCache<Result<()>>;
-#[frozen_abi(digest = "7hv3wDJQehXQGm2K6DyoW17otbsi1E1xpmuJFNu3KbtC")]
+#[frozen_abi(digest = "GU8FyZLsgA6QUkb2RNcznhj4J7vVFbfxQxMSsuZuYSZw")]
 pub type BankSlotDelta = SlotDelta<Result<()>>; // used as root of a snapshot file
 type TransactionAccountRefCells = Vec<Rc<RefCell<Account>>>;
 type TransactionLoaderRefCells = Vec<Vec<(Pubkey, RefCell<Account>)>>;
@@ -85,14 +85,14 @@ pub struct BankRc {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-use solana_sdk::abi_digester::AbiDigestSample;
+use solana_sdk::abi_digester::AbiSample;
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl AbiDigestSample for BankRc {
+impl AbiSample for BankRc {
     fn sample() -> Self {
         BankRc {
-            accounts: AbiDigestSample::sample(),
+            accounts: AbiSample::sample(),
             parent: RwLock::new(None),
-            slot: AbiDigestSample::sample(),
+            slot: AbiSample::sample(),
         }
     }
 }
@@ -218,8 +218,8 @@ impl HashAgeKind {
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-#[frozen_abi(digest = "4mDEhW3F8q2rQSEzj5R1A97zEhMaCwMahWhyT9vWhd6v")]
-#[derive(Default, Deserialize, Serialize, AbiDigestSample)]
+#[frozen_abi(digest = "EhAQQzLmqnwJaQHASaSLqWqYfvpPjKLefDgD1XvDdFf7")]
+#[derive(Default, Deserialize, Serialize, AbiSample)]
 pub struct Bank {
     /// References to accounts, parent and signature status
     #[serde(skip)]

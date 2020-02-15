@@ -111,7 +111,7 @@ actually would be serialized by `serde`.
 This part is a bit complex.
 
 First, the generated test creates such a sample instance of a type with a trait
-called `AbiDigestSample`, which should be implemented for all of serialized
+called `AbiSample`, which should be implemented for all of serialized
 types, much like `Serialize`. Usually, it's provided via generic trait
 specialization for most of common types. Also it is easy to `derive` for
 `struct` and `enum` and can be hand-written if needed.
@@ -126,12 +126,12 @@ expected to be overridden by custom trait implementations or generic
 specializations.
 
 Technically, this ABI management mechanism can't be realized only with
-`AbiDigest`. `AbiDigestSample` is required because an actual instance of type
+`AbiDigest`. `AbiSample` is required because an actual instance of type
 is needed to actually traverse the data via `serde`.
 
 To summarize this interplay, `serde` handles the recursive serialization control
 flow in tandem with `AbiDigester`. The test entry point and `AbiDigester` uses
-`AbiDigestSample` to create a sample instances as the traversal process digs
+`AbiSample` to create a sample instances as the traversal process digs
 deeper into the serialized structure. And `AbiDigester` uses `AbiDigest` to
 inquiry the actual ABI information relying on such samples.
 
@@ -149,7 +149,7 @@ Not digested type information:
 
 - The type name itself (intended as the digest for the content of type)
 - Any custom serialize code path not touched by the sample provided by
-  `AbiDigestSample`. (technically not possible)
+  `AbiSample`. (technically not possible)
 - generics (must always be a concrete type; `type` aliases are supported)
 
 # References

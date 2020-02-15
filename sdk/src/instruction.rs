@@ -5,8 +5,8 @@ use bincode::serialize;
 use serde::Serialize;
 
 /// Reasons the runtime might have rejected an instruction.
-#[frozen_abi(digest = "5hcZrXnMwUAnSasZeYeLeZoyZG471jz6efJPBy8dsTPV")]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiDigestSample)]
+#[frozen_abi(digest = "EWrMbVMc26KJ2URca9ZmC29FJauLMhTxScgD4NHwVJyF")]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
 pub enum InstructionError {
     /// Deprecated! Use CustomError instead!
     /// The program instruction returned an error
@@ -176,7 +176,7 @@ impl WithSigner for Vec<AccountMeta> {
 }
 
 /// An instruction to execute a program
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiDigestSample)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct CompiledInstruction {
     /// Index into the transaction keys array indicating the program account that executes this instruction

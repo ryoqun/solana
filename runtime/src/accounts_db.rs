@@ -174,7 +174,7 @@ impl<'de> Deserialize<'de> for AccountStorage {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Deserialize, Serialize, AbiDigestSample, AbiDigest)]
+#[derive(Debug, PartialEq, Copy, Clone, Deserialize, Serialize, AbiSample, AbiDigest)]
 pub enum AccountStorageStatus {
     Available = 0,
     Full = 1,
@@ -190,7 +190,7 @@ pub enum BankHashVerificationError {
 
 /// Persistent storage structure holding the accounts
 #[frozen_abi(digest = "DosBKtjgNCuEdi7e1KGTnBSPJULxprbHuxVjxKv5T5YC")]
-#[derive(Debug, Serialize, Deserialize, AbiDigestSample)]
+#[derive(Debug, Serialize, Deserialize, AbiSample)]
 pub struct AccountStorageEntry {
     id: AppendVecId,
 
@@ -355,7 +355,7 @@ mod test_accounts_db_serialize {
         .serialize(s)
     }
 
-    impl solana_sdk::abi_digester::AbiDigestSample for AccountsDBSerializeAbiTestWrapper {
+    impl solana_sdk::abi_digester::AbiSample for AccountsDBSerializeAbiTestWrapper {
         fn sample() -> Self {
             let accounts_db = AccountsDB::new_single();
             let key = Pubkey::default();

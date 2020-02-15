@@ -12,8 +12,8 @@ use std::{
 
 /// An Account with data that is stored on chain
 #[repr(C)]
-#[frozen_abi(digest = "8wNjkcVBafbJzrfcdvzP39ourf1R3fhREJ7eTG3weGxo")]
-#[derive(Serialize, Deserialize, Clone, Default, AbiDigestSample)]
+#[frozen_abi(digest = "9TVqdmVWEicqeA4mC14jDWD8tELsQV8Gj5hvjbPr3WbY")]
+#[derive(Serialize, Deserialize, Clone, Default, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
     /// lamports in the account

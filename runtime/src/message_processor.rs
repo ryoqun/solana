@@ -136,7 +136,7 @@ pub struct MessageProcessor {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::solana_sdk::abi_digester::AbiDigestSample for MessageProcessor {
+impl ::solana_sdk::abi_digester::AbiSample for MessageProcessor {
     fn sample() -> Self {
         MessageProcessor::default()
     }

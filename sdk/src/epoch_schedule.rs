@@ -13,7 +13,7 @@ pub const MINIMUM_SLOTS_PER_EPOCH: u64 = 32;
 
 #[repr(C)]
 #[frozen_abi(digest = "H4xR9ej6rthcBSaahd64AsxptSKZP6JTPTjgoePyZLeQ")]
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize, AbiDigestSample)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct EpochSchedule {
     /// The maximum number of slots in each epoch.
