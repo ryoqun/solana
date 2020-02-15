@@ -12,7 +12,7 @@ pub const DEFAULT_LEADER_SCHEDULE_SLOT_OFFSET: u64 = DEFAULT_SLOTS_PER_EPOCH;
 pub const MINIMUM_SLOTS_PER_EPOCH: u64 = 32;
 
 #[repr(C)]
-#[frozen_abi(digest = "H4xR9ej6rthcBSaahd64AsxptSKZP6JTPTjgoePyZLeQ")]
+#[frozen_abi(digest = "h3vfD1hgzQdNTLVrZm6Jfbh4zqRQPxZ3YfbHTnDyoVj")]
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize, Serialize, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct EpochSchedule {

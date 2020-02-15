@@ -335,26 +335,25 @@ impl<
 {
     fn sample() -> Self {
         info!("AbiSample for (HashMap<T, S, H>): {}", type_name::<Self>());
-        let mut v = HashMap::default();
-        v.insert(T::sample(), S::sample());
-        v
+        let mut map = HashMap::default();
+        map.insert(T::sample(), S::sample());
+        map
     }
 }
 
 impl<T: std::cmp::Ord + AbiSample, S: AbiSample> AbiSample for BTreeMap<T, S> {
     fn sample() -> Self {
         info!("AbiSample for (BTreeMap<T, S>): {}", type_name::<Self>());
-        let mut v = BTreeMap::default();
-        v.insert(T::sample(), S::sample());
-        v
+        let mut map = BTreeMap::default();
+        map.insert(T::sample(), S::sample());
+        map
     }
 }
 
 impl<T: AbiSample> AbiSample for Vec<T> {
     fn sample() -> Self {
         info!("AbiSample for (Vec<T>): {}", type_name::<Self>());
-        let v: Vec<T> = vec![T::sample()];
-        v
+        vec![T::sample()]
     }
 }
 
@@ -363,18 +362,18 @@ impl<T: std::cmp::Eq + std::hash::Hash + AbiSample, H: std::hash::BuildHasher + 
 {
     fn sample() -> Self {
         info!("AbiSample for (HashSet<T, H>): {}", type_name::<Self>());
-        let mut v: HashSet<T, H> = HashSet::default();
-        v.insert(T::sample());
-        v
+        let mut set: HashSet<T, H> = HashSet::default();
+        set.insert(T::sample());
+        set
     }
 }
 
 impl<T: std::cmp::Ord + AbiSample> AbiSample for BTreeSet<T> {
     fn sample() -> Self {
         info!("AbiSample for (BTreeSet<T>): {}", type_name::<Self>());
-        let mut v: BTreeSet<T> = BTreeSet::default();
-        v.insert(T::sample());
-        v
+        let mut set: BTreeSet<T> = BTreeSet::default();
+        set.insert(T::sample());
+        set
     }
 }
 
@@ -421,7 +420,6 @@ impl<T: Serialize + ?Sized + AbiSample> AbiDigest for T {
 
 impl<T: Serialize + Sized> AbiDigest for &T {
     default fn abi_digest(digester: &mut AbiDigester) -> DigestResult {
-        digester.update(&["ref", type_name::<T>()]);
         T::sample().serialize(digester.create_child())
     }
 }
@@ -432,8 +430,8 @@ impl<T: AbiDigest> AbiDigest for Option<T> {
     fn abi_digest(digester: &mut AbiDigester) -> DigestResult {
         info!("AbiDigest for (Option<T>): {}", type_name::<Self>());
 
-        let v: Self = Option::Some(T::sample());
-        v.serialize(digester.create_enum_child())
+        let variant: Self = Option::Some(T::sample());
+        variant.serialize(digester.create_enum_child())
     }
 }
 
@@ -441,11 +439,11 @@ impl<O: AbiDigest, E: AbiDigest> AbiDigest for Result<O, E> {
     fn abi_digest(digester: &mut AbiDigester) -> DigestResult {
         info!("AbiDigest for (Result<O, E>): {}", type_name::<Self>());
 
-        let v: Self = Result::Ok(O::sample());
-        v.serialize(digester.create_enum_child())?;
+        let variant: Self = Result::Ok(O::sample());
+        variant.serialize(digester.create_enum_child())?;
 
-        let v: Self = Result::Err(E::sample());
-        v.serialize(digester.create_enum_child())?;
+        let variant: Self = Result::Err(E::sample());
+        variant.serialize(digester.create_enum_child())?;
 
         Ok(digester.create_child())
     }
@@ -487,8 +485,16 @@ impl AbiDigester {
         }
     }
 
-    // must be created separate instance because we can't pass the single instnace to
+    // must create separate instances because we can't pass the single instnace to
     // `.serialize()` multiple times
+    pub fn create_new(&self) -> Self {
+        Self {
+            data_types: self.data_types.clone(),
+            depth: self.depth,
+            for_enum: false,
+        }
+    }
+
     pub fn create_child(&self) -> Self {
         Self {
             data_types: self.data_types.clone(),
@@ -497,20 +503,21 @@ impl AbiDigester {
         }
     }
 
-    pub fn digest_data<T: ?Sized + Serialize>(&self, value: &T) -> DigestResult {
-        let type_name = type_name::<T>();
-        if type_name.ends_with("__SerializeWith") || type_name.starts_with("bv::bit_vec") {
-            value.serialize(self.create_child())
-        } else {
-            <T>::abi_digest(&mut self.create_child())
-        }
-    }
-
     pub fn create_enum_child(&self) -> Self {
         Self {
             data_types: self.data_types.clone(),
             depth: self.depth + 1,
             for_enum: true,
+        }
+    }
+
+    pub fn digest_data<T: ?Sized + Serialize>(&mut self, value: &T) -> DigestResult {
+        let type_name = type_name::<T>();
+        if type_name.ends_with("__SerializeWith") || type_name.starts_with("bv::bit_vec") {
+            // we can't use the AbiDigest trait for these cases.
+            value.serialize(self.create_new())
+        } else {
+            <T>::abi_digest(&mut self.create_new())
         }
     }
 
@@ -527,34 +534,44 @@ impl AbiDigester {
         (*self.data_types.borrow_mut()).push(buf);
     }
 
-    fn update_with_type<T>(&mut self, label: &str, _v: T) {
+    pub fn update_with_type<T: ?Sized>(&mut self, label: &str) {
         self.update(&[label, type_name::<T>()]);
     }
 
-    pub fn update_with_type2<T>(&mut self, label: &str) {
-        self.update(&[label, type_name::<T>()]);
+    pub fn update_with_string(&mut self, label: String) {
+        self.update(&[&label]);
     }
 
-    fn update_with_primitive<T>(mut self, v: T) -> Result<AbiDigester, DigestError> {
-        self.update_with_type("primitive", v);
+    fn digest_primitive<T: Serialize>(mut self) -> Result<AbiDigester, DigestError> {
+        self.update_with_type::<T>("primitive");
         Ok(self)
     }
 
     fn digest_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
-        self.update_with_type("element", v);
+        self.update_with_type::<T>("element");
         self.digest_data(v).map(|r| r.into())
     }
 
     fn digest_named_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
-        self.update_with_type(&format!("field {}", key), v);
+        self.update_with_string(format!("field {}: {}", key, type_name::<T>()));
         self.digest_data(v)
             .map(|r| r.into())
             .map_err(|e| DigestError::wrap_by_str(e, key))
     }
 
     fn digest_unnamed_field<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
-        self.update_with_type("field", v);
+        self.update_with_type::<T>("field");
         self.digest_data(v).map(|r| r.into())
+    }
+
+    fn check_for_enum(&self, label: &'static str) -> NoResult {
+        if !self.for_enum {
+            return Err(DigestError::wrap_by_str(
+                DigestError::DigestNotImplementedForEnum,
+                label,
+            ));
+        }
+        Ok(())
     }
 
     pub fn finalize(self) -> Hash {
@@ -615,72 +632,72 @@ impl Serializer for AbiDigester {
     type SerializeStruct = Self;
     type SerializeStructVariant = Self;
 
-    fn serialize_bool(self, v: bool) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_bool(self, _data: bool) -> DigestResult {
+        self.digest_primitive::<bool>()
     }
 
-    fn serialize_i8(self, v: i8) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_i8(self, _data: i8) -> DigestResult {
+        self.digest_primitive::<i8>()
     }
 
-    fn serialize_i16(self, v: i16) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_i16(self, _data: i16) -> DigestResult {
+        self.digest_primitive::<i16>()
     }
 
-    fn serialize_i32(self, v: i32) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_i32(self, _data: i32) -> DigestResult {
+        self.digest_primitive::<i32>()
     }
 
-    fn serialize_i64(self, v: i64) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_i64(self, _data: i64) -> DigestResult {
+        self.digest_primitive::<i64>()
     }
 
-    fn serialize_i128(self, v: i128) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_i128(self, _data: i128) -> DigestResult {
+        self.digest_primitive::<i128>()
     }
 
-    fn serialize_u8(self, v: u8) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_u8(self, _data: u8) -> DigestResult {
+        self.digest_primitive::<u8>()
     }
 
-    fn serialize_u16(self, v: u16) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_u16(self, _data: u16) -> DigestResult {
+        self.digest_primitive::<u16>()
     }
 
-    fn serialize_u32(self, v: u32) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_u32(self, _data: u32) -> DigestResult {
+        self.digest_primitive::<u32>()
     }
 
-    fn serialize_u64(self, v: u64) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_u64(self, _data: u64) -> DigestResult {
+        self.digest_primitive::<u64>()
     }
 
-    fn serialize_u128(self, v: u128) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_u128(self, _data: u128) -> DigestResult {
+        self.digest_primitive::<u128>()
     }
 
-    fn serialize_f32(self, v: f32) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_f32(self, _data: f32) -> DigestResult {
+        self.digest_primitive::<f32>()
     }
 
-    fn serialize_f64(self, v: f64) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_f64(self, _data: f64) -> DigestResult {
+        self.digest_primitive::<f64>()
     }
 
-    fn serialize_char(self, v: char) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_char(self, _data: char) -> DigestResult {
+        self.digest_primitive::<char>()
     }
 
-    fn serialize_str(self, v: &str) -> DigestResult {
-        self.update_with_primitive(v)
+    fn serialize_str(self, _data: &str) -> DigestResult {
+        self.digest_primitive::<&str>()
     }
 
     fn serialize_unit(self) -> DigestResult {
-        self.update_with_primitive(())
+        self.digest_primitive::<()>()
     }
 
     fn serialize_bytes(mut self, v: &[u8]) -> DigestResult {
-        self.update_with_type2::<&[u8]>(&format!("bytes {}", v.len()));
+        self.update_with_string(format!("bytes [u8] (len = {})", v.len()));
         Ok(self)
     }
 
@@ -692,28 +709,23 @@ impl Serializer for AbiDigester {
     where
         T: ?Sized + Serialize,
     {
-        self.update_with_type("some", v);
-        self.digest_data(v)
+        // emulate the ABI digest for the Option enum; see TestMyOption
+        self.update(&["enum Option (variants = 2)"]);
+        self.create_child()
+            .update_with_string("variant(0) None (unit)".to_owned());
+        self.create_child()
+            .update_with_string(format!("variant(1) Some({}) (newtype)", type_name::<T>()));
+        self.create_child().digest_data(v)
     }
 
     fn serialize_unit_struct(mut self, name: Sstr) -> DigestResult {
-        self.update(&["unit struct", name]);
+        self.update(&["struct", name, "(unit)"]);
         Ok(self)
     }
 
-    fn serialize_unit_variant(mut self, name: Sstr, index: u32, variant: Sstr) -> DigestResult {
-        if !self.for_enum {
-            return Err(DigestError::wrap_by_str(
-                DigestError::DigestNotImplementedForEnum,
-                "unit_variant",
-            ));
-        }
-        self.update(&[
-            "variant",
-            name,
-            &format!("unit({})", &index.to_string()),
-            variant,
-        ]);
+    fn serialize_unit_variant(mut self, _name: Sstr, index: u32, variant: Sstr) -> DigestResult {
+        self.check_for_enum("unit_variant")?;
+        self.update_with_string(format!("variant({}) {} (unit)", index, variant));
         Ok(self)
     }
 
@@ -721,86 +733,81 @@ impl Serializer for AbiDigester {
     where
         T: ?Sized + Serialize,
     {
-        self.update(&["newtype", name, "struct", type_name::<T>()]);
+        self.update_with_string(format!("struct {}({}) (newtype)", name, type_name::<T>()));
         self.digest_data(v)
             .map_err(|e| DigestError::wrap_by_str(e, "newtype_struct"))
     }
 
     fn serialize_newtype_variant<T>(
         mut self,
-        name: Sstr,
-        _i: u32,
+        _name: Sstr,
+        i: u32,
         variant: Sstr,
         v: &T,
     ) -> DigestResult
     where
         T: ?Sized + Serialize,
     {
-        if !self.for_enum {
-            return Err(DigestError::wrap_by_str(
-                DigestError::DigestNotImplementedForEnum,
-                "newtype_variant",
-            ));
-        }
-        self.update(&["variant", name, "newtype", variant, type_name::<T>()]);
+        self.check_for_enum("newtype_variant")?;
+        self.update_with_string(format!(
+            "variant({}) {}({}) (newtype)",
+            i,
+            variant,
+            type_name::<T>()
+        ));
         self.digest_data(v)
+            .map_err(|e| DigestError::wrap_by_str(e, "newtype_variant"))
     }
 
     fn serialize_seq(mut self, len: Option<usize>) -> DigestResult {
-        self.update(&[
-            "seq",
-            &len.map(|len| len.to_string())
-                .unwrap_or_else(|| "none".to_owned()),
-        ]);
-        Ok(self)
+        self.update_with_string(format!("seq (elements = {})", len.unwrap()));
+        Ok(self.create_child())
     }
 
     fn serialize_tuple(mut self, len: usize) -> DigestResult {
-        self.update(&["tuple", len.to_string().as_ref()]);
-        Ok(self)
+        self.update_with_string(format!("tuple (elements = {})", len));
+        Ok(self.create_child())
     }
 
     fn serialize_tuple_struct(mut self, name: Sstr, len: usize) -> DigestResult {
-        self.update(&["tuple struct", name, len.to_string().as_ref()]);
-        Ok(self)
+        self.update_with_string(format!("struct {} (fields = {}) (tuple)", name, len));
+        Ok(self.create_child())
     }
 
     fn serialize_tuple_variant(
         mut self,
-        name: Sstr,
-        _i: u32,
+        _name: Sstr,
+        i: u32,
         variant: Sstr,
-        _len: usize,
+        len: usize,
     ) -> DigestResult {
-        if !self.for_enum {
-            return Err(DigestError::wrap_by_str(
-                DigestError::DigestNotImplementedForEnum,
-                "tuple_variant",
-            ));
-        }
-        self.update(&["variant", name, "newtype_tuple", variant]);
+        self.check_for_enum("tuple_variant")?;
+        self.update_with_string(format!("variant({}) {} (fields = {})", i, variant, len));
         Ok(self.create_child())
     }
 
-    fn serialize_map(mut self, _len: Option<usize>) -> DigestResult {
-        self.update(&["map"]);
-        Ok(self)
+    fn serialize_map(mut self, len: Option<usize>) -> DigestResult {
+        self.update_with_string(format!("map (entries = {})", len.unwrap()));
+        Ok(self.create_child())
     }
 
-    fn serialize_struct(self, name: Sstr, len: usize) -> DigestResult {
-        // export struct name
-        info!("serialize_struct {} {}", name, len);
-        Ok(self)
+    fn serialize_struct(mut self, name: Sstr, len: usize) -> DigestResult {
+        self.update_with_string(format!("struct {} (fields = {})", name, len));
+        Ok(self.create_child())
     }
 
     fn serialize_struct_variant(
         mut self,
-        name: Sstr,
-        _i: u32,
+        _name: Sstr,
+        i: u32,
         variant: Sstr,
-        _len: usize,
+        len: usize,
     ) -> DigestResult {
-        self.update(&[&format!("variant {} struct {}", name, variant)]);
+        self.check_for_enum("struct_variant")?;
+        self.update_with_string(format!(
+            "variant({}) struct {} (fields = {})",
+            i, variant, len
+        ));
         Ok(self.create_child())
     }
 }
@@ -809,8 +816,8 @@ impl SerializeSeq for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
-        self.digest_element(v)
+    fn serialize_element<T: ?Sized + Serialize>(&mut self, data: &T) -> NoResult {
+        self.digest_element(data)
     }
 
     fn end(self) -> DigestResult {
@@ -821,8 +828,8 @@ impl SerializeTuple for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_element<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
-        self.digest_element(v)
+    fn serialize_element<T: ?Sized + Serialize>(&mut self, data: &T) -> NoResult {
+        self.digest_element(data)
     }
 
     fn end(self) -> DigestResult {
@@ -833,8 +840,8 @@ impl SerializeTupleStruct for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_field<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
-        self.digest_unnamed_field(v)
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, data: &T) -> NoResult {
+        self.digest_unnamed_field(data)
     }
 
     fn end(self) -> DigestResult {
@@ -846,8 +853,8 @@ impl SerializeTupleVariant for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_field<T: ?Sized + Serialize>(&mut self, v: &T) -> NoResult {
-        self.digest_unnamed_field(v)
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, data: &T) -> NoResult {
+        self.digest_unnamed_field(data)
     }
 
     fn end(self) -> DigestResult {
@@ -860,12 +867,12 @@ impl SerializeMap for AbiDigester {
     type Error = DigestError;
 
     fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> NoResult {
-        self.update_with_type("key", key);
+        self.update_with_type::<T>("key");
         self.digest_data(key).map(|r| r.into())
     }
 
     fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> NoResult {
-        self.update_with_type("value", value);
+        self.update_with_type::<T>("value");
         self.digest_data(value).map(|r| r.into())
     }
 
@@ -878,8 +885,8 @@ impl SerializeStruct for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
-        self.digest_named_field(key, v)
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, data: &T) -> NoResult {
+        self.digest_named_field(key, data)
     }
 
     fn end(self) -> DigestResult {
@@ -891,8 +898,8 @@ impl SerializeStructVariant for AbiDigester {
     type Ok = Self;
     type Error = DigestError;
 
-    fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, v: &T) -> NoResult {
-        self.digest_named_field(key, v)
+    fn serialize_field<T: ?Sized + Serialize>(&mut self, key: Sstr, data: &T) -> NoResult {
+        self.digest_named_field(key, data)
     }
 
     fn end(self) -> DigestResult {
@@ -908,52 +915,52 @@ mod tests {
     #[frozen_abi(digest = "72U9RN7GyAN8WfyZekwDjmgNNVqpRr62WYpX69HcSQpT")]
     type TestTypeAlias = i32;
 
-    #[frozen_abi(digest = "C7XEnhpy8Dm6PzUD2wf3we5gxQxtqcqhjWoHwUaiHLQH")]
-    #[derive(Serialize, AbiSample)]
-    struct TestTupleStruct(i8, i8);
-
-    #[frozen_abi(digest = "4XRyCqXL8H48jwhQu4J9r8L3ZuoVyaWZLTmtwsKxL4Eq")]
-    #[derive(Serialize, AbiSample)]
-    struct TestNewtypeStruct(i8);
-
-    #[frozen_abi(digest = "54fUCH3yCdTRyg9KGgtA8iM1oEasfGagn2Rdx3xvQNsB")]
+    #[frozen_abi(digest = "3QgtnFyZNXq6G26kSLWv79qMvoatW8jR4rkUBhErboGx")]
     #[derive(Serialize, AbiSample)]
     struct TestStruct {
         test_field: i8,
         test_field2: i8,
     }
 
-    #[frozen_abi(digest = "3CMjKdDzuGBiN3dAZEd2LuPnewxnSUUnRJZGSif7iwGA")]
+    #[frozen_abi(digest = "DAMawvoapkvpXAk4EKNDd4W8fCNSLKCdFedfNZnXM9W4")]
+    #[derive(Serialize, AbiSample)]
+    struct TestTupleStruct(i8, i8);
+
+    #[frozen_abi(digest = "AeUfUC7qPmYGb7UkktP6SdMrxvcPNThf2whxsphS6r4p")]
+    #[derive(Serialize, AbiSample)]
+    struct TestNewtypeStruct(i8);
+
+    #[frozen_abi(digest = "sZzZfPAF5V6WcEoyJZhSLkmfmpnfVR3QsATkHy7YkNb")]
     #[derive(Serialize, AbiSample)]
     struct TestStructReversed {
         test_field2: i8,
         test_field: i8,
     }
 
-    #[frozen_abi(digest = "Hty5GomFYWGkYzfBxHBfznT944y6ivt8iuyuEx8MGvXR")]
+    #[frozen_abi(digest = "DSWhHsFuHFVtc35j1x1Mv2mAA4AcP3aRN9AmwDvoBk8Y")]
     #[derive(Serialize, AbiSample)]
     struct TestStructAnotherType {
         test_field: i16,
         test_field2: i8,
     }
 
-    #[frozen_abi(digest = "9UUDRfwbqU4XMCyaLZnPGQqigmV8cr5FAXM9Dyd3hR9n")]
+    #[frozen_abi(digest = "8uVZu3vBwymL4td57jmQgSa1GKMnDkem9TjZJGELLzrx")]
     #[derive(Serialize, AbiSample)]
     struct TestNest {
         nested_field: [TestStruct; 5],
     }
 
-    #[frozen_abi(digest = "9uJk94f2q1h7gXv6LNbaZgWwG2ma8kdG8HRoRZWFZt4n")]
+    #[frozen_abi(digest = "2ezHBgHPBNxR9K9X9xA3zCW1cUwxBm5poXzYgP2vChDt")]
     type TestUnitStruct = std::marker::PhantomData<i8>;
 
-    #[frozen_abi(digest = "BnHtuDevCVYuPu6JzKiCz7gyAWjWnDougeLtCbQyizJd")]
+    #[frozen_abi(digest = "2zvXde11f8sNnFbc9E6ZZeFxV7D2BTVLKEZmNTsCDBpS")]
     #[derive(Serialize, AbiSample)]
     enum TestEnum {
         VARIANT1,
         VARIANT2,
     }
 
-    #[frozen_abi(digest = "CrmfomDKBiFWXmUDiVQa8Sn9iGr6FTTkarqc7PBd9KeD")]
+    #[frozen_abi(digest = "6keb3v7GXLahhL6zoinzCWwSvB3KhmvZMB3tN2mamAm3")]
     #[derive(Serialize, AbiSample)]
     enum TestTupleVariant {
         VARIANT1(u8, u16),
@@ -965,7 +972,7 @@ mod tests {
         test_field: T,
     }
 
-    #[frozen_abi(digest = "8UTxNGWuPJqQ8fRrCjR5W6uEHHYPzP7y8rQeYppiRetf")]
+    #[frozen_abi(digest = "6u9kvQw769bnubNKupxESWLoEgqzeaEm3xD8DFtBZ7rn")]
     type TestConcreteStruct = TestGenericStruct<i64>;
 
     #[derive(Serialize, AbiSample, AbiDigest)]
@@ -973,33 +980,41 @@ mod tests {
         TestVariant(T),
     }
 
-    #[frozen_abi(digest = "GRkoFAhsuC5Jghoff1rmu8qUboowZHFuAUXBdHhWQtpc")]
+    #[frozen_abi(digest = "2B2HqxHaziSfW3kdxJqV9vEMpCpRaEipXL6Bskv1GV7J")]
     type TestConcreteEnum = TestGenericEnum<u128>;
 
-    #[frozen_abi(digest = "DL3KTotmMgUB9FzKc7tyPU3QrG5Qq3LdoRQ7396rciYs")]
+    #[frozen_abi(digest = "H59m8rqiqfrQoZzgbuLNBrkZyT39heYkdPfKD3dia6n1")]
     type TestMap = HashMap<char, i128>;
 
-    #[frozen_abi(digest = "GwfBKtcTeAypFpAw1ExXxAcvcnjwS8Tbnos8asMTUbjA")]
+    #[frozen_abi(digest = "77Ukcr8vCSjXPem45kQALu9Vmfiyy5kxPs6j5KJmx5tn")]
     type TestVec = Vec<f32>;
 
-    #[frozen_abi(digest = "6A7R1JRu5ui77qq1NbNhwXaAMwErXppXGRhFC2HN5656")]
+    #[frozen_abi(digest = "5c46ciKXZguCN5WEgNeCfevMYLDno8topUxFQ7vdJ9GB")]
     type TestArray = [f64; 10];
 
     #[frozen_abi(digest = "BEh8ii8iA4iBJvidDkRoTKgjUvZv82SS64iFmSL5Cik3")]
     type TestUnit = ();
 
-    #[frozen_abi(digest = "nWZAZ22vGdD4ECE4gXcKhEf8wQNjjvimUTPRPLFzfo4")]
+    #[frozen_abi(digest = "HzZrzvyPa7Gs4ghNjeUmcVV2MDaPzsRYogjfUVqgtzaD")]
     type TestResult = Result<u8, u16>;
 
     #[frozen_abi(digest = "Fcp6HvvGA8PYtoNF1eyg7X6zRdCf3Cb3sX6qqk6LAa6A")]
     type TestAtomic = AtomicIsize;
 
+    #[derive(Serialize, AbiSample, AbiDigest)]
+    enum TestMyOption<T: serde::Serialize + Sized + Ord> {
+        None,
+        Some(T),
+    }
+    #[frozen_abi(digest = "BzXkoRacijFTCPW4PyyvhkqMVgcuhmvPXjZfMsHJCeet")]
+    type TestMyOptionWithIsize = TestMyOption<isize>;
+
     mod skip_should_be_same {
-        #[frozen_abi(digest = "C7XEnhpy8Dm6PzUD2wf3we5gxQxtqcqhjWoHwUaiHLQH")]
+        #[frozen_abi(digest = "DAMawvoapkvpXAk4EKNDd4W8fCNSLKCdFedfNZnXM9W4")]
         #[derive(Serialize, AbiSample)]
         struct TestTupleStruct(i8, i8, #[serde(skip)] i8);
 
-        #[frozen_abi(digest = "EbKnnf5eJLYqvAaV2rL4M9Ejh7GBfwXvd3bTEpeojj3G")]
+        #[frozen_abi(digest = "Bpw2PXZdhRAC9KjX2nV1Ti7twhyWN5EGM3PhjYnEJ7dD")]
         #[derive(Serialize, AbiSample)]
         struct TestStruct {
             test_field: i8,
@@ -1007,7 +1022,7 @@ mod tests {
             _skipped_test_field: i8,
         }
 
-        #[frozen_abi(digest = "BnHtuDevCVYuPu6JzKiCz7gyAWjWnDougeLtCbQyizJd")]
+        #[frozen_abi(digest = "2zvXde11f8sNnFbc9E6ZZeFxV7D2BTVLKEZmNTsCDBpS")]
         #[derive(Serialize, AbiSample)]
         enum TestEnum {
             VARIANT1,
@@ -1017,7 +1032,7 @@ mod tests {
             VARIANT3,
         }
 
-        #[frozen_abi(digest = "CrmfomDKBiFWXmUDiVQa8Sn9iGr6FTTkarqc7PBd9KeD")]
+        #[frozen_abi(digest = "6keb3v7GXLahhL6zoinzCWwSvB3KhmvZMB3tN2mamAm3")]
         #[derive(Serialize, AbiSample)]
         enum TestTupleVariant {
             VARIANT1(u8, u16),

@@ -5,7 +5,7 @@ use bincode::serialize;
 use serde::Serialize;
 
 /// Reasons the runtime might have rejected an instruction.
-#[frozen_abi(digest = "EWrMbVMc26KJ2URca9ZmC29FJauLMhTxScgD4NHwVJyF")]
+#[frozen_abi(digest = "627Ak4UPqh5qnPGBQJ1NeQVNW4Cr3h4M1v2cg1nBo7QS")]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
 pub enum InstructionError {
     /// Deprecated! Use CustomError instead!

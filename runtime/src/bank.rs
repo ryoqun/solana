@@ -67,7 +67,7 @@ pub const MAX_SNAPSHOT_DATA_FILE_SIZE: u64 = 32 * 1024 * 1024 * 1024; // 32 GiB
 pub const MAX_LEADER_SCHEDULE_STAKES: Epoch = 5;
 
 type BankStatusCache = StatusCache<Result<()>>;
-#[frozen_abi(digest = "GU8FyZLsgA6QUkb2RNcznhj4J7vVFbfxQxMSsuZuYSZw")]
+#[frozen_abi(digest = "6Ky7HsMgRhgChLyVTmgXbZLFK4VCCZU4z9xCPfbhoFvF")]
 pub type BankSlotDelta = SlotDelta<Result<()>>; // used as root of a snapshot file
 type TransactionAccountRefCells = Vec<Rc<RefCell<Account>>>;
 type TransactionLoaderRefCells = Vec<Vec<(Pubkey, RefCell<Account>)>>;
@@ -218,7 +218,7 @@ impl HashAgeKind {
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-#[frozen_abi(digest = "EhAQQzLmqnwJaQHASaSLqWqYfvpPjKLefDgD1XvDdFf7")]
+#[frozen_abi(digest = "5QtHqk4ZKiytY7czPn68F4GvGVdeFRPWBmZ2KatWAV8J")]
 #[derive(Default, Deserialize, Serialize, AbiSample)]
 pub struct Bank {
     /// References to accounts, parent and signature status

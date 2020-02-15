@@ -125,7 +125,7 @@ fn get_program_ids(instructions: &[Instruction]) -> Vec<Pubkey> {
         .collect()
 }
 
-#[frozen_abi(digest = "2uqPJ2KbHEhaZzWc7t1FTqC77SM3qywhSTEG5iTHTYQA")]
+#[frozen_abi(digest = "5FgaWJZ6oz3Hd5drEvroH1GqcuEGuPtvQL4vQR1FSqWX")]
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq, Clone, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageHeader {
@@ -144,7 +144,7 @@ pub struct MessageHeader {
     pub num_readonly_unsigned_accounts: u8,
 }
 
-#[frozen_abi(digest = "2uMDmyzzRUAZijwuUT1TQsyucbct74mETPhdtjUFeBjJ")]
+#[frozen_abi(digest = "FdSseUqAs8SaLWb1qvqhDXkdn7TcscMS212DAWe7zpe1")]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct Message {

@@ -56,7 +56,7 @@ pub const MAX_ADDRESS_SEED_LEN: usize = 32;
 /// maximum permitted size of data: 10 MB
 pub const MAX_PERMITTED_DATA_LENGTH: u64 = 10 * 1024 * 1024;
 
-#[frozen_abi(digest = "7z1xcDb4ztRBQSDm9sGXe7Ji6ZLrfXuY1WvoSFrcbzFJ")]
+#[frozen_abi(digest = "6qUMMnw9nC6WU311nKQVASm6RDH1c2jQToC6k4Ck2gTy")]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, AbiSample)]
 pub enum SystemInstruction {
     /// Create a new account

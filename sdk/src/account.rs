@@ -12,7 +12,7 @@ use std::{
 
 /// An Account with data that is stored on chain
 #[repr(C)]
-#[frozen_abi(digest = "9TVqdmVWEicqeA4mC14jDWD8tELsQV8Gj5hvjbPr3WbY")]
+#[frozen_abi(digest = "EL6Bsfo4v3Rg6QCWxCPmnUhq69TUtvAi1B25UcisZzAb")]
 #[derive(Serialize, Deserialize, Clone, Default, AbiSample)]
 #[serde(rename_all = "camelCase")]
 pub struct Account {

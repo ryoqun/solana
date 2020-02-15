@@ -267,25 +267,29 @@ fn derive_abi_digest_struct_type(input: ItemStruct) -> TokenStream {
 fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
     let type_name = &input.ident;
     let mut serialized_variants = quote! {};
+    let mut variant_count = 0;
+    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     for variant in &input.variants {
         // Don't digest a variant with serde(skip)
         if filter_serde_attrs(&variant.attrs) {
             continue;
         };
-        let sample_variant = quote_sample_variant(&type_name, &variant);
+        let sample_variant = quote_sample_variant(&type_name, &ty_generics, &variant);
+        variant_count += 1;
         serialized_variants.extend(quote! {
             #sample_variant;
             sample_variant.serialize(digester.create_enum_child())?;
         });
     }
 
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+    let type_str = format!("{}", type_name);
     (quote! {
         impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
             fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
-                ::log::info!("AbiDigest for (enum): {}", std::any::type_name::<#type_name #ty_generics>());
+                let enum_name = #type_str;
                 use ::serde::ser::Serialize;
                 use ::solana_sdk::abi_digester::AbiSample;
+                digester.update_with_string(format!("enum {} (variants = {})", enum_name, #variant_count));
                 #serialized_variants
                 Ok(digester.create_child())
             }
@@ -373,12 +377,16 @@ fn frozen_abi_struct_type(input: ItemStruct, expected_digest: &str) -> TokenStre
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-fn quote_sample_variant(type_name: &Ident, variant: &Variant) -> TokenStream2 {
+fn quote_sample_variant(
+    type_name: &Ident,
+    ty_generics: &syn::TypeGenerics,
+    variant: &Variant,
+) -> TokenStream2 {
     let variant_name = &variant.ident;
     let variant = &variant.fields;
     if *variant == Fields::Unit {
         quote! {
-            let sample_variant = #type_name::#variant_name;
+            let sample_variant: #type_name #ty_generics = #type_name::#variant_name;
         }
     } else if let Fields::Unnamed(variant_fields) = variant {
         let mut fields = quote! {};
@@ -392,7 +400,7 @@ fn quote_sample_variant(type_name: &Ident, variant: &Variant) -> TokenStream2 {
             });
         }
         quote! {
-            let sample_variant = #type_name::#variant_name(#fields);
+            let sample_variant: #type_name #ty_generics = #type_name::#variant_name(#fields);
         }
     } else if let Fields::Named(variant_fields) = variant {
         let mut fields = quote! {};
@@ -407,7 +415,7 @@ fn quote_sample_variant(type_name: &Ident, variant: &Variant) -> TokenStream2 {
             });
         }
         quote! {
-            let sample_variant = #type_name::#variant_name{#fields};
+            let sample_variant: #type_name #ty_generics = #type_name::#variant_name{#fields};
         }
     } else {
         unimplemented!("variant: {:?}", variant)
