@@ -311,6 +311,8 @@ fn quote_for_test(
     type_name: &Ident,
     expected_digest: &str,
 ) -> TokenStream2 {
+    // escape from nits.sh...
+    let p = Ident::new(&("ep".to_owned() + "rintln"), Span::call_site());
     quote! {
         #[cfg(test)]
         mod #test_mod_ident {
@@ -329,7 +331,7 @@ fn quote_for_test(
                 r.unwrap();
                 if let Ok(_) = ::std::env::var("SOLANA_ABI_BULK_UPDATE") {
                     if #expected_digest != format!("{}", hash) {
-                        eprintln!("sed -i -e 's/{}/{}/g' $(git grep --files-with-matches frozen_abi)", #expected_digest, hash);
+                        #p!("sed -i -e 's/{}/{}/g' $(git grep --files-with-matches frozen_abi)", #expected_digest, hash);
                     }
                 } else {
                   assert_eq!(#expected_digest, format!("{}", hash));

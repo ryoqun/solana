@@ -290,12 +290,10 @@ impl<T: AbiSample> AbiSample for Box<[T]> {
     }
 }
 
-use std::marker::PhantomData;
-
-impl<T: AbiSample> AbiSample for PhantomData<T> {
+impl<T: AbiSample> AbiSample for std::marker::PhantomData<T> {
     fn sample() -> Self {
         info!("AbiSample for (PhantomData<T>): {}", type_name::<Self>());
-        <PhantomData<T>>::default()
+        <std::marker::PhantomData<T>>::default()
     }
 }
 
@@ -381,12 +379,9 @@ impl<T: std::cmp::Ord + AbiSample> AbiSample for BTreeSet<T> {
 }
 
 #[cfg(all(not(feature = "program")))]
-use memmap::MmapMut;
-
-#[cfg(all(not(feature = "program")))]
-impl solana_sdk::abi_digester::AbiSample for MmapMut {
+impl solana_sdk::abi_digester::AbiSample for memmap::MmapMut {
     fn sample() -> Self {
-        MmapMut::map_anon(1).expect("failed to map the data file")
+        memmap::MmapMut::map_anon(1).expect("failed to map the data file")
     }
 }
 
