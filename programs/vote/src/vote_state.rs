@@ -30,7 +30,7 @@ pub const MAX_EPOCH_CREDITS_HISTORY: usize = 64;
 // defaults, intended to limit block time drift to < 1hr
 pub const TIMESTAMP_SLOT_INTERVAL: u64 = 4500;
 
-#[frozen_abi(digest = "Ahxxtggu5PWUg5f2UWyESR9CWt7fsVXkrMPS8z8UidA7")]
+#[frozen_abi(digest = "8j2PZzTyd2ArYT3erNvjUG9GL6yRtKPuNvTmiAdNAxw5")]
 #[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
 pub struct Vote {
     /// A stack of votes starting with the oldest vote

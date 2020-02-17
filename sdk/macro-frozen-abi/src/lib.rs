@@ -257,7 +257,7 @@ fn derive_abi_digest_struct_type(input: ItemStruct) -> TokenStream {
                 use ::serde::ser::Serialize;
                 use ::solana_sdk::abi_digester::AbiSample;
                 let tested_value = <#type_name #ty_generics>::sample();
-                tested_value.serialize(digester.create_child())
+                tested_value.serialize(digester.create_new())
             }
         }
     }).into()

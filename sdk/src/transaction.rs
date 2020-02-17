@@ -14,8 +14,7 @@ use std::result;
 use thiserror::Error;
 
 /// Reasons a transaction might be rejected.
-#[frozen_abi(digest = "7rjFsa2wCzTJEL7PZN3E6iEpW5wC82v1UAXkN2nyGFaR")]
-#[derive(Error, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
+#[derive(Error, Serialize, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample, AbiDigest)]
 pub enum TransactionError {
     /// An account is already being processed in another transaction in a way
     /// that does not support parallelism
@@ -72,7 +71,7 @@ impl std::fmt::Display for TransactionError {
 }
 
 /// An atomic transaction
-#[frozen_abi(digest = "8XGj2XU8YZELpbfSRi3i3BBeFpeXcKcU5D2PwCx2yjt2")]
+#[frozen_abi(digest = "GoxM5ZMMjM2FSuY1VtuMhs1j8u9kMuYsH3dpYcSVVnTe")]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, AbiSample)]
 pub struct Transaction {
     /// A set of digital signatures of `account_keys`, `program_ids`, `recent_blockhash`, and `instructions`, signed by the first

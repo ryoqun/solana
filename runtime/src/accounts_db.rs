@@ -189,7 +189,7 @@ pub enum BankHashVerificationError {
 }
 
 /// Persistent storage structure holding the accounts
-#[frozen_abi(digest = "dzEAeUZWzgL8ehit1Ww7JLDoF572TmoHhfJyKhNPDdp")]
+#[frozen_abi(digest = "G3KVhf8S7fhFp2hwXXN37ehf1EeZVDiG397tY6eC3c1h")]
 #[derive(Debug, Serialize, Deserialize, AbiSample)]
 pub struct AccountStorageEntry {
     id: AppendVecId,
@@ -337,7 +337,7 @@ pub struct AccountsDBSerialize<'a> {
 mod test_accounts_db_serialize {
     use super::*;
 
-    #[frozen_abi(digest = "FftbHpcqYho9HyuJjU4gT1cUBziaGtcwtMmJtC6TkuKa")]
+    #[frozen_abi(digest = "8HonGUuN4veVMzn6JBsUd2o7AkTRkkrKxy1bQeB5rnvE")]
     #[derive(Serialize)]
     pub struct AccountsDBSerializeAbiTestWrapper {
         #[serde(serialize_with = "serialize_from_test_wrapper")]
