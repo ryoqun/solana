@@ -89,8 +89,6 @@ impl<'a> StoredAccount<'a> {
     }
 }
 
-// attr order got important...
-
 #[allow(clippy::mutex_atomic)]
 #[derive(Debug, AbiSample)]
 pub struct AppendVec {
