@@ -337,6 +337,10 @@ pub struct AccountsDBSerialize<'a> {
 mod test_accounts_db_serialize {
     use super::*;
 
+    // These some what long test harness is required to freeze the ABI of
+    // AccountsDB's serialization logic (AccontsDBSerialize) because
+    // AccountsDB::sample() isn't trivial and AccountsDBSerialize takes
+    // a ref(&) to an AccountsDB.
     #[frozen_abi(digest = "8HonGUuN4veVMzn6JBsUd2o7AkTRkkrKxy1bQeB5rnvE")]
     #[derive(Serialize)]
     pub struct AccountsDBSerializeAbiTestWrapper {
