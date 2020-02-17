@@ -90,8 +90,9 @@ use solana_sdk::abi_digester::AbiSample;
 impl AbiSample for BankRc {
     fn sample() -> Self {
         BankRc {
-            accounts: AbiSample::sample(),
+            // Set parent to None to cut the recursion into another Bank
             parent: RwLock::new(None),
+            accounts: AbiSample::sample(),
             slot: AbiSample::sample(),
         }
     }

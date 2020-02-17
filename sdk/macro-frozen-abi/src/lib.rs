@@ -256,8 +256,8 @@ fn derive_abi_digest_struct_type(input: ItemStruct) -> TokenStream {
                 ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#type_name #ty_generics>());
                 use ::serde::ser::Serialize;
                 use ::solana_sdk::abi_digester::AbiSample;
-                let tested_value = <#type_name #ty_generics>::sample();
-                tested_value.serialize(digester.create_new())
+                let sample_struct = <#type_name #ty_generics>::sample();
+                Serialize::serialize(&sample_struct, digester.create_new())
             }
         }
     }).into()
@@ -278,7 +278,7 @@ fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
         variant_count += 1;
         serialized_variants.extend(quote! {
             #sample_variant;
-            sample_variant.serialize(digester.create_enum_child())?;
+            Serialize::serialize(&sample_variant, digester.create_enum_child())?;
         });
     }
 
