@@ -339,38 +339,19 @@ mod test_accounts_db_serialize {
 
     // These some what long test harness is required to freeze the ABI of
     // AccountsDB's serialization logic (AccontsDBSerialize) because
-    // AccountsDB::sample() isn't trivial and AccountsDBSerialize takes
-    // a ref(&) to an AccountsDB.
+    // AccountsDBSerialize takes a ref(&) to an AccountsDB.
     #[frozen_abi(digest = "8HonGUuN4veVMzn6JBsUd2o7AkTRkkrKxy1bQeB5rnvE")]
-    #[derive(Serialize)]
+    #[derive(Serialize, AbiSample)]
     pub struct AccountsDBSerializeAbiTestWrapper {
-        #[serde(serialize_with = "serialize_from_test_wrapper")]
+        #[serde(serialize_with = "wrapper")]
         owned: AccountsDB,
     }
 
-    pub fn serialize_from_test_wrapper<S>(x: &AccountsDB, s: S) -> Result<S::Ok, S::Error>
+    pub fn wrapper<S>(accounts_db: &AccountsDB, s: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        (AccountsDBSerialize {
-            accounts_db: &*x,
-            slot: 0,
-        })
-        .serialize(s)
-    }
-
-    impl solana_sdk::abi_digester::AbiSample for AccountsDBSerializeAbiTestWrapper {
-        fn sample() -> Self {
-            let accounts_db = AccountsDB::new_single();
-            let key = Pubkey::default();
-            let some_data_len = 5;
-            let some_slot: Slot = 0;
-            let account = Account::new(1, some_data_len, &key);
-            accounts_db.store(some_slot, &[(&key, &account)]);
-            accounts_db.add_root(0);
-
-            AccountsDBSerializeAbiTestWrapper { owned: accounts_db }
-        }
+        AccountsDBSerialize::new(accounts_db, 0).serialize(s)
     }
 }
 
@@ -478,6 +459,21 @@ pub struct AccountsDB {
     min_num_stores: usize,
 
     pub bank_hashes: RwLock<HashMap<Slot, BankHashInfo>>,
+}
+
+#[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
+impl solana_sdk::abi_digester::AbiSample for AccountsDB {
+    fn sample() -> Self {
+        let accounts_db = AccountsDB::new_single();
+        let key = Pubkey::default();
+        let some_data_len = 5;
+        let some_slot: Slot = 0;
+        let account = Account::new(1, some_data_len, &key);
+        accounts_db.store(some_slot, &[(&key, &account)]);
+        accounts_db.add_root(0);
+
+        accounts_db
+    }
 }
 
 impl Default for AccountsDB {
