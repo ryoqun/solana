@@ -1,4 +1,4 @@
-use solana_runtime::{accounts_db::SnapshotStorageCandidates, bank::BankSlotDelta};
+use solana_runtime::{accounts_db::SnapshotStorages, bank::BankSlotDelta};
 use solana_sdk::clock::Slot;
 use solana_sdk::hash::Hash;
 use std::{
@@ -16,7 +16,7 @@ pub struct SnapshotPackage {
     pub root: Slot,
     pub slot_deltas: Vec<BankSlotDelta>,
     pub snapshot_links: TempDir,
-    pub storage_candidates: SnapshotStorageCandidates,
+    pub storages: SnapshotStorages,
     pub tar_output_file: PathBuf,
     pub hash: Hash,
 }
@@ -26,7 +26,7 @@ impl SnapshotPackage {
         root: Slot,
         slot_deltas: Vec<BankSlotDelta>,
         snapshot_links: TempDir,
-        storage_candidates: SnapshotStorageCandidates,
+        storages: SnapshotStorages,
         tar_output_file: PathBuf,
         hash: Hash,
     ) -> Self {
@@ -34,7 +34,7 @@ impl SnapshotPackage {
             root,
             slot_deltas,
             snapshot_links,
-            storage_candidates,
+            storages,
             tar_output_file,
             hash,
         }
