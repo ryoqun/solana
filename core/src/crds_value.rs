@@ -65,7 +65,7 @@ pub enum CrdsData {
     SnapshotHash(SnapshotHash),
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample, AbiDigest)]
 pub enum CompressionType {
     Uncompressed,
     GZip,
@@ -78,14 +78,14 @@ impl Default for CompressionType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, AbiSample)]
 pub struct EpochIncompleteSlots {
     pub first: Slot,
     pub compression: CompressionType,
     pub compressed_list: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample)]
 pub struct SnapshotHash {
     pub from: Pubkey,
     pub hashes: Vec<(Slot, Hash)>,
