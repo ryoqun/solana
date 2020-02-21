@@ -337,7 +337,7 @@ mod test_accounts_db_serialize {
         S: serde::Serializer,
     {
         let snapshot_storages = accounts_db.get_snapshot_storages(0);
-        AccountsDBSerialize::new(accounts_db, 0, snapshot_storages).serialize(s)
+        AccountsDBSerialize::new(accounts_db, 0, &snapshot_storages).serialize(s)
     }
 }
 
