@@ -471,14 +471,7 @@ impl Serialize for AppendVec {
     where
         S: serde::ser::Serializer,
     {
-        use serde::ser::Error;
-        let len = std::mem::size_of::<usize>();
-        let mut buf = vec![0u8; len];
-        let mut wr = Cursor::new(&mut buf[..]);
-        serialize_into(&mut wr, &(self.current_len.load(Ordering::Relaxed) as u64))
-            .map_err(Error::custom)?;
-        let len = wr.position() as usize;
-        serializer.serialize_bytes(&wr.into_inner()[..len])
+        (self.current_len.load(Ordering::Relaxed) as u64).serialize(serializer)
     }
 }
 
