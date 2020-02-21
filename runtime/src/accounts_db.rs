@@ -340,7 +340,7 @@ mod test_accounts_db_serialize {
     // These some what long test harness is required to freeze the ABI of
     // AccountsDB's serialization logic (AccontsDBSerialize) because
     // AccountsDBSerialize takes a ref(&) to an AccountsDB.
-    #[frozen_abi(digest = "8HonGUuN4veVMzn6JBsUd2o7AkTRkkrKxy1bQeB5rnvE")]
+    #[frozen_abi(digest = "DAT7VpkAnXSw7r9pDHppJSqKCRYC8YAF4yCDAfkCbVE5")]
     #[derive(Serialize, AbiSample)]
     pub struct AccountsDBSerializeAbiTestWrapper {
         #[serde(serialize_with = "wrapper")]
@@ -366,30 +366,23 @@ impl<'a> Serialize for AccountsDBSerialize<'a> {
     where
         S: serde::ser::Serializer,
     {
-        use serde::ser::Error;
         let storage = self.accounts_db.storage.read().unwrap();
-        let mut wr = Cursor::new(vec![]);
         let version: u64 = self.accounts_db.write_version.load(Ordering::Relaxed) as u64;
         let account_storage_serialize = AccountStorageSerialize::new(&*storage, self.slot);
-        serialize_into(&mut wr, &account_storage_serialize).map_err(Error::custom)?;
-        serialize_into(&mut wr, &version).map_err(Error::custom)?;
         let bank_hashes = self.accounts_db.bank_hashes.read().unwrap();
-        serialize_into(
-            &mut wr,
-            &(
+        (
+            account_storage_serialize,
+            version,
                 self.slot,
-                &*bank_hashes
+                bank_hashes
                     .get(&self.slot)
                     .unwrap_or_else(|| panic!("No bank_hashes entry for slot {}", self.slot)),
-            ),
-        )
-        .map_err(Error::custom)?;
-        let len = wr.position() as usize;
-        serializer.serialize_bytes(&wr.into_inner()[..len])
+        ).serialize(serializer)
+
     }
 }
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, AbiSample)]
 pub struct BankHashStats {
     pub num_removed_accounts: u64,
     pub num_added_accounts: u64,
@@ -423,7 +416,7 @@ impl BankHashStats {
     }
 }
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, AbiSample)]
 pub struct BankHashInfo {
     pub hash: BankHash,
     pub stats: BankHashStats,

@@ -12,7 +12,7 @@ use std::{fmt, io::Cursor};
 // finding a value or set of values that could be xor'ed to match the bitpattern
 // of an existing state value.
 const BANK_HASH_BYTES: usize = 448;
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, AbiSample)]
 pub struct BankHash([u8; BANK_HASH_BYTES]);
 
 impl fmt::Debug for BankHash {

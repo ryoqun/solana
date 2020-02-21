@@ -159,6 +159,12 @@ macro_rules! array_sample_impls {
 
 array_sample_impls! {32, T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T}
 
+impl AbiSample for [u8; 448] {
+    fn sample() -> Self {
+        [<u8>::sample(); 448]
+    }
+}
+
 // Source: https://github.com/rust-lang/rust/blob/ba18875557aabffe386a2534a1aa6118efb6ab88/src/libcore/default.rs#L137
 macro_rules! sample_impls {
     ($t:ty, $v:expr) => {
@@ -252,6 +258,12 @@ impl<T: Default + Serialize> TypeErasedSample<T> for () {
         } else {
             panic!("new unrecognized type for ABI digest!: {}", type_name)
         }
+    }
+}
+
+impl<T: AbiSample> AbiSample for &T {
+    default fn sample() -> Self {
+        panic!("references are not supported!: {}", type_name::<Self>());
     }
 }
 
@@ -516,7 +528,7 @@ impl AbiDigester {
 
     pub fn digest_data<T: ?Sized + Serialize>(&mut self, value: &T) -> DigestResult {
         let type_name = type_name::<T>();
-        if type_name.ends_with("__SerializeWith") || type_name.starts_with("bv::bit_vec") {
+        if type_name.ends_with("__SerializeWith") || type_name.starts_with("bv::bit_vec") || type_name.ends_with("AccountStorageSerialize") || type_name.contains("AccountStorageEntry") {
             // we can't use the AbiDigest trait for these cases.
             value.serialize(self.create_new())
         } else {
