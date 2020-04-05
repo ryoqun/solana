@@ -691,6 +691,7 @@ impl AccountsDB {
 
         let mut measure = Measure::start("clean_old_root_reclaims");
         self.handle_reclaims(&reclaims);
+        trace!("reclaims from clean old rooted: {}", reclaims.len());
         measure.stop();
         debug!("{} {}", clean_rooted, measure);
         inc_new_counter_info!("clean-old-root-reclaim-ms", measure.as_ms() as usize);
@@ -838,6 +839,7 @@ impl AccountsDB {
         }
 
         self.handle_reclaims(&reclaims);
+        trace!("reclaims from clean zero lamport: {}", reclaims.len());
         reclaims_time.stop();
         debug!(
             "clean_accounts: {} {} {} {}",
@@ -851,6 +853,7 @@ impl AccountsDB {
         dead_accounts.stop();
         let dead_slots_len = {
             let mut dead_slots_w = self.dead_slots.write().unwrap();
+            debug!("extending dead_slots: {:?}", dead_slots);
             dead_slots_w.extend(dead_slots);
             dead_slots_w.len()
         };
@@ -975,6 +978,7 @@ impl AccountsDB {
             let reclaims = self.update_index(slot, infos, &accounts);
 
             self.handle_reclaims(&reclaims);
+            trace!("reclaims from shrink: {}", reclaims.len());
 
             let mut storage = self.storage.write().unwrap();
             if let Some(slot_storage) = storage.0.get_mut(&slot) {
@@ -1777,9 +1781,9 @@ impl AccountsDB {
         let mut update_index = Measure::start("store::update_index");
         let reclaims = self.update_index(slot, infos, accounts);
         update_index.stop();
-        trace!("reclaim: {}", reclaims.len());
 
         self.handle_reclaims(&reclaims);
+        trace!("reclaims from store: {}", reclaims.len());
     }
 
     pub fn add_root(&self, slot: Slot) {

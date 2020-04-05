@@ -183,6 +183,7 @@ impl BankForks {
             .unwrap_or(0);
         // Generate each snapshot at a fixed interval
         let mut is_root_bank_squashed = false;
+        trace!("setting root....: {}", root);
         if self.snapshot_config.is_some() && snapshot_package_sender.is_some() {
             let config = self.snapshot_config.as_ref().unwrap();
             let mut banks = vec![root_bank];
@@ -197,6 +198,7 @@ impl BankForks {
                         bank.squash();
                         is_root_bank_squashed = bank_slot == root;
                         let mut snapshot_time = Measure::start("total-snapshot-ms");
+                        trace!("generating snapshot....: {}", root);
                         let r = self.generate_snapshot(
                             bank_slot,
                             &bank.src.roots(),
