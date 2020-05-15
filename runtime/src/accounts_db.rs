@@ -1425,7 +1425,7 @@ impl AccountsDB {
             hasher.hash(&[0u8; 1]);
         }
 
-        hasher.hash(&owner.as_ref());
+        //hasher.hash(&owner.as_ref());
         hasher.hash(&pubkey.as_ref());
 
         hasher.result()
