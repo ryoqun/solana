@@ -93,7 +93,7 @@ type EpochCount = u64;
 #[derive(Default)]
 pub struct BankRc {
     /// where all the Accounts are stored
-    pub(crate) accounts: Arc<Accounts>,
+    pub accounts: Arc<Accounts>,
 
     /// Previous checkpoint of this bank
     pub(crate) parent: RwLock<Option<Arc<Bank>>>,
@@ -5719,8 +5719,6 @@ mod tests {
             crate::serde_utils::bankrc_from_stream(
                 &dbank_paths,
                 dbank.slot(),
-                &dbank.ancestors,
-                &[],
                 &mut reader,
                 copied_accounts.path(),
             )
