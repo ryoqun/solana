@@ -23,7 +23,6 @@ use crate::{
     transaction_batch::TransactionBatch,
     transaction_utils::OrderedIterator,
 };
-use bincode::{deserialize_from, serialize_into};
 use byteorder::{ByteOrder, LittleEndian};
 use itertools::Itertools;
 use log::*;
@@ -60,7 +59,7 @@ use solana_vote_program::vote_state::VoteState;
 use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},
-    io::{BufReader, Cursor, Error as IOError, Read},
+    io::{BufReader, Error as IOError, Read},
     mem,
     ops::RangeInclusive,
     path::{Path, PathBuf},
@@ -114,12 +113,9 @@ impl BankRc {
         slot: Slot,
         ancestors: &Ancestors,
         frozen_account_pubkeys: &[Pubkey],
-        mut stream: &mut BufReader<R>,
+        stream: &mut BufReader<R>,
         stream_append_vecs_path: P,
     ) -> std::result::Result<Self, IOError> {
-        let _len: usize =
-            deserialize_from(&mut stream).map_err(|e| BankRc::get_io_error(&e.to_string()))?;
-
         let accounts = Accounts::from_stream(
             account_paths,
             ancestors,
@@ -138,11 +134,6 @@ impl BankRc {
     pub fn get_snapshot_storages(&self, slot: Slot) -> SnapshotStorages {
         self.accounts.accounts_db.get_snapshot_storages(slot)
     }
-
-    fn get_io_error(error: &str) -> IOError {
-        warn!("BankRc error: {:?}", error);
-        std::io::Error::new(std::io::ErrorKind::Other, error)
-    }
 }
 
 pub struct BankRcSerialize<'a, 'b> {
@@ -155,16 +146,12 @@ impl<'a, 'b> Serialize for BankRcSerialize<'a, 'b> {
     where
         S: serde::ser::Serializer,
     {
-        use serde::ser::Error;
-        let mut wr = Cursor::new(Vec::new());
         let accounts_db_serialize = AccountsDBSerialize::new(
             &*self.bank_rc.accounts.accounts_db,
             self.bank_rc.slot,
             self.snapshot_storages,
         );
-        serialize_into(&mut wr, &accounts_db_serialize).map_err(Error::custom)?;
-        let len = wr.position() as usize;
-        serializer.serialize_bytes(&wr.into_inner()[..len])
+        accounts_db_serialize.serialize(serializer)
     }
 }
 

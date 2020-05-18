@@ -23,7 +23,6 @@ use crate::{
     append_vec::{AppendVec, StoredAccount, StoredMeta},
     bank::deserialize_from_snapshot,
 };
-use bincode::{deserialize_from, serialize_into};
 use byteorder::{ByteOrder, LittleEndian};
 use fs_extra::dir::CopyOptions;
 use lazy_static::lazy_static;
@@ -46,7 +45,7 @@ use solana_sdk::{
 use std::{
     collections::{HashMap, HashSet},
     fmt,
-    io::{BufReader, Cursor, Error as IOError, ErrorKind, Read, Result as IOResult},
+    io::{BufReader, Error as IOError, ErrorKind, Read, Result as IOResult},
     ops::RangeBounds,
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
@@ -390,27 +389,19 @@ impl<'a, 'b> Serialize for AccountsDBSerialize<'a, 'b> {
     where
         S: serde::ser::Serializer,
     {
-        use serde::ser::Error;
-        let mut wr = Cursor::new(vec![]);
         let version = self.accounts_db.write_version.load(Ordering::Relaxed);
         let account_storage_serialize = AccountStorageSerialize {
             account_storage_entries: self.account_storage_entries,
         };
-        serialize_into(&mut wr, &account_storage_serialize).map_err(Error::custom)?;
-        serialize_into(&mut wr, &version).map_err(Error::custom)?;
         let bank_hashes = self.accounts_db.bank_hashes.read().unwrap();
-        serialize_into(
-            &mut wr,
-            &(
-                self.slot,
-                &*bank_hashes
-                    .get(&self.slot)
-                    .unwrap_or_else(|| panic!("No bank_hashes entry for slot {}", self.slot)),
-            ),
-        )
-        .map_err(Error::custom)?;
-        let len = wr.position() as usize;
-        serializer.serialize_bytes(&wr.into_inner()[..len])
+        (
+          account_storage_serialize,
+          version,
+          self.slot,
+          &*bank_hashes
+              .get(&self.slot)
+              .unwrap_or_else(|| panic!("No bank_hashes entry for slot {}", self.slot)),
+        ).serialize(serializer)
     }
 }
 
@@ -597,10 +588,8 @@ impl AccountsDB {
         mut stream: &mut BufReader<R>,
         stream_append_vecs_path: P,
     ) -> Result<(), IOError> {
-        let _len: usize =
-            deserialize_from(&mut stream).map_err(|e| AccountsDB::get_io_error(&e.to_string()))?;
-        let storage: AccountStorage = deserialize_from_snapshot(&mut stream)
-            .map_err(|e| AccountsDB::get_io_error(&e.to_string()))?;
+        let (storage, version, slot, bank_hash): (AccountStorage, u64, Slot, BankHashInfo) = deserialize_from_snapshot(&mut stream)
+            .map_err(|_| AccountsDB::get_io_error("bank hashes deserialize error"))?;
 
         // Remap the deserialized AppendVec paths to point to correct local paths
         let new_storage_map: Result<HashMap<Slot, SlotStores>, IOError> = storage
@@ -662,11 +651,6 @@ impl AccountsDB {
         // but non-root stores should not be included in the snapshot
         storage.0.retain(|_slot, stores| !stores.is_empty());
 
-        let version: u64 = deserialize_from(&mut stream)
-            .map_err(|_| AccountsDB::get_io_error("write version deserialize error"))?;
-
-        let (slot, bank_hash): (Slot, BankHashInfo) = deserialize_from(&mut stream)
-            .map_err(|_| AccountsDB::get_io_error("bank hashes deserialize error"))?;
         self.bank_hashes.write().unwrap().insert(slot, bank_hash);
 
         // Process deserialized data, set necessary fields in self
