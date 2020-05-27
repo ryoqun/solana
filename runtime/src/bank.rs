@@ -119,58 +119,6 @@ impl AbiSample for BankRc {
     }
 }
 
-#[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
-mod test_bank_rc_serialize {
-    use super::*;
-    use crate::serde_snapshot::SerializableBankRc;
-
-    // These some what long test harness is required to freeze the ABI of
-    // BankRc's serialization due to versioned nature
-    #[frozen_abi(digest = "BQMVTh2nDgFAjDHhuPqfXotVrBsrJsJvUejWq9d76wgz")]
-    #[derive(Serialize, AbiSample)]
-    pub struct BandRcAbiTestWrapperFuture {
-        #[serde(serialize_with = "wrapper_future")]
-        bank_rc: BankRc,
-    }
-
-    pub fn wrapper_future<S>(bank_rc: &BankRc, s: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        //let account = Account::default();
-        //let pubkey = Pubkey::default();
-        //bank_rc.accounts.store_slow(0, &pubkey, &account);
-        //bank_rc.accounts.accounts_db.add_root(0);
-        let snapshot_storages = bank_rc.accounts.accounts_db.get_snapshot_storages(0);
-        (SerializableBankRc::<crate::serde_snapshot::future::Context> {
-            bank_rc,
-            snapshot_storages: &snapshot_storages,
-            phantom: std::marker::PhantomData::default(),
-        })
-        .serialize(s)
-    }
-
-    #[frozen_abi(digest = "EBNeCo8NziLtHp1bff2sk3bm7JWsZcrFiFwJ4n3BFYmA")]
-    #[derive(Serialize, AbiSample)]
-    pub struct BandRcAbiTestWrapperLegacy {
-        #[serde(serialize_with = "wrapper_legacy")]
-        bank_rc: BankRc,
-    }
-
-    pub fn wrapper_legacy<S>(bank_rc: &BankRc, s: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let snapshot_storages = bank_rc.accounts.accounts_db.get_snapshot_storages(0);
-        (SerializableBankRc::<crate::serde_snapshot::legacy::Context> {
-            bank_rc,
-            snapshot_storages: &snapshot_storages,
-            phantom: std::marker::PhantomData::default(),
-        })
-        .serialize(s)
-    }
-}
-
 impl BankRc {
     pub(crate) fn new(accounts: Accounts, slot: Slot) -> Self {
         Self {

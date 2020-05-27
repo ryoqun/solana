@@ -30,8 +30,8 @@ use {
     },
 };
 
-pub mod future;
-pub mod legacy;
+mod future;
+mod legacy;
 mod tests;
 mod utils;
 
@@ -156,9 +156,9 @@ where
 }
 
 pub struct SerializableBankRc<'a, C> {
-    pub bank_rc: &'a BankRc,
-    pub snapshot_storages: &'a [SnapshotStorage],
-    pub phantom: std::marker::PhantomData<C>,
+    bank_rc: &'a BankRc,
+    snapshot_storages: &'a [SnapshotStorage],
+    phantom: std::marker::PhantomData<C>,
 }
 
 impl<'a, C: TypeContext<'a>> Serialize for SerializableBankRc<'a, C> {

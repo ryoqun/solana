@@ -338,7 +338,7 @@ fn quote_for_test(
                         #p!("sed -i -e 's/{}/{}/g' $(git grep --files-with-matches frozen_abi)", #expected_digest, hash);
                     }
                 } else {
-                  assert_eq!(#expected_digest, format!("{}", hash));
+                  assert_eq!(#expected_digest, format!("{}", hash), "Possibly ABI changed? Confirm the diff by rerunning before and after this test failed with SOLANA_ABI_DUMP_DIR");
                 }
             }
         }

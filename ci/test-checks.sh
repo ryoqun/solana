@@ -26,7 +26,8 @@ _ cargo +"$rust_stable" fmt --all -- --check
 
 _ cargo +"$rust_stable" clippy --version
 _ cargo +"$rust_stable" clippy --workspace -- --deny=warnings
-# there is moderate amount of nightly-only code for frozen_abi
+# run nightly clippy for `sdk/` as there's a moderate amount of nightly-only code there
+# which implements frozen_abi
 _ cargo +"$rust_nightly" clippy -p solana-sdk -- --deny=warnings
 
 _ cargo +"$rust_stable" audit --version
