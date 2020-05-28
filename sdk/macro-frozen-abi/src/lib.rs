@@ -3,11 +3,6 @@ extern crate proc_macro;
 #[macro_use]
 extern crate lazy_static;
 
-lazy_static! {
-    static ref SPECIALIZATION_DETECTOR_INJECTED: std::sync::atomic::AtomicBool =
-        std::sync::atomic::AtomicBool::new(false);
-}
-
 // This file littered with these essential cfgs so ensure them.
 #[cfg(not(any(RUSTC_WITH_SPECIALIZATION, RUSTC_WITHOUT_SPECIALIZATION)))]
 compile_error!("rustc_version is missing in build dependency and build.rs is not specified");
@@ -77,6 +72,11 @@ fn filter_allow_attrs(attrs: &mut Vec<Attribute>) {
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 fn quote_for_specialization_detection() -> TokenStream2 {
+    lazy_static! {
+        static ref SPECIALIZATION_DETECTOR_INJECTED: std::sync::atomic::AtomicBool =
+            std::sync::atomic::AtomicBool::new(false);
+    }
+
     if !SPECIALIZATION_DETECTOR_INJECTED.load(std::sync::atomic::Ordering::Relaxed) {
         SPECIALIZATION_DETECTOR_INJECTED.store(true, std::sync::atomic::Ordering::Relaxed);
         quote! {
