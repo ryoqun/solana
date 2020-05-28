@@ -289,7 +289,7 @@ mod test_bank_rc_serialize {
     // These some what long test harness is required to freeze the ABI of
     // BankRc's serialization due to versioned nature
     #[frozen_abi(digest = "HfCP74JKqPdeAccNJEj7KEoNxtsmX3zRqc2rpTy1NC7H")]
-    #[derive(Serialize, AbiSample)]
+    #[derive(Serialize, AbiExample)]
     pub struct BandRcAbiTestWrapperFuture {
         #[serde(serialize_with = "wrapper_future")]
         bank_rc: BankRc,
@@ -309,7 +309,7 @@ mod test_bank_rc_serialize {
     }
 
     #[frozen_abi(digest = "3Xgf4ibFwpoHymQrfTNAMYe2RibmWj1aKLrFDCiKDJJE")]
-    #[derive(Serialize, AbiSample)]
+    #[derive(Serialize, AbiExample)]
     pub struct BandRcAbiTestWrapperLegacy {
         #[serde(serialize_with = "wrapper_legacy")]
         bank_rc: BankRc,

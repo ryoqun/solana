@@ -26,7 +26,7 @@ impl<T> DecodeError<T> for PubkeyError {
 
 #[repr(transparent)]
 #[derive(
-    Serialize, Deserialize, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash, AbiSample,
+    Serialize, Deserialize, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash, AbiExample,
 )]
 pub struct Pubkey([u8; 32]);
 

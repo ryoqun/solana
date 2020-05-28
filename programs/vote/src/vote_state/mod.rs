@@ -37,7 +37,7 @@ pub const MAX_EPOCH_CREDITS_HISTORY: usize = 64;
 pub const TIMESTAMP_SLOT_INTERVAL: u64 = 4500;
 
 #[frozen_abi(digest = "8j2PZzTyd2ArYT3erNvjUG9GL6yRtKPuNvTmiAdNAxw5")]
-#[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Clone, AbiSample)]
+#[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Clone, AbiExample)]
 pub struct Vote {
     /// A stack of votes starting with the oldest vote
     pub slots: Vec<Slot>,

@@ -106,15 +106,15 @@ pub struct BankRc {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-use solana_sdk::abi_digester::AbiSample;
+use solana_sdk::abi_digester::AbiExample;
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl AbiSample for BankRc {
+impl AbiExample for BankRc {
     fn sample() -> Self {
         BankRc {
             // Set parent to None to cut the recursion into another Bank
             parent: RwLock::new(None),
-            accounts: AbiSample::sample(),
-            slot: AbiSample::sample(),
+            accounts: AbiExample::sample(),
+            slot: AbiExample::sample(),
         }
     }
 }
@@ -133,7 +133,7 @@ impl BankRc {
     }
 }
 
-#[derive(Default, AbiSample)]
+#[derive(Default, AbiExample)]
 pub struct StatusCacheRc {
     /// where all the Accounts are stored
     /// A cache of signature statuses
@@ -200,7 +200,7 @@ impl HashAgeKind {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Debug, Deserialize, Serialize, AbiSample)]
+#[derive(Default, Clone, PartialEq, Debug, Deserialize, Serialize, AbiExample)]
 struct UnusedAccounts {
     unused1: HashSet<Pubkey>,
     unused2: HashSet<Pubkey>,
@@ -209,7 +209,7 @@ struct UnusedAccounts {
 
 /// Manager for the state of all accounts and programs after processing its entries.
 #[frozen_abi(digest = "HLeHUCuaNja8TFQWQSAH3dG6AqZf8hmAeRDrexiKidLv")]
-#[derive(Default, Deserialize, Serialize, AbiSample)]
+#[derive(Default, Deserialize, Serialize, AbiExample)]
 pub struct Bank {
     /// References to accounts, parent and signature status
     #[serde(skip)]

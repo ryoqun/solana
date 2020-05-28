@@ -233,7 +233,7 @@ impl Clone for MessageProcessor {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-impl ::solana_sdk::abi_digester::AbiSample for MessageProcessor {
+impl ::solana_sdk::abi_digester::AbiExample for MessageProcessor {
     fn sample() -> Self {
         // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
         // so, just rely on Default anyway.

@@ -8,7 +8,7 @@ use std::fmt;
 #[macro_use]
 extern crate solana_sdk_macro_frozen_abi;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiSample)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, AbiExample)]
 pub struct Version {
     major: u16,
     minor: u16,

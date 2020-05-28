@@ -132,7 +132,7 @@ impl AccountStorage {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize, Serialize, AbiSample, AbiDigest)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize, Serialize, AbiExample, AbiVisitor)]
 pub enum AccountStorageStatus {
     Available = 0,
     Full = 1,
@@ -320,7 +320,7 @@ pub fn get_temp_accounts_paths(count: u32) -> IOResult<(Vec<TempDir>, Vec<PathBu
     Ok((temp_dirs, paths))
 }
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, AbiSample)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, AbiExample)]
 pub struct BankHashStats {
     pub num_updated_accounts: u64,
     pub num_removed_accounts: u64,
@@ -354,7 +354,7 @@ impl BankHashStats {
     }
 }
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, AbiSample)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, AbiExample)]
 pub struct BankHashInfo {
     pub hash: Hash,
     pub snapshot_hash: Hash,
@@ -428,7 +428,7 @@ fn make_min_priority_thread_pool() -> ThreadPool {
 }
 
 #[cfg(all(test, RUSTC_WITH_SPECIALIZATION))]
-impl solana_sdk::abi_digester::AbiSample for AccountsDB {
+impl solana_sdk::abi_digester::AbiExample for AccountsDB {
     fn sample() -> Self {
         let accounts_db = AccountsDB::new_single();
         let key = Pubkey::default();

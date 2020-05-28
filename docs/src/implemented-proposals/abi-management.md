@@ -103,11 +103,11 @@ considering custom non-`derive`d `Serialize` trait implementations.
 
 # The ABI digesting process
 
-This part is a bit complex. There is three inter-depending parts: `AbiSample`,
+This part is a bit complex. There is three inter-depending parts: `AbiExample`,
 `AbiDigester` and `AbiDigest`.
 
 First, the generated test creates a sample instance of the digested type with a
-trait called `AbiSample`, which should be implemented for all of digested types,
+trait called `AbiExample`, which should be implemented for all of digested types,
 much like `Serialize`. Usually, it's provided via generic trait specialization
 for most of common types. Also it is possible to `derive` for `struct` and
 `enum` and can be hand-written if needed.
@@ -122,16 +122,16 @@ be overridden.
 
 To summarize this interplay, `serde` handles the recursive serialization control
 flow in tandem with `AbiDigester`. The test entry point and `AbiDigester`
-uses `AbiSample` recursively to create a sample object hierarchal graph. And
+uses `AbiExample` recursively to create a sample object hierarchal graph. And
 `AbiDigester` uses `AbiDigest` to inquiry the actual ABI information using
 acquired samples.
 
-`Default` isn't enough for `AbiSample`. Various collection's `::default()` is
+`Default` isn't enough for `AbiExample`. Various collection's `::default()` is
 empty, yet, we want to digest them with actual items. And, ABI digesting can't
-be realized only with `AbiDigest`. `AbiSample` is required because an actual
+be realized only with `AbiDigest`. `AbiExample` is required because an actual
 instance of type is needed to actually traverse the data via `serde`.
 
-On the other hand, ABI digesting can't be done only with `AbiSample`, either.
+On the other hand, ABI digesting can't be done only with `AbiExample`, either.
 `AbiDigest` is required because all variants of an `enum` cannot be traversed
 just with a single variant of it as a ABI sample.
 
@@ -148,7 +148,7 @@ Digestable information:
 Not digestable information:
 
 - Any custom serialize code path not touched by the sample provided by
-  `AbiSample`. (technically not possible)
+  `AbiExample`. (technically not possible)
 - generics (must be a concrete type; use `frozen_abi` on type aliases)
 
 # References

@@ -53,7 +53,7 @@ impl<E> DecodeError<E> for NonceError {
 pub const MAX_PERMITTED_DATA_LENGTH: u64 = 10 * 1024 * 1024;
 
 #[frozen_abi(digest = "BGVRsd4QeMBqWXzefvSLUdukezYQmPurh32ZRHVhbpuK")]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, AbiSample, AbiDigest)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, AbiExample, AbiVisitor)]
 pub enum SystemInstruction {
     /// Create a new account
     /// * Transaction::keys[0] - source

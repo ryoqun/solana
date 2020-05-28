@@ -24,13 +24,13 @@ pub fn frozen_abi(_attrs: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
-#[proc_macro_derive(AbiSample)]
+#[proc_macro_derive(AbiExample)]
 pub fn derive_abi_sample(_item: TokenStream) -> TokenStream {
     "".parse().unwrap()
 }
 
 #[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
-#[proc_macro_derive(AbiDigest)]
+#[proc_macro_derive(AbiVisitor)]
 pub fn derive_abi_digest(_item: TokenStream) -> TokenStream {
     "".parse().unwrap()
 }
@@ -163,10 +163,10 @@ fn derive_abi_sample_enum_type(input: ItemEnum) -> TokenStream {
         #injection
         #[automatically_derived]
         #( #attrs )*
-        impl #impl_generics ::solana_sdk::abi_digester::AbiSample for #type_name #ty_generics #where_clause {
+        impl #impl_generics ::solana_sdk::abi_digester::AbiExample for #type_name #ty_generics #where_clause {
             fn sample() -> Self {
                 ::log::info!(
-                    "AbiSample for enum: {}",
+                    "AbiExample for enum: {}",
                     std::any::type_name::<#type_name #ty_generics>()
                 );
                 #sample_variant
@@ -187,7 +187,7 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
             for field in fields {
                 let field_name = &field.ident;
                 sample_fields.extend(quote! {
-                    #field_name: AbiSample::sample(),
+                    #field_name: AbiExample::sample(),
                 });
             }
             sample_fields = quote! {
@@ -197,7 +197,7 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
         Fields::Unnamed(_) => {
             for _ in fields {
                 sample_fields.extend(quote! {
-                    AbiSample::sample(),
+                    AbiExample::sample(),
                 });
             }
             sample_fields = quote! {
@@ -217,13 +217,13 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
         #injection
         #[automatically_derived]
         #( #attrs )*
-        impl #impl_generics ::solana_sdk::abi_digester::AbiSample for #type_name #ty_generics #where_clause {
+        impl #impl_generics ::solana_sdk::abi_digester::AbiExample for #type_name #ty_generics #where_clause {
             fn sample() -> Self {
                 ::log::info!(
-                    "AbiSample for struct: {}",
+                    "AbiExample for struct: {}",
                     std::any::type_name::<#type_name #ty_generics>()
                 );
-                use ::solana_sdk::abi_digester::AbiSample;
+                use ::solana_sdk::abi_digester::AbiExample;
 
                 #type_name #turbofish #sample_fields
             }
@@ -234,7 +234,7 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-#[proc_macro_derive(AbiSample)]
+#[proc_macro_derive(AbiExample)]
 pub fn derive_abi_sample(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as Item);
 
@@ -251,11 +251,11 @@ fn derive_abi_digest_struct_type(input: ItemStruct) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
     (quote! {
-        impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
-            fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
-                ::log::info!("AbiDigest for (struct): {}", std::any::type_name::<#type_name #ty_generics>());
+        impl #impl_generics ::solana_sdk::abi_digester::AbiVisitor for #type_name #ty_generics #where_clause {
+            fn visit_for_abi(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
+                ::log::info!("AbiVisitor for (struct): {}", std::any::type_name::<#type_name #ty_generics>());
                 use ::serde::ser::Serialize;
-                use ::solana_sdk::abi_digester::AbiSample;
+                use ::solana_sdk::abi_digester::AbiExample;
                 let sample_struct = <#type_name #ty_generics>::sample();
                 Serialize::serialize(&sample_struct, digester.create_new())
             }
@@ -284,11 +284,11 @@ fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
 
     let type_str = format!("{}", type_name);
     (quote! {
-        impl #impl_generics ::solana_sdk::abi_digester::AbiDigest for #type_name #ty_generics #where_clause {
-            fn abi_digest(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
+        impl #impl_generics ::solana_sdk::abi_digester::AbiVisitor for #type_name #ty_generics #where_clause {
+            fn visit_for_abi(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
                 let enum_name = #type_str;
                 use ::serde::ser::Serialize;
-                use ::solana_sdk::abi_digester::AbiSample;
+                use ::solana_sdk::abi_digester::AbiExample;
                 digester.update_with_string(format!("enum {} (variants = {})", enum_name, #variant_count));
                 #serialized_variants
                 Ok(digester.create_child())
@@ -298,7 +298,7 @@ fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-#[proc_macro_derive(AbiDigest)]
+#[proc_macro_derive(AbiVisitor)]
 pub fn derive_abi_digest(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as Item);
 
@@ -321,13 +321,13 @@ fn quote_for_test(
         #[cfg(test)]
         mod #test_mod_ident {
             use super::*;
-            use ::solana_sdk::abi_digester::AbiDigest;
+            use ::solana_sdk::abi_digester::AbiVisitor;
 
             #[test]
-            fn test_digest() {
+            fn test_abi_digest() {
                 ::solana_logger::setup();
                 let mut digester = ::solana_sdk::abi_digester::AbiDigester::create();
-                let r = <#type_name>::abi_digest(&mut digester);
+                let r = <#type_name>::visit_for_abi(&mut digester);
                 let mut hash = digester.finalize();
                 if r.is_err() {
                     ::log::error!("digest error: {:#?}", r);
@@ -337,6 +337,7 @@ fn quote_for_test(
                     if #expected_digest != format!("{}", hash) {
                         #p!("sed -i -e 's/{}/{}/g' $(git grep --files-with-matches frozen_abi)", #expected_digest, hash);
                     }
+                    ::log::warn!("Not testing the abi digest under SOLANA_ABI_BULK_UPDATE!");
                 } else {
                   assert_eq!(#expected_digest, format!("{}", hash), "Possibly ABI changed? Confirm the diff by rerunning before and after this test failed with SOLANA_ABI_DUMP_DIR");
                 }

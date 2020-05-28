@@ -275,7 +275,7 @@ impl fmt::Debug for Locality {
     }
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, AbiSample)]
+#[derive(Debug, Default, Deserialize, Serialize, AbiExample)]
 pub struct PruneData {
     /// Pubkey of the node that sent this prune data
     pub pubkey: Pubkey,
@@ -345,7 +345,7 @@ pub fn make_accounts_hashes_message(
 
 // TODO These messages should go through the gpu pipeline for spam filtering
 #[frozen_abi(digest = "BJRKHhwQtLPDoarfsAPgmvb8d8TLgWfPMLKG9Q3CqV9B")]
-#[derive(Serialize, Deserialize, Debug, AbiDigest)]
+#[derive(Serialize, Deserialize, Debug, AbiVisitor)]
 #[allow(clippy::large_enum_variant)]
 enum Protocol {
     /// Gossip protocol messages
