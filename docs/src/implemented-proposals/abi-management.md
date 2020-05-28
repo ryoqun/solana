@@ -92,48 +92,48 @@ calculated with best-effort accuracy and stability.
 When the ABI digest check is run, it dynamically computes an ABI digest by
 recursively digesting the ABI of fields of the ABI item, by re-using the
 `serde`'s serialization functionality, proc macro and generic specialization.
-And then, the check `assert!`s that it finalized digest value is identical as
+And then, the check `assert!`s that its finalized digest value is identical as
 what is specified in the `frozen_abi` attribute.
 
-To realize that, it creates a sample instance of the type and a custom
+To realize that, it creates an example instance of the type and a custom
 `Serializer` instance for `serde` to recursively traverse its fields as if
-serializing the sample for real. This traversing must be done via `serde` to
+serializing the example for real. This traversing must be done via `serde` to
 really capture what kinds of data actually would be serialized by `serde`, even
 considering custom non-`derive`d `Serialize` trait implementations.
 
 # The ABI digesting process
 
 This part is a bit complex. There is three inter-depending parts: `AbiExample`,
-`AbiDigester` and `AbiDigest`.
+`AbiDigester` and `AbiEnumVisitor`.
 
-First, the generated test creates a sample instance of the digested type with a
-trait called `AbiExample`, which should be implemented for all of digested types,
-much like `Serialize`. Usually, it's provided via generic trait specialization
-for most of common types. Also it is possible to `derive` for `struct` and
-`enum` and can be hand-written if needed.
+First, the generated test creates an example instance of the digested type with
+a trait called `AbiExample`, which should be implemented for all of digested
+types like the `Serialize` and return `Self` like the `Default` trait. Usually,
+it's provided via generic trait specialization for most of common types.  Also
+it is possible to `derive` for `struct` and `enum` and can be hand-written if
+needed.
 
 The custom `Serializer` is called `AbiDigester`. And when it's called by `serde`
 to serialize some data, it recursively collects ABI information as much as
-possible. `AbiDigester`'s internal state for the ABI item digest is updated
-differentially depending on the type of data. This logic is held by yet another
-trait called `AbiDigest`. This again should be implemented for all digested
-types. This is already provided for all of types and uses cases and should not
-be overridden.
+possible. `AbiDigester`'s internal state for the ABI digest is updated
+differentially depending on the type of data. This logic is specifically
+redirected via with a trait called `AbiEnumVisitor` for each `enum` type. As the
+name suggests, there is no need to implement `AbiEnumVisitor` for other types.
 
 To summarize this interplay, `serde` handles the recursive serialization control
-flow in tandem with `AbiDigester`. The test entry point and `AbiDigester`
-uses `AbiExample` recursively to create a sample object hierarchal graph. And
-`AbiDigester` uses `AbiDigest` to inquiry the actual ABI information using
-acquired samples.
+flow in tandem with `AbiDigester`. The initial entry point in tests and child
+`AbiDigester`s use `AbiExample` recursively to create an example object
+hierarchal graph. And `AbiDigester` uses `AbiEnumVisitor` to inquiry the actual
+ABI information using the constructed sample.
 
 `Default` isn't enough for `AbiExample`. Various collection's `::default()` is
 empty, yet, we want to digest them with actual items. And, ABI digesting can't
-be realized only with `AbiDigest`. `AbiExample` is required because an actual
-instance of type is needed to actually traverse the data via `serde`.
+be realized only with `AbiEnumVisitor`. `AbiExample` is required because an
+actual instance of type is needed to actually traverse the data via `serde`.
 
 On the other hand, ABI digesting can't be done only with `AbiExample`, either.
-`AbiDigest` is required because all variants of an `enum` cannot be traversed
-just with a single variant of it as a ABI sample.
+`AbiEnumVisitor` is required because all variants of an `enum` cannot be
+traversed just with a single variant of it as a ABI example.
 
 Digestable information:
 
@@ -149,7 +149,8 @@ Not digestable information:
 
 - Any custom serialize code path not touched by the sample provided by
   `AbiExample`. (technically not possible)
-- generics (must be a concrete type; use `frozen_abi` on type aliases)
+- generics (must be a concrete type; use `frozen_abi` on concrete type
+  aliases)
 
 # References
 
