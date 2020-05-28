@@ -233,7 +233,7 @@ trait TypeErasedSample<T> {
 impl<T: Sized> TypeErasedSample<T> for Placeholder {
     default fn type_erased_sample() -> T {
         panic!(
-            "derive or implement AbiExample/AbiVisitor for {}",
+            "derive or implement AbiExample/AbiEnumVisitor for {}",
             type_name::<T>()
         );
     }
@@ -245,7 +245,7 @@ impl<T: Default + Serialize> TypeErasedSample<T> for Placeholder {
 
         if type_name.starts_with("solana") {
             panic!(
-                "derive or implement AbiExample/AbiVisitor for {}",
+                "derive or implement AbiExample/AbiEnumVisitor for {}",
                 type_name
             );
         } else if type_name.starts_with("bv::bit_vec::BitVec")
@@ -402,19 +402,22 @@ impl solana_sdk::abi_digester::AbiExample for SocketAddr {
 }
 
 // This is a control flow indirection needed to digesting all variants of an enum
-pub trait AbiVisitor: Serialize {
+pub trait AbiEnumVisitor: Serialize {
     fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult;
 }
 
-impl<T: Serialize + ?Sized> AbiVisitor for T {
+impl<T: Serialize + ?Sized> AbiEnumVisitor for T {
     default fn visit_for_abi(_digester: &mut AbiDigester) -> DigestResult {
-        unreachable!("AbiVisitor must be implemented for {}", type_name::<T>());
+        unreachable!(
+            "AbiEnumVisitor must be implemented for {}",
+            type_name::<T>()
+        );
     }
 }
 
-impl<T: Serialize + ?Sized + AbiExample> AbiVisitor for T {
+impl<T: Serialize + ?Sized + AbiExample> AbiEnumVisitor for T {
     default fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult {
-        info!("AbiVisitor for (default): {}", type_name::<T>());
+        info!("AbiEnumVisitor for (default): {}", type_name::<T>());
         T::sample()
             .serialize(digester.create_new())
             .map_err(DigestError::wrap_by_type::<T>)
@@ -422,18 +425,18 @@ impl<T: Serialize + ?Sized + AbiExample> AbiVisitor for T {
 }
 
 // auto-ref hack
-impl<T: Serialize + ?Sized + AbiVisitor> AbiVisitor for &T {
+impl<T: Serialize + ?Sized + AbiEnumVisitor> AbiEnumVisitor for &T {
     default fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult {
-        info!("AbiVisitor for (&default): {}", type_name::<T>());
+        info!("AbiEnumVisitor for (&default): {}", type_name::<T>());
         T::visit_for_abi(digester)
     }
 }
 
 // Because Option and Result are so common enums we provide generic trait implementations
-// The digesting pattern must match with what is derived from #[derive(AbiVisitor)]
-impl<T: AbiVisitor> AbiVisitor for Option<T> {
+// The digesting pattern must match with what is derived from #[derive(AbiEnumVisitor)]
+impl<T: AbiEnumVisitor> AbiEnumVisitor for Option<T> {
     fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult {
-        info!("AbiVisitor for (Option<T>): {}", type_name::<Self>());
+        info!("AbiEnumVisitor for (Option<T>): {}", type_name::<Self>());
 
         let variant: Self = Option::Some(T::sample());
         // serde calls serialize_some(); not serialize_variant();
@@ -442,9 +445,9 @@ impl<T: AbiVisitor> AbiVisitor for Option<T> {
     }
 }
 
-impl<O: AbiVisitor, E: AbiVisitor> AbiVisitor for Result<O, E> {
+impl<O: AbiEnumVisitor, E: AbiEnumVisitor> AbiEnumVisitor for Result<O, E> {
     fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult {
-        info!("AbiVisitor for (Result<O, E>): {}", type_name::<Self>());
+        info!("AbiEnumVisitor for (Result<O, E>): {}", type_name::<Self>());
 
         digester.update(&["enum Result (variants = 2)"]);
         let variant: Self = Result::Ok(O::sample());
@@ -526,7 +529,7 @@ impl AbiDigester {
             || type_name.starts_with("solana_runtime::serde_snapshot")
             || type_name.starts_with("&solana_runtime::serde_snapshot")
         {
-            // we can't use the AbiVisitor trait for these cases.
+            // we can't use the AbiEnumVisitor trait for these cases.
             value.serialize(self.create_new())
         } else {
             <T>::visit_for_abi(&mut self.create_new())
@@ -579,7 +582,7 @@ impl AbiDigester {
 
     fn check_for_enum(&mut self, label: &'static str, variant: &'static str) -> NoResult {
         if !self.for_enum {
-            panic!("derive or implement AbiVisitor for the enum, which contains a variant ({}) named {}", label, variant);
+            panic!("derive AbiEnumVisitor or implement it for the enum, which contains a variant ({}) named {}", label, variant);
         }
         Ok(())
     }
@@ -968,14 +971,14 @@ mod tests {
     type TestUnitStruct = std::marker::PhantomData<i8>;
 
     #[frozen_abi(digest = "2zvXde11f8sNnFbc9E6ZZeFxV7D2BTVLKEZmNTsCDBpS")]
-    #[derive(Serialize, AbiExample, AbiVisitor)]
+    #[derive(Serialize, AbiExample, AbiEnumVisitor)]
     enum TestEnum {
         VARIANT1,
         VARIANT2,
     }
 
     #[frozen_abi(digest = "6keb3v7GXLahhL6zoinzCWwSvB3KhmvZMB3tN2mamAm3")]
-    #[derive(Serialize, AbiExample, AbiVisitor)]
+    #[derive(Serialize, AbiExample, AbiEnumVisitor)]
     enum TestTupleVariant {
         VARIANT1(u8, u16),
         VARIANT2(u8, u16),
@@ -995,7 +998,7 @@ mod tests {
     #[frozen_abi(digest = "2Dr5k3Z513mV4KrGeUfcMwjsVHLmVyLiZarmfnXawEbf")]
     type TestConcreteStruct = TestGenericStruct<i64>;
 
-    #[derive(Serialize, AbiExample, AbiVisitor)]
+    #[derive(Serialize, AbiExample, AbiEnumVisitor)]
     enum TestGenericEnum<T: serde::Serialize + Sized + Ord> {
         TestVariant(T),
     }
@@ -1024,7 +1027,7 @@ mod tests {
     #[frozen_abi(digest = "7rH7gnEhJ8YouzqPT6VPyUDELvL51DGednSPcoLXG2rg")]
     type TestOptionWithIsize = Option<isize>;
 
-    #[derive(Serialize, AbiExample, AbiVisitor)]
+    #[derive(Serialize, AbiExample, AbiEnumVisitor)]
     enum TestMyOption<T: serde::Serialize + Sized + Ord> {
         None,
         Some(T),
@@ -1046,7 +1049,7 @@ mod tests {
         }
 
         #[frozen_abi(digest = "2zvXde11f8sNnFbc9E6ZZeFxV7D2BTVLKEZmNTsCDBpS")]
-        #[derive(Serialize, AbiExample, AbiVisitor)]
+        #[derive(Serialize, AbiExample, AbiEnumVisitor)]
         enum TestEnum {
             VARIANT1,
             VARIANT2,
@@ -1056,7 +1059,7 @@ mod tests {
         }
 
         #[frozen_abi(digest = "6keb3v7GXLahhL6zoinzCWwSvB3KhmvZMB3tN2mamAm3")]
-        #[derive(Serialize, AbiExample, AbiVisitor)]
+        #[derive(Serialize, AbiExample, AbiEnumVisitor)]
         enum TestTupleVariant {
             VARIANT1(u8, u16),
             VARIANT2(u8, u16, #[serde(skip)] u32),

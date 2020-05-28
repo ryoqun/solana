@@ -132,7 +132,7 @@ impl AccountStorage {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize, Serialize, AbiExample, AbiVisitor)]
+#[derive(Debug, Eq, PartialEq, Copy, Clone, Deserialize, Serialize, AbiExample, AbiEnumVisitor)]
 pub enum AccountStorageStatus {
     Available = 0,
     Full = 1,

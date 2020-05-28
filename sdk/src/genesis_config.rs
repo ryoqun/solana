@@ -30,7 +30,7 @@ use std::{
 // deprecated default that is no longer used
 pub const UNUSED_DEFAULT: u64 = 1024;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, AbiVisitor, AbiExample)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, AbiEnumVisitor, AbiExample)]
 pub enum OperatingMode {
     Preview,     // Next set of cluster features to be promoted to Stable
     Stable,      // Stable cluster features

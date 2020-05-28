@@ -7,7 +7,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 /// Reasons the runtime might have rejected an instruction.
-#[derive(Serialize, Deserialize, Debug, Error, PartialEq, Eq, Clone, AbiExample, AbiVisitor)]
+#[derive(Serialize, Deserialize, Debug, Error, PartialEq, Eq, Clone, AbiExample, AbiEnumVisitor)]
 pub enum InstructionError {
     /// Deprecated! Use CustomError instead!
     /// The program instruction returned an error

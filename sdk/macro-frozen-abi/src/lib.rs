@@ -30,8 +30,8 @@ pub fn derive_abi_sample(_item: TokenStream) -> TokenStream {
 }
 
 #[cfg(RUSTC_WITHOUT_SPECIALIZATION)]
-#[proc_macro_derive(AbiVisitor)]
-pub fn derive_abi_digest(_item: TokenStream) -> TokenStream {
+#[proc_macro_derive(AbiEnumVisitor)]
+pub fn derive_abi_enum_visitor(_item: TokenStream) -> TokenStream {
     "".parse().unwrap()
 }
 
@@ -41,7 +41,7 @@ use proc_macro2::{Span, TokenStream as TokenStream2, TokenTree::Group};
 use quote::quote;
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 use syn::{
-    parse_macro_input, Attribute, AttributeArgs, Fields, Ident, Item, ItemEnum, ItemStruct,
+    parse_macro_input, Attribute, AttributeArgs, Error, Fields, Ident, Item, ItemEnum, ItemStruct,
     ItemType, Lit, Meta, NestedMeta, Variant,
 };
 
@@ -241,30 +241,14 @@ pub fn derive_abi_sample(item: TokenStream) -> TokenStream {
     match item {
         Item::Struct(input) => derive_abi_sample_struct_type(input),
         Item::Enum(input) => derive_abi_sample_enum_type(input),
-        _ => panic!("not applicable to {:#?}", item),
+        _ => Error::new_spanned(item, "AbiSample isn't applicable; only for struct and enum")
+            .to_compile_error()
+            .into(),
     }
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-fn derive_abi_digest_struct_type(input: ItemStruct) -> TokenStream {
-    let type_name = &input.ident;
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
-
-    (quote! {
-        impl #impl_generics ::solana_sdk::abi_digester::AbiVisitor for #type_name #ty_generics #where_clause {
-            fn visit_for_abi(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
-                ::log::info!("AbiVisitor for (struct): {}", std::any::type_name::<#type_name #ty_generics>());
-                use ::serde::ser::Serialize;
-                use ::solana_sdk::abi_digester::AbiExample;
-                let sample_struct = <#type_name #ty_generics>::sample();
-                Serialize::serialize(&sample_struct, digester.create_new())
-            }
-        }
-    }).into()
-}
-
-#[cfg(RUSTC_WITH_SPECIALIZATION)]
-fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
+fn do_derive_abi_enum_visitor(input: ItemEnum) -> TokenStream {
     let type_name = &input.ident;
     let mut serialized_variants = quote! {};
     let mut variant_count = 0;
@@ -284,7 +268,7 @@ fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
 
     let type_str = format!("{}", type_name);
     (quote! {
-        impl #impl_generics ::solana_sdk::abi_digester::AbiVisitor for #type_name #ty_generics #where_clause {
+        impl #impl_generics ::solana_sdk::abi_digester::AbiEnumVisitor for #type_name #ty_generics #where_clause {
             fn visit_for_abi(digester: &mut ::solana_sdk::abi_digester::AbiDigester) -> ::solana_sdk::abi_digester::DigestResult {
                 let enum_name = #type_str;
                 use ::serde::ser::Serialize;
@@ -298,14 +282,15 @@ fn derive_abi_digest_enum_type(input: ItemEnum) -> TokenStream {
 }
 
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
-#[proc_macro_derive(AbiVisitor)]
-pub fn derive_abi_digest(item: TokenStream) -> TokenStream {
+#[proc_macro_derive(AbiEnumVisitor)]
+pub fn derive_abi_enum_visitor(item: TokenStream) -> TokenStream {
     let item = parse_macro_input!(item as Item);
 
     match item {
-        Item::Struct(input) => derive_abi_digest_struct_type(input),
-        Item::Enum(input) => derive_abi_digest_enum_type(input),
-        _ => panic!("not applicable to {:#?}", item),
+        Item::Enum(input) => do_derive_abi_enum_visitor(input),
+        _ => Error::new_spanned(item, "AbiEnumVisitor not applicable; only for enum")
+            .to_compile_error()
+            .into(),
     }
 }
 
@@ -321,7 +306,7 @@ fn quote_for_test(
         #[cfg(test)]
         mod #test_mod_ident {
             use super::*;
-            use ::solana_sdk::abi_digester::AbiVisitor;
+            use ::solana_sdk::abi_digester::AbiEnumVisitor;
 
             #[test]
             fn test_abi_digest() {
@@ -452,9 +437,14 @@ pub fn frozen_abi(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
     let item = parse_macro_input!(item as Item);
     match item {
-        Item::Type(input) => frozen_abi_type_alias(input, &expected_digest),
         Item::Struct(input) => frozen_abi_struct_type(input, &expected_digest),
         Item::Enum(input) => frozen_abi_enum_type(input, &expected_digest),
-        _ => panic!("not applicable to {:#?}", item),
+        Item::Type(input) => frozen_abi_type_alias(input, &expected_digest),
+        _ => Error::new_spanned(
+            item,
+            "frozen_abi isn't applicable; only for struct, enum and type",
+        )
+        .to_compile_error()
+        .into(),
     }
 }
