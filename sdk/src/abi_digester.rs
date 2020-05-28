@@ -10,7 +10,7 @@ use std::any::type_name;
 use std::io::Write;
 
 pub trait AbiExample: Sized {
-    fn sample() -> Self;
+    fn example() -> Self;
 }
 
 // Following code snippets are copied and adapted from the official rustc implementation to
@@ -26,8 +26,8 @@ macro_rules! tuple_sample_impls {
     )+) => {
         $(
             impl<$($T:AbiExample),+> AbiExample for ($($T,)+) {
-                fn sample() -> Self {
-                        ($({ let x: $T = AbiExample::sample(); x},)+)
+                fn example() -> Self {
+                        ($({ let x: $T = AbiExample::example(); x},)+)
                 }
             }
         )+
@@ -144,15 +144,15 @@ tuple_sample_impls! {
 macro_rules! array_sample_impls {
     {$n:expr, $t:ident $($ts:ident)*} => {
         impl<T> AbiExample for [T; $n] where T: AbiExample {
-            fn sample() -> Self {
-                [$t::sample(), $($ts::sample()),*]
+            fn example() -> Self {
+                [$t::example(), $($ts::example()),*]
             }
         }
         array_sample_impls!{($n - 1), $($ts)*}
     };
     {$n:expr,} => {
         impl<T> AbiExample for [T; $n] {
-        fn sample() -> Self { [] }
+        fn example() -> Self { [] }
         }
     };
 }
@@ -163,7 +163,7 @@ array_sample_impls! {32, T T T T T T T T T T T T T T T T T T T T T T T T T T T T
 macro_rules! sample_impls {
     ($t:ty, $v:expr) => {
         impl AbiExample for $t {
-            fn sample() -> Self {
+            fn example() -> Self {
                 $v
             }
         }
@@ -199,8 +199,8 @@ use std::sync::atomic::*;
 macro_rules! atomic_sample_impls {
     ($atomic_type: ident) => {
         impl AbiExample for $atomic_type {
-            fn sample() -> Self {
-                Self::new(AbiExample::sample())
+            fn example() -> Self {
+                Self::new(AbiExample::example())
             }
         }
     };
@@ -220,7 +220,7 @@ atomic_sample_impls! { AtomicBool }
 type Placeholder = ();
 
 impl<T: Sized> AbiExample for T {
-    default fn sample() -> Self {
+    default fn example() -> Self {
         <Placeholder>::type_erased_sample()
     }
 }
@@ -259,72 +259,72 @@ impl<T: Default + Serialize> TypeErasedSample<T> for Placeholder {
 }
 
 impl<T: AbiExample> AbiExample for Option<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Option<T>): {}", type_name::<Self>());
-        Some(T::sample())
+        Some(T::example())
     }
 }
 
 impl<O: AbiExample, E: AbiExample> AbiExample for Result<O, E> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Result<O, E>): {}", type_name::<Self>());
-        Ok(O::sample())
+        Ok(O::example())
     }
 }
 
 impl<T: AbiExample> AbiExample for Box<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Box<T>): {}", type_name::<Self>());
-        Box::new(T::sample())
+        Box::new(T::example())
     }
 }
 
 impl<T> AbiExample for Box<dyn Fn(&mut T) -> () + Sync + Send> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Box<T>): {}", type_name::<Self>());
         Box::new(move |_t: &mut T| {})
     }
 }
 
 impl<T: AbiExample> AbiExample for Box<[T]> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Box<[T]>): {}", type_name::<Self>());
-        Box::new([T::sample()])
+        Box::new([T::example()])
     }
 }
 
 impl<T: AbiExample> AbiExample for std::marker::PhantomData<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (PhantomData<T>): {}", type_name::<Self>());
         <std::marker::PhantomData<T>>::default()
     }
 }
 
 impl<T: AbiExample> AbiExample for std::sync::Arc<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Arc<T>): {}", type_name::<Self>());
-        std::sync::Arc::new(T::sample())
+        std::sync::Arc::new(T::example())
     }
 }
 
 impl<T: AbiExample> AbiExample for std::rc::Rc<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Rc<T>): {}", type_name::<Self>());
-        std::rc::Rc::new(T::sample())
+        std::rc::Rc::new(T::example())
     }
 }
 
 impl<T: AbiExample> AbiExample for std::sync::Mutex<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Mutex<T>): {}", type_name::<Self>());
-        std::sync::Mutex::new(T::sample())
+        std::sync::Mutex::new(T::example())
     }
 }
 
 impl<T: AbiExample> AbiExample for std::sync::RwLock<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (RwLock<T>): {}", type_name::<Self>());
-        std::sync::RwLock::new(T::sample())
+        std::sync::RwLock::new(T::example())
     }
 }
 
@@ -336,67 +336,67 @@ impl<
         H: std::hash::BuildHasher + Default,
     > AbiExample for HashMap<T, S, H>
 {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (HashMap<T, S, H>): {}", type_name::<Self>());
         let mut map = HashMap::default();
-        map.insert(T::sample(), S::sample());
+        map.insert(T::example(), S::example());
         map
     }
 }
 
 impl<T: std::cmp::Ord + AbiExample, S: AbiExample> AbiExample for BTreeMap<T, S> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (BTreeMap<T, S>): {}", type_name::<Self>());
         let mut map = BTreeMap::default();
-        map.insert(T::sample(), S::sample());
+        map.insert(T::example(), S::example());
         map
     }
 }
 
 impl<T: AbiExample> AbiExample for Vec<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (Vec<T>): {}", type_name::<Self>());
-        vec![T::sample()]
+        vec![T::example()]
     }
 }
 
 impl<T: std::cmp::Eq + std::hash::Hash + AbiExample, H: std::hash::BuildHasher + Default> AbiExample
     for HashSet<T, H>
 {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (HashSet<T, H>): {}", type_name::<Self>());
         let mut set: HashSet<T, H> = HashSet::default();
-        set.insert(T::sample());
+        set.insert(T::example());
         set
     }
 }
 
 impl<T: std::cmp::Ord + AbiExample> AbiExample for BTreeSet<T> {
-    fn sample() -> Self {
+    fn example() -> Self {
         info!("AbiExample for (BTreeSet<T>): {}", type_name::<Self>());
         let mut set: BTreeSet<T> = BTreeSet::default();
-        set.insert(T::sample());
+        set.insert(T::example());
         set
     }
 }
 
 #[cfg(all(not(feature = "program")))]
 impl solana_sdk::abi_digester::AbiExample for memmap::MmapMut {
-    fn sample() -> Self {
+    fn example() -> Self {
         memmap::MmapMut::map_anon(1).expect("failed to map the data file")
     }
 }
 
 #[cfg(all(not(feature = "program")))]
 impl solana_sdk::abi_digester::AbiExample for std::path::PathBuf {
-    fn sample() -> Self {
-        std::path::PathBuf::from(String::sample())
+    fn example() -> Self {
+        std::path::PathBuf::from(String::example())
     }
 }
 
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 impl solana_sdk::abi_digester::AbiExample for SocketAddr {
-    fn sample() -> Self {
+    fn example() -> Self {
         SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 0)
     }
 }
@@ -418,7 +418,7 @@ impl<T: Serialize + ?Sized> AbiEnumVisitor for T {
 impl<T: Serialize + ?Sized + AbiExample> AbiEnumVisitor for T {
     default fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult {
         info!("AbiEnumVisitor for (default): {}", type_name::<T>());
-        T::sample()
+        T::example()
             .serialize(digester.create_new())
             .map_err(DigestError::wrap_by_type::<T>)
     }
@@ -438,7 +438,7 @@ impl<T: AbiEnumVisitor> AbiEnumVisitor for Option<T> {
     fn visit_for_abi(digester: &mut AbiDigester) -> DigestResult {
         info!("AbiEnumVisitor for (Option<T>): {}", type_name::<Self>());
 
-        let variant: Self = Option::Some(T::sample());
+        let variant: Self = Option::Some(T::example());
         // serde calls serialize_some(); not serialize_variant();
         // so create_new is correct
         variant.serialize(digester.create_new())
@@ -450,10 +450,10 @@ impl<O: AbiEnumVisitor, E: AbiEnumVisitor> AbiEnumVisitor for Result<O, E> {
         info!("AbiEnumVisitor for (Result<O, E>): {}", type_name::<Self>());
 
         digester.update(&["enum Result (variants = 2)"]);
-        let variant: Self = Result::Ok(O::sample());
+        let variant: Self = Result::Ok(O::example());
         variant.serialize(digester.create_enum_child())?;
 
-        let variant: Self = Result::Err(E::sample());
+        let variant: Self = Result::Err(E::example());
         variant.serialize(digester.create_enum_child())?;
 
         Ok(digester.create_child())

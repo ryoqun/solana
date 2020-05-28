@@ -109,12 +109,12 @@ pub struct BankRc {
 use solana_sdk::abi_digester::AbiExample;
 #[cfg(RUSTC_WITH_SPECIALIZATION)]
 impl AbiExample for BankRc {
-    fn sample() -> Self {
+    fn example() -> Self {
         BankRc {
             // Set parent to None to cut the recursion into another Bank
             parent: RwLock::new(None),
-            accounts: AbiExample::sample(),
-            slot: AbiExample::sample(),
+            accounts: AbiExample::example(),
+            slot: AbiExample::example(),
         }
     }
 }

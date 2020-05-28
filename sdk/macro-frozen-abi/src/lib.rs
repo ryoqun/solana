@@ -119,7 +119,7 @@ fn derive_abi_sample_enum_type(input: ItemEnum) -> TokenStream {
                 }
                 let field_type = &field.ty;
                 fields.extend(quote! {
-                    <#field_type>::sample(),
+                    <#field_type>::example(),
                 });
             }
             sample_variant.extend(quote! {
@@ -134,7 +134,7 @@ fn derive_abi_sample_enum_type(input: ItemEnum) -> TokenStream {
                 let field_type = &field.ty;
                 let field_name = &field.ident;
                 fields.extend(quote! {
-                    #field_name: <#field_type>::sample(),
+                    #field_name: <#field_type>::example(),
                 });
             }
             sample_variant.extend(quote! {
@@ -164,7 +164,7 @@ fn derive_abi_sample_enum_type(input: ItemEnum) -> TokenStream {
         #[automatically_derived]
         #( #attrs )*
         impl #impl_generics ::solana_sdk::abi_digester::AbiExample for #type_name #ty_generics #where_clause {
-            fn sample() -> Self {
+            fn example() -> Self {
                 ::log::info!(
                     "AbiExample for enum: {}",
                     std::any::type_name::<#type_name #ty_generics>()
@@ -187,7 +187,7 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
             for field in fields {
                 let field_name = &field.ident;
                 sample_fields.extend(quote! {
-                    #field_name: AbiExample::sample(),
+                    #field_name: AbiExample::example(),
                 });
             }
             sample_fields = quote! {
@@ -197,7 +197,7 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
         Fields::Unnamed(_) => {
             for _ in fields {
                 sample_fields.extend(quote! {
-                    AbiExample::sample(),
+                    AbiExample::example(),
                 });
             }
             sample_fields = quote! {
@@ -218,7 +218,7 @@ fn derive_abi_sample_struct_type(input: ItemStruct) -> TokenStream {
         #[automatically_derived]
         #( #attrs )*
         impl #impl_generics ::solana_sdk::abi_digester::AbiExample for #type_name #ty_generics #where_clause {
-            fn sample() -> Self {
+            fn example() -> Self {
                 ::log::info!(
                     "AbiExample for struct: {}",
                     std::any::type_name::<#type_name #ty_generics>()
@@ -381,7 +381,7 @@ fn quote_sample_variant(
             }
             let ty = &field.ty;
             fields.extend(quote! {
-                <#ty>::sample(),
+                <#ty>::example(),
             });
         }
         quote! {
@@ -396,7 +396,7 @@ fn quote_sample_variant(
             let field_type_name = &field.ty;
             let field_name = &field.ident;
             fields.extend(quote! {
-                #field_name: <#field_type_name>::sample(),
+                #field_name: <#field_type_name>::example(),
             });
         }
         quote! {
