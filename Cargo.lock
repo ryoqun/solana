@@ -4623,13 +4623,13 @@ dependencies = [
 
 [[package]]
 name = "solana-sdk-macro-frozen-abi"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "lazy_static",
- "proc-macro2 1.0.12",
+ "proc-macro2 1.0.17",
  "quote 1.0.1",
  "rustc_version",
- "syn 1.0.19",
+ "syn 1.0.27",
 ]
 
 [[package]]
