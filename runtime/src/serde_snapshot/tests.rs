@@ -64,7 +64,7 @@ where
     P: AsRef<Path>,
 {
     // read and deserialise the accounts database directly from the stream
-    context_accountsdb_from_fields::<C, P>(
+    reconstruct_accountsdb_from_fields(
         C::deserialize_accounts_db_fields(stream)?,
         account_paths,
         stream_append_vecs_path,
@@ -198,17 +198,15 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
     let snapshot_storages = bank2.get_snapshot_storages();
     let mut buf = vec![];
     let mut writer = Cursor::new(&mut buf);
-    serialize_into(&mut writer, &bank2).unwrap();
-    crate::serde_snapshot::bankrc_to_stream(
+    crate::serde_snapshot::bank_to_stream(
         serde_style,
         &mut std::io::BufWriter::new(&mut writer),
-        &bank2.rc,
+        &bank2,
         &snapshot_storages,
     )
     .unwrap();
 
-    let mut rdr = Cursor::new(&buf[..]);
-    let mut dbank: Bank = bincode::deserialize_from(&mut rdr).unwrap();
+    let rdr = Cursor::new(&buf[..]);
     let mut reader = std::io::BufReader::new(&buf[rdr.position() as usize..]);
 
     // Create a new set of directories for this bank's accounts
@@ -218,17 +216,16 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
     // Create a directory to simulate AppendVecs unpackaged from a snapshot tar
     let copied_accounts = TempDir::new().unwrap();
     copy_append_vecs(&bank2.rc.accounts.accounts_db, copied_accounts.path()).unwrap();
-    dbank.set_bank_rc(
-        crate::serde_snapshot::bankrc_from_stream(
-            serde_style,
-            &dbank_paths,
-            dbank.slot(),
-            &mut reader,
-            copied_accounts.path(),
-        )
-        .unwrap(),
-        ref_sc,
-    );
+    let mut dbank = crate::serde_snapshot::bank_from_stream(
+        serde_style,
+        &mut reader,
+        copied_accounts.path(),
+        &dbank_paths,
+        &genesis_config,
+        &[],
+    )
+    .unwrap();
+    dbank.src = ref_sc;
     assert_eq!(dbank.get_balance(&key1.pubkey()), 0);
     assert_eq!(dbank.get_balance(&key2.pubkey()), 10);
     assert_eq!(dbank.get_balance(&key3.pubkey()), 0);

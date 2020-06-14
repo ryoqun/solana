@@ -25,7 +25,6 @@ use crate::{
 use byteorder::{ByteOrder, LittleEndian};
 use itertools::Itertools;
 use log::*;
-use serde::{Deserialize, Serialize};
 use solana_measure::measure::Measure;
 use solana_metrics::{
     datapoint_debug, inc_new_counter_debug, inc_new_counter_error, inc_new_counter_info,
@@ -188,21 +187,81 @@ impl HashAgeKind {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Debug, Deserialize, Serialize)]
-struct UnusedAccounts {
-    unused1: HashSet<Pubkey>,
-    unused2: HashSet<Pubkey>,
-    unused3: HashMap<Pubkey, u64>,
+#[derive(Clone, Default)]
+pub(crate) struct BankFields {
+    pub(crate) blockhash_queue: BlockhashQueue,
+    pub(crate) ancestors: Ancestors,
+    pub(crate) hash: Hash,
+    pub(crate) parent_hash: Hash,
+    pub(crate) parent_slot: Slot,
+    pub(crate) hard_forks: HardForks,
+    pub(crate) transaction_count: u64,
+    pub(crate) tick_height: u64,
+    pub(crate) signature_count: u64,
+    pub(crate) capitalization: u64,
+    pub(crate) max_tick_height: u64,
+    pub(crate) hashes_per_tick: Option<u64>,
+    pub(crate) ticks_per_slot: u64,
+    pub(crate) ns_per_slot: u128,
+    pub(crate) genesis_creation_time: UnixTimestamp,
+    pub(crate) slots_per_year: f64,
+    pub(crate) unused: u64,
+    pub(crate) slot: Slot,
+    pub(crate) epoch: Epoch,
+    pub(crate) block_height: u64,
+    pub(crate) collector_id: Pubkey,
+    pub(crate) collector_fees: u64,
+    pub(crate) fee_calculator: FeeCalculator,
+    pub(crate) fee_rate_governor: FeeRateGovernor,
+    pub(crate) collected_rent: u64,
+    pub(crate) rent_collector: RentCollector,
+    pub(crate) epoch_schedule: EpochSchedule,
+    pub(crate) inflation: Inflation,
+    pub(crate) stakes: Stakes,
+    pub(crate) epoch_stakes: HashMap<Epoch, EpochStakes>,
+    pub(crate) is_delta: bool,
+}
+
+pub(crate) struct RefBankFields<'a> {
+    pub(crate) blockhash_queue: &'a RwLock<BlockhashQueue>,
+    pub(crate) ancestors: &'a Ancestors,
+    pub(crate) hash: Hash,
+    pub(crate) parent_hash: Hash,
+    pub(crate) parent_slot: Slot,
+    pub(crate) hard_forks: &'a RwLock<HardForks>,
+    pub(crate) transaction_count: u64,
+    pub(crate) tick_height: u64,
+    pub(crate) signature_count: u64,
+    pub(crate) capitalization: u64,
+    pub(crate) max_tick_height: u64,
+    pub(crate) hashes_per_tick: Option<u64>,
+    pub(crate) ticks_per_slot: u64,
+    pub(crate) ns_per_slot: u128,
+    pub(crate) genesis_creation_time: UnixTimestamp,
+    pub(crate) slots_per_year: f64,
+    pub(crate) unused: u64,
+    pub(crate) slot: Slot,
+    pub(crate) epoch: Epoch,
+    pub(crate) block_height: u64,
+    pub(crate) collector_id: Pubkey,
+    pub(crate) collector_fees: u64,
+    pub(crate) fee_calculator: FeeCalculator,
+    pub(crate) fee_rate_governor: FeeRateGovernor,
+    pub(crate) collected_rent: u64,
+    pub(crate) rent_collector: RentCollector,
+    pub(crate) epoch_schedule: EpochSchedule,
+    pub(crate) inflation: Inflation,
+    pub(crate) stakes: &'a RwLock<Stakes>,
+    pub(crate) epoch_stakes: &'a HashMap<Epoch, EpochStakes>,
+    pub(crate) is_delta: bool,
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Default)]
 pub struct Bank {
     /// References to accounts, parent and signature status
-    #[serde(skip)]
     pub rc: BankRc,
 
-    #[serde(skip)]
     pub src: StatusCacheRc,
 
     /// FIFO queue of `recent_blockhash` items
@@ -292,9 +351,6 @@ pub struct Bank {
     /// cache of vote_account and stake_account state for this fork
     stakes: RwLock<Stakes>,
 
-    /// unused
-    unused_accounts: RwLock<UnusedAccounts>,
-
     /// staked nodes on epoch boundaries, saved off when a bank.slot() is at
     ///   a leader schedule calculation boundary
     epoch_stakes: HashMap<Epoch, EpochStakes>,
@@ -308,24 +364,18 @@ pub struct Bank {
 
     /// Callback to be notified when a bank enters a new Epoch
     /// (used to adjust cluster features over time)
-    #[serde(skip)]
     entered_epoch_callback: Arc<RwLock<Option<EnteredEpochCallback>>>,
 
     /// Last time when the cluster info vote listener has synced with this bank
-    #[serde(skip)]
     pub last_vote_sync: AtomicU64,
 
     /// Rewards that were paid out immediately after this bank was created
-    #[serde(skip)]
     pub rewards: Option<Vec<(Pubkey, i64)>>,
 
-    #[serde(skip)]
     pub skip_drop: AtomicBool,
 
-    #[serde(skip)]
     pub operating_mode: Option<OperatingMode>,
 
-    #[serde(skip)]
     pub lazy_rent_collection: AtomicBool,
 }
 
@@ -354,7 +404,7 @@ impl Bank {
         bank.finish_init();
 
         // Freeze accounts after process_genesis_config creates the initial append vecs
-        Arc::get_mut(&mut bank.rc.accounts)
+        Arc::get_mut(&mut Arc::get_mut(&mut bank.rc.accounts).unwrap().accounts_db)
             .unwrap()
             .freeze_accounts(&bank.ancestors, frozen_account_pubkeys);
 
@@ -424,7 +474,6 @@ impl Bank {
             transaction_count: AtomicU64::new(parent.transaction_count()),
             stakes: RwLock::new(parent.stakes.read().unwrap().clone_with_epoch(epoch)),
             epoch_stakes: parent.epoch_stakes.clone(),
-            unused_accounts: RwLock::new(parent.unused_accounts.read().unwrap().clone()),
             parent_hash: parent.hash(),
             parent_slot: parent.slot(),
             collector_id: *collector_id,
@@ -496,6 +545,98 @@ impl Bank {
             .store(new.max_tick_height(), Ordering::Relaxed);
         new.freeze();
         new
+    }
+
+    /// Create a bank from explicit arguments and deserialized fields from snapshot
+    pub(crate) fn new_from_fields(
+        bank_rc: BankRc,
+        genesis_config: &GenesisConfig,
+        fields: BankFields,
+    ) -> Self {
+        fn new<T: Default>() -> T {
+            T::default()
+        }
+        let mut bank = Self {
+            rc: bank_rc,
+            src: new(),
+            blockhash_queue: RwLock::new(fields.blockhash_queue),
+            ancestors: fields.ancestors,
+            hash: RwLock::new(fields.hash),
+            parent_hash: fields.parent_hash,
+            parent_slot: fields.parent_slot,
+            hard_forks: Arc::new(RwLock::new(fields.hard_forks)),
+            transaction_count: AtomicU64::new(fields.transaction_count),
+            tick_height: AtomicU64::new(fields.tick_height),
+            signature_count: AtomicU64::new(fields.signature_count),
+            capitalization: AtomicU64::new(fields.capitalization),
+            max_tick_height: fields.max_tick_height,
+            hashes_per_tick: fields.hashes_per_tick,
+            ticks_per_slot: fields.ticks_per_slot,
+            ns_per_slot: fields.ns_per_slot,
+            genesis_creation_time: fields.genesis_creation_time,
+            slots_per_year: fields.slots_per_year,
+            unused: genesis_config.unused,
+            slot: fields.slot,
+            epoch: fields.epoch,
+            block_height: fields.block_height,
+            collector_id: fields.collector_id,
+            collector_fees: AtomicU64::new(fields.collector_fees),
+            fee_calculator: fields.fee_calculator,
+            fee_rate_governor: fields.fee_rate_governor,
+            collected_rent: AtomicU64::new(fields.collected_rent),
+            rent_collector: fields.rent_collector,
+            epoch_schedule: fields.epoch_schedule,
+            inflation: Arc::new(RwLock::new(fields.inflation)),
+            stakes: RwLock::new(fields.stakes),
+            epoch_stakes: fields.epoch_stakes,
+            is_delta: AtomicBool::new(fields.is_delta),
+            message_processor: new(),
+            entered_epoch_callback: new(),
+            last_vote_sync: new(),
+            rewards: new(),
+            skip_drop: new(),
+            operating_mode: Some(genesis_config.operating_mode),
+            lazy_rent_collection: new(),
+        };
+        bank.finish_init();
+        bank
+    }
+
+    /// Return subset of bank fields representing serializable state
+    pub(crate) fn get_ref_fields(&self) -> RefBankFields {
+        RefBankFields {
+            blockhash_queue: &self.blockhash_queue,
+            ancestors: &self.ancestors,
+            hash: *self.hash.read().unwrap(),
+            parent_hash: self.parent_hash,
+            parent_slot: self.parent_slot,
+            hard_forks: &*self.hard_forks,
+            transaction_count: self.transaction_count.load(Ordering::Relaxed),
+            tick_height: self.tick_height.load(Ordering::Relaxed),
+            signature_count: self.signature_count.load(Ordering::Relaxed),
+            capitalization: self.capitalization.load(Ordering::Relaxed),
+            max_tick_height: self.max_tick_height,
+            hashes_per_tick: self.hashes_per_tick,
+            ticks_per_slot: self.ticks_per_slot,
+            ns_per_slot: self.ns_per_slot,
+            genesis_creation_time: self.genesis_creation_time,
+            slots_per_year: self.slots_per_year,
+            unused: self.unused,
+            slot: self.slot,
+            epoch: self.epoch,
+            block_height: self.block_height,
+            collector_id: self.collector_id,
+            collector_fees: self.collector_fees.load(Ordering::Relaxed),
+            fee_calculator: self.fee_calculator.clone(),
+            fee_rate_governor: self.fee_rate_governor.clone(),
+            collected_rent: self.collected_rent.load(Ordering::Relaxed),
+            rent_collector: self.rent_collector.clone(),
+            epoch_schedule: self.epoch_schedule,
+            inflation: *self.inflation.read().unwrap(),
+            stakes: &self.stakes,
+            epoch_stakes: &self.epoch_stakes,
+            is_delta: self.is_delta.load(Ordering::Relaxed),
+        }
     }
 
     pub fn collector_id(&self) -> &Pubkey {

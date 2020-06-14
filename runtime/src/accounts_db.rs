@@ -1754,7 +1754,7 @@ impl AccountsDB {
         hashes
     }
 
-    pub fn freeze_accounts(&mut self, ancestors: &Ancestors, account_pubkeys: &[Pubkey]) {
+    pub(crate) fn freeze_accounts(&mut self, ancestors: &Ancestors, account_pubkeys: &[Pubkey]) {
         for account_pubkey in account_pubkeys {
             if let Some((account, _slot)) = self.load_slow(ancestors, &account_pubkey) {
                 let frozen_account_info = FrozenAccountInfo {

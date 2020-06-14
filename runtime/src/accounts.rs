@@ -65,17 +65,13 @@ pub enum AccountAddressFilter {
 }
 
 impl Accounts {
-    pub(crate) fn new_empty(accounts_db: AccountsDB) -> Self {
-        Self {
-            accounts_db: Arc::new(accounts_db),
+    pub fn new(paths: Vec<PathBuf>) -> Self {
+        Accounts {
+            slot: 0,
+            accounts_db: Arc::new(AccountsDB::new(paths)),
             account_locks: Mutex::new(HashSet::new()),
             readonly_locks: Arc::new(RwLock::new(Some(HashMap::new()))),
-            ..Self::default()
         }
-    }
-
-    pub fn new(paths: Vec<PathBuf>) -> Self {
-        Self::new_with_frozen_accounts(paths, &HashMap::default(), &[])
     }
 
     pub fn new_from_parent(parent: &Accounts, slot: Slot, parent_slot: Slot) -> Self {
@@ -89,25 +85,13 @@ impl Accounts {
         }
     }
 
-    pub fn new_with_frozen_accounts(
-        paths: Vec<PathBuf>,
-        ancestors: &Ancestors,
-        frozen_account_pubkeys: &[Pubkey],
-    ) -> Self {
-        let mut accounts = Accounts {
+    pub(crate) fn new_empty(accounts_db: AccountsDB) -> Self {
+        Self {
             slot: 0,
-            accounts_db: Arc::new(AccountsDB::new(paths)),
+            accounts_db: Arc::new(accounts_db),
             account_locks: Mutex::new(HashSet::new()),
             readonly_locks: Arc::new(RwLock::new(Some(HashMap::new()))),
-        };
-        accounts.freeze_accounts(ancestors, frozen_account_pubkeys);
-        accounts
-    }
-
-    pub fn freeze_accounts(&mut self, ancestors: &Ancestors, frozen_account_pubkeys: &[Pubkey]) {
-        Arc::get_mut(&mut self.accounts_db)
-            .unwrap()
-            .freeze_accounts(ancestors, frozen_account_pubkeys);
+        }
     }
 
     /// Return true if the slice has any duplicate elements
