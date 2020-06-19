@@ -14,7 +14,7 @@ use {
         stakes::Stakes,
     },
     bincode,
-    bincode::{Error, serialize_into},
+    bincode::{serialize_into, Error},
     fs_extra::dir::CopyOptions,
     log::{info, warn},
     rand::{thread_rng, Rng},
