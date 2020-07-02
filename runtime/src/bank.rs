@@ -223,6 +223,8 @@ pub(crate) struct BankFieldsToDeserialize {
     pub(crate) stakes: Stakes,
     pub(crate) epoch_stakes: HashMap<Epoch, EpochStakes>,
     pub(crate) is_delta: bool,
+    // Stop wrapping with Option once we are after snapshot version 1.X!
+    pub(crate) operating_mode: Option<solana_sdk::genesis_config::OperatingMode>,
 }
 
 // Bank's common fields shared by all supported snapshot versions for serialization.
@@ -261,6 +263,7 @@ pub(crate) struct BankFieldsToSerialize<'a> {
     pub(crate) stakes: &'a RwLock<Stakes>,
     pub(crate) epoch_stakes: &'a HashMap<Epoch, EpochStakes>,
     pub(crate) is_delta: bool,
+    pub(crate) operating_mode: OperatingMode,
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
@@ -381,6 +384,7 @@ pub struct Bank {
 
     pub skip_drop: AtomicBool,
 
+    // Stop wrapping with Option once we are after snapshot version 1.X!
     pub operating_mode: Option<OperatingMode>,
 
     pub lazy_rent_collection: AtomicBool,
@@ -602,7 +606,10 @@ impl Bank {
             last_vote_sync: new(),
             rewards: new(),
             skip_drop: new(),
-            operating_mode: Some(genesis_config.operating_mode),
+            // Always use fields.operating_mode once we are after snapshot version 1.X! and stop using genesis_config
+            operating_mode: fields
+                .operating_mode
+                .or(Some(genesis_config.operating_mode)),
             lazy_rent_collection: new(),
         };
         bank.finish_init();
@@ -643,6 +650,7 @@ impl Bank {
             stakes: &self.stakes,
             epoch_stakes: &self.epoch_stakes,
             is_delta: self.is_delta.load(Ordering::Relaxed),
+            operating_mode: self.operating_mode.unwrap(),
         }
     }
 

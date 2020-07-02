@@ -170,6 +170,7 @@ impl Into<BankFieldsToDeserialize> for DeserializableVersionedBank {
             stakes: self.stakes,
             epoch_stakes: self.epoch_stakes,
             is_delta: self.is_delta,
+            operating_mode: None,
         }
     }
 }

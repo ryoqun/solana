@@ -1,4 +1,3 @@
-use super::common::*;
 use {super::*, solana_measure::measure::Measure, std::cell::RefCell};
 
 type AccountsDbFields = super::AccountsDbFields<SerializableAccountStorageEntry>;
@@ -60,10 +59,10 @@ pub(crate) struct DeserializableVersionedBank {
     pub(crate) epoch_schedule: EpochSchedule,
     pub(crate) inflation: Inflation,
     pub(crate) stakes: Stakes,
-    pub(crate) unused_accounts: UnusedAccounts,
     pub(crate) epoch_stakes: HashMap<Epoch, EpochStakes>,
     pub(crate) is_delta: bool,
     pub(crate) message_processor: MessageProcessor,
+    pub(crate) operating_mode: solana_sdk::genesis_config::OperatingMode,
 }
 
 impl Into<BankFieldsToDeserialize> for DeserializableVersionedBank {
@@ -100,6 +99,7 @@ impl Into<BankFieldsToDeserialize> for DeserializableVersionedBank {
             stakes: self.stakes,
             epoch_stakes: self.epoch_stakes,
             is_delta: self.is_delta,
+            operating_mode: Some(self.operating_mode),
         }
     }
 }
@@ -136,10 +136,10 @@ pub(crate) struct SerializableVersionedBank<'a> {
     pub(crate) epoch_schedule: EpochSchedule,
     pub(crate) inflation: Inflation,
     pub(crate) stakes: &'a RwLock<Stakes>,
-    pub(crate) unused_accounts: UnusedAccounts,
     pub(crate) epoch_stakes: &'a HashMap<Epoch, EpochStakes>,
     pub(crate) is_delta: bool,
     pub(crate) message_processor: MessageProcessor,
+    pub(crate) operating_mode: solana_sdk::genesis_config::OperatingMode,
 }
 
 impl<'a> From<crate::bank::BankFieldsToSerialize<'a>> for SerializableVersionedBank<'a> {
@@ -177,10 +177,10 @@ impl<'a> From<crate::bank::BankFieldsToSerialize<'a>> for SerializableVersionedB
             epoch_schedule: rhs.epoch_schedule,
             inflation: rhs.inflation,
             stakes: rhs.stakes,
-            unused_accounts: new(),
             epoch_stakes: rhs.epoch_stakes,
             is_delta: rhs.is_delta,
             message_processor: new(),
+            operating_mode: rhs.operating_mode,
         }
     }
 }
