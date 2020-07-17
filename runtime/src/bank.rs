@@ -59,6 +59,7 @@ use solana_vote_program::vote_state::VoteState;
 use std::{
     cell::RefCell,
     collections::{HashMap, HashSet},
+    convert::TryFrom,
     mem,
     ops::RangeInclusive,
     path::PathBuf,
@@ -913,6 +914,18 @@ impl Bank {
 
         let validator_rewards_paid =
             self.stakes.read().unwrap().vote_balance_and_staked() - vote_balance_and_staked;
+        assert_eq!(
+            validator_rewards_paid,
+            u64::try_from(
+                self.rewards
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .map(|(_pubkey, reward)| reward)
+                    .sum::<i64>()
+            )
+            .unwrap()
+        );
 
         // verify that we didn't pay any more than we expected to
         assert!(validator_rewards >= validator_rewards_paid);
