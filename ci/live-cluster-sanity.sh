@@ -9,7 +9,9 @@ source ci/_
 source ci/rust-version.sh stable
 source scripts/ulimit-n.sh
 
-_ cargo +"$rust_stable" build --release --bins ${V:+--verbose}
+#_ cargo +"$rust_stable" build --release --bins ${V:+--verbose}
+export CARGO_TOOLCHAIN=+"$rust_stable"
+export NDEBUG=1
 
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
