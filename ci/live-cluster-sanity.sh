@@ -9,6 +9,8 @@ source ci/_
 source ci/rust-version.sh stable
 source scripts/ulimit-n.sh
 
+_ cargo +"$rust_stable" build --release --bins ${V:+--verbose}
+
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
 
