@@ -4,6 +4,11 @@ set -e
 # support testnet as well
 
 cd "$(dirname "$0")/.."
+
+source ci/_
+source ci/rust-version.sh stable
+source scripts/ulimit-n.sh
+
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
 
