@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 
 source ci/_
 source ci/rust-version.sh stable
+source ci/upload-ci-artifact.sh
 source scripts/ulimit-n.sh
 
 #_ cargo +"$rust_stable" build --release --bins ${V:+--verbose}
@@ -37,6 +38,11 @@ pid=$!
 tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev/null &
 tail_pid=$!
 
+exit_after_upload() {
+  upload-ci-artifact mainnet-beta-sanity/validator.log
+  exit $1
+}
+
 attempts=100
 while [[ ! -f mainnet-beta-sanity/init-completed ]]; do
 
@@ -56,7 +62,7 @@ while [[ ! -f mainnet-beta-sanity/init-completed ]]; do
      kill $pid
      wait $pid
      echo "Error: validator failed to boot"
-     exit 1
+     exit_after_upload 1
   fi
 
   sleep 3
@@ -85,7 +91,7 @@ while [[ $current_root -le $goal_root ]]; do
      kill $pid $tail_pid
      wait $pid $tail_pid
      echo "Error: validator failed to boot"
-     exit 1
+     exit_after_upload 1
   fi
 
   sleep 3
@@ -102,4 +108,4 @@ curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "m
   wait $pid $tail_pid
 ) || true
 
-# upload log as artifacts
+exit_after_upload 0
