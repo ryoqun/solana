@@ -20,7 +20,7 @@ source multinode-demo/common.sh
 rm -rf mainnet-beta-sanity
 mkdir mainnet-beta-sanity
 
-$solana_validator \
+($solana_validator \
   --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
   --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
   --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
@@ -32,7 +32,7 @@ $solana_validator \
   --log mainnet-beta-sanity/validator.log \
   --init-complete-file mainnet-beta-sanity/init-completed \
   --enable-rpc-exit \
-  --snapshot-interval-slots 0 2>&1 &
+  --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
 pid=$!
 
 tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev/null &
