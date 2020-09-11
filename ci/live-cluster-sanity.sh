@@ -32,7 +32,7 @@ $solana_validator \
   --log mainnet-beta-sanity/validator.log \
   --init-complete-file mainnet-beta-sanity/init-completed \
   --enable-rpc-exit \
-  --snapshot-interval-slots 0 &
+  --snapshot-interval-slots 0 2>&1 &
 pid=$!
 
 tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev/null &
