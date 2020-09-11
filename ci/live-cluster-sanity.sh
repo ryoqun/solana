@@ -25,8 +25,6 @@ $solana_validator \
   --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
   --no-untrusted-rpc \
   --ledger mainnet-beta-sanity/ledger \
-  --rpc-port 8899 \
-  --dynamic-port-range 12001-12011 \
   --entrypoint mainnet-beta.solana.com:8001 \
   --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
   --expected-shred-version 64864 \
