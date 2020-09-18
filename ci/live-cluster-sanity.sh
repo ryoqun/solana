@@ -21,6 +21,7 @@ instance_prefix="testnet-live-sanity-$RANDOM"
 ./net/gce.sh create -p "$instance_prefix" -n 0
 
 _ cargo +"$rust_stable" build --bins
+./net/gce.sh info
 instance_ip=$(./net/net.sh status | grep -o 'publicIp=[^ ]*' | sed 's/publicIp=//')
 
 ./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
