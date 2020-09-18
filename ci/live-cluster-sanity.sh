@@ -17,7 +17,7 @@ export NDEBUG=1
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
 
-(cd net && ./net/gce.sh create -p testnet-live-sanity -n 1)
+(cd net && ./gce.sh create -p testnet-live-sanity -n 1)
 
 rm -rf mainnet-beta-sanity
 mkdir mainnet-beta-sanity
