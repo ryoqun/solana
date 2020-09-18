@@ -27,6 +27,7 @@ abort() {
 trap abort INT TERM EXIT
 
 _ cargo +"$rust_stable" build --bins
+ls -l target/release
 ./net/gce.sh info
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
@@ -119,11 +120,14 @@ while [[ $current_root -le $goal_root ]]; do
   fi
 
   sleep 3
+  pwd
+  ls -l target/release
   current_root=$(./target/release/solana --url http://localhost:8899 slot --commitment root)
 done
 
 # currently doesn't work....
 curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' http://localhost:8899
+sleep 10
 
 (
   set +e
