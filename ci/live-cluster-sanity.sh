@@ -1,20 +1,15 @@
 #!/usr/bin/env bash
 set -e
-
-# support testnet as well
-
 cd "$(dirname "$0")/.."
 
 source ci/_
 source ci/rust-version.sh stable
 source ci/upload-ci-artifact.sh
 
-#_ cargo +"$rust_stable" build --release --bins ${V:+--verbose}
-export CARGO_TOOLCHAIN=+"$rust_stable"
-export NDEBUG=1
-
 instance_prefix="testnet-live-sanity-$RANDOM"
+# only bootstrap, no normal validator
 ./net/gce.sh create -p "$instance_prefix" -n 0
+instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 on_trap() {
   if [[ -z $instance_deleted ]]; then
     (
@@ -27,8 +22,6 @@ on_trap() {
 trap on_trap INT TERM EXIT
 
 _ cargo +"$rust_stable" build --bins --release
-instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
-
 _ ./net/scp.sh ./target/release/solana-validator "$instance_ip":.
 echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee /proc/sys/vm/max_map_count > /dev/null
 
@@ -43,6 +36,7 @@ test_with_live_cluster() {
   ./net/ssh.sh "$instance_ip" rm -rf cluster-sanity
   ./net/ssh.sh "$instance_ip" mkdir cluster-sanity
 
+  validator_log="cluster-sanity/$cluster_label-validator.log"
   (./net/ssh.sh "$instance_ip" -Llocalhost:18899:localhost:18899 ./solana-validator \
     --no-untrusted-rpc \
     --ledger cluster-sanity/ledger \
@@ -53,9 +47,9 @@ test_with_live_cluster() {
     --rpc-port 18899 \
     --rpc-bind-address localhost \
     --snapshot-interval-slots 0 \
-    "$@" ) >> cluster-sanity/validator.log 2>&1 &
+    "$@" ) &> "$validator_log"
   ssh_pid=$!
-  tail -F cluster-sanity/validator.log > cluster-sanity/log-tail 2> /dev/null &
+  tail -F "$validator_log" > cluster-sanity/log-tail 2> /dev/null &
   tail_pid=$!
   sleep 3
 
@@ -82,7 +76,11 @@ test_with_live_cluster() {
     fi
   done
 
-  snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t cluster-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
+  snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t cluster-sanity/ledger/snapshot* |
+    head -n 1 |
+    grep -o 'snapshot-[0-9]*-' |
+    grep -o '[0-9]*'
+  )
 
   echo "--- Monitoring validator $cluster_label"
 
@@ -112,18 +110,17 @@ test_with_live_cluster() {
     fi
   done
 
-  # currently doesn't work....
-  curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' http://localhost:18899
+  _ curl \
+    -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' \
+    http://localhost:18899
   sleep 10
 
-  (
-    set +e
-    # validatorExit doesn't work; so kill
-    kill $ssh_pid $tail_pid
-    wait $ssh_pid $tail_pid
-  ) || true
+  (sleep 3 && kill "$tail_pid") &
+  wait "$ssh_pid" "$tail_pid"
 
-  upload-ci-artifact cluster-sanity/validator.log
+  upload-ci-artifact "$validator_log"
 }
 
 test_with_live_cluster "mainnet-beta" \
