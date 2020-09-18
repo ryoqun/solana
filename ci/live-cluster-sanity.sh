@@ -37,7 +37,7 @@ mkdir mainnet-beta-sanity
 
 echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
 
-(./net/ssh.sh "$instance_ip" /tmp/solana-validator \
+(./net/ssh.sh -Llocalhost:8989:localhost:8989 "$instance_ip" /tmp/solana-validator \
   --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
   --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
   --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
@@ -49,6 +49,8 @@ echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
   --log - \
   --init-complete-file mainnet-beta-sanity/init-completed \
   --enable-rpc-exit \
+  --private-rpc \
+  --rpc-bind-address localhost \
   --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
 pid=$!
 
@@ -62,7 +64,7 @@ exit_after_upload() {
 }
 
 attempts=100
-while [[ ! -f mainnet-beta-sanity/init-completed ]]; do
+while ! ./net/ssh.sh "$instance_ip" test -f mainnet-beta-sanity/init-completed; do
 
   if find mainnet-beta-sanity/log-tail -not -empty | grep ^ > /dev/null; then
     echo
@@ -86,7 +88,7 @@ while [[ ! -f mainnet-beta-sanity/init-completed ]]; do
   sleep 3
 done
 
-snapshot_slot=$(ls -t mainnet-beta-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
+snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t mainnet-beta-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
 
 attempts=100
 current_root=$snapshot_slot
@@ -113,7 +115,7 @@ while [[ $current_root -le $goal_root ]]; do
   fi
 
   sleep 3
-  current_root=$($solana_cli --url http://localhost:8899 slot --commitment root)
+  current_root=$(./target/release/solana --url http://localhost:8899 slot --commitment root)
 done
 
 # currently doesn't work....
