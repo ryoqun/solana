@@ -19,12 +19,13 @@ source multinode-demo/common.sh
 
 instance_prefix="testnet-live-sanity-$RANDOM"
 ./net/gce.sh create -p "$instance_prefix" -n 0
-abort() {
+on_trap() {
+  upload-ci-artifact mainnet-beta-sanity/validator.log
   if [[ -z $instance_deleted ]]; then
     _ ./net/gce.sh delete -p "$instance_prefix"
   fi
 }
-trap abort INT TERM EXIT
+trap on_trap INT TERM EXIT
 
 _ cargo +"$rust_stable" build --bins --release
 ./net/gce.sh info
@@ -60,11 +61,6 @@ tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev
 tail_pid=$!
 sleep 3
 
-exit_after_upload() {
-  upload-ci-artifact mainnet-beta-sanity/validator.log
-  exit $1
-}
-
 echo "--- Starting validator"
 
 attempts=100
@@ -86,7 +82,7 @@ while ! ./net/ssh.sh "$instance_ip" test -f mainnet-beta-sanity/init-completed; 
      kill $pid
      wait $pid
      echo "Error: validator failed to boot"
-     exit_after_upload 1
+     exit 1
   fi
 
   sleep 3
@@ -117,11 +113,10 @@ while [[ $current_root -le $goal_root ]]; do
      kill $pid $tail_pid
      wait $pid $tail_pid
      echo "Error: validator failed to boot"
-     exit_after_upload 1
+     exit 1
   fi
 
   sleep 3
-  pwd
   current_root=$(./target/release/solana --url http://localhost:8899 slot --commitment root)
 done
 
@@ -136,5 +131,4 @@ sleep 10
   wait $pid $tail_pid
 ) || true
 
-exit_after_upload 0
 ./net/gce.sh delete -p "$instance_prefix" && instance_deleted=yes
