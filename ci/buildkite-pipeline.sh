@@ -177,7 +177,7 @@ all_test_steps() {
     timeout_in_minutes: 40
     artifact_paths: "log-*.txt"
     agents:
-      - "queue=cuda"
+      - "queue=aws-deploy"
 EOF
   else
     annotate --style info \
