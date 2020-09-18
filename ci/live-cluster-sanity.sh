@@ -28,7 +28,7 @@ trap abort INT TERM EXIT
 
 _ cargo +"$rust_stable" build --bins
 ./net/gce.sh info
-instance_ip=$(./net/net.sh info | grep bootstrap-validator | awk '{print $3}')
+instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
 ./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
 
