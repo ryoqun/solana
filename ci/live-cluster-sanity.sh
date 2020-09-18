@@ -18,10 +18,12 @@ export NDEBUG=1
 source multinode-demo/common.sh
 
 instance_prefix="testnet-live-sanity-$RANDOM"
-(cd net && ./gce.sh create -p "$instance_prefix" -n 0)
+./net/gce.sh create -p "$instance_prefix" -n 0
 
-_ cargo +"$rust_stable" build --bins ${V:+--verbose}
-./net/scp.sh ./target/release/solana-validator /tmp/
+_ cargo +"$rust_stable" build --bins
+instance_ip=$(./net/net.sh status | grep -o 'publicIp=[^ ]*' | sed 's/publicIp=//')
+
+./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
 
 (cd net && ./gce.sh delete -p "$instance_prefix")
 
