@@ -20,7 +20,7 @@ source multinode-demo/common.sh
 instance_prefix="testnet-live-sanity-$RANDOM"
 ./net/gce.sh create -p "$instance_prefix" -n 0
 on_trap() {
-  upload-ci-artifact mainnet-beta-sanity/validator.log
+  upload-ci-artifact mainnet-beta-sanity/validator.log || true
   if [[ -z $instance_deleted ]]; then
     _ ./net/gce.sh delete -p "$instance_prefix"
   fi
@@ -38,7 +38,7 @@ mkdir mainnet-beta-sanity
 
 echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
 
-(./net/ssh.sh "$instance_ip" -Llocalhost:8899:localhost:8899 /tmp/solana-validator \
+(./net/ssh.sh "$instance_ip" -Llocalhost:18899:localhost:18899 /tmp/solana-validator \
   --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
   --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
   --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
@@ -51,6 +51,7 @@ echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
   --init-complete-file mainnet-beta-sanity/init-completed \
   --enable-rpc-exit \
   --private-rpc \
+  --rpc-port 18899 \
   --rpc-bind-address localhost \
   --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
 pid=$!
@@ -117,11 +118,11 @@ while [[ $current_root -le $goal_root ]]; do
   fi
 
   sleep 3
-  current_root=$(./target/release/solana --url http://localhost:8899 slot --commitment root)
+  current_root=$(./target/release/solana --url http://localhost:18899 slot --commitment root)
 done
 
 # currently doesn't work....
-curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' http://localhost:8899
+curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' http://localhost:18899
 sleep 10
 
 (
