@@ -8,42 +8,42 @@ cd "$(dirname "$0")/.."
 source ci/_
 source ci/rust-version.sh stable
 source ci/upload-ci-artifact.sh
-source scripts/ulimit-n.sh
 
 #_ cargo +"$rust_stable" build --release --bins ${V:+--verbose}
 export CARGO_TOOLCHAIN=+"$rust_stable"
 export NDEBUG=1
 
-# shellcheck source=multinode-demo/common.sh
-source multinode-demo/common.sh
-
 instance_prefix="testnet-live-sanity-$RANDOM"
 ./net/gce.sh create -p "$instance_prefix" -n 0
 on_trap() {
-  upload-ci-artifact cluster-sanity/validator.log || true
   if [[ -z $instance_deleted ]]; then
-    _ ./net/gce.sh delete -p "$instance_prefix"
+    (
+      set +e
+      upload-ci-artifact cluster-sanity/validator.log
+      _ ./net/gce.sh delete -p "$instance_prefix"
+    )
   fi
 }
 trap on_trap INT TERM EXIT
 
 _ cargo +"$rust_stable" build --bins --release
-./net/gce.sh info
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
-_ ./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
+_ ./net/scp.sh ./target/release/solana-validator "$instance_ip":.
 echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee /proc/sys/vm/max_map_count > /dev/null
 
 test_with_live_cluster() {
   cluster_label="$1"
   shift
 
-  echo --- Testing with $cluster_label
+  echo "--- Starting validator $cluster_label"
 
   rm -rf cluster-sanity
   mkdir cluster-sanity
+  ./net/ssh.sh "$instance_ip" rm -rf cluster-sanity
+  ./net/ssh.sh "$instance_ip" mkdir cluster-sanity
 
-  (./net/ssh.sh "$instance_ip" -Llocalhost:18899:localhost:18899 /tmp/solana-validator \
+  (./net/ssh.sh "$instance_ip" -Llocalhost:18899:localhost:18899 ./solana-validator \
     --no-untrusted-rpc \
     --ledger cluster-sanity/ledger \
     --log - \
@@ -54,21 +54,18 @@ test_with_live_cluster() {
     --rpc-bind-address localhost \
     --snapshot-interval-slots 0 \
     "$@" ) >> cluster-sanity/validator.log 2>&1 &
-  pid=$!
-  sleep 3
-
+  ssh_pid=$!
   tail -F cluster-sanity/validator.log > cluster-sanity/log-tail 2> /dev/null &
   tail_pid=$!
-
-  echo "--- Starting validator"
+  sleep 3
 
   attempts=100
   while ! ./net/ssh.sh "$instance_ip" test -f cluster-sanity/init-completed &> /dev/null ; do
     attempts=$((attempts - 1))
-    if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
+    if [[ (($attempts == 0)) || ! -d "/proc/$ssh_pid" ]]; then
        set +e
-       kill $pid $tail_pid
-       wait $pid $tail_pid
+       kill $ssh_pid $tail_pid
+       wait $ssh_pid $tail_pid
        echo "Error: validator failed to boot"
        exit 1
     fi
@@ -87,17 +84,17 @@ test_with_live_cluster() {
 
   snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t cluster-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
 
-  echo "--- Monitoring validator"
+  echo "--- Monitoring validator $cluster_label"
 
   attempts=100
   current_root=$snapshot_slot
   goal_root=$((snapshot_slot + 100))
   while [[ $current_root -le $goal_root ]]; do
     attempts=$((attempts - 1))
-    if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
+    if [[ (($attempts == 0)) || ! -d "/proc/$ssh_pid" ]]; then
        set +e
-       kill $pid $tail_pid
-       wait $pid $tail_pid
+       kill $ssh_pid $tail_pid
+       wait $ssh_pid $tail_pid
        echo "Error: validator failed to boot"
        exit 1
     fi
@@ -122,9 +119,11 @@ test_with_live_cluster() {
   (
     set +e
     # validatorExit doesn't work; so kill
-    kill $pid $tail_pid
-    wait $pid $tail_pid
+    kill $ssh_pid $tail_pid
+    wait $ssh_pid $tail_pid
   ) || true
+
+  upload-ci-artifact cluster-sanity/validator.log
 }
 
 test_with_live_cluster "mainnet-beta" \
