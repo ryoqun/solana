@@ -53,10 +53,12 @@ echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
   --rpc-bind-address localhost \
   --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
 pid=$!
+sleep 3
 
 
 tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev/null &
 tail_pid=$!
+sleep 3
 
 exit_after_upload() {
   upload-ci-artifact mainnet-beta-sanity/validator.log
