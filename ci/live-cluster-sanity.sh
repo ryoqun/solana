@@ -20,7 +20,7 @@ source multinode-demo/common.sh
 instance_prefix="testnet-live-sanity-$RANDOM"
 ./net/gce.sh create -p "$instance_prefix" -n 0
 on_trap() {
-  upload-ci-artifact mainnet-beta-sanity/validator.log || true
+  upload-ci-artifact cluster-sanity/validator.log || true
   if [[ -z $instance_deleted ]]; then
     _ ./net/gce.sh delete -p "$instance_prefix"
   fi
@@ -32,104 +32,113 @@ _ cargo +"$rust_stable" build --bins --release
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
 _ ./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
+echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee /proc/sys/vm/max_map_count > /dev/null
 
-rm -rf mainnet-beta-sanity
-mkdir mainnet-beta-sanity
+test_with_live_cluster() {
+  cluster_label="$1"
+  shift
 
-echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
+  echo --- Testing with $cluster_label
 
-(./net/ssh.sh "$instance_ip" -Llocalhost:18899:localhost:18899 /tmp/solana-validator \
-  --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
-  --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
-  --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
-  --no-untrusted-rpc \
-  --ledger mainnet-beta-sanity/ledger \
-  --entrypoint mainnet-beta.solana.com:8001 \
-  --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
-  --expected-shred-version 64864 \
-  --log - \
-  --init-complete-file mainnet-beta-sanity/init-completed \
-  --enable-rpc-exit \
-  --private-rpc \
-  --rpc-port 18899 \
-  --rpc-bind-address localhost \
-  --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
-pid=$!
-sleep 3
+  rm -rf cluster-sanity
+  mkdir cluster-sanity
 
-
-tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev/null &
-tail_pid=$!
-sleep 3
-
-echo "--- Starting validator"
-
-attempts=100
-while ! ./net/ssh.sh "$instance_ip" test -f mainnet-beta-sanity/init-completed; do
-
-  if find mainnet-beta-sanity/log-tail -not -empty | grep ^ > /dev/null; then
-    echo
-    echo "[progress]: validator is starting... (until timeout: $attempts)"
-    echo "[new log]:"
-    timeout 1 cat mainnet-beta-sanity/log-tail | tail -n 3 || true
-    truncate --size 0 mainnet-beta-sanity/log-tail
-  else
-    echo "[progress]: validator is starting... (until timeout: $attempts)"
-  fi
-
-  attempts=$((attempts - 1))
-  if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
-     set +e
-     kill $pid
-     wait $pid
-     echo "Error: validator failed to boot"
-     exit 1
-  fi
-
+  (./net/ssh.sh "$instance_ip" -Llocalhost:18899:localhost:18899 /tmp/solana-validator \
+    --no-untrusted-rpc \
+    --ledger cluster-sanity/ledger \
+    --log - \
+    --init-complete-file cluster-sanity/init-completed \
+    --enable-rpc-exit \
+    --private-rpc \
+    --rpc-port 18899 \
+    --rpc-bind-address localhost \
+    --snapshot-interval-slots 0 \
+    "$@" ) >> cluster-sanity/validator.log 2>&1 &
+  pid=$!
   sleep 3
-done
 
-snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t mainnet-beta-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
+  tail -F cluster-sanity/validator.log > cluster-sanity/log-tail 2> /dev/null &
+  tail_pid=$!
 
-echo "--- Monitoring validator"
+  echo "--- Starting validator"
 
-attempts=100
-current_root=$snapshot_slot
-goal_root=$((snapshot_slot + 100))
-while [[ $current_root -le $goal_root ]]; do
+  attempts=100
+  while ! ./net/ssh.sh "$instance_ip" test -f cluster-sanity/init-completed &> /dev/null ; do
+    attempts=$((attempts - 1))
+    if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
+       set +e
+       kill $pid $tail_pid
+       wait $pid $tail_pid
+       echo "Error: validator failed to boot"
+       exit 1
+    fi
 
-  if find mainnet-beta-sanity/log-tail -not -empty | grep ^ > /dev/null; then
-    echo
-    echo "[progress]: validator is running ($current_root/$goal_root)... (until timeout: $attempts)"
-    echo "[new log]:"
-    timeout 1 cat mainnet-beta-sanity/log-tail | tail -n 3 || true
-    truncate --size 0 mainnet-beta-sanity/log-tail
-  else
-    echo "[progress]: validator is running ($current_root/$goal_root)... (until timeout: $attempts)"
-  fi
+    sleep 3
+    if find cluster-sanity/log-tail -not -empty | grep ^ > /dev/null; then
+      echo
+      echo "[progress]: validator is starting... (until timeout: $attempts)"
+      echo "[new log]:"
+      timeout 1 cat cluster-sanity/log-tail | tail -n 3 || true
+      truncate --size 0 cluster-sanity/log-tail
+    else
+      echo "[progress]: validator is starting... (until timeout: $attempts)"
+    fi
+  done
 
-  attempts=$((attempts - 1))
-  if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
-     set +e
-     kill $pid $tail_pid
-     wait $pid $tail_pid
-     echo "Error: validator failed to boot"
-     exit 1
-  fi
+  snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t cluster-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
 
-  sleep 3
-  current_root=$(./target/release/solana --url http://localhost:18899 slot --commitment root)
-done
+  echo "--- Monitoring validator"
 
-# currently doesn't work....
-curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' http://localhost:18899
-sleep 10
+  attempts=100
+  current_root=$snapshot_slot
+  goal_root=$((snapshot_slot + 100))
+  while [[ $current_root -le $goal_root ]]; do
+    attempts=$((attempts - 1))
+    if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
+       set +e
+       kill $pid $tail_pid
+       wait $pid $tail_pid
+       echo "Error: validator failed to boot"
+       exit 1
+    fi
 
-(
-  set +e
-  # validatorExit doesn't work; so kill
-  kill $pid $tail_pid
-  wait $pid $tail_pid
-) || true
+    sleep 3
+    current_root=$(./target/release/solana --url http://localhost:18899 slot --commitment root)
+    if find cluster-sanity/log-tail -not -empty | grep ^ > /dev/null; then
+      echo
+      echo "[progress]: validator is running ($current_root/$goal_root)... (until timeout: $attempts)"
+      echo "[new log]:"
+      timeout 1 cat cluster-sanity/log-tail | tail -n 3 || true
+      truncate --size 0 cluster-sanity/log-tail
+    else
+      echo "[progress]: validator is running ($current_root/$goal_root)... (until timeout: $attempts)"
+    fi
+  done
+
+  # currently doesn't work....
+  curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "method":"validatorExit"}' http://localhost:18899
+  sleep 10
+
+  (
+    set +e
+    # validatorExit doesn't work; so kill
+    kill $pid $tail_pid
+    wait $pid $tail_pid
+  ) || true
+}
+
+test_with_live_cluster "mainnet-beta" \
+    --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
+    --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
+    --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
+    --entrypoint mainnet-beta.solana.com:8001 \
+    --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
+    --expected-shred-version 64864
+
+test_with_live_cluster "testnet" \
+    --trusted-validator 5D1fNXzvv5NjV1ysLjirC4WY92RNsVH18vjmcszZd8on \
+    --entrypoint 35.203.170.30:8001 \
+    --expected-genesis-hash 4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY \
+    --expected-shred-version 1579 \
 
 ./net/gce.sh delete -p "$instance_prefix" && instance_deleted=yes
