@@ -44,7 +44,7 @@ mkdir mainnet-beta-sanity
   --entrypoint mainnet-beta.solana.com:8001 \
   --expected-genesis-hash 5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d \
   --expected-shred-version 64864 \
-  --log mainnet-beta-sanity/validator.log \
+  --log - \
   --init-complete-file mainnet-beta-sanity/init-completed \
   --enable-rpc-exit \
   --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
