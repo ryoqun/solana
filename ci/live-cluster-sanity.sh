@@ -8,16 +8,18 @@ source ci/upload-ci-artifact.sh
 
 escaped_branch=$(echo "$BUILDKITE_BRANCH" | tr -c "[:alnum:]" - | sed -r "s#(^-*|-*head-*|-*$)##g")
 instance_prefix="testnet-live-sanity-$escaped_branch"
+# ensure to delete leftover cluster
+./net/gce.sh delete -p "$instance_prefix" || true
 # only bootstrap, no normal validator
 ./net/gce.sh create -p "$instance_prefix" -n 0
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
+
 on_trap() {
   if [[ -z $instance_deleted ]]; then
     (
       set +e
-      upload-ci-artifact \
-        cluster-sanity/mainnet-beta-validator.log \
-        cluster-sanity/testnet-validator.log
+      upload-ci-artifact cluster-sanity/testnet-validator.log
+      upload-ci-artifact cluster-sanity/mainnet-beta-validator.log
       _ ./net/gce.sh delete -p "$instance_prefix"
     )
   fi
@@ -68,11 +70,12 @@ test_with_live_cluster() {
     fi
 
     sleep 3
-    echo "### validator is starting... (until timeout: $attempts) ###"
+    echo "##### validator is starting... (until timeout: $attempts) #####"
     if find cluster-sanity/log-tail -not -empty | grep ^ > /dev/null; then
-      echo "### new log:"
+      echo "##### new log:"
       timeout 1 cat cluster-sanity/log-tail | tail -n 3 || true
       truncate --size 0 cluster-sanity/log-tail
+      echo
     fi
   done
 
@@ -99,11 +102,12 @@ test_with_live_cluster() {
 
     sleep 3
     current_root=$(./target/release/solana --url http://localhost:18899 slot --commitment root)
-    echo "### validator is running ($current_root/$goal_root)... (until timeout: $attempts) ###"
+    echo "##### validator is running ($current_root/$goal_root)... (until timeout: $attempts) #####"
     if find cluster-sanity/log-tail -not -empty | grep ^ > /dev/null; then
-      echo "### new log:"
+      echo "##### new log:"
       timeout 1 cat cluster-sanity/log-tail | tail -n 3 || true
       truncate --size 0 cluster-sanity/log-tail
+      echo
     fi
   done
 
