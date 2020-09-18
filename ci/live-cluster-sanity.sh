@@ -26,8 +26,7 @@ abort() {
 }
 trap abort INT TERM EXIT
 
-_ cargo +"$rust_stable" build --bins
-ls -l target/release
+_ cargo +"$rust_stable" build --bins --release
 ./net/gce.sh info
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
@@ -121,7 +120,6 @@ while [[ $current_root -le $goal_root ]]; do
 
   sleep 3
   pwd
-  ls -l target/release
   current_root=$(./target/release/solana --url http://localhost:8899 slot --commitment root)
 done
 
