@@ -77,7 +77,7 @@ while ! ./net/ssh.sh "$instance_ip" test -f mainnet-beta-sanity/init-completed; 
   fi
 
   attempts=$((attempts - 1))
-  if [[ ((attempts == 0)) || ! -d "/proc/$pid" ]]; then
+  if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
      set +e
      kill $pid
      wait $pid
@@ -106,7 +106,7 @@ while [[ $current_root -le $goal_root ]]; do
   fi
 
   attempts=$((attempts - 1))
-  if [[ ((attempts == 0)) || ! -d "/proc/$pid" ]]; then
+  if [[ (($attempts == 0)) || ! -d "/proc/$pid" ]]; then
      set +e
      kill $pid $tail_pid
      wait $pid $tail_pid
