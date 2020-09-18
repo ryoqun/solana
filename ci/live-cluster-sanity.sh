@@ -17,7 +17,12 @@ export NDEBUG=1
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
 
-(cd net && ./gce.sh create -p testnet-live-sanity -n 1)
+instance_prefix="testnet-live-sanity-$RANDOM"
+(cd net && ./gce.sh create -p "$instance_prefix" -n 0)
+
+sleep 120
+
+(cd net && ./gce.sh delete -p "$instance_prefix")
 
 rm -rf mainnet-beta-sanity
 mkdir mainnet-beta-sanity
