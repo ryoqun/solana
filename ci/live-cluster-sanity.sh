@@ -20,7 +20,8 @@ source multinode-demo/common.sh
 instance_prefix="testnet-live-sanity-$RANDOM"
 (cd net && ./gce.sh create -p "$instance_prefix" -n 0)
 
-sleep 120
+_ cargo +"$rust_stable" build --bins ${V:+--verbose}
+./net/scp.sh ./target/release/solana-validator /tmp/
 
 (cd net && ./gce.sh delete -p "$instance_prefix")
 
