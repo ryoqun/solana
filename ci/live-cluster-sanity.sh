@@ -6,7 +6,8 @@ source ci/_
 source ci/rust-version.sh stable
 source ci/upload-ci-artifact.sh
 
-instance_prefix="testnet-live-sanity-$RANDOM"
+escaped_branch=$(echo "$BUILDKITE_BRANCH" | tr -c "[:alnum:]" - | sed -r "s#(^-*|-*head-*|-*$)##g")
+instance_prefix="testnet-live-sanity-$escaped_branch"
 # only bootstrap, no normal validator
 ./net/gce.sh create -p "$instance_prefix" -n 0
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
@@ -14,7 +15,9 @@ on_trap() {
   if [[ -z $instance_deleted ]]; then
     (
       set +e
-      upload-ci-artifact cluster-sanity/validator.log
+      upload-ci-artifact \
+        cluster-sanity/mainnet-beta-validator.log \
+        cluster-sanity/testnet-validator.log
       _ ./net/gce.sh delete -p "$instance_prefix"
     )
   fi
@@ -47,7 +50,7 @@ test_with_live_cluster() {
     --rpc-port 18899 \
     --rpc-bind-address localhost \
     --snapshot-interval-slots 0 \
-    "$@" ) &> "$validator_log"
+    "$@" ) &> "$validator_log" &
   ssh_pid=$!
   tail -F "$validator_log" > cluster-sanity/log-tail 2> /dev/null &
   tail_pid=$!
@@ -65,14 +68,11 @@ test_with_live_cluster() {
     fi
 
     sleep 3
+    echo "### validator is starting... (until timeout: $attempts) ###"
     if find cluster-sanity/log-tail -not -empty | grep ^ > /dev/null; then
-      echo
-      echo "[progress]: validator is starting... (until timeout: $attempts)"
-      echo "[new log]:"
+      echo "### new log:"
       timeout 1 cat cluster-sanity/log-tail | tail -n 3 || true
       truncate --size 0 cluster-sanity/log-tail
-    else
-      echo "[progress]: validator is starting... (until timeout: $attempts)"
     fi
   done
 
@@ -99,14 +99,11 @@ test_with_live_cluster() {
 
     sleep 3
     current_root=$(./target/release/solana --url http://localhost:18899 slot --commitment root)
+    echo "### validator is running ($current_root/$goal_root)... (until timeout: $attempts) ###"
     if find cluster-sanity/log-tail -not -empty | grep ^ > /dev/null; then
-      echo
-      echo "[progress]: validator is running ($current_root/$goal_root)... (until timeout: $attempts)"
-      echo "[new log]:"
+      echo "### new log:"
       timeout 1 cat cluster-sanity/log-tail | tail -n 3 || true
       truncate --size 0 cluster-sanity/log-tail
-    else
-      echo "[progress]: validator is running ($current_root/$goal_root)... (until timeout: $attempts)"
     fi
   done
 
@@ -118,7 +115,8 @@ test_with_live_cluster() {
   sleep 10
 
   (sleep 3 && kill "$tail_pid") &
-  wait "$ssh_pid" "$tail_pid"
+  kill_pid=$!
+  wait "$ssh_pid" "$tail_pid" "$kill_pid"
 
   upload-ci-artifact "$validator_log"
 }
