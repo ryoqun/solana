@@ -1876,12 +1876,6 @@ impl Bank {
                         &self.rent_collector,
                         log_collector.clone(),
                     );
-                    trace!(
-                        "bank (slot: {}) executed a transaction with result: {} => {:?}",
-                        self.slot(),
-                        tx.signatures[0],
-                        process_result
-                    );
 
                     Self::refcells_to_accounts(
                         accounts,
