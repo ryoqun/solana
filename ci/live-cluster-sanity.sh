@@ -21,7 +21,7 @@ instance_prefix="testnet-live-sanity-$RANDOM"
 ./net/gce.sh create -p "$instance_prefix" -n 0
 abort() {
   if [[ -z $instance_deleted ]]; then
-    ./net/gce.sh delete -p "$instance_prefix"
+    _ ./net/gce.sh delete -p "$instance_prefix"
   fi
 }
 trap abort INT TERM EXIT
@@ -30,10 +30,12 @@ _ cargo +"$rust_stable" build --bins
 ./net/gce.sh info
 instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
-./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
+_ ./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
 
 rm -rf mainnet-beta-sanity
 mkdir mainnet-beta-sanity
+
+echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
 
 (./net/ssh.sh "$instance_ip" /tmp/solana-validator \
   --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
