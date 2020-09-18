@@ -32,12 +32,10 @@ instance_ip=$(./net/gce.sh info | grep bootstrap-validator | awk '{print $3}')
 
 ./net/scp.sh ./target/release/solana-validator "$instance_ip":/tmp/
 
-./net/gce.sh delete -p "$instance_prefix" && instance_deleted=yes
-
 rm -rf mainnet-beta-sanity
 mkdir mainnet-beta-sanity
 
-($solana_validator \
+(./net/ssh.sh "$instance_ip" /tmp/solana-validator \
   --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
   --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
   --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
@@ -51,6 +49,7 @@ mkdir mainnet-beta-sanity
   --enable-rpc-exit \
   --snapshot-interval-slots 0) >> mainnet-beta-sanity/validator.log 2>&1 &
 pid=$!
+
 
 tail -F mainnet-beta-sanity/validator.log > mainnet-beta-sanity/log-tail 2> /dev/null &
 tail_pid=$!
@@ -126,3 +125,4 @@ curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1, "m
 ) || true
 
 exit_after_upload 0
+./net/gce.sh delete -p "$instance_prefix" && instance_deleted=yes
