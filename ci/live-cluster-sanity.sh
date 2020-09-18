@@ -63,6 +63,8 @@ exit_after_upload() {
   exit $1
 }
 
+echo "--- Starting validator"
+
 attempts=100
 while ! ./net/ssh.sh "$instance_ip" test -f mainnet-beta-sanity/init-completed; do
 
@@ -89,6 +91,8 @@ while ! ./net/ssh.sh "$instance_ip" test -f mainnet-beta-sanity/init-completed; 
 done
 
 snapshot_slot=$(./net/ssh.sh "$instance_ip" ls -t mainnet-beta-sanity/ledger/snapshot* | head -n 1 | grep -o 'snapshot-[0-9]*-' | grep -o '[0-9]*')
+
+echo "--- Monitoring validator"
 
 attempts=100
 current_root=$snapshot_slot
