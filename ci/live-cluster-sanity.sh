@@ -37,7 +37,7 @@ mkdir mainnet-beta-sanity
 
 echo 500000 | ./net/ssh.sh "$instance_ip" sudo tee -a /proc/sys/vm/max_map_count
 
-(./net/ssh.sh -Llocalhost:8989:localhost:8989 "$instance_ip" /tmp/solana-validator \
+(./net/ssh.sh "$instance_ip" -Llocalhost:8989:localhost:8989 /tmp/solana-validator \
   --trusted-validator 7Np41oeYqPefeNQEHSv1UDhYrehxin3NStELsSKCT4K2 \
   --trusted-validator GdnSyH3YtwcxFvQrVVJMm1JhTS4QVX7MFsX56uJLUfiZ \
   --trusted-validator DE1bawNcRJB9rVm3buyMVfr8mBEoyyu73NBovf2oXJsJ \
