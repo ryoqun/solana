@@ -193,7 +193,7 @@ build() {
     if [[ -n $LOCAL_BUILD_BRANCH || -n $LOCAL_BUILD_REVISION ]]; then
       detached_build=true
       git status
-      git stash && git_stashed=true
+      git stash && git_stashed=true || true
       if [[ -n $LOCAL_BUILD_BRANCH ]]; then
         # for prs, BRANCH value will be like "pull/12390/head"
         git fetch origin "$LOCAL_BUILD_BRANCH"
