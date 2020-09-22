@@ -203,7 +203,7 @@ build() {
       if [[ -n $LOCAL_BUILD_REVISION ]]; then
         git reset --hard "$LOCAL_BUILD_REVISION"
       else
-        git reset --hard "$LOCAL_BUILD_BRANCH"
+        git reset --hard "FETCH_HEAD"
       fi
     fi
 
