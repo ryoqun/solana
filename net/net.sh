@@ -187,12 +187,40 @@ build() {
     if $debugBuild; then
       buildVariant=--debug
     fi
-    source ci/rust-version.sh stable
 
+    detached_build=false
+    if [[ -n $LOCAL_BUILD_BRANCH || -n $LOCAL_BUILD_REVISION ]]; then
+      detached_build=true
+      git status
+      git stash
+      if [[ -n $LOCAL_BUILD_BRANCH ]]; then
+        # for prs, BRANCH value will be like "pull/12390/head"
+        git fetch origin "$LOCAL_BUILD_BRANCH"
+      fi
+
+      # revision takes precedence
+      if [[ -n $LOCAL_BUILD_REVISION ]]; then
+        git reset --hard "$LOCAL_BUILD_REVISION"
+      else
+        git reset --hard "$LOCAL_BUILD_BRANCH"
+      fi
+    fi
+
+    cargo_error_code=
+    source ci/rust-version.sh stable
     $MAYBE_DOCKER bash -c "
       set -ex
       scripts/cargo-install-all.sh +\"$rust_stable\" farf \"$buildVariant\"
-    "
+    " || cargo_error_code=$?
+
+    if $detached_build; then
+      git reset --hard "HEAD@{1}"
+      git stash pop
+    fi
+
+    if [[ -n $cargo_error_code ]]; then
+      (exit $cargo_error_code)
+    fi
   )
   echo "Build took $SECONDS seconds"
 }
@@ -904,7 +932,7 @@ while getopts "h?T:t:o:f:rc:Fn:i:d" opt "${shortArgs[@]}"; do
       deployMethod=tar
       ;;
     local)
-      # just pass-through to use default values for $deployMethod and $doBuild
+      # just pass-through to use default values of $deployMethod and $doBuild
       true
       ;;
     *)
