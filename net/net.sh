@@ -189,10 +189,11 @@ build() {
     fi
 
     detached_build=false
+    git_stashed=false
     if [[ -n $LOCAL_BUILD_BRANCH || -n $LOCAL_BUILD_REVISION ]]; then
       detached_build=true
       git status
-      git stash
+      git stash && git_stashed=true
       if [[ -n $LOCAL_BUILD_BRANCH ]]; then
         # for prs, BRANCH value will be like "pull/12390/head"
         git fetch origin "$LOCAL_BUILD_BRANCH"
@@ -215,7 +216,9 @@ build() {
 
     if $detached_build; then
       git reset --hard "HEAD@{1}"
-      git stash pop
+      if $git_stashed; then
+        git stash pop
+      fi
     fi
 
     if [[ -n $cargo_error_code ]]; then
