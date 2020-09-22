@@ -187,10 +187,11 @@ build() {
     if $debugBuild; then
       buildVariant=--debug
     fi
+    source ci/rust-version.sh stable
 
     $MAYBE_DOCKER bash -c "
       set -ex
-      scripts/cargo-install-all.sh farf \"$buildVariant\"
+      scripts/cargo-install-all.sh +\"$rust_stable\" farf \"$buildVariant\"
     "
   )
   echo "Build took $SECONDS seconds"
