@@ -185,7 +185,7 @@ build() {
 
     buildVariant=
     if $debugBuild; then
-      buildVariant=debug
+      buildVariant=--debug
     fi
 
     $MAYBE_DOCKER bash -c "
@@ -901,6 +901,10 @@ while getopts "h?T:t:o:f:rc:Fn:i:d" opt "${shortArgs[@]}"; do
     edge|beta|stable|v*)
       releaseChannel=$OPTARG
       deployMethod=tar
+      ;;
+    local)
+      # just pass-through to use default values for $deployMethod and $doBuild
+      true
       ;;
     *)
       usage "Invalid release channel: $OPTARG"
