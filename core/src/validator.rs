@@ -745,6 +745,20 @@ fn post_process_restored_tower(
                     "And there is an existing vote_account containing actual votes. \
                      Aborting due to possible conflicting duplicate votes",
                 );
+                if let crate::consensus::TowerError::TooOldBlockstore(tower_root, _) = err {
+                    error!(
+                        "This error indicates there had been an unexpeted manipulation to \
+                         the ledger causing severe inconsistency between blockstore and tower.",
+                    );
+                    error!(
+                        "Please restore rocksdb/tower if you modified/copied/moved those files or \
+                         use snapshot (newer than {}) fetched from the cluster by running without \
+                         --no-snapshot-fertch or populate missing data in blockstore by running \
+                         with --no-voting and without --identity and --vote-account until rooting {}.",
+                         tower_root,
+                         tower_root,
+                    );
+                }
                 process::exit(1);
             }
             if err.is_file_missing() && !voting_has_been_active {

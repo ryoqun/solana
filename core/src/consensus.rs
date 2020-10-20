@@ -846,14 +846,9 @@ impl Tower {
         );
         assert_eq!(slot_history.check(replayed_root), Check::Found);
 
-        // reconcile_blockstore_roots_with_tower() should already have aligned these.
-        assert!(
-            tower_root <= replayed_root,
-            format!(
-                "tower root: {:?} >= replayed root slot: {}",
-                tower_root, replayed_root
-            )
-        );
+        if tower_root > replayed_root {
+            return Err(TowerError::TooOldBlockstore(tower_root, replayed_root));
+        }
         assert!(
             self.last_vote == Vote::default() && self.lockouts.votes.is_empty()
                 || self.last_vote != Vote::default() && !self.lockouts.votes.is_empty(),
@@ -1114,6 +1109,12 @@ pub enum TowerError {
     )]
     TooOldTower(Slot, Slot),
 
+    #[error(
+        "The blockstore is too old: \
+        root in tower ({0}) > root in blockstore ({1})"
+    )]
+    TooOldBlockstore(Slot, Slot),
+
     #[error("The tower is fatally inconsistent with blockstore: {0}")]
     FatallyInconsistent(&'static str),
 }
@@ -1172,12 +1173,24 @@ pub fn reconcile_blockstore_roots_with_tower(
                 ),
             })
             .collect();
-        assert!(
-            !new_roots.is_empty(),
-            "at least 1 parent slot must be found"
-        );
-
-        blockstore.set_roots(&new_roots)?;
+        if !new_roots.is_empty() {
+            info!(
+                "marking slots as root based on tower root: {:?} ({}..{}) ",
+                new_roots, tower_root, last_blockstore_root
+            );
+            blockstore.set_roots(&new_roots)?;
+        } else {
+            // This indicates we're in bad state; but still don't panic here.
+            // That's because we might have a chance of recovering properly with
+            // newer snapshot. Ultimately TooOldBlockstore should handle
+            // this bad condition.
+            warn!(
+                "Couldn't find any ancestor slots from tower root ({}) \
+                 towards ({}) in blockstore; blockstore pruned or only \
+                 tower moved?",
+                tower_root, last_blockstore_root,
+            );
+        }
     }
     Ok(())
 }
@@ -2699,8 +2712,7 @@ pub mod test {
     }
 
     #[test]
-    #[should_panic(expected = "at least 1 parent slot must be found")]
-    fn test_reconcile_blockstore_roots_with_tower_panic_no_parent() {
+    fn test_reconcile_blockstore_roots_with_tower_nop_no_parent() {
         solana_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -2716,7 +2728,9 @@ pub mod test {
 
             let mut tower = Tower::new_with_key(&Pubkey::default());
             tower.lockouts.root_slot = Some(4);
+            assert_eq!(blockstore.last_root(), 0);
             reconcile_blockstore_roots_with_tower(&tower, &blockstore).unwrap();
+            assert_eq!(blockstore.last_root(), 0);
         }
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
