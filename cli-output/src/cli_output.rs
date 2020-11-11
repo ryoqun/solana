@@ -744,6 +744,12 @@ impl fmt::Display for CliStakeState {
                             .map(|de| de > self.current_epoch)
                             .unwrap_or(true)
                 };
+                writeln!(
+                    f,
+                    "epochs {:?} {:?}",
+                    self.activation_epoch, self.deactivation_epoch
+                )?;
+                writeln!(f, "self {:#?}", self)?;
                 if show_delegation {
                     let delegated_stake = self.delegated_stake.unwrap();
                     writeln!(
