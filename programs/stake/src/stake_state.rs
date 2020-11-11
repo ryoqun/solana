@@ -312,6 +312,7 @@ impl Delegation {
         history: Option<&StakeHistory>,
         fix_stake_deactivate: bool,
     ) -> (u64, u64) {
+        eprintln!("FIX_STAKE_DEACTIVATE: {}", fix_stake_deactivate);
         let delegated_stake = self.stake;
 
         if self.is_bootstrap() {
