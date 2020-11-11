@@ -83,7 +83,7 @@ pub mod timestamp_bounding {
 }
 
 pub mod stake_program_v2 {
-    solana_sdk::declare_id!("Gvd9gGJZDHGMNf1b3jkxrfBQSR5etrfTQSBNKCvLSFJN");
+    solana_sdk::declare_id!("AgFqbhaAiommMnEuiWCX2uqD9xDRkGSvBfKkSQScHPUT");
 }
 
 lazy_static! {
