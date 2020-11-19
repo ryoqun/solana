@@ -2120,6 +2120,7 @@ fn main() {
                             activation_epoch: Epoch,
                             deactivation_epoch: Option<Epoch>,
                             point_value: Option<PointValue>,
+                            credits_observed: u64,
                         }
                         use solana_stake_program::stake_state::InflationPointCalculationEvent;
                         let mut stake_calcuration_details: HashMap<Pubkey, CalculationDetail> =
@@ -2170,6 +2171,9 @@ fn main() {
                                     }
                                     InflationPointCalculationEvent::RentExemptReserve(reserve) => {
                                         detail.rent_exempt_reserve = *reserve;
+                                    }
+                                    InflationPointCalculationEvent::CreditsObserved(credits_observed) => {
+                                        detail.credits_observed = *credits_observed;
                                     }
                                     InflationPointCalculationEvent::Delegation(
                                         delegation,
@@ -2311,6 +2315,7 @@ fn main() {
                                         deactivation_epoch: String,
                                         earned_epochs: String,
                                         earned_credits: String,
+                                        credits_observed: String,
                                         base_rewards: String,
                                         stake_rewards: String,
                                         vote_rewards: String,
@@ -2354,6 +2359,7 @@ fn main() {
                                         ),
                                         earned_epochs: format_or_na(detail.map(|d| d.epochs)),
                                         earned_credits: format_or_na(detail.map(|d| d.credits)),
+                                        credits_observed: format_or_na(detail.map(|d| d.credits_observed)),
                                         base_rewards: format_or_na(detail.map(|d| d.base_rewards)),
                                         stake_rewards: format_or_na(
                                             detail.map(|d| d.stake_rewards),
