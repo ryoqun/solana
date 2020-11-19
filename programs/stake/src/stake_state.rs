@@ -627,17 +627,24 @@ impl Stake {
             fix_stake_deactivate,
         );
 
-        if points == 0 || point_value.points == 0 {
+        if point_value.points == 0 {
             return None;
         }
+        let rewards = if points == 0 {
+            if fix_stake_deactivate {
+                0
+            } else {
+                return None;
+            }
+        } else {
+            let rewards = points
+                .checked_mul(u128::from(point_value.rewards))
+                .unwrap()
+                .checked_div(point_value.points)
+                .unwrap();
 
-        let rewards = points
-            .checked_mul(u128::from(point_value.rewards))
-            .unwrap()
-            .checked_div(point_value.points)
-            .unwrap();
-
-        let rewards = u64::try_from(rewards).unwrap();
+            u64::try_from(rewards).unwrap()
+        };
 
         // don't bother trying to split if fractional lamports got truncated
         let (voter_rewards, staker_rewards, is_split) = if rewards == 0 {
