@@ -1898,6 +1898,7 @@ fn main() {
                                     new_cap
                                 );
                             }
+                    bank.update_accounts_hash();
                     bank.set_capitalization();
 
 
