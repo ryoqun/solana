@@ -1838,17 +1838,6 @@ fn main() {
                         }
                     }
 
-                    bank.set_capitalization();
-
-                    let bank = if let Some(warp_slot) = warp_slot {
-                        Arc::new(Bank::warp_from_parent(
-                            &bank,
-                            bank.collector_id(),
-                            warp_slot,
-                        ))
-                    } else {
-                        bank
-                    };
                             let feature_account_balance = std::cmp::max(
                                 genesis_config.rent.minimum_balance(Feature::size_of()),
                                 1,
@@ -1909,7 +1898,18 @@ fn main() {
                                     new_cap
                                 );
                             }
+                    bank.set_capitalization();
 
+
+                    let bank = if let Some(warp_slot) = warp_slot {
+                        Arc::new(Bank::warp_from_parent(
+                            &bank,
+                            bank.collector_id(),
+                            warp_slot,
+                        ))
+                    } else {
+                        bank
+                    };
                     println!(
                         "Creating a version {} snapshot of slot {}",
                         snapshot_version,
