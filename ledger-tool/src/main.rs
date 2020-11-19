@@ -1849,6 +1849,66 @@ fn main() {
                     } else {
                         bank
                     };
+                            let feature_account_balance = std::cmp::max(
+                                genesis_config.rent.minimum_balance(Feature::size_of()),
+                                1,
+                            );
+                            bank.store_account(
+                                &feature_set::stake_program_v2::id(),
+                                &feature::create_account(
+                                    &Feature { activated_at: None },
+                                    feature_account_balance,
+                                ),
+                            );
+                            bank.store_account(
+                                &feature_set::rewrite_stake::id(),
+                                &feature::create_account(
+                                    &Feature { activated_at: None },
+                                    feature_account_balance,
+                                ),
+                            );
+
+                            let mut store_failed_count = 0;
+                            if bank
+                                .get_account(&feature_set::secp256k1_program_enabled::id())
+                                .is_some()
+                            {
+                                // steal some lamports from the pretty old feature not to affect
+                                // capitalizaion, which doesn't affect inflation behavior!
+                                bank.store_account(
+                                    &feature_set::secp256k1_program_enabled::id(),
+                                    &Account::default(),
+                                );
+                            } else {
+                                store_failed_count += 1;
+                            }
+
+                            if bank
+                                .get_account(&feature_set::instructions_sysvar_enabled::id())
+                                .is_some()
+                            {
+                                bank.store_account(
+                                    &feature_set::instructions_sysvar_enabled::id(),
+                                    &Account::default(),
+                                );
+                            } else {
+                                store_failed_count += 1;
+                            }
+                            if store_failed_count >= 1 {
+                                // we have no choice; maybe locally created blank cluster with
+                                // not-Development cluster type.
+                                let old_cap = bank.set_capitalization();
+                                let new_cap = bank.capitalization();
+                                warn!(
+                                    "Skewing capitalization a bit to enable stake_program_v2 as \
+                                     requested: increasing {} from {} to {}",
+                                    feature_account_balance, old_cap, new_cap,
+                                );
+                                assert_eq!(
+                                    old_cap + feature_account_balance * store_failed_count,
+                                    new_cap
+                                );
+                            }
 
                     println!(
                         "Creating a version {} snapshot of slot {}",
