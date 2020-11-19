@@ -670,7 +670,7 @@ impl Stake {
             //  is_split means there should be tokens on both sides,
             //  uncool to move credits_observed if one side didn't get paid
             if fix_stake_deactivate {
-                return (0, 0, credits_observed);
+                return Some((0, 0, credits_observed));
             } else {
                 return None;
             }
