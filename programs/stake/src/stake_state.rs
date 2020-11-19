@@ -595,10 +595,15 @@ impl Stake {
         let rewards = u64::try_from(rewards).unwrap();
 
         // don't bother trying to split if fractional lamports got truncated
-        if rewards == 0 {
-            return None;
-        }
-        let (voter_rewards, staker_rewards, is_split) = vote_state.commission_split(rewards);
+        let (voter_rewards, staker_rewards, is_split) = if rewards == 0 {
+            if fix_stake_deactivate {
+                (0, 0, false)
+            } else {
+                return None;
+            }
+        } else {
+            vote_state.commission_split(rewards)
+        };
         if let Some(inflation_point_calc_tracer) = inflation_point_calc_tracer {
             inflation_point_calc_tracer(&InflationPointCalculationEvent::SplitRewards(
                 rewards,
@@ -2998,6 +3003,23 @@ mod tests {
             stake.calculate_rewards(
                 &PointValue {
                     rewards: 4,
+                    points: 4
+                },
+                &vote_state,
+                None,
+                &mut null_tracer(),
+                true,
+            )
+        );
+
+        // now one with inflation disabled. no one gets paid, but we still need
+        // to advance the stake state's observed_credits field to prevent back-
+        // paying rewards when inflation is turned on.
+        assert_eq!(
+            Some((0, 0, 4)),
+            stake.calculate_rewards(
+                &PointValue {
+                    rewards: 0,
                     points: 4
                 },
                 &vote_state,
