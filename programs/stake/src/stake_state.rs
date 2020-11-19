@@ -669,7 +669,11 @@ impl Stake {
             // don't collect if we lose a whole lamport somewhere
             //  is_split means there should be tokens on both sides,
             //  uncool to move credits_observed if one side didn't get paid
-            return None;
+            if fix_stake_deactivate {
+                retun (0, 0, credits_observed)
+            } else {
+                return None;
+            }
         }
 
         Some((staker_rewards, voter_rewards, credits_observed))
