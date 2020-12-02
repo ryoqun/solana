@@ -10,7 +10,7 @@ use {
     itertools::Itertools,
     log::*,
     regex::Regex,
-    serde::Serialize,
+    serde::{Deserialize, Serialize},
     serde_json::json,
     solana_clap_utils::{
         input_parsers::{cluster_type_of, pubkey_of, pubkeys_of},
@@ -1074,6 +1074,665 @@ static GLOBAL: Jemalloc = Jemalloc;
 /// u64::MAX as the default value means it won't delete any files by default.
 const DEFAULT_LEDGER_TOOL_ROCKS_FIFO_SHRED_STORAGE_SIZE_BYTES: u64 = std::u64::MAX;
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
+struct InflationRecord {
+    cluster_type: String,
+    rewarded_epoch: Epoch,
+    account: String,
+    owner: String,
+    old_balance: u64,
+    new_balance: u64,
+    data_size: usize,
+    delegation: String,
+    delegation_owner: String,
+    effective_stake: String,
+    delegated_stake: String,
+    rent_exempt_reserve: String,
+    activation_epoch: String,
+    deactivation_epoch: String,
+    earned_epochs: String,
+    epoch: String,
+    epoch_credits: String,
+    epoch_points: String,
+    epoch_stake: String,
+    old_credits_observed: String,
+    new_credits_observed: String,
+    base_rewards: String,
+    stake_rewards: String,
+    vote_rewards: String,
+    commission: String,
+    cluster_rewards: String,
+    cluster_points: String,
+    old_capitalization: u64,
+    new_capitalization: u64,
+}
+
+impl InflationRecord {
+    fn epoch(&self) -> Option<Epoch> {
+        if self.epoch == "N/A" {
+            None
+        } else {
+            Some(self.epoch.parse().unwrap())
+        }
+    }
+
+    fn activation_epoch(&self) -> Option<Epoch> {
+        if self.activation_epoch == "N/A" {
+            None
+        } else {
+            Some(self.activation_epoch.parse().unwrap())
+        }
+    }
+
+    fn deactivation_epoch(&self) -> Option<Epoch> {
+        if self.deactivation_epoch == "N/A" {
+            None
+        } else {
+            Some(self.deactivation_epoch.parse().unwrap())
+        }
+    }
+
+    fn effective_stake(&self) -> Option<u64> {
+        if self.effective_stake == "N/A" {
+            None
+        } else {
+            Some(self.effective_stake.parse().unwrap())
+        }
+    }
+
+    fn earned_epochs(&self) -> Option<u64> {
+        if self.earned_epochs == "N/A" {
+            None
+        } else {
+            Some(self.earned_epochs.parse().unwrap())
+        }
+    }
+
+    fn rent_exempt_reserve(&self) -> Option<u64> {
+        if self.rent_exempt_reserve == "N/A" {
+            None
+        } else {
+            Some(self.rent_exempt_reserve.parse().unwrap())
+        }
+    }
+
+    fn delegated_stake(&self) -> Option<u64> {
+        if self.delegated_stake == "N/A" {
+            None
+        } else {
+            Some(self.delegated_stake.parse().unwrap())
+        }
+    }
+
+    fn old_credits_observed(&self) -> Option<u64> {
+        if self.old_credits_observed == "N/A" {
+            None
+        } else {
+            Some(self.old_credits_observed.parse().unwrap())
+        }
+    }
+
+    fn new_credits_observed(&self) -> Option<u64> {
+        if self.new_credits_observed == "N/A" {
+            None
+        } else {
+            Some(self.new_credits_observed.parse().unwrap())
+        }
+    }
+
+    fn base_rewards(&self) -> Option<u128> {
+        if self.base_rewards == "N/A" {
+            None
+        } else {
+            Some(self.base_rewards.parse().unwrap())
+        }
+    }
+
+    fn stake_rewards(&self) -> Option<u128> {
+        if self.stake_rewards == "N/A" {
+            None
+        } else {
+            Some(self.stake_rewards.parse().unwrap())
+        }
+    }
+
+    fn vote_rewards(&self) -> Option<u128> {
+        if self.vote_rewards == "N/A" {
+            None
+        } else {
+            Some(self.vote_rewards.parse().unwrap())
+        }
+    }
+
+    fn cluster_rewards(&self) -> Option<u128> {
+        if self.cluster_rewards == "N/A" {
+            None
+        } else {
+            Some(self.cluster_rewards.parse().unwrap())
+        }
+    }
+
+    fn commission(&self) -> Option<u8> {
+        if self.commission == "N/A" {
+            None
+        } else {
+            Some(self.commission.parse().unwrap())
+        }
+    }
+
+    fn epoch_points(&self) -> Option<u128> {
+        if self.epoch_points == "N/A" {
+            None
+        } else {
+            Some(self.epoch_points.parse().unwrap())
+        }
+    }
+
+    fn epoch_credits(&self) -> Option<u128> {
+        if self.epoch_credits == "N/A" {
+            None
+        } else {
+            Some(self.epoch_credits.parse().unwrap())
+        }
+    }
+
+    fn epoch_stake(&self) -> Option<u128> {
+        if self.epoch_stake == "N/A" {
+            None
+        } else {
+            Some(self.epoch_stake.parse().unwrap())
+        }
+    }
+
+    fn cluster_points(&self) -> Option<u128> {
+        if self.cluster_points == "N/A" {
+            None
+        } else {
+            Some(self.cluster_points.parse().unwrap())
+        }
+    }
+
+    fn is_stake(&self) -> bool {
+        self.base_rewards().is_some()
+    }
+
+    fn is_vote(&self) -> bool {
+        !self.is_stake()
+    }
+}
+
+#[derive(Default)]
+struct EpochInflation(Vec<InflationRecord>);
+
+enum Event {
+    OnNextRecord(InflationRecord),
+    OnFinish,
+}
+
+impl EpochInflation {
+    fn add(&mut self, record: InflationRecord) {
+        self.0.push(record);
+    }
+
+    fn run_record_verify(&self, label: &'static str, mut verifier: impl FnMut(&Event) -> bool) {
+        let all = self.0.len();
+        let mut ok = 0;
+        let mut ng = 0;
+        for record in self.0.iter() {
+            if !verifier(&Event::OnNextRecord(record.clone())) {
+                //error!("failed: {:?}", record);
+                ng += 1;
+            } else {
+                ok += 1;
+            }
+
+            print!("\r{}: {}/{} (NG: {})", label, ok, all, ng);
+        }
+        if !verifier(&Event::OnFinish) {
+            print!("\r{}: {}/{} (NG: {} + 1)", label, ok, all, ng);
+        } else {
+            print!("\r{}: {}/{} 1/1 (NG: {})", label, ok, all, ng);
+        }
+        println!("");
+    }
+
+    fn run_record_verify_simple(&self, label: &'static str, mut verifier: impl FnMut(&InflationRecord) -> bool) {
+        let all = self.0.len();
+        let mut ok = 0;
+        let mut ng = 0;
+        for record in self.0.iter() {
+            if !verifier(record) {
+                //error!("{}: failed: {:?}", label, record);
+                ng += 1;
+            } else {
+                ok += 1;
+            }
+
+            print!("\r{}: {}/{} (NG: {})", label, ok, all, ng);
+        }
+        println!("");
+    }
+
+    fn balance_only_increases(&self) {
+        self.run_record_verify_simple("balance only increases", |record| record.old_balance <= record.new_balance)
+    }
+
+    fn commission_is_under_100(&self) {
+        self.run_record_verify_simple("commission is under 100", |record| if record.is_stake() {
+            record.commission().unwrap() <= 100
+        } else {
+            true
+        })
+    }
+
+    fn all_commission_no_stake_reward(&self) {
+        self.run_record_verify_simple("all commission no stake reward", |record| if record.is_stake() {
+            if record.commission().unwrap() == 100 {
+                record.stake_rewards().unwrap() == 0 && record.vote_rewards().unwrap() == record.base_rewards().unwrap()
+            } else {
+                true
+            }
+        } else {
+            true
+        })
+    }
+
+    fn no_commission_all_stake_reward(&self) {
+        self.run_record_verify_simple("no commission all stake reward", |record| if record.is_stake() {
+            if record.commission().unwrap() == 0 {
+                record.vote_rewards().unwrap() == 0 && record.stake_rewards().unwrap() == record.base_rewards().unwrap()
+            } else {
+                true
+            }
+        } else {
+            true
+        })
+    }
+
+    fn sum_of_split_rewards_less_than_base_reward(&self) {
+        self.run_record_verify_simple("sum of split rewards less than base rewards", |record| if record.is_stake() {
+            record.vote_rewards().unwrap() + record.stake_rewards().unwrap() <= record.base_rewards().unwrap()
+        } else {
+            true
+        })
+    }
+
+    fn no_multiple_earned_epoch(&self) {
+        self.run_record_verify_simple("no multiple earned epoch", |record| if record.is_stake() {
+            record.earned_epochs().unwrap() <= 1
+        } else {
+            true
+        })
+    }
+
+    fn no_future_earned_epoch(&self) {
+        self.run_record_verify_simple("no future earned epoch", |record| 
+             match record.epoch() {
+                 Some(earned_epoch) => record.rewarded_epoch >= earned_epoch,
+                 None =>  true
+             }
+        )
+    }
+
+    fn zero_new_credits_observed_not_existing(&self) {
+        self.run_record_verify_simple("zero new credits observed", |record| record.old_credits_observed() == Some(0) || record.new_credits_observed() != Some(0))
+    }
+
+    fn credits_observed_increasing(&self) {
+        self.run_record_verify_simple("credits incresing", |record|
+            match (record.old_credits_observed(), record.new_credits_observed()) {
+                (Some(old), Some(new)) => old <= new,
+                (None, None) => true,
+                _ => panic!("odd"),
+            }
+        )
+    }
+
+    fn credits_observed_capped_to_max_epoch_slots(&self) {
+        self.run_record_verify_simple("credits incresing capped to max slots in epoch", |record|
+            match (record.old_credits_observed(), record.new_credits_observed()) {
+                (Some(old), Some(new)) => (new - old) <= 432000,
+                (None, None) => true,
+                _ => panic!("odd"),
+            }
+        )
+    }
+
+    fn vote_owner_should_vote11111(&self) {
+        self.run_record_verify_simple("vote owner should vote11111", |record| {
+            if record.is_vote() {
+                record.owner == "Vote111111111111111111111111111111111111111"
+            } else {
+                true
+            }
+        })
+    }
+
+    fn stake_owner_should_stake11111(&self) {
+        self.run_record_verify_simple("stake owner should stake1111", |record| {
+            if record.is_stake() {
+                record.owner == "Stake11111111111111111111111111111111111111"
+            } else {
+                true
+            }
+        })
+    }
+
+    fn delegation_owner_should_vote11111(&self) {
+        self.run_record_verify_simple("delegation owner should vote", |record| {
+            if record.is_stake() {
+                record.delegation_owner == "Vote111111111111111111111111111111111111111"
+            } else {
+                true
+            }
+        })
+    }
+
+    fn stake_less_than_balance(&self) {
+        self.run_record_verify_simple("stake less than balance", |record| {
+            match record.delegated_stake() {
+                Some(stake) => stake <= record.old_balance,
+                None => true,
+            }
+        })
+    }
+
+    fn stake_and_rent_exempt_less_than_balance(&self) {
+        self.run_record_verify_simple("stake and rent exempt less than balance", |record| {
+            match record.delegated_stake() {
+                Some(stake) => record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance,
+                None => true,
+            }
+        })
+    }
+
+    fn effective_less_than_delegated(&self) {
+        self.run_record_verify_simple("effective less than delegated", |record| {
+            match record.delegated_stake() {
+                Some(delegated) => {
+                    record.effective_stake().unwrap() <= delegated
+                },
+                None => true,
+            }
+        })
+    }
+
+    fn effective_no_stake_no_reward(&self) {
+        self.run_record_verify_simple("effective no stake no reward", |record| {
+            match record.effective_stake() {
+                Some(effective) => {
+                    if effective == 0 {
+                        record.base_rewards().unwrap() == 0
+                    } else {
+                        true
+                    }
+                },
+                None => true,
+            }
+        })
+    }
+
+    fn points_equal_stake_times_credits(&self) {
+        self.run_record_verify_simple("points == stake * credits", |record| {
+            match record.epoch_points() {
+                Some(epoch_points) => {
+                    epoch_points == record.epoch_credits().unwrap() * record.epoch_stake().unwrap()
+                },
+                None => true,
+            }
+        })
+    }
+
+    fn data_size_and_rent_exempt(&self) {
+        self.run_record_verify_simple("data size and rent exempt", |record| {
+            if record.is_stake() {
+                match record.data_size {
+                    200 => record.rent_exempt_reserve().unwrap() == 2_282_880,
+                    4008 => record.rent_exempt_reserve().unwrap() == 28_786_560,
+                    _ => panic!("odd"),
+                }
+            } else {
+                true
+            }
+        })
+    }
+
+    fn deactivated_without_activated(&self) {
+        self.run_record_verify_simple("deactivated_without_activated", |record| {
+            if record.is_stake() {
+                match (record.activation_epoch(), record.deactivation_epoch()) {
+                    (None, Some(_)) => false,
+                    (None, None) => panic!("odd"),
+                    _ => true,
+                }
+            } else {
+                true
+            }
+        })
+    }
+
+    fn no_stuck_deactivated(&self) {
+        self.run_record_verify_simple("no stuck deactivated", |record| {
+            if record.is_stake() {
+                match record.deactivation_epoch() {
+                    Some(deactivation_epoch) => if deactivation_epoch < record.rewarded_epoch {
+                        record.effective_stake().unwrap() == 0
+                    } else {
+                        true
+                    },
+                    _ => true,
+                }
+            } else {
+                true
+            }
+        })
+    }
+
+    fn sum_base_rewards_less_than_cluster_rewards(&self) {
+        let mut sum = 0;
+        let mut cluster_rewards = 0;
+        let mut stakes = HashSet::new();
+
+        self.run_record_verify("sum base rewards less than cluster rewards", |event|
+            match event {
+                Event::OnNextRecord(record) => {
+                    //dbg!(record.cluster_rewards(), record.base_rewards());
+                    if !stakes.contains(&record.account.clone()) {
+                        stakes.insert(record.account.clone());
+                        match (record.cluster_rewards(), record.base_rewards()) {
+                            (Some(cr), Some(base_rewards)) => {sum += base_rewards; cluster_rewards = cr; true},
+                            (None, None) => true,
+                            (Some(_), None) => true,
+                            (None, Some(base_rewards)) => base_rewards == 0,
+                        }
+                    } else {
+                        true
+                    }
+                },
+                Event::OnFinish => {
+                    //warn!("{}, {}", sum, cluster_rewards);
+                    sum <= cluster_rewards
+                }
+            }
+        )
+    }
+
+    fn sum_balance_increase_equal_to_capitalization(&self) {
+        let mut sum = 0;
+        let mut old_capitalization = 0;
+        let mut new_capitalization = 0;
+        let mut stakes = HashSet::new();
+
+        self.run_record_verify("sum balance increase equal to capitalization", |event|
+            match event {
+                Event::OnNextRecord(record) => {
+                    //dbg!(record.cluster_rewards(), record.base_rewards());
+                    if !stakes.contains(&record.account.clone()) {
+                        stakes.insert(record.account.clone());
+                        sum += record.new_balance - record.old_balance;
+                        old_capitalization = record.old_capitalization;
+                        new_capitalization = record.new_capitalization;
+                        true
+                    } else {
+                        true
+                    }
+                },
+                Event::OnFinish => {
+                    //warn!("{}, {}", old_capitalization + sum, new_capitalization);
+                    old_capitalization + sum == new_capitalization
+                }
+            }
+        )
+    }
+
+    fn sum_of_vote_equal_grouped(&self) {
+        let mut votes = HashMap::new();
+        let mut increases = HashMap::<String, u128>::new();
+        let mut stakes = HashSet::new();
+
+        self.run_record_verify("sum of vote", |event|
+            match event {
+                Event::OnNextRecord(record) => {
+                    if record.is_stake() {
+                        if !stakes.contains(&record.account.clone()) {
+                            stakes.insert(record.account.clone());
+                            let e = increases.entry(record.delegation.clone()).or_default();
+                            //dbg!(&(record, *e));
+                            *e += record.vote_rewards().unwrap();
+                        }
+                    } else {
+                        let e = votes.entry(record.account.clone()).or_default();
+                        *e = (record.new_balance - record.old_balance) as u128;
+                    }
+                    true
+                },
+                Event::OnFinish => {
+                    //warn!("{}, {}", old_capitalization + sum, new_capitalization);
+                    //old_capitalization + sum == new_capitalization
+                    //dbg!(&increases);
+                    votes.iter().all(|(address, increase)| {
+                        //dbg!(increases.get(address).copied().unwrap_or_default(),  *increase);
+                        increases.get(address).copied().unwrap_or_default() == *increase
+                    })
+                }
+            }
+        )
+    }
+
+    fn no_duplicate_epoch_points(&self) {
+        let mut stake_epoch_points = HashSet::new();
+        self.run_record_verify_simple("no duplicate epoch points", |record| 
+            if record.epoch_points().is_some() {
+                if stake_epoch_points.contains(&(record.account.clone(), record.epoch().unwrap())) {
+                    false
+                } else {
+                    stake_epoch_points.insert((record.account.clone(), record.epoch().unwrap()));
+                    true
+                }
+            } else {
+                true
+            }
+        )
+    }
+
+    fn sum_of_epoch_points_equal_to_base_rewards(&self) {
+        let mut sum_of_epoch_epoch_points = HashMap::<String, u128>::new();
+        let mut base_rewards_by_stake = HashMap::new();
+        let mut stakes = HashSet::new();
+        let mut cluster_rewards = None;
+        let mut cluster_points = None;
+
+        self.run_record_verify("sum of epoch points == base rewards", |event|
+            match event {
+                Event::OnNextRecord(record) => {
+                    if record.is_stake() {
+                        if !stakes.contains(&record.account.clone()) {
+                            stakes.insert(record.account.clone());
+                            if let Some(base_rewards) = record.base_rewards() {
+                                base_rewards_by_stake.insert(record.account.clone(), base_rewards);
+                                cluster_rewards = record.cluster_rewards();
+                                cluster_points = record.cluster_points();
+                            }
+                        }
+                        let e = sum_of_epoch_epoch_points.entry(record.account.clone()).or_default();
+                        //dbg!(&(record, *e));
+                        if let Some(epoch_points) = record.epoch_points() {
+                            *e += epoch_points;
+                        }
+                    }
+                    true
+                },
+                Event::OnFinish => {
+                    //warn!("{}, {}", old_capitalization + sum, new_capitalization);
+                    //old_capitalization + sum == new_capitalization
+                    //dbg!(&sum_of_epoch_epoch_points);
+                    base_rewards_by_stake.iter().all(|(address, base_rewards)| {
+                        //dbg!(sum_of_epoch_epoch_points.get(address).copied().unwrap_or_default(),  *increase);
+                        sum_of_epoch_epoch_points.get(address).copied().unwrap() * cluster_rewards.unwrap() / cluster_points.unwrap() == *base_rewards
+                    })
+                }
+            }
+        )
+    }
+
+    fn sum_base_points_equal_to_cluster_points(&self) {
+        let mut sum = 0;
+        let mut cluster_points = 0;
+        self.run_record_verify("sum base points equal to cluster points", |event|
+            match event {
+                Event::OnNextRecord(record) => {
+                    match (record.cluster_points(), record.epoch_points()) {
+                        (Some(cp), Some(epoch_points)) => {sum += epoch_points; cluster_points = cp; true},
+                        (None, None) => true,
+                        (Some(_), None) => true,
+                        (None, Some(epoch_points)) => {
+                             true
+                        }
+                    }
+                },
+                Event::OnFinish => {
+                    //warn!("{}, {}", sum, cluster_points);
+                    sum == cluster_points
+                }
+            }
+        )
+    }
+
+
+    fn verify(&self) {
+        self.sum_of_epoch_points_equal_to_base_rewards();
+        self.points_equal_stake_times_credits();
+        self.balance_only_increases();
+        self.commission_is_under_100();
+        self.all_commission_no_stake_reward();
+        self.no_commission_all_stake_reward();
+        self.sum_of_split_rewards_less_than_base_reward();
+        self.zero_new_credits_observed_not_existing();
+        self.credits_observed_increasing();
+        self.credits_observed_capped_to_max_epoch_slots();
+        self.vote_owner_should_vote11111();
+        self.stake_owner_should_stake11111();
+        self.delegation_owner_should_vote11111();
+        self.stake_less_than_balance();
+        self.stake_and_rent_exempt_less_than_balance();
+        self.effective_less_than_delegated();
+        self.effective_no_stake_no_reward();
+        self.data_size_and_rent_exempt();
+        self.deactivated_without_activated();
+        // yield should similar across stakes grouped by vote
+        self.no_duplicate_epoch_points();
+        // consistent full epoch_credits grouped for each voter
+        // partial epoch_credits should be less than would-be full epoch_credits
+        self.no_future_earned_epoch();
+        self.no_multiple_earned_epoch();
+        self.no_stuck_deactivated();
+        self.sum_base_rewards_less_than_cluster_rewards();
+        self.sum_base_points_equal_to_cluster_points();
+        self.sum_balance_increase_equal_to_capitalization();
+        self.sum_of_vote_equal_grouped();
+    }
+}
+
 #[allow(clippy::cognitive_complexity)]
 fn main() {
     // Ignore SIGUSR1 to prevent long-running calls being killed by logrotate
@@ -1090,6 +1749,15 @@ fn main() {
     const DEFAULT_LATEST_OPTIMISTIC_SLOTS_COUNT: &str = "1";
     const DEFAULT_MAX_SLOTS_ROOT_REPAIR: &str = "2000";
     solana_logger::setup_with_default("solana=info");
+
+    let mut rdr = csv::Reader::from_reader(io::stdin());
+    let mut epoch_inflation = EpochInflation::default();
+    for result in rdr.deserialize() {
+        let record: InflationRecord = result.unwrap();
+        epoch_inflation.add(record);
+    }
+    epoch_inflation.verify();
+    exit(1);
 
     let starting_slot_arg = Arg::with_name("starting_slot")
         .long("starting-slot")
@@ -3479,38 +4147,6 @@ fn main() {
                                         detail,
                                     );
                                     if let Some(ref mut csv_writer) = csv_writer {
-                                        #[derive(Serialize)]
-                                        struct InflationRecord {
-                                            cluster_type: String,
-                                            rewarded_epoch: Epoch,
-                                            account: String,
-                                            owner: String,
-                                            old_balance: u64,
-                                            new_balance: u64,
-                                            data_size: usize,
-                                            delegation: String,
-                                            delegation_owner: String,
-                                            effective_stake: String,
-                                            delegated_stake: String,
-                                            rent_exempt_reserve: String,
-                                            activation_epoch: String,
-                                            deactivation_epoch: String,
-                                            earned_epochs: String,
-                                            epoch: String,
-                                            epoch_credits: String,
-                                            epoch_points: String,
-                                            epoch_stake: String,
-                                            old_credits_observed: String,
-                                            new_credits_observed: String,
-                                            base_rewards: String,
-                                            stake_rewards: String,
-                                            vote_rewards: String,
-                                            commission: String,
-                                            cluster_rewards: String,
-                                            cluster_points: String,
-                                            old_capitalization: u64,
-                                            new_capitalization: u64,
-                                        }
                                         fn format_or_na<T: std::fmt::Display>(
                                             data: Option<T>,
                                         ) -> String {
