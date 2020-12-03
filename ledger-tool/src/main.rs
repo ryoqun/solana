@@ -1365,6 +1365,15 @@ impl EpochInflation {
         })
     }
 
+    fn epoch_stake_less_than_delegated(&self) {
+        self.run_record_verify_simple("epoch stake less than delegated", |record|
+             match record.epoch_stake() {
+                 Some(epoch_stake) => epoch_stake <= record.delegated_stake().unwrap() as u128,
+                 None =>  true
+             }
+        )
+    }
+
     fn no_future_earned_epoch(&self) {
         self.run_record_verify_simple("no future earned epoch", |record| 
              match record.epoch() {
@@ -1635,6 +1644,52 @@ impl EpochInflation {
         )
     }
 
+    fn consistent_interast_rate_grouped_by_voter(&self) {
+        let mut interest_rates_by_voter = HashMap::<String, Vec<(String, f64)>>::new();
+        let mut stakes = HashSet::new();
+
+        self.run_record_verify("consistent interst rate grouped by vorter", |event|
+            match event {
+                Event::OnNextRecord(record) => {
+                    if record.is_stake() {
+                        if !stakes.contains(&record.account.clone()) {
+                            stakes.insert(record.account.clone());
+                            if let Some(base_rewards) = record.base_rewards() {
+                                let base_stake = record.effective_stake().unwrap();
+                                if base_rewards > 0 && base_stake > 0 {
+                                    // thre isn't much granuity to compare to others
+                                    if base_rewards < 1000 {
+                                        return true;
+                                    }
+
+                                    let rate = base_rewards as f64 / base_stake as f64;
+                                    let e = interest_rates_by_voter.entry(record.delegation.clone()).or_default();
+                                    e.push((record.account.clone(), rate));
+                                }
+                            }
+                        }
+                    }
+                    true
+                },
+                Event::OnFinish => {
+                    //warn!("{}, {}", old_capitalization + sum, new_capitalization);
+                    //old_capitalization + sum == new_capitalization
+                    //dbg!(&interest_rates_by_voter);
+                    interest_rates_by_voter.clone().into_iter().all(|(voter, mut interest_rates)| {
+                        interest_rates.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+                        let (first, last) = (interest_rates.first().unwrap().1, interest_rates.last().unwrap().1);
+                        if last / first < 1.001 {
+                            true
+                        } else {
+                            dbg!(&(voter, interest_rates.clone(), first, last));
+                            false
+                        }
+                    })
+                }
+            }
+        )
+    }
+
     fn sum_of_epoch_points_equal_to_base_rewards(&self) {
         let mut sum_of_epoch_epoch_points = HashMap::<String, u128>::new();
         let mut base_rewards_by_stake = HashMap::new();
@@ -1700,6 +1755,7 @@ impl EpochInflation {
 
 
     fn verify(&self) {
+        self.consistent_interast_rate_grouped_by_voter();
         self.sum_of_epoch_points_equal_to_base_rewards();
         self.points_equal_stake_times_credits();
         self.balance_only_increases();
@@ -1719,12 +1775,12 @@ impl EpochInflation {
         self.effective_no_stake_no_reward();
         self.data_size_and_rent_exempt();
         self.deactivated_without_activated();
-        // yield should similar across stakes grouped by vote
         self.no_duplicate_epoch_points();
         // consistent full epoch_credits grouped for each voter
         // partial epoch_credits should be less than would-be full epoch_credits
         self.no_future_earned_epoch();
         self.no_multiple_earned_epoch();
+        self.epoch_stake_less_than_delegated();
         self.no_stuck_deactivated();
         self.sum_base_rewards_less_than_cluster_rewards();
         self.sum_base_points_equal_to_cluster_points();
