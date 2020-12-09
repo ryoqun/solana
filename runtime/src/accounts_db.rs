@@ -2249,18 +2249,23 @@ impl AccountsDB {
     ) -> Result<(Hash, u64), BankHashVerificationError> {
         use BankHashVerificationError::*;
         let mut scan = Measure::start("scan");
-        let keys: Vec<_> = self
+        let keys: Vec<_, _> = self
             .accounts_index
             .account_maps
             .read()
             .unwrap()
             .keys()
             .cloned()
+            .enumerate()
             .collect();
         let mismatch_found = AtomicU64::new(0);
         let hashes: Vec<(Pubkey, Hash, u64)> = keys
             .par_iter()
-            .filter_map(|pubkey| {
+            .filter_map(|(pubkey, index)| {
+                if index % 1000 {
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                }
+
                 if let Some((lock, index)) =
                     self.accounts_index.get(pubkey, Some(ancestors), Some(slot))
                 {
