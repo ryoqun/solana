@@ -2258,12 +2258,14 @@ impl AccountsDB {
             .cloned()
             .collect();
         let mismatch_found = AtomicU64::new(0);
+        let mut index = 0;
         let hashes: Vec<(Pubkey, Hash, u64)> = keys
             .iter()
             .filter_map(|pubkey| {
                 if index % 10000 == 0 {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                 }
+                index += 1;
 
                 if let Some((lock, index)) =
                     self.accounts_index.get(pubkey, Some(ancestors), Some(slot))
