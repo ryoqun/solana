@@ -2249,7 +2249,7 @@ impl AccountsDB {
     ) -> Result<(Hash, u64), BankHashVerificationError> {
         use BankHashVerificationError::*;
         let mut scan = Measure::start("scan");
-        let keys: Vec<_, _> = self
+        let keys: Vec<_> = self
             .accounts_index
             .account_maps
             .read()
