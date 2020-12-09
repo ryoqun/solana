@@ -2263,7 +2263,7 @@ impl AccountsDB {
             .par_iter()
             .filter_map(|(index, pubkey)| {
                 if index % 1000 == 0 {
-                    std::thread::sleep(std::time::Duration::from_millis(2));
+                    std::thread::sleep(std::time::Duration::from_millis(10));
                 }
 
                 if let Some((lock, index)) =
