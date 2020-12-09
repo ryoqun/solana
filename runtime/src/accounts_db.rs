@@ -2261,7 +2261,7 @@ impl AccountsDB {
         let mismatch_found = AtomicU64::new(0);
         let hashes: Vec<(Pubkey, Hash, u64)> = keys
             .par_iter()
-            .filter_map(|(pubkey, index)| {
+            .filter_map(|(index, pubkey)| {
                 if index % 1000 {
                     std::thread::sleep(std::time::Duration::from_millis(1));
                 }
