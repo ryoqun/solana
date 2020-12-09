@@ -2256,13 +2256,12 @@ impl AccountsDB {
             .unwrap()
             .keys()
             .cloned()
-            .enumerate()
             .collect();
         let mismatch_found = AtomicU64::new(0);
         let hashes: Vec<(Pubkey, Hash, u64)> = keys
-            .par_iter()
+            .iter()
             .filter_map(|(index, pubkey)| {
-                if index % 1000 == 0 {
+                if index % 10000 == 0 {
                     std::thread::sleep(std::time::Duration::from_millis(10));
                 }
 
