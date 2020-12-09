@@ -2262,7 +2262,7 @@ impl AccountsDB {
         let hashes: Vec<(Pubkey, Hash, u64)> = keys
             .par_iter()
             .filter_map(|(index, pubkey)| {
-                if index % 1000 {
+                if index % 1000 == 0 {
                     std::thread::sleep(std::time::Duration::from_millis(1));
                 }
 
