@@ -1400,11 +1400,96 @@ impl EpochInflation {
     fn credits_observed_capped_to_max_epoch_slots(&self) {
         self.run_record_verify_simple("credits incresing capped to max slots in epoch", |record|
             match (record.old_credits_observed(), record.new_credits_observed()) {
-                (Some(old), Some(new)) => (new - old) <= 432000,
+                (Some(old), Some(new)) => {
+                    // the next epoch of activation epoch usually earns some additional credits
+                    // (upto twice)
+                    if (record.activation_epoch().unwrap() + 1 == record.rewarded_epoch && (new - old) <= 432000 * 2)|| (new - old) <= 432000 {
+                        true
+                    } else {
+                        dbg!(new - old, record);
+                        false
+                    }
+                },
                 (None, None) => true,
                 _ => panic!("odd"),
             }
         )
+    }
+
+    fn epoch_credits_to_max_epoch_slots(&self) {
+        self.run_record_verify_simple("epoch credits to max epoch sltos", |record|
+            match record.epoch_credits() {
+                Some(epoch_credits) => {
+                    epoch_credits <= 432000
+                },
+                _ => true,
+            }
+        )
+    }
+
+    fn epoch_always_increase(&self) {
+        let mut last_account = None;
+        let mut last_delegation = None;
+        let mut last_epoch = 0;
+        self.run_record_verify_simple("epoch always increase", |record| {
+            if record.delegation == "N/A" { return true; };
+
+            match record.epoch() {
+                Some(epoch) => {
+                    if last_account == Some(record.account.clone()) && last_delegation == Some(record.delegation.clone()) {
+                        if epoch > last_epoch {
+                            last_epoch = epoch;
+                            true
+                        } else {
+                            false
+                        }
+                    } else {
+                        last_account = Some(record.account.clone());
+                        last_epoch = epoch;
+                        last_delegation = Some(record.delegation.clone());
+                        true
+                    }
+                },
+                _ => true,
+            }
+        })
+    }
+
+    fn consistent_full_epoch_credits_by_vote(&self) {
+        let mut vote_and_credits = BTreeMap::new();
+
+        self.run_record_verify_simple("consistent full epoch credits by vote", |record| {
+            if record.delegation == "N/A" { return true; };
+
+            match record.epoch() {
+                Some(epoch) => {
+                    let key = (record.delegation.clone(), epoch);
+                    if vote_and_credits.contains_key(&key) {
+                        *vote_and_credits.get(&key).unwrap() == record.epoch_credits().unwrap()
+                    } else {
+                        vote_and_credits.insert(key.clone(), record.epoch_credits().unwrap());
+                        true
+                    }
+                },
+                _ => true,
+            }
+        })
+    }
+
+    fn delegation_paring(&self) {
+        let mut vote_and_credits = BTreeMap::new();
+
+        self.run_record_verify_simple("delegation paring", |record| {
+            if record.delegation == "N/A" { return true; };
+
+            let value = record.delegation.clone();
+            if vote_and_credits.contains_key(&record.account) {
+                *vote_and_credits.get(&record.account).unwrap() == value
+            } else {
+                vote_and_credits.insert(record.account.clone(), value);
+                true
+            }
+        })
     }
 
     fn vote_owner_should_vote11111(&self) {
@@ -1718,6 +1803,10 @@ impl EpochInflation {
                     true
                 },
                 Event::OnFinish => {
+                    if cluster_rewards.is_none() || cluster_points.is_none() {
+                        warn!("inflation disabled??");
+                        return true;
+                    }
                     //warn!("{}, {}", old_capitalization + sum, new_capitalization);
                     //old_capitalization + sum == new_capitalization
                     //dbg!(&sum_of_epoch_epoch_points);
@@ -1766,6 +1855,10 @@ impl EpochInflation {
         self.zero_new_credits_observed_not_existing();
         self.credits_observed_increasing();
         self.credits_observed_capped_to_max_epoch_slots();
+        self.epoch_credits_to_max_epoch_slots();
+        self.epoch_always_increase();
+        self.consistent_full_epoch_credits_by_vote();
+        self.delegation_paring();
         self.vote_owner_should_vote11111();
         self.stake_owner_should_stake11111();
         self.delegation_owner_should_vote11111();
@@ -1776,7 +1869,6 @@ impl EpochInflation {
         self.data_size_and_rent_exempt();
         self.deactivated_without_activated();
         self.no_duplicate_epoch_points();
-        // consistent full epoch_credits grouped for each voter
         // partial epoch_credits should be less than would-be full epoch_credits
         self.no_future_earned_epoch();
         self.no_multiple_earned_epoch();
