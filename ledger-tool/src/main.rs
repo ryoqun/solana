@@ -1467,9 +1467,15 @@ impl EpochInflation {
                     (None, None) if record.earned_epochs().unwrap() == 0 => {
                         true
                     },
-                    (None, None) if warned => {
-                        dbg!(record);
-                        true
+                    (None, None) => {
+                        let r = record.base_rewards().unwrap() == 0 || (
+                           (record.commission().unwrap() != 0  && record.commission().unwrap() != 100) &&
+                           (record.stake_rewards().unwrap() == 0 || record.vote_rewards().unwrap() == 0)
+                        );
+                        if !r {
+                            dbg!(record);
+                        }
+                        r
                     },
                     a => panic!("odd: {:?}", a),
                 }
