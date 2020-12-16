@@ -1359,7 +1359,11 @@ impl EpochInflation {
 
     fn no_multiple_earned_epoch(&self) {
         self.run_record_verify_simple("no multiple earned epoch", |record| if record.is_stake() {
-            record.earned_epochs().unwrap() <= 1
+            if record.base_rewards().unwrap() == 0 { // no reward for this stake
+                true
+            } else {
+                record.earned_epochs().unwrap() <= 1
+            }
         } else {
             true
         })
@@ -1398,7 +1402,15 @@ impl EpochInflation {
     }
 
     fn credits_observed_capped_to_max_epoch_slots(&self) {
-        self.run_record_verify_simple("credits incresing capped to max slots in epoch", |record|
+        let mut warned = false;
+        self.run_record_verify_simple("credits incresing capped to max slots in epoch", |record| {
+            if record.cluster_rewards().is_none() || record.cluster_points().is_none() {
+                if !warned {
+                    warned = true;
+                    warn!("inflation disabled??");
+                }
+                return true;
+            };
             match (record.old_credits_observed(), record.new_credits_observed()) {
                 (Some(old), Some(new)) => {
                     // the next epoch of activation epoch usually earns some additional credits
@@ -1406,15 +1418,67 @@ impl EpochInflation {
                     if (record.activation_epoch().unwrap() + 1 == record.rewarded_epoch && (new - old) <= 432000 * 2)|| (new - old) <= 432000 {
                         true
                     } else {
-                        dbg!(new - old, record);
+                        //dbg!(new - old, record);
                         false
                     }
                 },
                 (None, None) => true,
                 _ => panic!("odd"),
             }
-        )
+        })
     }
+
+    fn credits_observed_must_be_updated_with_no_inflation(&self) {
+        let mut warned = false;
+        self.run_record_verify_simple("credits observed must be updated", |record| {
+            if !record.cluster_rewards().is_none() && !record.cluster_points().is_none() {
+                if !warned {
+                    warned = true;
+                    warn!("inflation enabled??");
+                }
+            };
+
+            if record.is_stake() {
+                match (record.old_credits_observed(), record.new_credits_observed()) {
+                    (Some(old), Some(new)) => {
+                        if !warned { 
+                            if new > old {
+                                true
+                            } else {
+                                // or detect stale vote account properly like tracer emitting vote's
+                                // root slot?
+                                if record.earned_epochs().unwrap() == 0 {
+                                    true
+                                } else {
+                                    dbg!(record);
+                                    false
+                                }
+                            }
+                        } else {
+                            if new > old {
+                                true
+                            } else if new == old {
+                                record.base_rewards().unwrap() == 0
+                            } else {
+                                panic!("aaa");
+                            }
+                        }
+                    },
+                    (None, None) if record.earned_epochs().unwrap() == 0 => {
+                        true
+                    },
+                    (None, None) if warned => {
+                        dbg!(record);
+                        true
+                    },
+                    a => panic!("odd: {:?}", a),
+                }
+            } else {
+                true
+            }
+        })
+    }
+
 
     fn epoch_credits_to_max_epoch_slots(&self) {
         self.run_record_verify_simple("epoch credits to max epoch sltos", |record|
@@ -1872,6 +1936,7 @@ impl EpochInflation {
         // partial epoch_credits should be less than would-be full epoch_credits
         self.no_future_earned_epoch();
         self.no_multiple_earned_epoch();
+        self.credits_observed_must_be_updated_with_no_inflation();
         self.epoch_stake_less_than_delegated();
         self.no_stuck_deactivated();
         self.sum_base_rewards_less_than_cluster_rewards();
