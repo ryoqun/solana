@@ -2856,9 +2856,28 @@ impl AccountsDB {
 
         // Flush all roots
         let mut flush_roots_elapsed = Measure::start("flush_roots_elapsed");
-        let cached_roots = self.accounts_cache.clear_roots();
+        let mut cached_roots: Vec<Slot> = self.accounts_cache.clear_roots().into_iter().collect();
+        // sort from highest to lowest
+        cached_roots.sort_by_key(|&b| std::cmp::Reverse(b));
+        let mut written_accounts = HashSet::new();
+        let mut account_bytes_saved = 0;
+        let mut num_accounts_saved = 0;
         for root in &cached_roots {
-            self.flush_slot_cache(*root);
+            self.flush_slot_cache(
+                *root,
+                Some(|account_key: &Pubkey, account: &Account| {
+                    // If a later root already wrote this account, no point
+                    // in flushing it
+                    let should_flush = !written_accounts.contains(account_key);
+                    if should_flush {
+                        written_accounts.insert(*account_key);
+                    } else {
+                        account_bytes_saved += account.data.len();
+                        num_accounts_saved += 1;
+                    }
+                    should_flush
+                }),
+            );
             self.accounts_cache.set_max_flush_root(*root);
         }
 
@@ -2879,20 +2898,27 @@ impl AccountsDB {
         for old_slot in old_slots {
             // Don't flush slots that are known to be unrooted
             if old_slot > max_flushed_root {
-                self.flush_slot_cache(old_slot);
+                self.flush_slot_cache(old_slot, None::<fn(&_, &_) -> bool>);
             } else {
                 unflushable_unrooted_slot_count += 1;
             }
         }
 
         datapoint_info!(
-            "accounts_db-cache-limit-slots",
+            "accounts_db-flush_accounts_cache",
             ("total_excess_slot_count", total_excess_slot_count, i64),
             (
                 "unflushable_unrooted_slot_count",
                 unflushable_unrooted_slot_count,
                 i64
             ),
+            (
+                "flush_roots_elapsed",
+                flush_roots_elapsed.as_us() as i64,
+                i64
+            ),
+            ("account_bytes_saved", account_bytes_saved, i64),
+            ("num_accounts_saved", num_accounts_saved, i64),
         );
 
         // Flush a random slot out after every force flush to catch any inconsistencies
@@ -2910,26 +2936,35 @@ impl AccountsDB {
                     "Flushing random slot: {}, num_remaining: {}",
                     *rand_slot, num_slots_remaining
                 );
-                self.flush_slot_cache(*rand_slot);
+                self.flush_slot_cache(*rand_slot, None::<fn(&_, &_) -> bool>);
             }
         }
-
-        inc_new_counter_info!("flush_roots_elapsed", flush_roots_elapsed.as_us() as usize);
     }
 
-    fn flush_slot_cache(&self, slot: Slot) {
+    fn flush_slot_cache<F>(&self, slot: Slot, mut should_flush_f: Option<F>)
+    where
+        F: FnMut(&Pubkey, &Account) -> bool,
+    {
         info!("flush_slot_cache slot: {}", slot);
         if let Some(slot_cache) = self.accounts_cache.slot_cache(slot) {
             let iter_items: Vec<_> = slot_cache.iter().collect();
             let mut total_size = 0;
             let (accounts, hashes): (Vec<(&Pubkey, &Account)>, Vec<Hash>) = iter_items
                 .iter()
-                .map(|iter_item| {
+                .filter_map(|iter_item| {
                     let key = iter_item.key();
                     let account = &iter_item.value().account;
-                    let hash = iter_item.value().hash;
-                    total_size += (account.data.len() + STORE_META_OVERHEAD) as u64;
-                    ((key, account), hash)
+                    if should_flush_f
+                        .as_mut()
+                        .map(|should_flush_f| should_flush_f(key, account))
+                        .unwrap_or(true)
+                    {
+                        let hash = iter_item.value().hash;
+                        total_size += (account.data.len() + STORE_META_OVERHEAD) as u64;
+                        Some(((key, account), hash))
+                    } else {
+                        None
+                    }
                 })
                 .unzip();
             let aligned_total_size = self.page_align(total_size);
