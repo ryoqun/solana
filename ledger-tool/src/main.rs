@@ -1595,7 +1595,14 @@ impl EpochInflation {
     fn stake_less_than_balance(&self) {
         self.run_record_verify_simple("stake less than balance", |record| {
             match record.delegated_stake() {
-                Some(stake) => stake <= record.old_balance,
+                Some(stake) => {
+                    if stake <= record.old_balance || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
+                        true
+                    } else {
+                        dbg!(&record);
+                        false
+                    }
+                },
                 None => true,
             }
         })
@@ -1604,7 +1611,14 @@ impl EpochInflation {
     fn stake_and_rent_exempt_less_than_balance(&self) {
         self.run_record_verify_simple("stake and rent exempt less than balance", |record| {
             match record.delegated_stake() {
-                Some(stake) => record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance,
+                Some(stake) => {
+                    if (record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance) || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
+                        true
+                    } else {
+                        dbg!(&record);
+                        false
+                    }
+                },
                 None => true,
             }
         })
