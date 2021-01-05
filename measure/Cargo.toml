@@ -15,9 +15,5 @@ log = "0.4.8"
 solana-sdk = { path = "../sdk", version = "1.4.19" }
 solana-metrics = { path = "../metrics", version = "1.4.19" }
 
-[target."cfg(unix)".dependencies]
-jemallocator = "0.3.2"
-jemalloc-ctl = "0.3.2"
-
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
