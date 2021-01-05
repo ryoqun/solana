@@ -2408,21 +2408,31 @@ impl AccountsDB {
         );
     }
 
-    fn purge_slot_cache_keys(&self, dead_slot: Slot, slot_cache: SlotCache) {
-        // Slot purged from cache should not exist in the backing store
-        assert!(self.storage.get_slot_stores(dead_slot).is_none());
+    fn purge_slot_cache(&self, purge_slot: Slot, slot_cache: SlotCache) -> Vec<(u64, AccountInfo)> {
         let mut purged_slot_pubkeys: HashSet<(Slot, Pubkey)> = HashSet::new();
         let pubkey_to_slot_set: Vec<(Pubkey, Slot)> = slot_cache
             .iter()
             .map(|account| {
-                purged_slot_pubkeys.insert((dead_slot, *account.key()));
-                (*account.key(), dead_slot)
+                purged_slot_pubkeys.insert((purge_slot, *account.key()));
+                (*account.key(), purge_slot)
             })
             .collect();
+        self.purge_slot_cache_keys(purge_slot, purged_slot_pubkeys, pubkey_to_slot_set)
+    }
+
+    fn purge_slot_cache_keys(
+        &self,
+        dead_slot: Slot,
+        dead_slot_pubkeys: HashSet<(Slot, Pubkey)>,
+        pubkey_to_slot_set: Vec<(Pubkey, Slot)>,
+    ) -> Vec<(u64, AccountInfo)> {
+        // Slot purged from cache should not exist in the backing store
+        assert!(self.storage.get_slot_stores(dead_slot).is_none());
         let num_purged_keys = pubkey_to_slot_set.len();
         let reclaims = self.purge_keys_exact(&pubkey_to_slot_set);
         assert_eq!(reclaims.len(), num_purged_keys);
-        self.finalize_dead_slot_removal(std::iter::once(&dead_slot), purged_slot_pubkeys, None);
+        self.finalize_dead_slot_removal(std::iter::once(&dead_slot), dead_slot_pubkeys, None);
+        reclaims
     }
 
     fn purge_slots(&self, slots: &HashSet<Slot>) {
@@ -2440,8 +2450,10 @@ impl AccountsDB {
         for remove_slot in non_roots {
             if let Some(slot_cache) = self.accounts_cache.remove_slot(*remove_slot) {
                 // If the slot is still in the cache, remove the backing storages for
-                // the slot and from the Accounts Index
-                self.purge_slot_cache_keys(*remove_slot, slot_cache);
+                // the slot. The accounts index cleaning (removing from the slot list,
+                // decrementing the account ref count), is handled in
+                // clean_accounts() -> purge_older_root_entries()
+                self.purge_slot_cache(*remove_slot, slot_cache);
             } else if let Some((_, slot_removed_storages)) = self.storage.0.remove(&remove_slot) {
                 // Because AccountsBackgroundService synchronously flushes from the accounts cache
                 // and handles all Bank::drop() (the cleanup function that leads to this
@@ -2518,7 +2530,7 @@ impl AccountsDB {
 
         if let Some(slot_cache) = self.accounts_cache.remove_slot(remove_slot) {
             // If the slot is still in the cache, remove it from the cache
-            self.purge_slot_cache_keys(remove_slot, slot_cache);
+            self.purge_slot_cache(remove_slot, slot_cache);
         }
 
         // TODO: Handle if the slot was flushed to storage while we were removing the cached
@@ -2949,6 +2961,8 @@ impl AccountsDB {
         if let Some(slot_cache) = self.accounts_cache.slot_cache(slot) {
             let iter_items: Vec<_> = slot_cache.iter().collect();
             let mut total_size = 0;
+            let mut purged_slot_pubkeys: HashSet<(Slot, Pubkey)> = HashSet::new();
+            let mut pubkey_to_slot_set: Vec<(Pubkey, Slot)> = vec![];
             let (accounts, hashes): (Vec<(&Pubkey, &Account)>, Vec<Hash>) = iter_items
                 .iter()
                 .filter_map(|iter_item| {
@@ -2963,6 +2977,10 @@ impl AccountsDB {
                         total_size += (account.data.len() + STORE_META_OVERHEAD) as u64;
                         Some(((key, account), hash))
                     } else {
+                        // If we don't flush, we have to remove the entry from the
+                        // index, since it's equivalent to purging
+                        purged_slot_pubkeys.insert((slot, *key));
+                        pubkey_to_slot_set.push((*key, slot));
                         None
                     }
                 })
@@ -2997,6 +3015,7 @@ impl AccountsDB {
             // Remove this slot from the cache, which will to AccountsDb readers should look like an
             // atomic switch from the cache to storage
             assert!(self.accounts_cache.remove_slot(slot).is_some());
+            self.purge_slot_cache_keys(slot, purged_slot_pubkeys, pubkey_to_slot_set);
         }
     }
 
