@@ -2985,8 +2985,12 @@ impl AccountsDB {
                     }
                 })
                 .unzip();
-            let aligned_total_size = self.page_align(total_size);
 
+            // Remove the account index entries from earlier roots that are outdated by later roots.
+            // Safe because queries to the index will be reading updates from later roots.
+            self.purge_slot_cache_keys(slot, purged_slot_pubkeys, pubkey_to_slot_set);
+
+            let aligned_total_size = self.page_align(total_size);
             // This ensures that all updates are written to an AppendVec, before any
             // updates to the index happen, so anybody that sees a real entry in the index,
             // will be able to find the account in storage
@@ -3015,7 +3019,6 @@ impl AccountsDB {
             // Remove this slot from the cache, which will to AccountsDb readers should look like an
             // atomic switch from the cache to storage
             assert!(self.accounts_cache.remove_slot(slot).is_some());
-            self.purge_slot_cache_keys(slot, purged_slot_pubkeys, pubkey_to_slot_set);
         }
     }
 
