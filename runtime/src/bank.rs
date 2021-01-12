@@ -3904,14 +3904,17 @@ impl Bank {
     }
 
     pub fn force_flush_accounts_cache(&self) {
-        self.rc.accounts.accounts_db.force_flush_accounts_cache()
+        self.rc
+            .accounts
+            .accounts_db
+            .force_flush_accounts_cache(Some(self.slot()))
     }
 
     pub fn flush_accounts_cache_if_needed(&self) {
         self.rc
             .accounts
             .accounts_db
-            .flush_accounts_cache_if_needed()
+            .flush_accounts_cache_if_needed(Some(self.slot()))
     }
 
     fn store_account_and_update_capitalization(&self, pubkey: &Pubkey, new_account: &Account) {

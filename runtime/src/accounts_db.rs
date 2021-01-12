@@ -49,7 +49,7 @@ use solana_vote_program::vote_state::MAX_LOCKOUT_HISTORY;
 use std::{
     borrow::Cow,
     boxed::Box,
-    collections::{BTreeMap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     convert::{TryFrom, TryInto},
     io::{Error as IOError, Result as IOResult},
     ops::RangeBounds,
@@ -2853,49 +2853,67 @@ impl AccountsDB {
 
     // Force flush the cached roots, flush any unrooted frozen slots as well if there are
     // > MAX_CACHE_SLOTS of them.
-    pub fn force_flush_accounts_cache(&self) {
-        self.flush_accounts_cache(true);
+    pub fn force_flush_accounts_cache(&self, max_clean_root: Option<Slot>) {
+        self.flush_accounts_cache(true, max_clean_root);
     }
 
-    pub fn flush_accounts_cache_if_needed(&self) {
-        self.flush_accounts_cache(false);
+    pub fn flush_accounts_cache_if_needed(&self, max_clean_root: Option<Slot>) {
+        self.flush_accounts_cache(false, max_clean_root);
     }
 
-    fn flush_accounts_cache(&self, force_flush: bool) {
-        if !force_flush && self.accounts_cache.num_slots() <= MAX_CACHE_SLOTS {
-            return;
-        }
+    fn flush_rooted_slots_cache(
+        &self,
+        max_flush_root: Option<Slot>,
+        mut should_clean: Option<(&mut usize, &mut usize)>,
+    ) {
+        let cached_roots: BTreeSet<Slot> = self.accounts_cache.clear_roots(max_flush_root);
 
-        // Flush all roots
-        let mut flush_roots_elapsed = Measure::start("flush_roots_elapsed");
-        let mut cached_roots: Vec<Slot> = self.accounts_cache.clear_roots().into_iter().collect();
-        // sort from highest to lowest
-        cached_roots.sort_by_key(|&b| std::cmp::Reverse(b));
         let mut written_accounts = HashSet::new();
-        let mut account_bytes_saved = 0;
-        let mut num_accounts_saved = 0;
-        for root in &cached_roots {
+        // Iterate from highest to lowest so that we don't need to flush earlier
+        // outdated updates in earlier roots
+        for root in cached_roots.iter().rev() {
             self.flush_slot_cache(
                 *root,
                 Some(|account_key: &Pubkey, account: &Account| {
                     // If a later root already wrote this account, no point
                     // in flushing it
-                    let should_flush = !written_accounts.contains(account_key);
-                    if should_flush {
-                        written_accounts.insert(*account_key);
+                    if let Some((account_bytes_saved, num_accounts_saved)) = should_clean.as_mut() {
+                        let should_flush = !written_accounts.contains(account_key);
+                        if should_flush {
+                            written_accounts.insert(*account_key);
+                        } else {
+                            **account_bytes_saved += account.data.len();
+                            **num_accounts_saved += 1;
+                        }
+                        should_flush
                     } else {
-                        account_bytes_saved += account.data.len();
-                        num_accounts_saved += 1;
+                        // If we're not doing any cleaning, flush everything
+                        true
                     }
-                    should_flush
                 }),
+                true,
             );
-            self.accounts_cache.set_max_flush_root(*root);
         }
 
         // Only add to the uncleaned roots set *after* we've flushed the previous roots,
         // so that clean will actually be able to clean the slots.
         self.accounts_index.add_uncleaned_roots(cached_roots);
+    }
+
+    fn flush_accounts_cache(&self, force_flush: bool, max_clean_root: Option<Slot>) {
+        if !force_flush && self.accounts_cache.num_slots() <= MAX_CACHE_SLOTS {
+            return;
+        }
+
+        // Flush only the roots <= max_clean_root, so that snapshotting has all
+        // the relevant roots in storage.
+        let mut flush_roots_elapsed = Measure::start("flush_roots_elapsed");
+        let mut account_bytes_saved = 0;
+        let mut num_accounts_saved = 0;
+        self.flush_rooted_slots_cache(
+            max_clean_root,
+            Some((&mut account_bytes_saved, &mut num_accounts_saved)),
+        );
         flush_roots_elapsed.stop();
 
         // Note we don't purge unrooted slots here because there may be ongoing scans/references
@@ -2910,7 +2928,7 @@ impl AccountsDB {
         for old_slot in old_slots {
             // Don't flush slots that are known to be unrooted
             if old_slot > max_flushed_root {
-                self.flush_slot_cache(old_slot, None::<fn(&_, &_) -> bool>);
+                self.flush_slot_cache(old_slot, None::<fn(&_, &_) -> bool>, false);
             } else {
                 unflushable_unrooted_slot_count += 1;
             }
@@ -2938,6 +2956,10 @@ impl AccountsDB {
         // that flush and don't flush if such a bug exists).
         let num_slots_remaining = self.accounts_cache.num_slots();
         if force_flush && num_slots_remaining >= FLUSH_CACHE_RANDOM_THRESHOLD {
+            // Cannot do any cleaning on roots past `max_clean_root` because future
+            // snapshots may need updates from those later slots, hence we pass `false`
+            // for `should_clean`.
+            self.flush_rooted_slots_cache(None, None);
             // Don't flush slots that are known to be unrooted
             let mut frozen_slots = self.accounts_cache.find_older_frozen_slots(0);
             frozen_slots.retain(|s| *s > max_flushed_root);
@@ -2948,12 +2970,12 @@ impl AccountsDB {
                     "Flushing random slot: {}, num_remaining: {}",
                     *rand_slot, num_slots_remaining
                 );
-                self.flush_slot_cache(*rand_slot, None::<fn(&_, &_) -> bool>);
+                self.flush_slot_cache(*rand_slot, None::<fn(&_, &_) -> bool>, false);
             }
         }
     }
 
-    fn flush_slot_cache<F>(&self, slot: Slot, mut should_flush_f: Option<F>)
+    fn flush_slot_cache<F>(&self, slot: Slot, mut should_flush_f: Option<F>, is_root: bool)
     where
         F: FnMut(&Pubkey, &Account) -> bool,
     {
@@ -3019,6 +3041,17 @@ impl AccountsDB {
             // Remove this slot from the cache, which will to AccountsDb readers should look like an
             // atomic switch from the cache to storage
             assert!(self.accounts_cache.remove_slot(slot).is_some());
+        }
+
+        // Regardless of whether this slot exists in the slot, we should update the `max_flush_root`.
+        // This is because in cases where:
+        // 1) The cache is overwhelmed, we may be flushing frozen slots
+        // 2) Random evictions
+        // Some slots may be flushed to storage *before* they are marked as root. These slots may
+        // then *later* be marked as root, so we still need to handle updating the `max_flush_root`
+        // in the accounts cache.
+        if is_root {
+            self.accounts_cache.set_max_flush_root(slot);
         }
     }
 
@@ -6893,7 +6926,7 @@ pub mod tests {
 
         // No root was added yet, requires an ancestor to find
         // the account
-        db.force_flush_accounts_cache();
+        db.force_flush_accounts_cache(None);
         let ancestors = vec![(slot, 1)].into_iter().collect();
         assert_eq!(
             db.load_slow(&ancestors, &key),
@@ -6902,7 +6935,7 @@ pub mod tests {
 
         // Add root then flush
         db.add_root(slot);
-        db.force_flush_accounts_cache();
+        db.force_flush_accounts_cache(None);
         assert_eq!(db.load_slow(&HashMap::new(), &key), Some((account0, slot)));
     }
 
@@ -6933,7 +6966,7 @@ pub mod tests {
             db.load_slow(&ancestors, &unrooted_key),
             Some((account0.clone(), unrooted_slot))
         );
-        db.force_flush_accounts_cache();
+        db.force_flush_accounts_cache(None);
 
         // After the flush, the unrooted slot is still in the cache
         assert!(db.load_slow(&ancestors, &unrooted_key).is_some());
@@ -6982,7 +7015,7 @@ pub mod tests {
             }
         }
 
-        db.flush_accounts_cache_if_needed();
+        db.flush_accounts_cache_if_needed(None);
 
         let total_slots = num_roots + num_unrooted;
         // If there's <= the max size, then nothing will be flushed from the slot
@@ -7044,7 +7077,7 @@ pub mod tests {
 
         // Flush, then clean again. Should not need another root to initiate the cleaning
         // because `accounts_index.uncleaned_roots` should be correct
-        db.force_flush_accounts_cache();
+        db.force_flush_accounts_cache(None);
         db.clean_accounts(None);
         assert!(db
             .do_load(&Ancestors::default(), &account_key, Some(0))
@@ -7121,7 +7154,7 @@ pub mod tests {
         db.add_root(2);
 
         // Flush the cache, slot 1 should remain in the cache, everything else should be flushed
-        db.force_flush_accounts_cache();
+        db.force_flush_accounts_cache(None);
         assert_eq!(db.accounts_cache.num_slots(), 1);
         assert!(db.accounts_cache.slot_cache(1).is_some());
 
@@ -7168,7 +7201,7 @@ pub mod tests {
         }
 
         accounts_db.add_root(slot);
-        accounts_db.force_flush_accounts_cache();
+        accounts_db.force_flush_accounts_cache(None);
 
         let mut storage_maps: Vec<Arc<AccountStorageEntry>> = accounts_db
             .storage
