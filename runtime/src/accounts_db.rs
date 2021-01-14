@@ -2424,7 +2424,7 @@ impl AccountsDB {
                 (*account.key(), purge_slot)
             })
             .collect();
-        self.purge_slot_cache_keys(purge_slot, purged_slot_pubkeys, pubkey_to_slot_set)
+        self.purge_slot_cache_keys(purge_slot, purged_slot_pubkeys, pubkey_to_slot_set, true)
     }
 
     fn purge_slot_cache_keys(
@@ -2432,13 +2432,16 @@ impl AccountsDB {
         dead_slot: Slot,
         dead_slot_pubkeys: HashSet<(Slot, Pubkey)>,
         pubkey_to_slot_set: Vec<(Pubkey, Slot)>,
+        is_dead: bool,
     ) -> Vec<(u64, AccountInfo)> {
         // Slot purged from cache should not exist in the backing store
         assert!(self.storage.get_slot_stores(dead_slot).is_none());
         let num_purged_keys = pubkey_to_slot_set.len();
         let reclaims = self.purge_keys_exact(&pubkey_to_slot_set);
         assert_eq!(reclaims.len(), num_purged_keys);
-        self.finalize_dead_slot_removal(std::iter::once(&dead_slot), dead_slot_pubkeys, None);
+        if is_dead {
+            self.finalize_dead_slot_removal(std::iter::once(&dead_slot), dead_slot_pubkeys, None);
+        }
         reclaims
     }
 
@@ -3001,6 +3004,7 @@ impl AccountsDB {
             let mut total_size = 0;
             let mut purged_slot_pubkeys: HashSet<(Slot, Pubkey)> = HashSet::new();
             let mut pubkey_to_slot_set: Vec<(Pubkey, Slot)> = vec![];
+            let mut is_dead_slot = true;
             let (accounts, hashes): (Vec<(&Pubkey, &Account)>, Vec<Hash>) = iter_items
                 .iter()
                 .filter_map(|iter_item| {
@@ -3013,6 +3017,10 @@ impl AccountsDB {
                     {
                         let hash = iter_item.value().hash;
                         total_size += (account.data.len() + STORE_META_OVERHEAD) as u64;
+                        // If any entry is persisted for this slot, it's not dead.
+                        // Mark this down so we don't remove pertinent information like
+                        // bank hash which is needed for snapshotting.
+                        is_dead_slot = false;
                         Some(((key, account), hash))
                     } else {
                         // If we don't flush, we have to remove the entry from the
@@ -3026,7 +3034,7 @@ impl AccountsDB {
 
             // Remove the account index entries from earlier roots that are outdated by later roots.
             // Safe because queries to the index will be reading updates from later roots.
-            self.purge_slot_cache_keys(slot, purged_slot_pubkeys, pubkey_to_slot_set);
+            self.purge_slot_cache_keys(slot, purged_slot_pubkeys, pubkey_to_slot_set, is_dead_slot);
 
             let aligned_total_size = self.page_align(total_size);
             // This ensures that all updates are written to an AppendVec, before any
