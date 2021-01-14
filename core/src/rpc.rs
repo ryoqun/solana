@@ -635,10 +635,12 @@ impl JsonRpcRequestProcessor {
                 err
             );
             if slot >= self.blockstore.max_root() {
-                return Err(RpcCustomError::BlockNotAvailable { slot }.into());
+                //return Err(RpcCustomError::BlockNotAvailable { slot }.into());
+                return Ok(())
             }
             if self.blockstore.is_skipped(slot) {
-                return Err(RpcCustomError::SlotSkipped { slot }.into());
+                //return Err(RpcCustomError::SlotSkipped { slot }.into());
+                return Ok(())
             }
         }
         Ok(())

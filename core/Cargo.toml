@@ -28,12 +28,12 @@ fs_extra = "1.1.0"
 flate2 = "1.0"
 indexmap = { version = "1.5", features = ["rayon"] }
 itertools = "0.9.0"
-jsonrpc-core = "15.0.0"
-jsonrpc-core-client = { version = "15.0.0", features = ["ws"] }
-jsonrpc-derive = "15.0.0"
-jsonrpc-http-server = "15.0.0"
-jsonrpc-pubsub = "15.0.0"
-jsonrpc-ws-server = "15.0.0"
+jsonrpc-core = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
+jsonrpc-core-client = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903", features = ["ws"] }
+jsonrpc-derive = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
+jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
+jsonrpc-pubsub = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
+jsonrpc-ws-server = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
 log = "0.4.11"
 lru = "0.6.1"
 miow = "0.2.2"

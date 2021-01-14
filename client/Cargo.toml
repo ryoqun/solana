@@ -14,7 +14,7 @@ bincode = "1.3.1"
 bs58 = "0.3.1"
 clap = "2.33.0"
 indicatif = "0.15.0"
-jsonrpc-core = "15.0.0"
+jsonrpc-core = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
 log = "0.4.11"
 net2 = "0.2.37"
 rayon = "1.5.0"
@@ -36,8 +36,8 @@ url = "2.1.1"
 
 [dev-dependencies]
 assert_matches = "1.3.0"
-jsonrpc-core = "15.0.0"
-jsonrpc-http-server = "15.0.0"
+jsonrpc-core = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
+jsonrpc-http-server = { git = "https://github.com/paritytech/jsonrpc", commit = "91cf903"}
 solana-logger = { path = "../logger", version = "1.6.0" }
 
 [package.metadata.docs.rs]

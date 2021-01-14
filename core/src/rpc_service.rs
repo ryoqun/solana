@@ -107,55 +107,6 @@ impl RpcRequestMiddleware {
         }
     }
 
-    fn process_file_get(&self, path: &str) -> RequestMiddlewareAction {
-        // Stuck on tokio 0.1 until the jsonrpc-http-server crate upgrades to tokio 0.2
-        use tokio_01::prelude::*;
-
-        let stem = path.split_at(1).1; // Drop leading '/' from path
-        let filename = {
-            match path {
-                "/genesis.tar.bz2" => {
-                    inc_new_counter_info!("rpc-get_genesis", 1);
-                    self.ledger_path.join(stem)
-                }
-                _ => {
-                    inc_new_counter_info!("rpc-get_snapshot", 1);
-                    self.snapshot_config
-                        .as_ref()
-                        .unwrap()
-                        .snapshot_package_output_path
-                        .join(stem)
-                }
-            }
-        };
-
-        let file_length = std::fs::metadata(&filename)
-            .map(|m| m.len())
-            .unwrap_or(0)
-            .to_string();
-        info!("get {} -> {:?} ({} bytes)", path, filename, file_length);
-
-        RequestMiddlewareAction::Respond {
-            should_validate_hosts: true,
-            response: Box::new(
-                tokio_fs_01::file::File::open(filename)
-                    .and_then(|file| {
-                        use tokio_codec_01::{BytesCodec, FramedRead};
-
-                        let stream = FramedRead::new(file, BytesCodec::new())
-                            .map(tokio_01_bytes::BytesMut::freeze);
-                        let body = hyper::Body::wrap_stream(stream);
-
-                        Ok(hyper::Response::builder()
-                            .header(hyper::header::CONTENT_LENGTH, file_length)
-                            .body(body)
-                            .unwrap())
-                    })
-                    .or_else(|_| Ok(RpcRequestMiddleware::not_found())),
-            ),
-        }
-    }
-
     fn health_check(&self) -> &'static str {
         let response = match self.health.check() {
             RpcHealthStatus::Ok => "ok",
@@ -175,7 +126,7 @@ impl RequestMiddleware for RpcRequestMiddleware {
                 // Convenience redirect to the latest snapshot
                 return RequestMiddlewareAction::Respond {
                     should_validate_hosts: true,
-                    response: Box::new(jsonrpc_core::futures::future::ok(
+                    response: Box::pin(jsonrpc_core::futures::future::ok(
                         if let Some((snapshot_archive, _)) =
                             snapshot_utils::get_highest_snapshot_archive_path(
                                 &snapshot_config.snapshot_package_output_path,
@@ -200,7 +151,7 @@ impl RequestMiddleware for RpcRequestMiddleware {
         if let Some(result) = process_rest(&self.bank_forks, request.uri().path()) {
             RequestMiddlewareAction::Respond {
                 should_validate_hosts: true,
-                response: Box::new(jsonrpc_core::futures::future::ok(
+                response: Box::pin(jsonrpc_core::futures::future::ok(
                     hyper::Response::builder()
                         .status(hyper::StatusCode::OK)
                         .body(hyper::Body::from(result))
@@ -208,11 +159,19 @@ impl RequestMiddleware for RpcRequestMiddleware {
                 )),
             }
         } else if self.is_file_get_path(request.uri().path()) {
-            self.process_file_get(request.uri().path())
+            RequestMiddlewareAction::Respond {
+                should_validate_hosts: true,
+                response: Box::pin(jsonrpc_core::futures::future::ok(
+                    hyper::Response::builder()
+                        .status(hyper::StatusCode::OK)
+                        .body(hyper::Body::from(self.health_check()))
+                        .unwrap(),
+                )),
+            }
         } else if request.uri().path() == "/health" {
             RequestMiddlewareAction::Respond {
                 should_validate_hosts: true,
-                response: Box::new(jsonrpc_core::futures::future::ok(
+                response: Box::pin(jsonrpc_core::futures::future::ok(
                     hyper::Response::builder()
                         .status(hyper::StatusCode::OK)
                         .body(hyper::Body::from(self.health_check()))

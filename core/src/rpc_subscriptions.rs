@@ -5,7 +5,7 @@ use crate::{
     rpc::{get_parsed_token_account, get_parsed_token_accounts},
 };
 use core::hash::Hash;
-use jsonrpc_core::futures::Future;
+use tokio_01::prelude::Future;
 use jsonrpc_pubsub::{
     typed::{Sink, Subscriber},
     SubscriptionId,
@@ -269,8 +269,7 @@ impl RpcNotifier {
     where
         T: serde::Serialize,
     {
-        self.0
-            .spawn(sink.notify(Ok(value)).map(|_| ()).map_err(|_| ()));
+        panic!();
     }
 }
 
