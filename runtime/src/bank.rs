@@ -11806,43 +11806,45 @@ pub(crate) mod tests {
 
     #[test]
     fn test_store_scan_consistency_root() {
-        test_store_scan_consistency(
-            false,
-            |bank0, bank_to_scan_sender, pubkeys_to_modify, program_id, starting_lamports| {
-                let mut current_bank = bank0.clone();
-                let mut prev_bank = bank0;
-                loop {
-                    let lamports_this_round = current_bank.slot() + starting_lamports + 1;
-                    let account = Account::new(lamports_this_round, 0, &program_id);
-                    for key in pubkeys_to_modify.iter() {
-                        current_bank.store_account(key, &account);
+        for accounts_db_caching_enabled in &[false, true] {
+            test_store_scan_consistency(
+                *accounts_db_caching_enabled,
+                |bank0, bank_to_scan_sender, pubkeys_to_modify, program_id, starting_lamports| {
+                    let mut current_bank = bank0.clone();
+                    let mut prev_bank = bank0;
+                    loop {
+                        let lamports_this_round = current_bank.slot() + starting_lamports + 1;
+                        let account = Account::new(lamports_this_round, 0, &program_id);
+                        for key in pubkeys_to_modify.iter() {
+                            current_bank.store_account(key, &account);
+                        }
+                        current_bank.freeze();
+                        // Send the previous bank to the scan thread to perform the scan.
+                        // Meanwhile this thread will squash and update roots immediately after
+                        // so the roots will update while scanning.
+                        //
+                        // The capacity of the channel is 1 so that this thread will wait for the scan to finish before starting
+                        // the next iteration, allowing the scan to stay in sync with these updates
+                        // such that every scan will see this interruption.
+                        if bank_to_scan_sender.send(prev_bank).is_err() {
+                            // Channel was disconnected, exit
+                            return;
+                        }
+                        current_bank.squash();
+                        if current_bank.slot() % 2 == 0 {
+                            current_bank.force_flush_accounts_cache();
+                            current_bank.clean_accounts(true);
+                        }
+                        prev_bank = current_bank.clone();
+                        current_bank = Arc::new(Bank::new_from_parent(
+                            &current_bank,
+                            &solana_sdk::pubkey::new_rand(),
+                            current_bank.slot() + 1,
+                        ));
                     }
-                    current_bank.freeze();
-                    // Send the previous bank to the scan thread to perform the scan.
-                    // Meanwhile this thread will squash and update roots immediately after
-                    // so the roots will update while scanning.
-                    //
-                    // The capacity of the channel is 1 so that this thread will wait for the scan to finish before starting
-                    // the next iteration, allowing the scan to stay in sync with these updates
-                    // such that every scan will see this interruption.
-                    if bank_to_scan_sender.send(prev_bank).is_err() {
-                        // Channel was disconnected, exit
-                        return;
-                    }
-
-                    current_bank.freeze();
-                    current_bank.squash();
-                    current_bank.force_flush_accounts_cache();
-                    current_bank.clean_accounts(true);
-                    prev_bank = current_bank.clone();
-                    current_bank = Arc::new(Bank::new_from_parent(
-                        &current_bank,
-                        &solana_sdk::pubkey::new_rand(),
-                        current_bank.slot() + 1,
-                    ));
-                }
-            },
-        );
+                },
+            );
+        }
     }
 
     #[test]
