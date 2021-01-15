@@ -10238,7 +10238,8 @@ pub(crate) mod tests {
     fn get_shrink_account_size() -> usize {
         let (genesis_config, _mint_keypair) = create_genesis_config(1_000_000_000);
 
-        // Set root for bank 0, with caching enabled
+        // Set root for bank 0, with caching disabled so we can get the size
+        // of the storage for this slot
         let mut bank0 = Arc::new(Bank::new_with_config(
             &genesis_config,
             HashSet::new(),
@@ -10276,12 +10277,16 @@ pub(crate) mod tests {
         bank0.restore_old_behavior_for_fragile_tests();
 
         let pubkey0_size = get_shrink_account_size();
+
         let account0 = Account::new(1000, pubkey0_size as usize, &Pubkey::new_unique());
         bank0.store_account(&pubkey0, &account0);
 
         goto_end_of_slot(Arc::<Bank>::get_mut(&mut bank0).unwrap());
         bank0.freeze();
         bank0.squash();
+        // Flush now so that accounts cache cleaning doesn't clean up bank 0 when later
+        // slots add updates to the cache
+        bank0.force_flush_accounts_cache();
 
         // Store some lamports in bank 1
         let some_lamports = 123;
@@ -10289,6 +10294,11 @@ pub(crate) mod tests {
         bank1.deposit(&pubkey1, some_lamports);
         bank1.deposit(&pubkey2, some_lamports);
         goto_end_of_slot(Arc::<Bank>::get_mut(&mut bank1).unwrap());
+        bank1.freeze();
+        bank1.squash();
+        // Flush now so that accounts cache cleaning doesn't clean up bank 0 when later
+        // slots add updates to the cache
+        bank1.force_flush_accounts_cache();
 
         // Store some lamports for pubkey1 in bank 2, root bank 2
         let mut bank2 = Arc::new(new_from_parent(&bank1));
