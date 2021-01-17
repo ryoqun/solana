@@ -3494,8 +3494,8 @@ impl AccountsDB {
     }
 
     fn finalize_dead_slot_removal<'a>(
-        &'a self,
-        dead_slots_iter: impl IntoIterator<Item = &'a Slot> + Clone,
+        &self,
+        dead_slots_iter: impl Iterator<Item = &'a Slot> + Clone,
         purged_slot_pubkeys: HashSet<(Slot, Pubkey)>,
         mut purged_account_slots: Option<&mut AccountSlots>,
     ) {
@@ -3506,13 +3506,13 @@ impl AccountsDB {
             self.accounts_index.unref_from_storage(&pubkey);
         }
 
-        let dead_slots_iter_ = dead_slots_iter.clone();
-        for slot in dead_slots_iter {
+        for slot in dead_slots_iter.clone() {
             self.accounts_index.clean_dead_slot(*slot);
         }
+
         {
             let mut bank_hashes = self.bank_hashes.write().unwrap();
-            for slot in dead_slots_iter_ {
+            for slot in dead_slots_iter {
                 bank_hashes.remove(slot);
             }
         }
@@ -3549,7 +3549,11 @@ impl AccountsDB {
                     })
             })
         };
-        self.finalize_dead_slot_removal(dead_slots, purged_slot_pubkeys, purged_account_slots);
+        self.finalize_dead_slot_removal(
+            dead_slots.iter(),
+            purged_slot_pubkeys,
+            purged_account_slots,
+        );
         measure.stop();
         inc_new_counter_info!("clean_stored_dead_slots-ms", measure.as_ms() as usize);
     }
