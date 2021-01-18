@@ -148,7 +148,7 @@ impl AccountsCache {
 
     pub fn add_root(&self, root: Slot) {
         let max_flushed_root = self.fetch_max_flush_root();
-        if root > max_flushed_root || (max_flushed_root == 0 && root == 0) {
+        if root > max_flushed_root || (root == max_flushed_root && root == 0) {
             self.maybe_unflushed_roots.write().unwrap().insert(root);
         }
     }
@@ -156,17 +156,12 @@ impl AccountsCache {
     pub fn clear_roots(&self, max_root: Option<Slot>) -> BTreeSet<Slot> {
         let mut w_maybe_unflushed_roots = self.maybe_unflushed_roots.write().unwrap();
         if let Some(max_root) = max_root {
-            let mut greater_than_equal_to_max_root =
-                w_maybe_unflushed_roots.split_off(&(max_root + 1));
+            let greater_than_max_root = w_maybe_unflushed_roots.split_off(&(max_root + 1));
 
             // After the swap, `greater_than_equal_to_max_root` now contains all slots <= root
-            std::mem::swap(
-                &mut greater_than_equal_to_max_root,
-                &mut w_maybe_unflushed_roots,
-            );
-            greater_than_equal_to_max_root
+            std::mem::replace(&mut w_maybe_unflushed_roots, greater_than_max_root)
         } else {
-            std::mem::replace(&mut w_maybe_unflushed_roots, BTreeSet::new())
+            std::mem::replace(&mut *w_maybe_unflushed_roots, BTreeSet::new())
         }
     }
 
