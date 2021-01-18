@@ -739,7 +739,7 @@ impl JsonRpcRequestProcessor {
         }
 
         Ok( {
-            std::thread::sleep(Duration::from_secs(60));
+            std::thread::sleep(std::time::Duration::from_secs(60));
             self
             .blockstore
             .rooted_slot_iterator(max(start_slot, lowest_blockstore_slot))
