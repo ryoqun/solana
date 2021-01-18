@@ -324,11 +324,12 @@ impl JsonRpcService {
         // so that we avoid the single-threaded event loops from being created automatically by
         // jsonrpc for threads when .threads(N > 1) is given.
         let event_loop = {
-            tokio_01::runtime::Builder::new()
-                .core_threads(rpc_threads)
-                .name_prefix("sol-rpc-el")
+            runtime::Builder::new()
+                .threaded_scheduler()
+                .thread_name("rpc-el-")
+                .enable_all()
                 .build()
-                .unwrap()
+                .expect("Runtime");
         };
 
         let (close_handle_sender, close_handle_receiver) = channel();
