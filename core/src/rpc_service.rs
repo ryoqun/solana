@@ -329,7 +329,7 @@ impl JsonRpcService {
                 .thread_name("rpc-el-")
                 .enable_all()
                 .build()
-                .expect("Runtime");
+                .expect("Runtime")
         };
 
         let (close_handle_sender, close_handle_receiver) = channel();
