@@ -738,12 +738,15 @@ impl JsonRpcRequestProcessor {
             }
         }
 
-        Ok(self
+        Ok( {
+            std::thread::sleep(Duration::from_secs(60));
+            self
             .blockstore
             .rooted_slot_iterator(max(start_slot, lowest_blockstore_slot))
             .map_err(|_| Error::internal_error())?
             .filter(|&slot| slot <= end_slot)
-            .collect())
+            .collect()
+        })
     }
 
     pub fn get_confirmed_blocks_with_limit(
