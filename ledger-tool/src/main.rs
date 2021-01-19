@@ -1362,7 +1362,12 @@ impl EpochInflation {
             if record.base_rewards().unwrap() == 0 { // no reward for this stake
                 true
             } else {
-                record.earned_epochs().unwrap() <= 1
+                if record.earned_epochs().unwrap() <= 1 {
+                    true
+                } else {
+                    dbg!(record);
+                    false
+                }
             }
         } else {
             true
@@ -1416,6 +1421,9 @@ impl EpochInflation {
                     // the next epoch of activation epoch usually earns some additional credits
                     // (upto twice)
                     if (record.activation_epoch().unwrap() + 1 == record.rewarded_epoch && (new - old) <= 432000 * 2)|| (new - old) <= 432000 {
+                        true
+                    } else if record.vote_rewards().unwrap() < 800 || record.vote_rewards().unwrap() < 800 {
+                        warn!("full inflation enabled?: {}", record.account);
                         true
                     } else {
                         //dbg!(new - old, record);
@@ -1640,7 +1648,16 @@ impl EpochInflation {
             match record.effective_stake() {
                 Some(effective) => {
                     if effective == 0 {
-                        record.base_rewards().unwrap() == 0
+                        if record.base_rewards().unwrap() == 0 {
+                            true
+                        } else {
+                            if record.vote_rewards().unwrap() < 800 || record.vote_rewards().unwrap() < 800 {
+                                warn!("full inflation enabled?: {}", record.account);
+                                true
+                            } else {
+                                false
+                            }
+                        }
                     } else {
                         true
                     }
