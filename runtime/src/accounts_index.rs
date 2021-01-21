@@ -956,6 +956,7 @@ impl<T: 'static + Clone + IsCached> AccountsIndex<T> {
         std::mem::replace(&mut w_roots_tracker.previous_uncleaned_roots, cleaned_roots)
     }
 
+    #[cfg(test)]
     pub fn clear_uncleaned_roots(&self, max_clean_root: Option<Slot>) -> HashSet<Slot> {
         let mut cleaned_roots = HashSet::new();
         let mut w_roots_tracker = self.roots_tracker.write().unwrap();

@@ -158,7 +158,7 @@ impl AccountsCache {
         if let Some(max_root) = max_root {
             let greater_than_max_root = w_maybe_unflushed_roots.split_off(&(max_root + 1));
 
-            // After the swap, `greater_than_equal_to_max_root` now contains all slots <= root
+            // After the swap, `greater_than_max_root` now contains slots <= `max_root`
             std::mem::replace(&mut w_maybe_unflushed_roots, greater_than_max_root)
         } else {
             std::mem::replace(&mut *w_maybe_unflushed_roots, BTreeSet::new())
