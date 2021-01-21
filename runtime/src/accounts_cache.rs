@@ -156,9 +156,12 @@ impl AccountsCache {
     pub fn clear_roots(&self, max_root: Option<Slot>) -> BTreeSet<Slot> {
         let mut w_maybe_unflushed_roots = self.maybe_unflushed_roots.write().unwrap();
         if let Some(max_root) = max_root {
+            // `greater_than_max_root` contains all slots >= `max_root + 1`, or alternatively,
+            // all slots > `max_root`. Meanwhile, `w_maybe_unflushed_roots` is left with all slots
+            // <= `max_root`.
             let greater_than_max_root = w_maybe_unflushed_roots.split_off(&(max_root + 1));
-
-            // After the swap, `greater_than_max_root` now contains slots <= `max_root`
+            // After the replace, `w_maybe_unflushed_roots` contains slots > `max_root`, and
+            // we return all slots <= `max_root`
             std::mem::replace(&mut w_maybe_unflushed_roots, greater_than_max_root)
         } else {
             std::mem::replace(&mut *w_maybe_unflushed_roots, BTreeSet::new())
