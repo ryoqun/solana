@@ -7365,21 +7365,20 @@ pub mod tests {
         // Each slot should only have one entry in the storage, since all other accounts were
         // cleaned due to later updates
         for slot in &slots {
-            let slot_accounts = accounts_db.scan_account_storage(
+            if let ScanStorageResult::Stored(slot_accounts) = accounts_db.scan_account_storage(
                 *slot as Slot,
-                |loaded_account, _, slot_accounts: &mut Vec<Pubkey>| match loaded_account {
-                    LoadedAccount::Cached(_) => panic!("Everything should have been flushed"),
-                    LoadedAccount::Stored(_) => {
-                        slot_accounts.push(*loaded_account.pubkey());
-                    }
+                |_| Some(0),
+                |slot_accounts: &DashSet<Pubkey>, loaded_account: LoadedAccount| {
+                    slot_accounts.insert(*loaded_account.pubkey());
                 },
-            );
-
-            if *slot == alive_slot {
-                assert_eq!(slot_accounts.len(), 1);
-                assert_eq!(slot_accounts[0].len(), keys.len());
+            ) {
+                if *slot == alive_slot {
+                    assert_eq!(slot_accounts.len(), keys.len());
+                } else {
+                    assert!(slot_accounts.is_empty());
+                }
             } else {
-                assert!(slot_accounts.is_empty());
+                panic!("Expected slot to be in storage, not cache");
             }
         }
     }
@@ -7406,17 +7405,17 @@ pub mod tests {
         // Each slot should only have one entry in the storage, since all other accounts were
         // cleaned due to later updates
         for slot in &slots {
-            let slot_accounts = accounts_db.scan_account_storage(
+            if let ScanStorageResult::Stored(slot_account) = accounts_db.scan_account_storage(
                 *slot as Slot,
-                |loaded_account, _, slot_account: &mut Pubkey| match loaded_account {
-                    LoadedAccount::Cached(_) => panic!("Everything should have been flushed"),
-                    LoadedAccount::Stored(_) => {
-                        *slot_account = *loaded_account.pubkey();
-                    }
+                |_| Some(0),
+                |slot_account: &Arc<RwLock<Pubkey>>, loaded_account: LoadedAccount| {
+                    *slot_account.write().unwrap() = *loaded_account.pubkey();
                 },
-            );
-
-            assert_eq!(slot_accounts, vec![keys[*slot as usize]]);
+            ) {
+                assert_eq!(*slot_account.read().unwrap(), keys[*slot as usize]);
+            } else {
+                panic!("Everything should have been flushed")
+            }
         }
     }
 
@@ -7469,26 +7468,33 @@ pub mod tests {
         for slot in &slots {
             let slot_accounts = accounts_db.scan_account_storage(
                 *slot as Slot,
-                |loaded_account, _, slot_accounts: &mut HashSet<Pubkey>| {
+                |loaded_account: LoadedAccount| {
+                    if is_cache_at_limit {
+                        panic!(
+                            "When cache is at limit, all roots should have been flushed to storage"
+                        );
+                    }
+                    assert!(*slot > max_clean_root);
+                    Some(*loaded_account.pubkey())
+                },
+                |slot_accounts: &DashSet<Pubkey>, loaded_account: LoadedAccount| {
                     slot_accounts.insert(*loaded_account.pubkey());
-                    match loaded_account {
-                        LoadedAccount::Cached(_) => {
-                            if is_cache_at_limit {
-                                panic!("When cache is at limit, all roots should have been flushed to storage");
-                            }
-                            assert!(*slot > max_clean_root);
-                        }
-                        LoadedAccount::Stored(_) => {
-                            if !is_cache_at_limit {
-                                // Only true when the limit hasn't been reached and there are still
-                                // slots left in the cache
-                                assert!(*slot <= max_clean_root);
-                            }
-                        }
+                    if !is_cache_at_limit {
+                        // Only true when the limit hasn't been reached and there are still
+                        // slots left in the cache
+                        assert!(*slot <= max_clean_root);
                     }
                 },
             );
 
+            let slot_accounts = match slot_accounts {
+                ScanStorageResult::Cached(slot_accounts) => {
+                    slot_accounts.into_iter().collect::<HashSet<Pubkey>>()
+                }
+                ScanStorageResult::Stored(slot_accounts) => {
+                    slot_accounts.into_iter().collect::<HashSet<Pubkey>>()
+                }
+            };
             if *slot >= max_clean_root {
                 // 1) If slot > `max_clean_root`, then  either:
                 //   a) If `is_cache_at_limit == true`, still in the cache
@@ -7500,7 +7506,7 @@ pub mod tests {
                 // 2) If slot == `max_clean_root`, the slot was not cleaned before being flushed to storage,
                 // so it also contains all the original updates.
                 assert_eq!(
-                    slot_accounts[0],
+                    slot_accounts,
                     keys[*slot as usize..]
                         .iter()
                         .cloned()
@@ -7510,7 +7516,7 @@ pub mod tests {
                 // Slots less than `max_clean_root` were cleaned in the cache before being flushed
                 // to storage, should only contain one account
                 assert_eq!(
-                    slot_accounts[0],
+                    slot_accounts,
                     std::iter::once(keys[*slot as usize])
                         .into_iter()
                         .collect::<HashSet<Pubkey>>()
@@ -7550,20 +7556,23 @@ pub mod tests {
         // If no cleaning is specified, then flush everything
         accounts_db.flush_rooted_accounts_cache(None, should_clean_tracker);
         for slot in &slots {
-            let slot_accounts = accounts_db.scan_account_storage(
-                *slot as Slot,
-                |loaded_account, _, slot_account: &mut HashSet<Pubkey>| {
-                    slot_account.insert(*loaded_account.pubkey());
-                    if let LoadedAccount::Cached(_) = loaded_account {
-                        panic!("All roots should have been flushed to storage");
-                    }
-                },
-            );
+            let slot_accounts = if let ScanStorageResult::Stored(slot_accounts) = accounts_db
+                .scan_account_storage(
+                    *slot as Slot,
+                    |_| Some(0),
+                    |slot_account: &DashSet<Pubkey>, loaded_account: LoadedAccount| {
+                        slot_account.insert(*loaded_account.pubkey());
+                    },
+                ) {
+                slot_accounts.into_iter().collect::<HashSet<Pubkey>>()
+            } else {
+                panic!("All roots should have been flushed to storage");
+            };
             if !should_clean || slot == slots.last().unwrap() {
                 // The slot was not cleaned before being flushed to storage,
                 // so it also contains all the original updates.
                 assert_eq!(
-                    slot_accounts[0],
+                    slot_accounts,
                     keys[*slot as usize..]
                         .iter()
                         .cloned()
@@ -7573,7 +7582,7 @@ pub mod tests {
                 // If clean was specified, only the latest slot should have all the updates.
                 // All these other slots have been cleaned before flush
                 assert_eq!(
-                    slot_accounts[0],
+                    slot_accounts,
                     std::iter::once(keys[*slot as usize])
                         .into_iter()
                         .collect::<HashSet<Pubkey>>()
