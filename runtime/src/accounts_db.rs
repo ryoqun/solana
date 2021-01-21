@@ -2971,21 +2971,29 @@ impl AccountsDB {
         // If there is a long running scan going on, this could prevent any cleaning
         // past `max_flush_root`.
         let cached_roots: BTreeSet<Slot> = self.accounts_cache.clear_roots(max_flush_root);
-        let mut written_accounts = HashSet::new();
+
+        // Use HashMap because HashSet doesn't provide Entry api
+        let mut written_accounts = HashMap::new();
 
         // If `should_clean` is None, then`should_flush_f` is also None, which will cause
         // `flush_slot_cache` to flush all accounts to storage without cleaning any accounts.
         let mut should_flush_f = should_clean.map(|(account_bytes_saved, num_accounts_saved)| {
-            move |pubkey: &Pubkey, account: &Account| {
-                // If a later root already wrote this account, no point
-                // in flushing it
-                let should_flush = !written_accounts.contains(pubkey);
-                if should_flush {
-                    written_accounts.insert(*pubkey);
-                } else {
-                    *account_bytes_saved += account.data.len();
-                    *num_accounts_saved += 1;
-                }
+            move |&pubkey: &Pubkey, account: &Account| {
+                use std::collections::hash_map::Entry::{Occupied, Vacant};
+
+                let should_flush = match written_accounts.entry(pubkey) {
+                    Vacant(vacant_entry) => {
+                        vacant_entry.insert(());
+                        true
+                    }
+                    Occupied(_occupied_entry) => {
+                        *account_bytes_saved += account.data.len();
+                        *num_accounts_saved += 1;
+                        // If a later root already wrote this account, no point
+                        // in flushing it
+                        false
+                    }
+                };
                 should_flush
             }
         });
