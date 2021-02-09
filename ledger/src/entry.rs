@@ -278,10 +278,10 @@ impl EntryVerificationState {
                 let res = PAR_THREAD_POOL.with(|thread_pool| {
                     thread_pool.borrow().install(|| {
                         hashes
-                            .into_par_iter()
+                            .par_iter()
                             .zip(&verification_state.tx_hashes)
                             .zip(entries)
-                            .all(|((hash, tx_hash), answer)| {
+                            .all(|((&hash, tx_hash), answer)| {
                                 if answer.num_hashes == 0 {
                                     hash == answer.hash
                                 } else {
