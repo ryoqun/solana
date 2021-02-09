@@ -2540,7 +2540,7 @@ impl ClusterInfo {
 
     fn process_packets(
         &self,
-        packets: VecDeque<Packet>,
+        packets: &VecDeque<solana_perf::cuda_runtime::PinnedVec<Packet>>,
         thread_pool: &ThreadPool,
         recycler: &PacketsRecycler,
         response_sender: &PacketSender,
@@ -2550,9 +2550,11 @@ impl ClusterInfo {
         should_check_duplicate_instance: bool,
     ) -> Result<()> {
         let _st = ScopedTimer::from(&self.stats.process_gossip_packets_time);
+
         let packets: Vec<_> = thread_pool.install(|| {
             packets
-                .into_par_iter()
+                .par_iter()
+                .flatten()
                 .filter_map(|packet| {
                     let protocol: Protocol =
                         limited_deserialize(&packet.data[..packet.meta.size]).ok()?;
@@ -2562,6 +2564,7 @@ impl ClusterInfo {
                 })
                 .collect()
         });
+
         // Check if there is a duplicate instance of
         // this node with more recent timestamp.
         let check_duplicate_instance = |values: &[CrdsValue]| {
@@ -2633,18 +2636,26 @@ impl ClusterInfo {
         should_check_duplicate_instance: bool,
     ) -> Result<()> {
         const RECV_TIMEOUT: Duration = Duration::from_secs(1);
-        let packets: Vec<_> = requests_receiver.recv_timeout(RECV_TIMEOUT)?.packets.into();
-        let mut packets = VecDeque::from(packets);
-        while let Ok(packet) = requests_receiver.try_recv() {
-            packets.extend(packet.packets.into_iter());
-            let excess_count = packets.len().saturating_sub(MAX_GOSSIP_TRAFFIC);
-            if excess_count > 0 {
-                packets.drain(0..excess_count);
-                self.stats
-                    .gossip_packets_dropped_count
-                    .add_relaxed(excess_count as u64);
+
+        let initial_blocked_packets = requests_receiver.recv_timeout(RECV_TIMEOUT)?.packets;
+        let mut total_count = initial_blocked_packets.len();
+
+        let mut packets = VecDeque::new();
+        packets.push_back(initial_blocked_packets);
+        while let Ok(extra_buffered_packets) = requests_receiver.try_recv().map(|p| p.packets) {
+            total_count += extra_buffered_packets.len();
+            packets.push_back(extra_buffered_packets);
+
+            while total_count.saturating_sub(MAX_GOSSIP_TRAFFIC) > 0 {
+                if let Some(dropped_count) = packets.pop_front().map(|p| p.len()) {
+                    total_count -= dropped_count;
+                    self.stats
+                        .gossip_packets_dropped_count
+                        .add_relaxed(dropped_count as u64);
+                }
             }
         }
+
         let (stakes, epoch_time_ms) = Self::get_stakes_and_epoch_time(bank_forks);
         // Using root_bank instead of working_bank here so that an enbaled
         // feature does not roll back (if the feature happens to get enabled in
@@ -2659,7 +2670,7 @@ impl ClusterInfo {
                 .clone()
         });
         self.process_packets(
-            packets,
+            &packets,
             thread_pool,
             recycler,
             response_sender,
