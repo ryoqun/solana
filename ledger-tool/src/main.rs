@@ -1007,7 +1007,12 @@ impl EpochInflation {
                 if record.earned_epochs().unwrap() <= 1 {
                     true
                 } else {
-                    dbg!(record);
+                    // don't care about very small stakes at the activation of full inflation
+                    if record.cluster_type == "MainnetBeta" && record.epoch_stake().unwrap() < 10_000_000 {
+                        warn!("full inflation enabled?: {}", record.account);
+                        return true;
+                    }
+
                     false
                 }
             }
@@ -1064,11 +1069,11 @@ impl EpochInflation {
                     // (upto twice)
                     if (record.activation_epoch().unwrap() + 1 == record.rewarded_epoch && (new - old) <= 432000 * 2)|| (new - old) <= 432000 {
                         true
-                    } else if record.vote_rewards().unwrap() < 800 || record.vote_rewards().unwrap() < 800 {
+                    } else if (record.vote_rewards().unwrap() < 3_000 || record.vote_rewards().unwrap() < 3_000) && record.base_rewards().unwrap() < 300_000 {
                         warn!("full inflation enabled?: {}", record.account);
                         true
                     } else {
-                        //dbg!(new - old, record);
+                        dbg!(new - old, record);
                         false
                     }
                 },
@@ -1185,7 +1190,13 @@ impl EpochInflation {
                 Some(epoch) => {
                     let key = (record.delegation.clone(), epoch);
                     if vote_and_credits.contains_key(&key) {
-                        *vote_and_credits.get(&key).unwrap() == record.epoch_credits().unwrap()
+                        let ret = *vote_and_credits.get(&key).unwrap() == record.epoch_credits().unwrap();
+                        if ret {
+                            true
+                        } else {
+                            dbg!(&record);
+                            false
+                        }
                     } else {
                         vote_and_credits.insert(key.clone(), record.epoch_credits().unwrap());
                         true
@@ -1246,7 +1257,7 @@ impl EpochInflation {
         self.run_record_verify_simple("stake less than balance", |record| {
             match record.delegated_stake() {
                 Some(stake) => {
-                    if stake <= record.old_balance || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
+                    if stake <= record.old_balance || record.effective_stake().unwrap() == 0 || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
                         true
                     } else {
                         dbg!(&record);
@@ -1262,7 +1273,7 @@ impl EpochInflation {
         self.run_record_verify_simple("stake and rent exempt less than balance", |record| {
             match record.delegated_stake() {
                 Some(stake) => {
-                    if (record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance) || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
+                    if (record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance) || record.effective_stake().unwrap() == 0 || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
                         true
                     } else {
                         dbg!(&record);
@@ -1323,11 +1334,15 @@ impl EpochInflation {
     fn data_size_and_rent_exempt(&self) {
         self.run_record_verify_simple("data size and rent exempt", |record| {
             if record.is_stake() {
-                match record.data_size {
+                let ret = match record.data_size {
                     200 => record.rent_exempt_reserve().unwrap() == 2_282_880,
                     4008 => record.rent_exempt_reserve().unwrap() == 28_786_560,
                     _ => panic!("odd"),
+                };
+                if !ret {
+                    dbg!(&record);
                 }
+                ret
             } else {
                 true
             }
@@ -1489,6 +1504,12 @@ impl EpochInflation {
                                     if base_rewards < 1000 {
                                         return true;
                                     }
+                                    // just ignore small and epoch-spanning rewards as this skews
+                                    // consistent interest rate by definition
+                                    if record.cluster_type == "MainnetBeta" && record.epoch_stake().unwrap() < 10_000_000 && record.earned_epochs().unwrap() > 1 {
+                                        warn!("full inflation enabled?: {}", record.account);
+                                        return true;
+                                    }
 
                                     let rate = base_rewards as f64 / base_stake as f64;
                                     let e = interest_rates_by_voter.entry(record.delegation.clone()).or_default();
@@ -1640,14 +1661,16 @@ fn main() {
     const DEFAULT_ROOT_COUNT: &str = "1";
     solana_logger::setup_with_default("solana=info");
 
-    let mut rdr = csv::Reader::from_reader(io::stdin());
-    let mut epoch_inflation = EpochInflation::default();
-    for result in rdr.deserialize() {
-        let record: InflationRecord = result.unwrap();
-        epoch_inflation.add(record);
+    if std::env::var("INFLATION_VALIDATION").is_ok() {
+        let mut rdr = csv::Reader::from_reader(io::stdin());
+        let mut epoch_inflation = EpochInflation::default();
+        for result in rdr.deserialize() {
+            let record: InflationRecord = result.unwrap();
+            epoch_inflation.add(record);
+        }
+        epoch_inflation.verify();
+        exit(1);
     }
-    epoch_inflation.verify();
-    exit(1);
 
     let starting_slot_arg = Arg::with_name("starting_slot")
         .long("starting-slot")
