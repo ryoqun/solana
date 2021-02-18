@@ -1047,8 +1047,8 @@ impl EpochInflation {
         self.run_record_verify_simple("credits incresing", |record|
             match (record.old_credits_observed(), record.new_credits_observed()) {
                 (Some(old), Some(new)) => old <= new,
-                (None, None) => true,
-                _ => panic!("odd"),
+                (None, None) | (Some(_), None) => true,
+                a => { warn!("odd: {:?}", a); false },
             }
         )
     }
@@ -1077,8 +1077,8 @@ impl EpochInflation {
                         false
                     }
                 },
-                (None, None) => true,
-                _ => panic!("odd"),
+                (None, None) | (Some(_), None) => true,
+                a => panic!("odd: {:?}", a),
             }
         })
     }
@@ -1123,6 +1123,19 @@ impl EpochInflation {
                         true
                     },
                     (None, None) => {
+                        let r = record.base_rewards().unwrap() == 0 || (
+                           (record.commission().unwrap() != 0  && record.commission().unwrap() != 100) &&
+                           (record.stake_rewards().unwrap() == 0 || record.vote_rewards().unwrap() == 0)
+                        );
+                        if !r {
+                            dbg!(record);
+                        }
+                        r
+                    },
+                    (Some(_), None) if record.earned_epochs().unwrap() == 0 => {
+                        true
+                    },
+                    (Some(_), None) => {
                         let r = record.base_rewards().unwrap() == 0 || (
                            (record.commission().unwrap() != 0  && record.commission().unwrap() != 100) &&
                            (record.stake_rewards().unwrap() == 0 || record.vote_rewards().unwrap() == 0)
@@ -1254,10 +1267,12 @@ impl EpochInflation {
     }
 
     fn stake_less_than_balance(&self) {
-        self.run_record_verify_simple("stake less than balance", |record| {
+        self.run_record_verify_simple("delegated stake less than balance", |record| {
             match record.delegated_stake() {
                 Some(stake) => {
-                    if stake <= record.old_balance || record.effective_stake().unwrap() == 0 || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
+                    // when deactivation, it could be possible to have fewer than delegated because
+                    // of withdraw of not-warmed-up portion
+                    if stake <= record.old_balance || record.effective_stake().unwrap() == 0 || record.deactivation_epoch().unwrap() <= record.rewarded_epoch {
                         true
                     } else {
                         dbg!(&record);
@@ -1270,10 +1285,12 @@ impl EpochInflation {
     }
 
     fn stake_and_rent_exempt_less_than_balance(&self) {
-        self.run_record_verify_simple("stake and rent exempt less than balance", |record| {
+        self.run_record_verify_simple("delegated stake and rent exempt less than balance", |record| {
             match record.delegated_stake() {
                 Some(stake) => {
-                    if (record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance) || record.effective_stake().unwrap() == 0 || record.deactivation_epoch().unwrap() < record.rewarded_epoch {
+                    // when deactivation, it could be possible to have fewer than delegated because
+                    // of withdraw of not-warmed-up portion
+                    if (record.delegated_stake().unwrap() == 0 || stake + record.rent_exempt_reserve().unwrap() <= record.old_balance) || record.effective_stake().unwrap() == 0 || record.deactivation_epoch().unwrap() <= record.rewarded_epoch {
                         true
                     } else {
                         dbg!(&record);
@@ -1290,6 +1307,17 @@ impl EpochInflation {
             match record.delegated_stake() {
                 Some(delegated) => {
                     record.effective_stake().unwrap() <= delegated
+                },
+                None => true,
+            }
+        })
+    }
+
+    fn balance_less_than_effective(&self) {
+        self.run_record_verify_simple("balance less than effective", |record| {
+            match record.effective_stake() {
+                Some(effective) => {
+                    effective <= record.old_balance
                 },
                 None => true,
             }
@@ -1629,6 +1657,7 @@ impl EpochInflation {
         self.stake_less_than_balance();
         self.stake_and_rent_exempt_less_than_balance();
         self.effective_less_than_delegated();
+        self.balance_less_than_effective();
         self.effective_no_stake_no_reward();
         self.data_size_and_rent_exempt();
         self.deactivated_without_activated();
