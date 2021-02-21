@@ -2215,8 +2215,9 @@ impl AccountsDb {
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
+        is_transaction_load: bool,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.do_load(ancestors, pubkey, None)
+        self.do_load(ancestors, pubkey, None, is_transaction_load)
     }
 
     fn accounts_index_get(
@@ -2244,6 +2245,7 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
         max_root: Option<Slot>,
+        is_transaction_load: bool,
     ) -> Option<(AccountSharedData, Slot)> {
         // If there are no entries in the index, return
         let (slot, store_id, offset) = self.accounts_index_get(ancestors, pubkey, max_root)?;
@@ -2255,29 +2257,47 @@ impl AccountsDb {
         if let LoadedAccountAccessor::Cached(None) = account_accessor {
             // Accounts cache was just flushed, look in the index to find
             // the account storage again. This works because in accounts cache flush,
-            // by an account is written to storage before it is removed from the cache
+            // an account is written to storage *before* it is removed from the cache
             account_accessor =
                 self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset);
         }
 
-        let loaded_account: LoadedAccount = match &mut account_accessor {
+        let loaded_account: Option<LoadedAccount> = match &mut account_accessor {
             LoadedAccountAccessor::Cached(None) => {
                 panic!("Should have already been take care of above, see comment above");
             }
-            LoadedAccountAccessor::Cached(_) | LoadedAccountAccessor::Stored(Some(_)) => {
-                account_accessor
-                    .get_loaded_account()
-                    .expect("If an account was found in the index, it cannot have been cleaned.
-                    This is because clean should not be removing storage entries that have alive accounts")
+            LoadedAccountAccessor::Cached(_) => {
+                // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
+                // it just returns the inner `x` without additional fetches
+                Some(account_accessor.get_loaded_account().unwrap())
             }
-            LoadedAccountAccessor::Stored(None) => panic!(
-                "It should not happen that the storage entry doesn't exist if the entry in
-                the accounts index is the latest version of this account. This is because clean
-                should not be removing storage entries that have alive accounts"
-            ),
+            LoadedAccountAccessor::Stored(Some(_)) => {
+                let load_result = account_accessor.get_loaded_account();
+                if is_transaction_load {
+                    Some(load_result
+                        .expect("If an account was found in the index, it cannot have been cleaned.
+                        This is because clean should not be removing storage entries that have alive accounts"))
+                } else {
+                    // RPC may have fetched this storage entry after it was already `reset` by clean
+                    load_result
+                }
+            }
+            LoadedAccountAccessor::Stored(None) => {
+                if is_transaction_load {
+                    panic!(
+                        "It should not happen that the storage entry doesn't exist if the entry in
+                        the accounts index is the latest version of this account. This is because clean
+                        should not be removing storage entries that have alive accounts"
+                    );
+                } else {
+                    // RPC get_account() may be fetching old cleaned accounts on banks that
+                    // have already been purged
+                    None
+                }
+            }
         };
 
-        Some((loaded_account.account(), slot))
+        loaded_account.map(|loaded_account| (loaded_account.account(), slot))
     }
 
     pub fn load_account_hash(&self, ancestors: &Ancestors, pubkey: &Pubkey) -> Hash {
@@ -2308,7 +2328,7 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.load(ancestors, pubkey)
+        self.load(ancestors, pubkey, false)
     }
 
     // Only safe to use the `get_account_accessor_from_cache_or_storage() -> get_loaded_account()`
@@ -8492,7 +8512,7 @@ pub mod tests {
         // Clean should not remove anything yet as nothing has been flushed
         db.clean_accounts(None);
         let account = db
-            .do_load(&Ancestors::default(), &account_key, Some(0))
+            .do_load(&Ancestors::default(), &account_key, Some(0), false)
             .unwrap();
         assert_eq!(account.0.lamports, 0);
 
@@ -8501,7 +8521,7 @@ pub mod tests {
         db.flush_accounts_cache(true, None);
         db.clean_accounts(None);
         assert!(db
-            .do_load(&Ancestors::default(), &account_key, Some(0))
+            .do_load(&Ancestors::default(), &account_key, Some(0), false)
             .is_none());
     }
 
@@ -8684,7 +8704,7 @@ pub mod tests {
         // Intra cache cleaning should not clean the entry for `account_key` from slot 0,
         // even though it was updated in slot `2` because of the ongoing scan
         let account = db
-            .do_load(&Ancestors::default(), &account_key, Some(0))
+            .do_load(&Ancestors::default(), &account_key, Some(0), false)
             .unwrap();
         assert_eq!(account.0.lamports, zero_lamport_account.lamports);
 
@@ -8692,7 +8712,7 @@ pub mod tests {
         // because we're still doing a scan on it.
         db.clean_accounts(None);
         let account = db
-            .do_load(&scan_ancestors, &account_key, Some(max_scan_root))
+            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), false)
             .unwrap();
         assert_eq!(account.0.lamports, slot1_account.lamports);
 
@@ -8701,14 +8721,14 @@ pub mod tests {
         scan_tracker.exit().unwrap();
         db.clean_accounts(None);
         let account = db
-            .do_load(&scan_ancestors, &account_key, Some(max_scan_root))
+            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), false)
             .unwrap();
         assert_eq!(account.0.lamports, slot1_account.lamports);
 
         // Simulate dropping the bank, which finally removes the slot from the cache
         db.purge_slot(1);
         assert!(db
-            .do_load(&scan_ancestors, &account_key, Some(max_scan_root))
+            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), false)
             .is_none());
     }
 
@@ -8844,7 +8864,7 @@ pub mod tests {
         // a smaller max root
         for key in &keys {
             assert!(accounts_db
-                .do_load(&Ancestors::default(), key, Some(last_dead_slot))
+                .do_load(&Ancestors::default(), key, Some(last_dead_slot), false)
                 .is_some());
         }
 
@@ -8867,7 +8887,7 @@ pub mod tests {
         // as those have been purged from the accounts index for the dead slots.
         for key in &keys {
             assert!(accounts_db
-                .do_load(&Ancestors::default(), key, Some(last_dead_slot))
+                .do_load(&Ancestors::default(), key, Some(last_dead_slot), false)
                 .is_none());
         }
         // Each slot should only have one entry in the storage, since all other accounts were
