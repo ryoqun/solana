@@ -192,6 +192,34 @@ pub enum LoadedAccountAccessor<'a> {
 }
 
 impl<'a> LoadedAccountAccessor<'a> {
+    fn get_checked_loaded_account(&mut self, is_transaction_load: bool) -> Option<LoadedAccount> {
+        match self {
+            LoadedAccountAccessor::Cached(None) | LoadedAccountAccessor::Stored(None) => {
+                panic!("Should have already been taken care of when creating this LoadedAccountAccessor");
+            }
+            LoadedAccountAccessor::Cached(Some(_)) => {
+                // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
+                // it just returns the inner `x` without additional fetches
+                Some(self.get_loaded_account().unwrap())
+            }
+            LoadedAccountAccessor::Stored(Some(_storage_entry)) => {
+                let load_result = self.get_loaded_account();
+                if is_transaction_load {
+                    // If we do find the storage entry, we can guarantee that the storage entry is
+                    // safe to read from because we grabbed a reference to the storage entry while it
+                    // was still in the storage map. This means even if the storage entry is removed
+                    // from the storage map after we grabbed the storage entry, the recycler should not
+                    // reset the storage entry until we drop the reference to the storage entry.
+                    Some(load_result
+                        .expect("If a storage entry was found in the storage map, it must not have been reset yet"))
+                } else {
+                    // RPC may have fetched this storage entry after it was already `reset` by clean
+                    load_result
+                }
+            }
+        }
+    }
+
     fn get_loaded_account(&mut self) -> Option<LoadedAccount> {
         match self {
             LoadedAccountAccessor::Stored(storage_entry) => {
@@ -2247,15 +2275,15 @@ impl AccountsDb {
         Some((slot, store_id, offset))
     }
 
-    fn do_load(
-        &self,
-        ancestors: &Ancestors,
-        pubkey: &Pubkey,
+    fn get_account_accessor_with_retry<'a>(
+        &'a self,
+        ancestors: &'a Ancestors,
+        pubkey: &'a Pubkey,
         max_root: Option<Slot>,
         is_transaction_load: bool,
-    ) -> Option<(AccountSharedData, Slot)> {
-        // If there are no entries in the index, return
-        let (slot, store_id, offset) = self.accounts_index_get(ancestors, pubkey, max_root)?;
+    ) -> Option<(LoadedAccountAccessor<'a>, Slot)> {
+        let (mut slot, mut store_id, mut offset) =
+            self.accounts_index_get(ancestors, pubkey, max_root)?;
 
         #[cfg(test)]
         {
@@ -2320,16 +2348,17 @@ impl AccountsDb {
                 }
                 LoadedAccountAccessor::Cached(None) => {
                     // Cache was flushed in between checking the index and retrieving from the cache,
-                    // so retry. Don't increment `num_failed_iterations` here because it's impossible
-                    // for this to fail for transaction loads more than once. This is because for a slot
-                    // `X` that's being replayed, there is only one latest ancestor containing the latest
-                    // update for the account, and this ancestor can only be flushed once.
+                    // so retry.
                     num_acceptable_failed_iterations += 1;
                     if is_transaction_load {
+                        // it's impossible for this to fail for transaction loads more than once.
+                        // This is because for a slot `X` that's being replayed, there is only one
+                        // latest ancestor containing the latest update for the account, and this
+                        // ancestor can only be flushed once.
                         assert!(num_acceptable_failed_iterations <= 1);
                     }
                 }
-                _ => {
+                LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
                     // Everything else means there was no race, so break out and continue
                     break;
                 }
@@ -2348,63 +2377,47 @@ impl AccountsDb {
                 return None;
             }
 
+            slot = new_slot;
+            store_id = new_store_id;
+            offset = new_offset;
+
             // Accounts cache was just flushed, look in the index to find
             // the account storage again. This works because in accounts cache flush,
             // an account is written to storage *before* it is removed from the cache
-            account_accessor = self.get_account_accessor_from_cache_or_storage(
-                new_slot,
-                pubkey,
-                new_store_id,
-                new_offset,
-            );
+            account_accessor =
+                self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset);
         }
 
-        let loaded_account: Option<LoadedAccount> = match &mut account_accessor {
-            LoadedAccountAccessor::Cached(None) | LoadedAccountAccessor::Stored(None) => {
-                panic!("Should have already been taken care of above, see comment above");
-            }
-            LoadedAccountAccessor::Cached(_) => {
-                // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
-                // it just returns the inner `x` without additional fetches
-                Some(account_accessor.get_loaded_account().unwrap())
-            }
-            LoadedAccountAccessor::Stored(Some(_)) => {
-                let load_result = account_accessor.get_loaded_account();
-                if is_transaction_load {
-                    Some(load_result
-                        .expect("If an account was found in the index, it cannot have been cleaned.
-                        This is because clean should not be removing storage entries that have alive accounts"))
-                } else {
-                    // RPC may have fetched this storage entry after it was already `reset` by clean
-                    load_result
-                }
-            }
-        };
+        Some((account_accessor, slot))
+    }
 
+    fn do_load(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+        max_root: Option<Slot>,
+        is_transaction_load: bool,
+    ) -> Option<(AccountSharedData, Slot)> {
+        // If there are no entries in the index, return
+        let (mut account_accessor, slot) =
+            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_transaction_load)?;
+        let loaded_account: Option<LoadedAccount> =
+            account_accessor.get_checked_loaded_account(is_transaction_load);
         loaded_account.map(|loaded_account| (loaded_account.account(), slot))
     }
 
-    pub fn load_account_hash(&self, ancestors: &Ancestors, pubkey: &Pubkey) -> Hash {
-        let (slot, store_id, offset) = {
-            let (lock, index) = self
-                .accounts_index
-                .get(pubkey, Some(ancestors), None)
-                .unwrap();
-            let slot_list = lock.slot_list();
-            let (
-                slot,
-                AccountInfo {
-                    store_id, offset, ..
-                },
-            ) = slot_list[index];
-            (slot, store_id, offset)
-            // lock released here
-        };
-
-        self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset)
-            .get_loaded_account()
-            .map(|loaded_account| *loaded_account.loaded_hash())
-            .unwrap()
+    pub fn load_account_hash(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+        max_root: Option<Slot>,
+        is_transaction_load: bool,
+    ) -> Option<Hash> {
+        let (mut account_accessor, _) =
+            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_transaction_load)?;
+        let loaded_account: Option<LoadedAccount> =
+            account_accessor.get_checked_loaded_account(is_transaction_load);
+        loaded_account.map(|loaded_account| *loaded_account.loaded_hash())
     }
 
     pub fn load_slow(
