@@ -4823,6 +4823,7 @@ dependencies = [
  "solana-transaction-status",
  "solana-version",
  "solana-vote-program",
+ "spl-token",
  "tempfile",
  "tokio 1.1.1",
 ]
