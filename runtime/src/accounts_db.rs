@@ -195,7 +195,9 @@ impl<'a> LoadedAccountAccessor<'a> {
     fn get_loaded_account(&mut self) -> Option<LoadedAccount> {
         match self {
             LoadedAccountAccessor::Stored(storage_entry) => {
-                // May not be present if slot was cleaned up in between
+                // May not be present if slot was cleaned up in between reading
+                // the accounts index and calling this function to get the storage
+                // entry here
                 storage_entry.as_ref().and_then(|(storage_entry, offset)| {
                     storage_entry
                         .get_stored_account_meta(*offset)
@@ -2286,22 +2288,33 @@ impl AccountsDb {
             }
             match account_accessor {
                 LoadedAccountAccessor::Stored(None) => {
-                    if is_transaction_load {
-                        panic!(
-                            "It should not happen that the storage entry doesn't exist if the entry in
-                            the accounts index is the latest version of this account. This is because clean
-                            should not be removing storage entries that have alive accounts"
-                        );
-                    }
-                    // RPC get_account() may have fetched an old root from the index that was
-                    // either:
-                    // 1) Cleaned up by clean_accounts(), so the accounts index has been updated
-                    // and the storage entries have been removed.
-                    // 2) Dropped by purge_slots() because the slot was on a minor fork, which
-                    // removes the slots' storage entries but doesn't purge from the accounts index
-                    // (account index cleanup is left to clean for stored slots).
-                    else {
-                        // Increment failsafe
+                    if !is_transaction_load {
+                        // When running replay on the validator, or banking stage on the leader,
+                        // it should be very rare that the storage entry doesn't exist if the
+                        // entry in the accounts index is the latest version of this account.
+                        //
+                        // There are only a few places where the storage entry may not exist
+                        // after reading the index:
+                        // 1) Shrink has removed the old storage entry and rewritten to
+                        // a newer storage entry
+                        // 2) The `pubkey` asked for in this function is a zero-lamport account,
+                        // and the storage entry holding this account qualified for zero-lamport clean.
+                        //
+                        // In both these cases, it should be safe to retry and recheck the accounts
+                        // index. Also note that in both cases, if we do find the storage entry,
+                        // we can guarantee that the storage entry is safe to read from because
+                        // we grabbed a reference to the storage entry while it was still in the
+                        // storage map. This means even if the storage entry is removed from the storage
+                        // map after we grabbed the storage entry, the recycler should not reset the
+                        // storage entry until we drop the reference to the storage entry.
+
+                        // RPC get_account() may have fetched an old root from the index that was
+                        // either:
+                        // 1) Cleaned up by clean_accounts(), so the accounts index has been updated
+                        // and the storage entries have been removed.
+                        // 2) Dropped by purge_slots() because the slot was on a minor fork, which
+                        // removes the slots' storage entries but doesn't purge from the accounts index
+                        // (account index cleanup is left to clean for stored slots).
                         num_acceptable_failed_iterations += 1;
                     }
                 }
@@ -2402,11 +2415,6 @@ impl AccountsDb {
         self.load(ancestors, pubkey, false)
     }
 
-    // Only safe to use the `get_account_accessor_from_cache_or_storage() -> get_loaded_account()`
-    // pattern if you're holding the AccountIndex lock for the `pubkey`, otherwise, a cache
-    // flush could happen between `get_account_accessor_from_cache_or_storage()` and
-    //`get_loaded_account()`, and the `LoadedAccountAccessor::Cached((&self.accounts_cache, slot, pubkey))`
-    // returned here won't be able to find a slot cache entry for that `slot`.
     fn get_account_accessor_from_cache_or_storage<'a>(
         &'a self,
         slot: Slot,
