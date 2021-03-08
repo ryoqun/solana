@@ -49,6 +49,7 @@ use solana_vote_program::{
     self,
     vote_state::{self, VoteState},
 };
+use spl_token_v2_0::solana_program::program_pack::Pack;
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     convert::TryInto,
@@ -2084,18 +2085,47 @@ fn main() {
                         .collect();
 
                     println!("---");
+                    let mut supplies_by_mint = BTreeMap::<_, (u64, u64)>::new();
+                    let mut mints = BTreeMap::new();
                     for (pubkey, (account, slot)) in accounts.into_iter() {
-                        let data_len = account.data.len();
-                        println!("{}:", pubkey);
-                        println!("  - balance: {} SOL", lamports_to_sol(account.lamports));
-                        println!("  - owner: '{}'", account.owner);
-                        println!("  - executable: {}", account.executable);
-                        println!("  - slot: {}", slot);
-                        println!("  - rent_epoch: {}", account.rent_epoch);
-                        if !exclude_account_data {
-                            println!("  - data: '{}'", bs58::encode(account.data).into_string());
+                        use spl_token_v2_0::solana_program::program_pack::Pack;
+                        pub fn spl_token_id_v2_0() -> Pubkey {
+                            Pubkey::from_str(&spl_token_v2_0::id().to_string()).unwrap()
                         }
-                        println!("  - data_len: {}", data_len);
+                        let data_len = account.data.len();
+                        if account.owner == spl_token_id_v2_0() {
+                            if data_len == spl_token_v2_0::state::Account::get_packed_len() {
+                                if let Ok(spl_account) = spl_token_v2_0::state::Account::unpack(&account.data) {
+                                    let mut new = supplies_by_mint.get(&spl_account.mint).copied().unwrap_or_default();
+                                    new.0 += 1 as u64;
+                                    new.1 += spl_account.amount;
+                                    supplies_by_mint.insert(spl_account.mint, new);
+                                }
+                            } else if data_len == spl_token_v2_0::state::Mint::get_packed_len() {
+                                if let Ok(spl_mint) = spl_token_v2_0::state::Mint::unpack(&account.data) {
+                                    mints.insert(pubkey, spl_mint);
+                                }
+                            }
+                        }
+                        //println!("{}:", pubkey);
+                        //println!("  - balance: {} SOL", lamports_to_sol(account.lamports));
+                        //println!("  - owner: '{}'", account.owner);
+                        //println!("  - executable: {}", account.executable);
+                        //println!("  - slot: {}", slot);
+                        //println!("  - rent_epoch: {}", account.rent_epoch);
+                        //if !exclude_account_data {
+                        //    println!("  - data: '{}'", bs58::encode(account.data).into_string());
+                        //}
+                        //println!("  - data_len: {}", data_len);
+                    }
+                    println!("{:#?}", supplies_by_mint);
+                    println!("{:#?}", mints);
+                    for (mint_address, mint) in &mints {
+                        if let Some((calculated_count, calculated_supply)) = supplies_by_mint.get(&spl_token_v2_0::solana_program::pubkey::Pubkey::new(&mint_address.to_bytes())) {
+                            println!("mint_address: {} ({} holders) {} == {} => {}", mint_address, calculated_count, mint.supply, calculated_supply, (if mint.supply == *calculated_supply { "OK" } else { "NG" }));
+                        } else {
+                            println!("mint_address: {} (0 holders) {}", mint_address, mint.supply);
+                        }
                     }
                 }
                 Err(err) => {
