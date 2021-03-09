@@ -192,7 +192,7 @@ pub enum LoadedAccountAccessor<'a> {
 }
 
 impl<'a> LoadedAccountAccessor<'a> {
-    fn get_checked_loaded_account(&mut self, is_transaction_load: bool) -> Option<LoadedAccount> {
+    fn get_checked_loaded_account(&mut self, is_root_fixed: bool) -> Option<LoadedAccount> {
         match self {
             LoadedAccountAccessor::Cached(None) | LoadedAccountAccessor::Stored(None) => {
                 panic!("Should have already been taken care of when creating this LoadedAccountAccessor");
@@ -204,7 +204,7 @@ impl<'a> LoadedAccountAccessor<'a> {
             }
             LoadedAccountAccessor::Stored(Some(_storage_entry)) => {
                 let load_result = self.get_loaded_account();
-                if is_transaction_load {
+                if is_root_fixed {
                     // If we do find the storage entry, we can guarantee that the storage entry is
                     // safe to read from because we grabbed a reference to the storage entry while it
                     // was still in the storage map. This means even if the storage entry is removed
@@ -2249,13 +2249,22 @@ impl AccountsDb {
         bank_hashes.insert(slot, new_hash_info);
     }
 
-    pub fn load(
+    pub fn load_slow(
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
-        is_transaction_load: bool,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.do_load(ancestors, pubkey, None, is_transaction_load)
+        self.do_load(ancestors, pubkey, None, false)
+    }
+
+    // Load transactions for a block which is descended from the current root,
+    // and at the tip of its fork
+    pub fn load_slow_with_fixed_root(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+    ) -> Option<(AccountSharedData, Slot)> {
+        self.do_load(ancestors, pubkey, None, true)
     }
 
     fn accounts_index_get(
@@ -2280,7 +2289,7 @@ impl AccountsDb {
         ancestors: &'a Ancestors,
         pubkey: &'a Pubkey,
         max_root: Option<Slot>,
-        is_transaction_load: bool,
+        is_root_fixed: bool,
     ) -> Option<(LoadedAccountAccessor<'a>, Slot)> {
         let (mut slot, mut store_id, mut offset) =
             self.accounts_index_get(ancestors, pubkey, max_root)?;
@@ -2316,7 +2325,7 @@ impl AccountsDb {
             }
             match account_accessor {
                 LoadedAccountAccessor::Stored(None) => {
-                    if !is_transaction_load {
+                    if !is_root_fixed {
                         // When running replay on the validator, or banking stage on the leader,
                         // it should be very rare that the storage entry doesn't exist if the
                         // entry in the accounts index is the latest version of this account.
@@ -2350,11 +2359,14 @@ impl AccountsDb {
                     // Cache was flushed in between checking the index and retrieving from the cache,
                     // so retry.
                     num_acceptable_failed_iterations += 1;
-                    if is_transaction_load {
+                    if is_root_fixed {
                         // it's impossible for this to fail for transaction loads more than once.
-                        // This is because for a slot `X` that's being replayed, there is only one
+                        // This is because:
+                        // 1) For a slot `X` that's being replayed, there is only one
                         // latest ancestor containing the latest update for the account, and this
                         // ancestor can only be flushed once.
+                        // 2) The root cannot move while replaying, so the index cannot continually
+                        // find more up to date entries than the current `slot`
                         assert!(num_acceptable_failed_iterations <= 1);
                     }
                 }
@@ -2396,13 +2408,14 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
         max_root: Option<Slot>,
-        is_transaction_load: bool,
+        // true if the root will not move during this load
+        is_root_fixed: bool,
     ) -> Option<(AccountSharedData, Slot)> {
         // If there are no entries in the index, return
         let (mut account_accessor, slot) =
-            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_transaction_load)?;
+            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
         let loaded_account: Option<LoadedAccount> =
-            account_accessor.get_checked_loaded_account(is_transaction_load);
+            account_accessor.get_checked_loaded_account(is_root_fixed);
         loaded_account.map(|loaded_account| (loaded_account.account(), slot))
     }
 
@@ -2411,21 +2424,13 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
         max_root: Option<Slot>,
-        is_transaction_load: bool,
+        is_root_fixed: bool,
     ) -> Option<Hash> {
         let (mut account_accessor, _) =
-            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_transaction_load)?;
+            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
         let loaded_account: Option<LoadedAccount> =
-            account_accessor.get_checked_loaded_account(is_transaction_load);
+            account_accessor.get_checked_loaded_account(is_root_fixed);
         loaded_account.map(|loaded_account| *loaded_account.loaded_hash())
-    }
-
-    pub fn load_slow(
-        &self,
-        ancestors: &Ancestors,
-        pubkey: &Pubkey,
-    ) -> Option<(AccountSharedData, Slot)> {
-        self.load(ancestors, pubkey, false)
     }
 
     fn get_account_accessor_from_cache_or_storage<'a>(
@@ -8680,13 +8685,13 @@ pub mod tests {
         let max_root = None;
         // Fine to simulate a transaction load since we are not doing any out of band
         // removals, only using clean_accounts
-        let is_transaction_load = true;
+        let is_root_fixed = true;
         assert_eq!(
             db.do_load(
                 &Ancestors::default(),
                 &zero_lamport_account_key,
                 max_root,
-                is_transaction_load
+                is_root_fixed
             )
             .unwrap()
             .0

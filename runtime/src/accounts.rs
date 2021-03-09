@@ -215,7 +215,7 @@ impl Accounts {
                     } else {
                         let (account, rent) = self
                             .accounts_db
-                            .load(ancestors, key, true)
+                            .load_slow_with_fixed_root(ancestors, key)
                             .map(|(mut account, _)| {
                                 if message.is_writable(i, demote_sysvar_write_locks) {
                                     let rent_due = rent_collector
@@ -235,7 +235,7 @@ impl Accounts {
                             {
                                 if let Some(account) = self
                                     .accounts_db
-                                    .load(ancestors, &programdata_address, true)
+                                    .load_slow_with_fixed_root(ancestors, &programdata_address)
                                     .map(|(account, _)| account)
                                 {
                                     account_deps.push((programdata_address, account));
@@ -342,7 +342,7 @@ impl Accounts {
 
             let program = match self
                 .accounts_db
-                .load(ancestors, &program_id, true)
+                .load_slow_with_fixed_root(ancestors, &program_id)
                 .map(|(account, _)| account)
             {
                 Some(program) => program,
@@ -367,7 +367,7 @@ impl Accounts {
                 {
                     if let Some(program) = self
                         .accounts_db
-                        .load(ancestors, &programdata_address, true)
+                        .load_slow_with_fixed_root(ancestors, &programdata_address)
                         .map(|(account, _)| account)
                     {
                         accounts.insert(0, (programdata_address, program));
@@ -453,6 +453,17 @@ impl Accounts {
             .collect()
     }
 
+    fn filter_zero_lamport_account(
+        account: AccountSharedData,
+        slot: Slot,
+    ) -> Option<(AccountSharedData, Slot)> {
+        if account.lamports > 0 {
+            Some((account, slot))
+        } else {
+            None
+        }
+    }
+
     /// Slow because lock is held for 1 operation instead of many
     pub fn load_slow(
         &self,
@@ -460,12 +471,18 @@ impl Accounts {
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
         let (account, slot) = self.accounts_db.load_slow(ancestors, pubkey)?;
+        Self::filter_zero_lamport_account(account, slot)
+    }
 
-        if account.lamports > 0 {
-            Some((account, slot))
-        } else {
-            None
-        }
+    pub fn load_slow_with_fixed_root(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+    ) -> Option<(AccountSharedData, Slot)> {
+        let (account, slot) = self
+            .accounts_db
+            .load_slow_with_fixed_root(ancestors, pubkey)?;
+        Self::filter_zero_lamport_account(account, slot)
     }
 
     /// scans underlying accounts_db for this delta (slot) with a map function
