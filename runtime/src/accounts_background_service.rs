@@ -445,18 +445,10 @@ mod test {
         assert!(bank0.get_account(&account_key).is_some());
         pruned_banks_sender.send(0).unwrap();
 
-        assert!(!bank0
-            .rc
-            .accounts
-            .scan_slot(0, |stored_account| Some(stored_account.stored_size()))
-            .is_empty());
+        assert!(!bank0.rc.accounts.scan_slot(0, |_| Some(())).is_empty());
 
         AccountsBackgroundService::remove_dead_slots(&bank0, &request_handler, &mut 0, &mut 0);
 
-        assert!(bank0
-            .rc
-            .accounts
-            .scan_slot(0, |stored_account| Some(stored_account.stored_size()))
-            .is_empty());
+        assert!(bank0.rc.accounts.scan_slot(0, |_| Some(())).is_empty());
     }
 }

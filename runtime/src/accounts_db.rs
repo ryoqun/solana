@@ -192,7 +192,7 @@ pub enum LoadedAccountAccessor<'a> {
 }
 
 impl<'a> LoadedAccountAccessor<'a> {
-    fn get_checked_loaded_account(&mut self, is_root_fixed: bool) -> Option<LoadedAccount> {
+    fn get_checked_loaded_account(&mut self) -> LoadedAccount {
         match self {
             LoadedAccountAccessor::Cached(None) | LoadedAccountAccessor::Stored(None) => {
                 panic!("Should have already been taken care of when creating this LoadedAccountAccessor");
@@ -200,22 +200,17 @@ impl<'a> LoadedAccountAccessor<'a> {
             LoadedAccountAccessor::Cached(Some(_)) => {
                 // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
                 // it just returns the inner `x` without additional fetches
-                Some(self.get_loaded_account().unwrap())
+                self.get_loaded_account().unwrap()
             }
             LoadedAccountAccessor::Stored(Some(_storage_entry)) => {
                 let load_result = self.get_loaded_account();
-                if is_root_fixed {
-                    // If we do find the storage entry, we can guarantee that the storage entry is
-                    // safe to read from because we grabbed a reference to the storage entry while it
-                    // was still in the storage map. This means even if the storage entry is removed
-                    // from the storage map after we grabbed the storage entry, the recycler should not
-                    // reset the storage entry until we drop the reference to the storage entry.
-                    Some(load_result
-                        .expect("If a storage entry was found in the storage map, it must not have been reset yet"))
-                } else {
-                    // RPC may have fetched this storage entry after it was already `reset` by clean
-                    load_result
-                }
+                // If we do find the storage entry, we can guarantee that the storage entry is
+                // safe to read from because we grabbed a reference to the storage entry while it
+                // was still in the storage map. This means even if the storage entry is removed
+                // from the storage map after we grabbed the storage entry, the recycler should not
+                // reset the storage entry until we drop the reference to the storage entry.
+                load_result
+                    .expect("If a storage entry was found in the storage map, it must not have been reset yet")
             }
         }
     }
@@ -235,10 +230,8 @@ impl<'a> LoadedAccountAccessor<'a> {
             LoadedAccountAccessor::Cached(maybe_cached_account) => {
                 let cached_account: Option<(Pubkey, Cow<'a, CachedAccount>)> =
                     maybe_cached_account.take();
-                let cached_account = cached_account.expect(
-                    "Cache flushed should be handled before
-                trying to fetch account",
-                );
+                let cached_account = cached_account
+                    .expect("Cache flushed should be handled before trying to fetch account");
                 Some(LoadedAccount::Cached(cached_account))
             }
         }
@@ -2300,8 +2293,7 @@ impl AccountsDb {
             sleep(Duration::from_millis(self.load_delay));
         }
 
-        let mut account_accessor =
-            self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset);
+        let mut account_accessor;
 
         // Failsafe for potential race conditions with cache flush and accounts clean
         let mut num_acceptable_failed_iterations = 0;
@@ -2323,6 +2315,9 @@ impl AccountsDb {
                 );
                 return None;
             }
+
+            account_accessor =
+                self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset);
             match account_accessor {
                 LoadedAccountAccessor::Stored(None) => {
                     if !is_root_fixed {
@@ -2357,10 +2352,12 @@ impl AccountsDb {
                 }
                 LoadedAccountAccessor::Cached(None) => {
                     // Cache was flushed in between checking the index and retrieving from the cache,
-                    // so retry.
+                    // so retry. This works because in accounts cache flush, an account is written to
+                    // storage *before* it is removed from the cache
                     num_acceptable_failed_iterations += 1;
                     if is_root_fixed {
-                        // it's impossible for this to fail for transaction loads more than once.
+                        // it's impossible for this to fail for transaction loads from replay/banking
+                        // more than once.
                         // This is because:
                         // 1) For a slot `X` that's being replayed, there is only one
                         // latest ancestor containing the latest update for the account, and this
@@ -2372,9 +2369,11 @@ impl AccountsDb {
                 }
                 LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
                     // Everything else means there was no race, so break out and continue
-                    break;
+                    return Some((account_accessor, slot));
                 }
             }
+
+            // Because reading from the cache/storage failed, retry from the index read
             let (new_slot, new_store_id, new_offset) =
                 self.accounts_index_get(ancestors, pubkey, max_root)?;
             if new_slot == slot && new_store_id == store_id {
@@ -2382,6 +2381,7 @@ impl AccountsDb {
                 // and the accounts index is always updated before cache flush, so this
                 // should be impossible
                 assert!(new_store_id != CACHE_VIRTUAL_STORAGE_ID);
+                assert!(new_offset == offset);
 
                 // If this is not a cache entry, then this was a minor fork slot
                 // that had its storage entries cleaned up by purge_slots() but hasn't been
@@ -2392,15 +2392,7 @@ impl AccountsDb {
             slot = new_slot;
             store_id = new_store_id;
             offset = new_offset;
-
-            // Accounts cache was just flushed, look in the index to find
-            // the account storage again. This works because in accounts cache flush,
-            // an account is written to storage *before* it is removed from the cache
-            account_accessor =
-                self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset);
         }
-
-        Some((account_accessor, slot))
     }
 
     fn do_load(
@@ -2414,9 +2406,8 @@ impl AccountsDb {
         // If there are no entries in the index, return
         let (mut account_accessor, slot) =
             self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
-        let loaded_account: Option<LoadedAccount> =
-            account_accessor.get_checked_loaded_account(is_root_fixed);
-        loaded_account.map(|loaded_account| (loaded_account.account(), slot))
+        let loaded_account = account_accessor.get_checked_loaded_account();
+        Some((loaded_account.account(), slot))
     }
 
     pub fn load_account_hash(
@@ -2428,9 +2419,8 @@ impl AccountsDb {
     ) -> Option<Hash> {
         let (mut account_accessor, _) =
             self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
-        let loaded_account: Option<LoadedAccount> =
-            account_accessor.get_checked_loaded_account(is_root_fixed);
-        loaded_account.map(|loaded_account| *loaded_account.loaded_hash())
+        let loaded_account = account_accessor.get_checked_loaded_account();
+        Some(*loaded_account.loaded_hash())
     }
 
     fn get_account_accessor_from_cache_or_storage<'a>(

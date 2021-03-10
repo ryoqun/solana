@@ -1364,7 +1364,7 @@ impl Bank {
     where
         F: Fn(&Option<AccountSharedData>) -> AccountSharedData,
     {
-        let old_account = self.get_sysvar_account(pubkey, true);
+        let old_account = self.get_sysvar_account_with_fixed_root(pubkey);
         let new_account = updater(&old_account);
 
         self.store_account_and_update_capitalization(pubkey, &new_account);
@@ -4056,21 +4056,13 @@ impl Bank {
     // multiple times with the same parent_slot in the case of forking.
     //
     // Generally, all of sysvar update granularity should be slot boundaries.
-    fn get_sysvar_account(
-        &self,
-        pubkey: &Pubkey,
-        is_root_fixed: bool,
-    ) -> Option<AccountSharedData> {
+    fn get_sysvar_account_with_fixed_root(&self, pubkey: &Pubkey) -> Option<AccountSharedData> {
         let mut ancestors = self.ancestors.clone();
         ancestors.remove(&self.slot());
-        let res = if is_root_fixed {
-            self.rc
-                .accounts
-                .load_slow_with_fixed_root(&ancestors, pubkey)
-        } else {
-            self.rc.accounts.load_slow(&ancestors, pubkey)
-        };
-        res.map(|(acc, _slot)| acc)
+        self.rc
+            .accounts
+            .load_slow_with_fixed_root(&ancestors, pubkey)
+            .map(|(acc, _slot)| acc)
     }
 
     pub fn get_program_accounts(&self, program_id: &Pubkey) -> Vec<(Pubkey, AccountSharedData)> {
