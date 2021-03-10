@@ -9486,6 +9486,33 @@ pub mod tests {
         assert_eq!(recycle_stores.total_bytes(), dummy_size);
     }
 
+    fn start_load_thread(
+        db: Arc<AccountsDb>,
+        exit: Arc<AtomicBool>,
+        pubkey_to_load: Arc<Pubkey>,
+        expected_lamports: impl Fn(&(AccountSharedData, Slot)) -> u64 + Send + 'static,
+    ) -> JoinHandle<()> {
+        std::thread::Builder::new()
+            .name("account-do-load".to_string())
+            .spawn(move || {
+                loop {
+                    if exit.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    // Load should never be unable to find this key
+                    let loaded_account = db
+                        .do_load(&Ancestors::default(), &pubkey_to_load, None, true)
+                        .unwrap();
+                    // slot + 1 == account.lamports because of the account-cache-flush thread
+                    assert_eq!(
+                        loaded_account.0.lamports,
+                        expected_lamports(&loaded_account)
+                    );
+                }
+            })
+            .unwrap()
+    }
+
     #[test]
     fn test_load_account_and_cache_flush_race() {
         let caching_enabled = true;
@@ -9533,29 +9560,69 @@ pub mod tests {
                 .unwrap()
         };
 
-        let t_do_load = {
-            let exit = exit.clone();
-            std::thread::Builder::new()
-                .name("account-do-load".to_string())
-                .spawn(move || {
-                    loop {
-                        if exit.load(Ordering::Relaxed) {
-                            return;
-                        }
-                        // Load should never be unable to find this key
-                        let loaded_account = db
-                            .do_load(&Ancestors::default(), &pubkey, None, true)
-                            .unwrap();
-                        // slot + 1 == account.lamports because of the account-cache-flush thread
-                        assert_eq!(loaded_account.0.lamports, loaded_account.1 + 1);
-                    }
-                })
-                .unwrap()
-        };
+        let t_do_load = start_load_thread(db, exit.clone(), pubkey, |(_, slot)| slot + 1);
 
         sleep(Duration::from_secs(1));
         exit.store(true, Ordering::Relaxed);
         t_flush_accounts_cache.join().unwrap();
+        t_do_load.join().unwrap();
+    }
+
+    #[test]
+    fn test_load_account_and_shrink_race() {
+        let caching_enabled = true;
+        let mut db = AccountsDb::new_with_config(
+            Vec::new(),
+            &ClusterType::Development,
+            HashSet::new(),
+            caching_enabled,
+        );
+        db.load_delay = 10;
+        let db = Arc::new(db);
+        let pubkey = Arc::new(Pubkey::new_unique());
+        let exit = Arc::new(AtomicBool::new(false));
+        let slot = 1;
+
+        // Store an account
+        let lamports = 42;
+        let mut account = AccountSharedData::new(1, 0, &AccountSharedData::default().owner);
+        account.lamports = lamports;
+        db.store_uncached(slot, &[(&pubkey, &account)]);
+
+        // Set the slot as a root so account loads will see the contents of this slot
+        db.add_root(slot);
+
+        let t_shrink_accounts = {
+            let db = db.clone();
+            let exit = exit.clone();
+
+            std::thread::Builder::new()
+                .name("account-cache-flush".to_string())
+                .spawn(move || loop {
+                    if exit.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    // Simulate adding shrink candidates from clean_accounts()
+                    let stores = db.storage.get_slot_storage_entries(slot).unwrap();
+                    assert_eq!(stores.len(), 1);
+                    let store = &stores[0];
+                    let store_id = store.append_vec_id();
+                    db.shrink_candidate_slots
+                        .lock()
+                        .unwrap()
+                        .entry(slot)
+                        .or_default()
+                        .insert(store_id, store.clone());
+                    db.shrink_candidate_slots();
+                })
+                .unwrap()
+        };
+
+        let t_do_load = start_load_thread(db, exit.clone(), pubkey, move |_| lamports);
+
+        sleep(Duration::from_secs(1));
+        exit.store(true, Ordering::Relaxed);
+        t_shrink_accounts.join().unwrap();
         t_do_load.join().unwrap();
     }
 }
