@@ -3659,6 +3659,8 @@ impl AccountsDb {
                                 {
                                     let (slot, account_info) = &lock.slot_list()[index];
                                     if account_info.lamports != 0 {
+                                        // Because we're keeing the `lock' here, there is no need
+                                        // to use get_account_accessor_with_retry()
                                         self.get_account_accessor(
                                             *slot,
                                             pubkey,
