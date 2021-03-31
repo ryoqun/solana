@@ -306,7 +306,7 @@ impl<'a> LoadedAccount<'a> {
         }
     }
 
-    pub fn account(self) -> AccountSharedData {
+    pub fn take_account(self) -> AccountSharedData {
         match self {
             LoadedAccount::Stored(stored_account_meta) => stored_account_meta.clone_account(),
             LoadedAccount::Cached((_, cached_account)) => match cached_account {
@@ -2065,7 +2065,7 @@ impl AccountsDb {
                         account_info.offset,
                     )
                     .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.account(), slot));
+                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
                 scan_func(&mut collector, account_slot)
             });
         collector
@@ -2128,7 +2128,7 @@ impl AccountsDb {
                         account_info.offset,
                     )
                     .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.account(), slot));
+                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
                 scan_func(&mut collector, account_slot)
             },
         );
@@ -2158,7 +2158,7 @@ impl AccountsDb {
                         account_info.offset,
                     )
                     .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.account(), slot));
+                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
                 scan_func(&mut collector, account_slot)
             },
         );
@@ -2407,7 +2407,7 @@ impl AccountsDb {
         let (mut account_accessor, slot) =
             self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
         let loaded_account = account_accessor.get_checked_loaded_account();
-        Some((loaded_account.account(), slot))
+        Some((loaded_account.take_account(), slot))
     }
 
     pub fn load_account_hash(
@@ -5644,7 +5644,7 @@ pub mod tests {
             "",
             &ancestors,
             |accounts: &mut Vec<AccountSharedData>, option| {
-                accounts.push(option.1.account());
+                accounts.push(option.1.take_account());
             },
         );
         assert_eq!(accounts, vec![account1]);
@@ -7010,7 +7010,7 @@ pub mod tests {
             "",
             &ancestors,
             |accounts: &mut Vec<AccountSharedData>, option| {
-                accounts.push(option.1.account());
+                accounts.push(option.1.take_account());
             },
         );
         assert_eq!(accounts, vec![account0]);
@@ -7020,7 +7020,7 @@ pub mod tests {
             "",
             &ancestors,
             |accounts: &mut Vec<AccountSharedData>, option| {
-                accounts.push(option.1.account());
+                accounts.push(option.1.take_account());
             },
         );
         assert_eq!(accounts.len(), 2);

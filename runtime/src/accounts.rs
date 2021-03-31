@@ -547,7 +547,7 @@ impl Accounts {
             };
 
             if hit {
-                Some((*stored_account.pubkey(), stored_account.account()))
+                Some((*stored_account.pubkey(), stored_account.take_account()))
             } else {
                 None
             }
