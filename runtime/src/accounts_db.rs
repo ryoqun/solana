@@ -197,19 +197,18 @@ impl<'a> LoadedAccountAccessor<'a> {
             LoadedAccountAccessor::Cached(None) | LoadedAccountAccessor::Stored(None) => {
                 panic!("Should have already been taken care of when creating this LoadedAccountAccessor");
             }
-            LoadedAccountAccessor::Cached(Some(_)) => {
+            LoadedAccountAccessor::Cached(Some(_cached_account)) => {
                 // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
                 // it just returns the inner `x` without additional fetches
                 self.get_loaded_account().unwrap()
             }
             LoadedAccountAccessor::Stored(Some(_storage_entry)) => {
-                let load_result = self.get_loaded_account();
                 // If we do find the storage entry, we can guarantee that the storage entry is
                 // safe to read from because we grabbed a reference to the storage entry while it
                 // was still in the storage map. This means even if the storage entry is removed
                 // from the storage map after we grabbed the storage entry, the recycler should not
                 // reset the storage entry until we drop the reference to the storage entry.
-                load_result
+                self.get_loaded_account()
                     .expect("If a storage entry was found in the storage map, it must not have been reset yet")
             }
         }
@@ -227,10 +226,9 @@ impl<'a> LoadedAccountAccessor<'a> {
                         .map(LoadedAccount::Stored)
                 })
             }
-            LoadedAccountAccessor::Cached(maybe_cached_account) => {
-                let cached_account: Option<(Pubkey, Cow<'a, CachedAccount>)> =
-                    maybe_cached_account.take();
-                let cached_account = cached_account
+            LoadedAccountAccessor::Cached(cached_account) => {
+                let cached_account: (Pubkey, Cow<'a, CachedAccount>) = cached_account
+                    .take()
                     .expect("Cache flushed should be handled before trying to fetch account");
                 Some(LoadedAccount::Cached(cached_account))
             }
