@@ -2380,7 +2380,6 @@ impl AccountsDb {
         // true if the root will not move during this load
         is_root_fixed: bool,
     ) -> Option<(AccountSharedData, Slot)> {
-        // If there are no entries in the index, return
         let (mut account_accessor, slot) =
             self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
         let loaded_account = account_accessor.check_and_get_loaded_account();
