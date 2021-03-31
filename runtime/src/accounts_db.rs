@@ -192,7 +192,7 @@ pub enum LoadedAccountAccessor<'a> {
 }
 
 impl<'a> LoadedAccountAccessor<'a> {
-    fn get_checked_loaded_account(&mut self) -> LoadedAccount {
+    fn check_and_get_loaded_account(&mut self) -> LoadedAccount {
         match self {
             LoadedAccountAccessor::Cached(None) | LoadedAccountAccessor::Stored(None) => {
                 panic!("Should have already been taken care of when creating this LoadedAccountAccessor");
@@ -2406,7 +2406,7 @@ impl AccountsDb {
         // If there are no entries in the index, return
         let (mut account_accessor, slot) =
             self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
-        let loaded_account = account_accessor.get_checked_loaded_account();
+        let loaded_account = account_accessor.check_and_get_loaded_account();
         Some((loaded_account.take_account(), slot))
     }
 
@@ -2419,7 +2419,7 @@ impl AccountsDb {
     ) -> Option<Hash> {
         let (mut account_accessor, _) =
             self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
-        let loaded_account = account_accessor.get_checked_loaded_account();
+        let loaded_account = account_accessor.check_and_get_loaded_account();
         Some(*loaded_account.loaded_hash())
     }
 
