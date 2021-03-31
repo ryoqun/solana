@@ -2368,7 +2368,7 @@ impl AccountsDb {
                     }
                 }
                 LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
-                    // Everything else means there was no race, so break out and continue
+                    // Everything else means there was no race, so break out and return
                     return Some((account_accessor, slot));
                 }
             }
