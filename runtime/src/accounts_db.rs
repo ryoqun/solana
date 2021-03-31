@@ -2437,10 +2437,11 @@ impl AccountsDb {
                 .map(|cached_account| (*pubkey, Cow::Owned(cached_account)));
             LoadedAccountAccessor::Cached(cached_account)
         } else {
-            let account_storage_entry = self.storage.get_account_storage_entry(slot, store_id);
-            LoadedAccountAccessor::Stored(
-                account_storage_entry.map(|account_storage_entry| (account_storage_entry, offset)),
-            )
+            let account_storage_entry = self
+                .storage
+                .get_account_storage_entry(slot, store_id)
+                .map(|account_storage_entry| (account_storage_entry, offset));
+            LoadedAccountAccessor::Stored(account_storage_entry)
         }
     }
 

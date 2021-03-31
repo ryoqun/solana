@@ -4048,7 +4048,9 @@ impl Bank {
     pub fn get_account_modified_slot(&self, pubkey: &Pubkey) -> Option<(AccountSharedData, Slot)> {
         // fixed_root variant must be used because get_account (= this fn caller) is called for
         // various on-consensus code like inflation, feature activation and native program loading..
-        self.rc.accounts.load_slow_with_fixed_root(&self.ancestors, pubkey)
+        self.rc
+            .accounts
+            .load_slow_with_fixed_root(&self.ancestors, pubkey)
     }
 
     // Exclude self to really fetch the parent Bank's account hash and data.
