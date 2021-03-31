@@ -2056,12 +2056,7 @@ impl AccountsDb {
         self.accounts_index
             .scan_accounts(ancestors, |pubkey, (account_info, slot)| {
                 let account_slot = self
-                    .get_account_accessor_from_cache_or_storage(
-                        slot,
-                        pubkey,
-                        account_info.store_id,
-                        account_info.offset,
-                    )
+                    .get_account_accessor(slot, pubkey, account_info.store_id, account_info.offset)
                     .get_loaded_account()
                     .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
                 scan_func(&mut collector, account_slot)
@@ -2085,12 +2080,7 @@ impl AccountsDb {
             ancestors,
             |pubkey, (account_info, slot)| {
                 if let Some(loaded_account) = self
-                    .get_account_accessor_from_cache_or_storage(
-                        slot,
-                        pubkey,
-                        account_info.store_id,
-                        account_info.offset,
-                    )
+                    .get_account_accessor(slot, pubkey, account_info.store_id, account_info.offset)
                     .get_loaded_account()
                 {
                     scan_func(&mut collector, (pubkey, loaded_account, slot));
@@ -2119,12 +2109,7 @@ impl AccountsDb {
             range,
             |pubkey, (account_info, slot)| {
                 let account_slot = self
-                    .get_account_accessor_from_cache_or_storage(
-                        slot,
-                        pubkey,
-                        account_info.store_id,
-                        account_info.offset,
-                    )
+                    .get_account_accessor(slot, pubkey, account_info.store_id, account_info.offset)
                     .get_loaded_account()
                     .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
                 scan_func(&mut collector, account_slot)
@@ -2149,12 +2134,7 @@ impl AccountsDb {
             index_key,
             |pubkey, (account_info, slot)| {
                 let account_slot = self
-                    .get_account_accessor_from_cache_or_storage(
-                        slot,
-                        pubkey,
-                        account_info.store_id,
-                        account_info.offset,
-                    )
+                    .get_account_accessor(slot, pubkey, account_info.store_id, account_info.offset)
                     .get_loaded_account()
                     .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
                 scan_func(&mut collector, account_slot)
@@ -2314,8 +2294,7 @@ impl AccountsDb {
                 return None;
             }
 
-            account_accessor =
-                self.get_account_accessor_from_cache_or_storage(slot, pubkey, store_id, offset);
+            account_accessor = self.get_account_accessor(slot, pubkey, store_id, offset);
             match account_accessor {
                 LoadedAccountAccessor::Stored(None) => {
                     if !is_root_fixed {
@@ -2421,7 +2400,7 @@ impl AccountsDb {
         Some(*loaded_account.loaded_hash())
     }
 
-    fn get_account_accessor_from_cache_or_storage<'a>(
+    fn get_account_accessor<'a>(
         &'a self,
         slot: Slot,
         pubkey: &'a Pubkey,
@@ -3680,7 +3659,7 @@ impl AccountsDb {
                                 {
                                     let (slot, account_info) = &lock.slot_list()[index];
                                     if account_info.lamports != 0 {
-                                        self.get_account_accessor_from_cache_or_storage(
+                                        self.get_account_accessor(
                                             *slot,
                                             pubkey,
                                             account_info.store_id,
