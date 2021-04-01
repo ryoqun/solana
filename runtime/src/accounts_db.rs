@@ -2373,7 +2373,7 @@ impl AccountsDb {
             let account_accessor = self.get_account_accessor(slot, pubkey, store_id, offset);
             match account_accessor {
                 LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
-                    // Everything else means there was no race, so break out and return
+                    // Great! There was no race, just return :)
                     return Some((account_accessor, slot));
                 }
                 LoadedAccountAccessor::Cached(None) => {
