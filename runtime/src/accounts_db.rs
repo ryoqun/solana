@@ -187,6 +187,8 @@ impl Versioned for (u64, AccountInfo) {
 
 #[derive(Debug)]
 pub enum LoadedAccountAccessor<'a> {
+    // StoredAccountMeta can't be held directly here due to its lifetime dependency to
+    // AccountStorageEntry
     Stored(Option<(Arc<AccountStorageEntry>, usize)>),
     // None value in Cached variant means the cache was flushed
     Cached(Option<(Pubkey, Cow<'a, CachedAccount>)>),
@@ -217,11 +219,11 @@ impl<'a> LoadedAccountAccessor<'a> {
 
     fn get_loaded_account(&mut self) -> Option<LoadedAccount> {
         match self {
-            LoadedAccountAccessor::Stored(storage_entry) => {
-                // May not be present if slot was cleaned up in between reading
-                // the accounts index and calling this function to get the storage
-                // entry here
-                storage_entry.as_ref().and_then(|(storage_entry, offset)| {
+            LoadedAccountAccessor::Stored(maybe_storage_entry) => {
+                // storage entry may not be present if slot was cleaned up in
+                // between reading the accounts index and calling this function to
+                // get account meta from the storage entry here
+                maybe_storage_entry.as_ref().and_then(|(storage_entry, offset)| {
                     storage_entry
                         .get_stored_account_meta(*offset)
                         .map(LoadedAccount::Stored)
@@ -2263,6 +2265,81 @@ impl AccountsDb {
         max_root: Option<Slot>,
         is_root_fixed: bool,
     ) -> Option<(LoadedAccountAccessor<'a>, Slot)> {
+        // Happy drawing time! :)
+        //
+        // Reader                               | Accessed data source
+        // -------------------------------------+----------------------------------
+        // R1 read_index_for_accessor()         | cached/stored: index
+        //          |                           |
+        //        <(store_id, offset, ..)>      |
+        //          V                           |
+        // R2 retry_to_get_account_accessor()/  | cached: map of caches & entry for (slot, pubkey)
+        //        get_account_accessor()        | stored: map of stores
+        //          |                           |
+        //        <Accessor>                    |
+        //          V                           |
+        // R3 check_and_get_loaded_account()/   | cached: N/A (note: basically noop unwrap)
+        //        get_loaded_account()          | stored: store's entry for slot
+        //          |                           |
+        //        <LoadedAccount>               |
+        //          V                           |
+        // R4 take_account()                    | cached/stored: entry of cache/storage for (slot, pubkey)
+        //          |                           |
+        //        <AccountSharedData>           |
+        //          V                           |
+        //    Account!!                         V
+        //
+        // Flusher                              | Accessed data source
+        // -------------------------------------+----------------------------------
+        // F1 flush_slot_cache()                | N/A
+        //          |                           |
+        //          V                           |
+        // F2 store_accounts_frozen()/          | map of stores (creates new entry)
+        //        write_accounts_to_storage()   |
+        //          |                           |
+        //          V                           |
+        // F3 store_accounts_frozen()/          | index
+        //        update_index()                | (replaces existing store_id, offset for caches)
+        //          |                           |
+        //          V                           |
+        // F4 accounts_cache.remove_slot()      | map of caches (removes old entry)
+        //                                      V
+        //
+        // Remarks for flusher: So, for any reading operations, it's a race conditon where F4 happens
+        // between R1 and R2. In that case, retrying from R1 is safu because F3 should have
+        // been occured.
+        //
+        // Shrinker                             | Accessed data source
+        // -------------------------------------+----------------------------------
+        // S1 do_shrink_slot_stores()           | N/A
+        //          |                           |
+        //          V                           |
+        // S2 store_accounts_frozen()/          | map of stores (creates new entry)
+        //        write_accounts_to_storage()   |
+        //          |                           |
+        //          V                           |
+        // S3 store_accounts_frozen()/          | index
+        //        update_index()                | (replaces existing store_id, offset for stores)
+        //          |                           |
+        //          V                           |
+        // S4 do_shrink_slot_stores()/          | map of stores (removes old entry)
+        //        dead_storages
+        //
+        // Remarks for shrinker: So, for any reading operations, it's a race conditon
+        // where S3 happens between R1 and R2. In that case, retrying from R1 is safu because S3 should have
+        // been occured, and S3 atomically replaced the index accordingly.
+        //
+        // Cleaner                              | Accessed data source
+        // -------------------------------------+----------------------------------
+        // C1 clean_accounts()                  | N/A
+        //          |                           |
+        //          V                           |
+        // C2 clean_accounts()/                 | index
+        //        purge_keys_exact()            | (removes existing store_id, offset for stores)
+        //
+        // Remarks for cleaner: So, for any reading operations, it's a race conditon
+        // where C2 happens between R1 and R2. In that case, retrying from R1 is safu.
+        // In that case, None would be returned while bailing out at R1.
         let (mut slot, mut store_id, mut offset) =
             self.read_index_for_accessor(ancestors, pubkey, max_root)?;
 
@@ -3457,8 +3534,10 @@ impl AccountsDb {
                 );
             }
 
-            // Remove this slot from the cache, which will to AccountsDb readers should look like an
-            // atomic switch from the cache to storage
+            // Remove this slot from the cache, which will to AccountsDb's new readers should look like an
+            // atomic switch from the cache to storage.
+            // There is some racy condition for existing readers who just has read exactly while
+            // flushing. That case is handled by retry_to_get_account_accessor()
             assert!(self.accounts_cache.remove_slot(slot).is_some());
             true
         } else {
