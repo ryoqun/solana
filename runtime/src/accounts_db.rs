@@ -2358,6 +2358,21 @@ impl AccountsDb {
         // Remarks for cleaner: So, for any reading operations, it's a race conditon
         // where C3 happens between R1 and R2. In that case, retrying from R1 is safu.
         // In that case, None would be returned while bailing out at R1.
+        //
+        // Purger                               | Accessed data source for cached/stored
+        // -------------------------------------+----------------------------------
+        // P1 purge_slot()                      | N/A
+        //          |                           |
+        //          V                           |
+        // P2 purge_slots_from_cache_and_store()| map of caches/stores (removes old entry)
+        //          |                           |
+        //          V                           |
+        // P3 clean_accounts()/                 | index
+        //        purge_rooted...()             | (removes existing store_id, offset for caches/stores)
+        //
+        // Remarks for cleaner: So, for any reading operations, it's a race conditon
+        // where P2 happens between R1 and R2. In that case, retrying from R1 is safu.
+        // In that case, we may bail at index read retry when P3 hasn't been run
         let (mut slot, mut store_id, mut offset) =
             self.read_index_for_accessor(ancestors, pubkey, max_root)?;
 
@@ -2772,7 +2787,7 @@ impl AccountsDb {
         recycle_stores_write_elapsed.as_us()
     }
 
-    fn do_purge_slots_from_cache_and_store<'a>(
+    fn purge_slots_from_cache_and_store<'a>(
         &'a self,
         can_exist_in_cache: bool,
         removed_slots: impl Iterator<Item = &'a Slot>,
@@ -2873,7 +2888,7 @@ impl AccountsDb {
             .purge_stats
             .safety_checks_elapsed
             .fetch_add(safety_checks_elapsed.as_us(), Ordering::Relaxed);
-        self.do_purge_slots_from_cache_and_store(
+        self.purge_slots_from_cache_and_store(
             false,
             removed_slots.iter(),
             &self.clean_accounts_stats.purge_stats,
@@ -2924,7 +2939,7 @@ impl AccountsDb {
         self.external_purge_slots_stats
             .safety_checks_elapsed
             .fetch_add(safety_checks_elapsed.as_us(), Ordering::Relaxed);
-        self.do_purge_slots_from_cache_and_store(
+        self.purge_slots_from_cache_and_store(
             true,
             non_roots.into_iter(),
             &self.external_purge_slots_stats,
