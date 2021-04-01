@@ -2372,6 +2372,27 @@ impl AccountsDb {
 
             let account_accessor = self.get_account_accessor(slot, pubkey, store_id, offset);
             match account_accessor {
+                LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
+                    // Everything else means there was no race, so break out and return
+                    return Some((account_accessor, slot));
+                }
+                LoadedAccountAccessor::Cached(None) => {
+                    // Cache was flushed in between checking the index and retrieving from the cache,
+                    // so retry. This works because in accounts cache flush, an account is written to
+                    // storage *before* it is removed from the cache
+                    num_acceptable_failed_iterations += 1;
+                    if is_root_fixed {
+                        // it's impossible for this to fail for transaction loads from replay/banking
+                        // more than once.
+                        // This is because:
+                        // 1) For a slot `X` that's being replayed, there is only one
+                        // latest ancestor containing the latest update for the account, and this
+                        // ancestor can only be flushed once.
+                        // 2) The root cannot move while replaying, so the index cannot continually
+                        // find more up to date entries than the current `slot`
+                        assert!(num_acceptable_failed_iterations <= 1);
+                    }
+                }
                 LoadedAccountAccessor::Stored(None) => {
                     if !is_root_fixed {
                         // When running replay on the validator, or banking stage on the leader,
@@ -2402,27 +2423,6 @@ impl AccountsDb {
                         // (account index cleanup is left to clean for stored slots).
                         num_acceptable_failed_iterations += 1;
                     }
-                }
-                LoadedAccountAccessor::Cached(None) => {
-                    // Cache was flushed in between checking the index and retrieving from the cache,
-                    // so retry. This works because in accounts cache flush, an account is written to
-                    // storage *before* it is removed from the cache
-                    num_acceptable_failed_iterations += 1;
-                    if is_root_fixed {
-                        // it's impossible for this to fail for transaction loads from replay/banking
-                        // more than once.
-                        // This is because:
-                        // 1) For a slot `X` that's being replayed, there is only one
-                        // latest ancestor containing the latest update for the account, and this
-                        // ancestor can only be flushed once.
-                        // 2) The root cannot move while replaying, so the index cannot continually
-                        // find more up to date entries than the current `slot`
-                        assert!(num_acceptable_failed_iterations <= 1);
-                    }
-                }
-                LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
-                    // Everything else means there was no race, so break out and return
-                    return Some((account_accessor, slot));
                 }
             }
 
