@@ -9547,10 +9547,13 @@ pub mod tests {
         assert_eq!(recycle_stores.total_bytes(), dummy_size);
     }
 
+    const RACY_SLEEP_MS: u64 = 10;
+
     fn start_load_thread(
+        with_retry: bool,
         db: Arc<AccountsDb>,
         exit: Arc<AtomicBool>,
-        pubkey_to_load: Arc<Pubkey>,
+        pubkey: Arc<Pubkey>,
         expected_lamports: impl Fn(&(AccountSharedData, Slot)) -> u64 + Send + 'static,
     ) -> JoinHandle<()> {
         std::thread::Builder::new()
@@ -9561,9 +9564,26 @@ pub mod tests {
                         return;
                     }
                     // Load should never be unable to find this key
-                    let loaded_account = db
-                        .do_load(&Ancestors::default(), &pubkey_to_load, None, true)
-                        .unwrap();
+                    let loaded_account = if with_retry {
+                        // simulate replaying/banking loading
+                        db.do_load(&Ancestors::default(), &pubkey, None, true)
+                            .unwrap()
+                    } else {
+                        // simulate rpc loading
+
+                        let (slot, store_id, offset) = db
+                            .read_index_for_accessor(&Ancestors::default(), &pubkey, None)
+                            .unwrap();
+
+                        sleep(Duration::from_millis(RACY_SLEEP_MS));
+
+                        let mut account_accessor =
+                            db.get_account_accessor(slot, &pubkey, store_id, offset);
+                        match account_accessor.get_loaded_account() {
+                            None => continue, // for RPC case, observing None is valid sometimes
+                            Some(account_accessor) => (account_accessor.take_account(), slot),
+                        }
+                    };
                     // slot + 1 == account.lamports because of the account-cache-flush thread
                     assert_eq!(
                         loaded_account.0.lamports,
@@ -9574,8 +9594,9 @@ pub mod tests {
             .unwrap()
     }
 
-    #[test]
-    fn test_load_account_and_cache_flush_race() {
+    fn do_test_load_account_and_cache_flush_race(with_retry: bool) {
+        solana_logger::setup();
+
         let caching_enabled = true;
         let mut db = AccountsDb::new_with_config(
             Vec::new(),
@@ -9583,7 +9604,7 @@ pub mod tests {
             HashSet::new(),
             caching_enabled,
         );
-        db.load_delay = 10;
+        db.load_delay = RACY_SLEEP_MS;
         let db = Arc::new(db);
         let pubkey = Arc::new(Pubkey::new_unique());
         let exit = Arc::new(AtomicBool::new(false));
@@ -9613,7 +9634,7 @@ pub mod tests {
                         account.lamports = slot + 1;
                         db.store_cached(slot, &[(&pubkey, &account)]);
                         db.add_root(slot);
-                        sleep(Duration::from_millis(10));
+                        sleep(Duration::from_millis(RACY_SLEEP_MS));
                         db.flush_accounts_cache(true, None);
                         slot += 1;
                     }
@@ -9621,7 +9642,8 @@ pub mod tests {
                 .unwrap()
         };
 
-        let t_do_load = start_load_thread(db, exit.clone(), pubkey, |(_, slot)| slot + 1);
+        let t_do_load =
+            start_load_thread(with_retry, db, exit.clone(), pubkey, |(_, slot)| slot + 1);
 
         sleep(Duration::from_secs(1));
         exit.store(true, Ordering::Relaxed);
@@ -9630,7 +9652,16 @@ pub mod tests {
     }
 
     #[test]
-    fn test_load_account_and_shrink_race() {
+    fn test_load_account_and_cache_flush_race_with_retry() {
+        do_test_load_account_and_cache_flush_race(true);
+    }
+
+    #[test]
+    fn test_load_account_and_cache_flush_race_without_retry() {
+        do_test_load_account_and_cache_flush_race(false);
+    }
+
+    fn do_test_load_account_and_shrink_race(with_retry: bool) {
         let caching_enabled = true;
         let mut db = AccountsDb::new_with_config(
             Vec::new(),
@@ -9638,7 +9669,7 @@ pub mod tests {
             HashSet::new(),
             caching_enabled,
         );
-        db.load_delay = 10;
+        db.load_delay = RACY_SLEEP_MS;
         let db = Arc::new(db);
         let pubkey = Arc::new(Pubkey::new_unique());
         let exit = Arc::new(AtomicBool::new(false));
@@ -9679,11 +9710,21 @@ pub mod tests {
                 .unwrap()
         };
 
-        let t_do_load = start_load_thread(db, exit.clone(), pubkey, move |_| lamports);
+        let t_do_load = start_load_thread(with_retry, db, exit.clone(), pubkey, move |_| lamports);
 
         sleep(Duration::from_secs(1));
         exit.store(true, Ordering::Relaxed);
         t_shrink_accounts.join().unwrap();
         t_do_load.join().unwrap();
+    }
+
+    #[test]
+    fn test_load_account_and_shrink_race_with_retry() {
+        do_test_load_account_and_shrink_race(true);
+    }
+
+    #[test]
+    fn test_load_account_and_shrink_race_without_retry() {
+        do_test_load_account_and_shrink_race(false);
     }
 }
