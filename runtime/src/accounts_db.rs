@@ -2256,7 +2256,7 @@ impl AccountsDb {
         Some((slot, store_id, offset))
     }
 
-    fn get_account_accessor_with_retry<'a>(
+    fn retry_to_get_account_accessor<'a>(
         &'a self,
         ancestors: &'a Ancestors,
         pubkey: &'a Pubkey,
@@ -2382,7 +2382,7 @@ impl AccountsDb {
         is_root_fixed: bool,
     ) -> Option<(AccountSharedData, Slot)> {
         let (mut account_accessor, slot) =
-            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
+            self.retry_to_get_account_accessor(ancestors, pubkey, max_root, is_root_fixed)?;
         let loaded_account = account_accessor.check_and_get_loaded_account();
         Some((loaded_account.take_account(), slot))
     }
@@ -2395,7 +2395,7 @@ impl AccountsDb {
         is_root_fixed: bool,
     ) -> Option<Hash> {
         let (mut account_accessor, _) =
-            self.get_account_accessor_with_retry(ancestors, pubkey, max_root, is_root_fixed)?;
+            self.retry_to_get_account_accessor(ancestors, pubkey, max_root, is_root_fixed)?;
         let loaded_account = account_accessor.check_and_get_loaded_account();
         Some(*loaded_account.loaded_hash())
     }
@@ -3660,7 +3660,7 @@ impl AccountsDb {
                                     let (slot, account_info) = &lock.slot_list()[index];
                                     if account_info.lamports != 0 {
                                         // Because we're keeing the `lock' here, there is no need
-                                        // to use get_account_accessor_with_retry()
+                                        // to use retry_to_get_account_accessor()
                                         self.get_account_accessor(
                                             *slot,
                                             pubkey,
