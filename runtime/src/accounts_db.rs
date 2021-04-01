@@ -2281,17 +2281,13 @@ impl AccountsDb {
                 // The latest version of the account existed in the index, but could not be
                 // fetched from storage. This means a race occurred between this function and clean
                 // accounts/purge_slots
-                datapoint_warn!(
-                    "accounts_db-do_load_warn",
-                    (
-                        "warn",
-                        format!("do_load() failed to get key: {} from storage, latest attempt was for slot: {}, storage_entry: {}",
+                let message = format!("do_load() failed to get key: {} from storage, latest attempt was for slot: {}, storage_entry: {} is_root_fixed: {}",
                         pubkey,
                         slot,
-                        store_id),
-                        String
-                    ),
+                        store_id,
+                        is_root_fixed,
                 );
+                datapoint_warn!("accounts_db-do_load_warn", ("warn", message, String));
                 return None;
             }
 
