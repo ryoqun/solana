@@ -2340,9 +2340,13 @@ impl AccountsDb {
         //          V                           |
         // C2 clean_accounts()/                 | index
         //        purge_keys_exact()            | (removes existing store_id, offset for stores)
+        //          |                           |
+        //          V                           |
+        // C3 clean_accounts()/                 | map of stores (removes old entry)
+        //        handle_reclaims()             |
         //
         // Remarks for cleaner: So, for any reading operations, it's a race conditon
-        // where C2 happens between R1 and R2. In that case, retrying from R1 is safu.
+        // where C3 happens between R1 and R2. In that case, retrying from R1 is safu.
         // In that case, None would be returned while bailing out at R1.
         let (mut slot, mut store_id, mut offset) =
             self.read_index_for_accessor(ancestors, pubkey, max_root)?;
@@ -3738,6 +3742,8 @@ impl AccountsDb {
                                     if account_info.lamports != 0 {
                                         // Because we're keeing the `lock' here, there is no need
                                         // to use retry_to_get_account_accessor()
+                                        // In other words, flusher/shrinker/cleaner is blocked to
+                                        // cause any Accessor(None) situtation.
                                         self.get_account_accessor(
                                             *slot,
                                             pubkey,
