@@ -1914,8 +1914,10 @@ impl AccountsDb {
                 slot_stores.write().unwrap().retain(|_key, store| {
                     if store.count() == 0 {
                         dead_storages.push(store.clone());
+                        false
+                    } else {
+                        true
                     }
-                    store.count() > 0
                 });
             }
             start.stop();
