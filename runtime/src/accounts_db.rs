@@ -2357,27 +2357,13 @@ impl AccountsDb {
             sleep(Duration::from_millis(self.load_delay));
         }
 
-        // Failsafe for potential race conditions with cache flush and accounts clean
+        // Failsafe for potential race conditions with other subsystems
         let mut num_acceptable_failed_iterations = 0;
         loop {
-            if num_acceptable_failed_iterations >= 10 {
-                // The latest version of the account existed in the index, but could not be
-                // fetched from storage. This means a race occurred between this function and clean
-                // accounts/purge_slots
-                let message = format!("do_load() failed to get key: {} from storage, latest attempt was for slot: {}, storage_entry: {} is_root_fixed: {}",
-                        pubkey,
-                        slot,
-                        store_id,
-                        is_root_fixed,
-                );
-                datapoint_warn!("accounts_db-do_load_warn", ("warn", message, String));
-                return None;
-            }
-
             let account_accessor = self.get_account_accessor(slot, pubkey, store_id, offset);
             match account_accessor {
                 LoadedAccountAccessor::Cached(Some(_)) | LoadedAccountAccessor::Stored(Some(_)) => {
-                    // Great! There was no race, just return :)
+                    // Great! There was no race, just return :) This is the most usual situation
                     return Some((account_accessor, slot));
                 }
                 LoadedAccountAccessor::Cached(None) => {
@@ -2428,6 +2414,18 @@ impl AccountsDb {
                         num_acceptable_failed_iterations += 1;
                     }
                 }
+            }
+            if num_acceptable_failed_iterations >= 10 {
+                // The latest version of the account existed in the index, but could not be
+                // fetched from storage. This means a race occurred between this function and clean
+                // accounts/purge_slots
+                let message = format!(
+                    "do_load() failed to get key: {} from storage, latest attempt was for \
+                     slot: {}, storage_entry: {} is_root_fixed: {}",
+                    pubkey, slot, store_id, is_root_fixed,
+                );
+                datapoint_warn!("accounts_db-do_load_warn", ("warn", message, String));
+                return None;
             }
 
             // Because reading from the cache/storage failed, retry from the index read
@@ -2487,17 +2485,17 @@ impl AccountsDb {
         offset: usize,
     ) -> LoadedAccountAccessor<'a> {
         if store_id == CACHE_VIRTUAL_STORAGE_ID {
-            let cached_account = self
+            let maybe_cached_account = self
                 .accounts_cache
                 .load(slot, pubkey)
                 .map(|cached_account| (*pubkey, Cow::Owned(cached_account)));
-            LoadedAccountAccessor::Cached(cached_account)
+            LoadedAccountAccessor::Cached(maybe_cached_account)
         } else {
-            let account_storage_entry = self
+            let maybe_storage_entry = self
                 .storage
                 .get_account_storage_entry(slot, store_id)
                 .map(|account_storage_entry| (account_storage_entry, offset));
-            LoadedAccountAccessor::Stored(account_storage_entry)
+            LoadedAccountAccessor::Stored(maybe_storage_entry)
         }
     }
 
