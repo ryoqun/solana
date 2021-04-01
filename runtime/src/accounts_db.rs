@@ -223,11 +223,13 @@ impl<'a> LoadedAccountAccessor<'a> {
                 // storage entry may not be present if slot was cleaned up in
                 // between reading the accounts index and calling this function to
                 // get account meta from the storage entry here
-                maybe_storage_entry.as_ref().and_then(|(storage_entry, offset)| {
-                    storage_entry
-                        .get_stored_account_meta(*offset)
-                        .map(LoadedAccount::Stored)
-                })
+                maybe_storage_entry
+                    .as_ref()
+                    .and_then(|(storage_entry, offset)| {
+                        storage_entry
+                            .get_stored_account_meta(*offset)
+                            .map(LoadedAccount::Stored)
+                    })
             }
             LoadedAccountAccessor::Cached(cached_account) => {
                 let cached_account: (Pubkey, Cow<'a, CachedAccount>) = cached_account
