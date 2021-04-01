@@ -2239,7 +2239,7 @@ impl AccountsDb {
         self.do_load(ancestors, pubkey, None, true)
     }
 
-    fn accounts_index_get(
+    fn read_index_for_accessor(
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
@@ -2264,7 +2264,7 @@ impl AccountsDb {
         is_root_fixed: bool,
     ) -> Option<(LoadedAccountAccessor<'a>, Slot)> {
         let (mut slot, mut store_id, mut offset) =
-            self.accounts_index_get(ancestors, pubkey, max_root)?;
+            self.read_index_for_accessor(ancestors, pubkey, max_root)?;
 
         #[cfg(test)]
         {
@@ -2349,7 +2349,7 @@ impl AccountsDb {
 
             // Because reading from the cache/storage failed, retry from the index read
             let (new_slot, new_store_id, new_offset) =
-                self.accounts_index_get(ancestors, pubkey, max_root)?;
+                self.read_index_for_accessor(ancestors, pubkey, max_root)?;
             if new_slot == slot && new_store_id == store_id {
                 // If the entry was missing from the cache, that means it must have been flushed,
                 // and the accounts index is always updated before cache flush, so this
