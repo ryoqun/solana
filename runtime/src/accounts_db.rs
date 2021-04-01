@@ -2115,11 +2115,21 @@ impl AccountsDb {
             ancestors,
             range,
             |pubkey, (account_info, slot)| {
+                // unlike other scan fns, this is called from Bank::collect_rent_eagerly(),
+                // which is on-consensus processing in the banking/replaying stage.
+                // This requires infallible and consistent account loading.
+                // So, we unwrap Option<LoadedAccount> from get_loaded_account() here.
+                // This is safe because this closure is invoked with the account_info,
+                // while we lock the index entry at AccountsIndex::do_scan_accounts() ultimately,
+                // meaning no other subsystems can invalidate the account_info before making their
+                // changes to the index entry.
+                // For details, see the comment in retry_to_get_account_accessor()
                 let account_slot = self
                     .get_account_accessor(slot, pubkey, account_info.store_id, account_info.offset)
                     .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
-                scan_func(&mut collector, account_slot)
+                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot))
+                    .unwrap();
+                scan_func(&mut collector, Some(account_slot))
             },
         );
         collector
