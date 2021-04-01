@@ -203,7 +203,8 @@ impl<'a> LoadedAccountAccessor<'a> {
             LoadedAccountAccessor::Cached(Some(_cached_account)) => {
                 // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
                 // it just returns the inner `x` without additional fetches
-                self.get_loaded_account().unwrap()
+                self.get_loaded_account()
+                    .expect("Cache flushed should be handled before trying to fetch account")
             }
             LoadedAccountAccessor::Stored(Some(_storage_entry)) => {
                 // If we do find the storage entry, we can guarantee that the storage entry is
@@ -231,11 +232,10 @@ impl<'a> LoadedAccountAccessor<'a> {
                             .map(LoadedAccount::Stored)
                     })
             }
-            LoadedAccountAccessor::Cached(cached_account) => {
-                let cached_account: (Pubkey, Cow<'a, CachedAccount>) = cached_account
-                    .take()
-                    .expect("Cache flushed should be handled before trying to fetch account");
-                Some(LoadedAccount::Cached(cached_account))
+            LoadedAccountAccessor::Cached(maybe_cached_account) => {
+                // cached account may not be present if slot was flushed in between,
+                // assuming that retry_to_get_account_accessor() isn't used
+                maybe_cached_account.take().map(LoadedAccount::Cached)
             }
         }
     }
