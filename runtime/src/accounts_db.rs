@@ -2303,7 +2303,7 @@ impl AccountsDb {
         //          |                           |
         //          V                           |
         // F3 store_accounts_frozen()/          | index
-        //        update_index()                | (replaces existing store_id, offset for caches)
+        //        update_index()                | (replaces existing store_id, offset in caches)
         //          |                           |
         //          V                           |
         // F4 accounts_cache.remove_slot()      | map of caches (removes old entry)
@@ -2323,7 +2323,7 @@ impl AccountsDb {
         //          |                           |
         //          V                           |
         // S3 store_accounts_frozen()/          | index
-        //        update_index()                | (replaces existing store_id, offset for stores)
+        //        update_index()                | (replaces existing store_id, offset in stores)
         //          |                           |
         //          V                           |
         // S4 do_shrink_slot_stores()/          | map of stores (removes old entry)
