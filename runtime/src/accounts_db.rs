@@ -185,6 +185,7 @@ impl Versioned for (u64, AccountInfo) {
     }
 }
 
+#[derive(Debug)]
 pub enum LoadedAccountAccessor<'a> {
     Stored(Option<(Arc<AccountStorageEntry>, usize)>),
     // None value in Cached variant means the cache was flushed
