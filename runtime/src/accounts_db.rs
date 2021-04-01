@@ -2353,8 +2353,6 @@ impl AccountsDb {
             sleep(Duration::from_millis(self.load_delay));
         }
 
-        let mut account_accessor;
-
         // Failsafe for potential race conditions with cache flush and accounts clean
         let mut num_acceptable_failed_iterations = 0;
         loop {
@@ -2372,7 +2370,7 @@ impl AccountsDb {
                 return None;
             }
 
-            account_accessor = self.get_account_accessor(slot, pubkey, store_id, offset);
+            let account_accessor = self.get_account_accessor(slot, pubkey, store_id, offset);
             match account_accessor {
                 LoadedAccountAccessor::Stored(None) => {
                     if !is_root_fixed {
