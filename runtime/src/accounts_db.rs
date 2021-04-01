@@ -2271,7 +2271,7 @@ impl AccountsDb {
     ) -> Option<(LoadedAccountAccessor<'a>, Slot)> {
         // Happy drawing time! :)
         //
-        // Reader                               | Accessed data source
+        // Reader                               | Accessed data source for cached/stored
         // -------------------------------------+----------------------------------
         // R1 read_index_for_accessor()         | cached/stored: index
         //          |                           |
@@ -2293,7 +2293,7 @@ impl AccountsDb {
         //          V                           |
         //    Account!!                         V
         //
-        // Flusher                              | Accessed data source
+        // Flusher                              | Accessed data source for cached/stored
         // -------------------------------------+----------------------------------
         // F1 flush_slot_cache()                | N/A
         //          |                           |
@@ -2313,7 +2313,7 @@ impl AccountsDb {
         // between R1 and R2. In that case, retrying from R1 is safu because F3 should have
         // been occured.
         //
-        // Shrinker                             | Accessed data source
+        // Shrinker                             | Accessed data source for stored
         // -------------------------------------+----------------------------------
         // S1 do_shrink_slot_stores()           | N/A
         //          |                           |
@@ -2330,10 +2330,10 @@ impl AccountsDb {
         //        dead_storages
         //
         // Remarks for shrinker: So, for any reading operations, it's a race conditon
-        // where S3 happens between R1 and R2. In that case, retrying from R1 is safu because S3 should have
+        // where S4 happens between R1 and R2. In that case, retrying from R1 is safu because S3 should have
         // been occured, and S3 atomically replaced the index accordingly.
         //
-        // Cleaner                              | Accessed data source
+        // Cleaner                              | Accessed data source for stored
         // -------------------------------------+----------------------------------
         // C1 clean_accounts()                  | N/A
         //          |                           |
