@@ -2368,9 +2368,11 @@ impl AccountsDb {
         //          |                           |
         //          V                           |
         // P3 clean_accounts()/                 | index
-        //        purge_rooted...()             | (removes existing store_id, offset for caches/stores)
+        //        purge_slot_cache_pubkeys()    | (removes existing store_id, offset for caches)
+        //        clean_old_rooted_accounts()   | (removes existing store_id, offset for stores)
+        //                                      V
         //
-        // Remarks for cleaner: So, for any reading operations, it's a race conditon
+        // Remarks for purger: So, for any reading operations, it's a race conditon
         // where P2 happens between R1 and R2. In that case, retrying from R1 is safu.
         // In that case, we may bail at index read retry when P3 hasn't been run
         let (mut slot, mut store_id, mut offset) =
