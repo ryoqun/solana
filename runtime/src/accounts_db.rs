@@ -2477,15 +2477,24 @@ impl AccountsDb {
             let (new_slot, new_store_id, new_offset) =
                 self.read_index_for_accessor(ancestors, pubkey, max_root)?;
             if new_slot == slot && new_store_id == store_id {
-                // If the entry was missing from the cache, that means it must have been flushed,
-                // and the accounts index is always updated before cache flush, so this
-                // should be impossible
-                assert!(new_store_id != CACHE_VIRTUAL_STORAGE_ID);
+                // Considering that we're failed to get acccessor above and further that
+                // the index still returned the same (slot, store_id) tuple, offset must be same
+                // too.
                 assert!(new_offset == offset);
+
+                // If the entry was missing from the cache, that means it must have been flushed,
+                // and the accounts index is always updated before cache flush, so store_id must
+                // not indicate being cached.
+                assert!(new_store_id != CACHE_VIRTUAL_STORAGE_ID);
 
                 // If this is not a cache entry, then this was a minor fork slot
                 // that had its storage entries cleaned up by purge_slots() but hasn't been
-                // cleaned yet, so return None
+                // cleaned yet. That means this must be rpc access and not replay/banking.
+                // But we can't guarantee `is_root_fixed' must be false, because
+                // the dangling bank at the tip of minor fork might not be started to freeze
+                // (!freeze_started =~> is_root_fixed)
+
+                // Everything being said, let's return None as it's an error condition after all.
                 return None;
             }
 
@@ -9686,7 +9695,9 @@ pub mod tests {
     const RACY_SLEEP_MS: u64 = 10;
 
     fn start_load_thread(
-        with_retry: bool,
+        no_account_with_retry: Option<bool>, // silly tribool!
+        is_root_fixed: bool,
+        ancestors: Ancestors,
         db: Arc<AccountsDb>,
         exit: Arc<AtomicBool>,
         pubkey: Arc<Pubkey>,
@@ -9700,10 +9711,19 @@ pub mod tests {
                         return;
                     }
                     // Load should never be unable to find this key
-                    let loaded_account = if with_retry {
+                    let loaded_account = if let Some(no_account_with_retry) = no_account_with_retry
+                    {
                         // simulate replaying/banking loading
-                        db.do_load(&Ancestors::default(), &pubkey, None, true)
-                            .unwrap()
+                        match db.do_load(&ancestors, &pubkey, None, is_root_fixed) {
+                            Some(account) => account,
+                            None => {
+                                if no_account_with_retry {
+                                    continue;
+                                } else {
+                                    panic!("odd!");
+                                }
+                            }
+                        }
                     } else {
                         // simulate rpc loading
 
@@ -9778,8 +9798,17 @@ pub mod tests {
                 .unwrap()
         };
 
-        let t_do_load =
-            start_load_thread(with_retry, db, exit.clone(), pubkey, |(_, slot)| slot + 1);
+        let is_root_fixed = true;
+        let no_account_with_retry = if with_retry { Some(false) } else { None };
+        let t_do_load = start_load_thread(
+            no_account_with_retry,
+            is_root_fixed,
+            Ancestors::default(),
+            db,
+            exit.clone(),
+            pubkey,
+            |(_, slot)| slot + 1,
+        );
 
         sleep(Duration::from_secs(1));
         exit.store(true, Ordering::Relaxed);
@@ -9825,7 +9854,7 @@ pub mod tests {
             let exit = exit.clone();
 
             std::thread::Builder::new()
-                .name("account-cache-flush".to_string())
+                .name("account-shrink".to_string())
                 .spawn(move || loop {
                     if exit.load(Ordering::Relaxed) {
                         return;
@@ -9846,7 +9875,17 @@ pub mod tests {
                 .unwrap()
         };
 
-        let t_do_load = start_load_thread(with_retry, db, exit.clone(), pubkey, move |_| lamports);
+        let is_root_fixed = true;
+        let no_account_with_retry = if with_retry { Some(false) } else { None };
+        let t_do_load = start_load_thread(
+            no_account_with_retry,
+            is_root_fixed,
+            Ancestors::default(),
+            db,
+            exit.clone(),
+            pubkey,
+            move |_| lamports,
+        );
 
         sleep(Duration::from_secs(1));
         exit.store(true, Ordering::Relaxed);
@@ -9862,5 +9901,63 @@ pub mod tests {
     #[test]
     fn test_load_account_and_shrink_race_without_retry() {
         do_test_load_account_and_shrink_race(false);
+    }
+
+    #[test]
+    fn test_load_account_and_purge_race() {
+        let caching_enabled = true;
+        let mut db = AccountsDb::new_with_config(
+            Vec::new(),
+            &ClusterType::Development,
+            HashSet::new(),
+            caching_enabled,
+        );
+        db.load_delay = RACY_SLEEP_MS;
+        let db = Arc::new(db);
+        let pubkey = Arc::new(Pubkey::new_unique());
+        let exit = Arc::new(AtomicBool::new(false));
+        let slot = 1;
+
+        // Store an account
+        let lamports = 42;
+        let mut account = AccountSharedData::new(1, 0, &AccountSharedData::default().owner);
+        account.lamports = lamports;
+        db.store_uncached(slot, &[(&pubkey, &account)]);
+
+        let t_shrink_accounts = {
+            let db = db.clone();
+            let exit = exit.clone();
+
+            std::thread::Builder::new()
+                .name("account-purge".to_string())
+                .spawn(move || loop {
+                    if exit.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    // Simulate purge_slots()
+                    db.purge_slot(slot);
+                    sleep(Duration::from_millis(RACY_SLEEP_MS));
+                })
+                .unwrap()
+        };
+
+        let ancestors: Ancestors = vec![(slot, 0)].into_iter().collect();
+        // purge race should ever occur under is_root_fixed == false condition
+        let is_root_fixed = false;
+        let no_account_with_retry = Some(true);
+        let t_do_load = start_load_thread(
+            no_account_with_retry,
+            is_root_fixed,
+            ancestors,
+            db,
+            exit.clone(),
+            pubkey,
+            move |_| lamports,
+        );
+
+        sleep(Duration::from_secs(1));
+        exit.store(true, Ordering::Relaxed);
+        t_shrink_accounts.join().unwrap();
+        t_do_load.join().unwrap();
     }
 }
