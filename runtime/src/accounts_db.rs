@@ -2422,7 +2422,7 @@ impl AccountsDb {
                     }
                 }
                 LoadedAccountAccessor::Stored(None) => {
-                    if !is_root_fixed {
+                    if is_root_fixed {
                         // When running replay on the validator, or banking stage on the leader,
                         // it should be very rare that the storage entry doesn't exist if the
                         // entry in the accounts index is the latest version of this account.
@@ -2435,13 +2435,15 @@ impl AccountsDb {
                         // and the storage entry holding this account qualified for zero-lamport clean.
                         //
                         // In both these cases, it should be safe to retry and recheck the accounts
-                        // index. Also note that in both cases, if we do find the storage entry,
+                        // index indefinitely, without incrementing num_acceptable_failed_iterations.
+                        //
+                        // Also note that in both cases, if we do find the storage entry,
                         // we can guarantee that the storage entry is safe to read from because
                         // we grabbed a reference to the storage entry while it was still in the
                         // storage map. This means even if the storage entry is removed from the storage
                         // map after we grabbed the storage entry, the recycler should not reset the
                         // storage entry until we drop the reference to the storage entry.
-
+                    } else {
                         // RPC get_account() may have fetched an old root from the index that was
                         // either:
                         // 1) Cleaned up by clean_accounts(), so the accounts index has been updated
