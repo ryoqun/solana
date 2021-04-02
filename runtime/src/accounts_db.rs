@@ -2359,18 +2359,20 @@ impl AccountsDb {
         // where C3 happens between R1 and R2. In that case, retrying from R1 is safu.
         // In that case, None would be returned while bailing out at R1.
         //
-        // Purger                               | Accessed data source for cached/stored
-        // -------------------------------------+----------------------------------
-        // P1 purge_slot()                      | N/A
-        //          |                           |
-        //          V                           |
-        // P2 purge_slots_from_cache_and_store()| map of caches/stores (removes old entry)
-        //          |                           |
-        //          V                           |
-        // P3 clean_accounts()/                 | index
-        //        purge_slot_cache_pubkeys()    | (removes existing store_id, offset for caches)
-        //        clean_old_rooted_accounts()   | (removes existing store_id, offset for stores)
-        //                                      V
+        // Purger                                 | Accessed data source for cached/stored
+        // ---------------------------------------+----------------------------------
+        // P1 purge_slot()                        | N/A
+        //          |                             |
+        //          V                             |
+        // P2 purge_slots_from_cache_and_store()  | map of caches/stores (removes old entry)
+        //          |                             |
+        //          V                             |
+        // P3 purge_slots_from_cache_and_store()/ | index
+        //        purge_slot_cache_pubkeys()      | (removes existing store_id, offset for caches)
+        //      OR                                |
+        //    clean_accounts()/                   |
+        //        clean_old_rooted_accounts()     | (removes existing store_id, offset for stores)
+        //                                        V
         //
         // Remarks for purger: So, for any reading operations, it's a race conditon
         // where P2 happens between R1 and R2. In that case, retrying from R1 is safu.
