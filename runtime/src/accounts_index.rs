@@ -986,14 +986,15 @@ impl<T: 'static + Clone + IsCached + ZeroLamport> AccountsIndex<T> {
             if should_purge {
                 reclaims.push((*slot, value.clone()));
                 purged_slots.insert(*slot);
+                false
+            } else {
+                true
             }
-            !should_purge
         });
 
         self.purge_secondary_indexes_by_inner_key(pubkey, Some(&purged_slots), account_indexes);
     }
 
-    // `is_cached` closure is needed to work around the generic (`T`) indexed type.
     pub fn clean_rooted_entries(
         &self,
         pubkey: &Pubkey,
