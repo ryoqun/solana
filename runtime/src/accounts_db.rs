@@ -2241,18 +2241,27 @@ impl AccountsDb {
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
+        // Load transactions for a block which is descended from the current root,
+        // and at the tip of its fork
+        is_root_fixed: bool,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.do_load(ancestors, pubkey, None, false)
+        self.do_load(ancestors, pubkey, None, is_root_fixed)
     }
 
-    // Load transactions for a block which is descended from the current root,
-    // and at the tip of its fork
-    pub fn load_slow_with_fixed_root(
+    pub fn load_without_fixed_root(
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.do_load(ancestors, pubkey, None, true)
+        self.load_slow(ancestors, pubkey, false)
+    }
+
+    pub fn load_with_fixed_root(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+    ) -> Option<(AccountSharedData, Slot)> {
+        self.load_slow(ancestors, pubkey, true)
     }
 
     fn read_index_for_accessor(
@@ -4371,7 +4380,8 @@ impl AccountsDb {
 
     pub(crate) fn freeze_accounts(&mut self, ancestors: &Ancestors, account_pubkeys: &[Pubkey]) {
         for account_pubkey in account_pubkeys {
-            if let Some((account, _slot)) = self.load_slow(ancestors, &account_pubkey) {
+            if let Some((account, _slot)) = self.load_without_fixed_root(ancestors, &account_pubkey)
+            {
                 let frozen_account_info = FrozenAccountInfo {
                     hash: Self::hash_frozen_account_data(&account),
                     lamports: account.lamports,
@@ -5708,7 +5718,10 @@ pub mod tests {
         db.store_uncached(0, &[(&key, &account0)]);
         db.add_root(0);
         let ancestors = vec![(1, 1)].into_iter().collect();
-        assert_eq!(db.load_slow(&ancestors, &key), Some((account0, 0)));
+        assert_eq!(
+            db.load_without_fixed_root(&ancestors, &key),
+            Some((account0, 0))
+        );
     }
 
     #[test]
@@ -5724,10 +5737,16 @@ pub mod tests {
         db.store_uncached(1, &[(&key, &account1)]);
 
         let ancestors = vec![(1, 1)].into_iter().collect();
-        assert_eq!(&db.load_slow(&ancestors, &key).unwrap().0, &account1);
+        assert_eq!(
+            &db.load_without_fixed_root(&ancestors, &key).unwrap().0,
+            &account1
+        );
 
         let ancestors = vec![(1, 1), (0, 0)].into_iter().collect();
-        assert_eq!(&db.load_slow(&ancestors, &key).unwrap().0, &account1);
+        assert_eq!(
+            &db.load_without_fixed_root(&ancestors, &key).unwrap().0,
+            &account1
+        );
 
         let accounts: Vec<AccountSharedData> = db.unchecked_scan_accounts(
             "",
@@ -5753,10 +5772,16 @@ pub mod tests {
         db.add_root(0);
 
         let ancestors = vec![(1, 1)].into_iter().collect();
-        assert_eq!(&db.load_slow(&ancestors, &key).unwrap().0, &account1);
+        assert_eq!(
+            &db.load_without_fixed_root(&ancestors, &key).unwrap().0,
+            &account1
+        );
 
         let ancestors = vec![(1, 1), (0, 0)].into_iter().collect();
-        assert_eq!(&db.load_slow(&ancestors, &key).unwrap().0, &account1);
+        assert_eq!(
+            &db.load_without_fixed_root(&ancestors, &key).unwrap().0,
+            &account1
+        );
     }
 
     #[test]
@@ -5787,18 +5812,30 @@ pub mod tests {
         // original account (but could also accept "None", which is implemented
         // at the Accounts level)
         let ancestors = vec![(0, 0), (1, 1)].into_iter().collect();
-        assert_eq!(&db.load_slow(&ancestors, &key).unwrap().0, &account1);
+        assert_eq!(
+            &db.load_without_fixed_root(&ancestors, &key).unwrap().0,
+            &account1
+        );
 
         // we should see 1 token in slot 2
         let ancestors = vec![(0, 0), (2, 2)].into_iter().collect();
-        assert_eq!(&db.load_slow(&ancestors, &key).unwrap().0, &account0);
+        assert_eq!(
+            &db.load_without_fixed_root(&ancestors, &key).unwrap().0,
+            &account0
+        );
 
         db.add_root(0);
 
         let ancestors = vec![(1, 1)].into_iter().collect();
-        assert_eq!(db.load_slow(&ancestors, &key), Some((account1, 1)));
+        assert_eq!(
+            db.load_without_fixed_root(&ancestors, &key),
+            Some((account1, 1))
+        );
         let ancestors = vec![(2, 2)].into_iter().collect();
-        assert_eq!(db.load_slow(&ancestors, &key), Some((account0, 0))); // original value
+        assert_eq!(
+            db.load_without_fixed_root(&ancestors, &key),
+            Some((account0, 0))
+        ); // original value
     }
 
     #[test]
@@ -5810,7 +5847,9 @@ pub mod tests {
         for _ in 1..100 {
             let idx = thread_rng().gen_range(0, 99);
             let ancestors = vec![(0, 0)].into_iter().collect();
-            let account = db.load_slow(&ancestors, &pubkeys[idx]).unwrap();
+            let account = db
+                .load_without_fixed_root(&ancestors, &pubkeys[idx])
+                .unwrap();
             let default_account = AccountSharedData::from(Account {
                 lamports: (idx + 1) as u64,
                 ..Account::default()
@@ -5824,9 +5863,13 @@ pub mod tests {
         for _ in 1..100 {
             let idx = thread_rng().gen_range(0, 99);
             let ancestors = vec![(0, 0)].into_iter().collect();
-            let account0 = db.load_slow(&ancestors, &pubkeys[idx]).unwrap();
+            let account0 = db
+                .load_without_fixed_root(&ancestors, &pubkeys[idx])
+                .unwrap();
             let ancestors = vec![(1, 1)].into_iter().collect();
-            let account1 = db.load_slow(&ancestors, &pubkeys[idx]).unwrap();
+            let account1 = db
+                .load_without_fixed_root(&ancestors, &pubkeys[idx])
+                .unwrap();
             let default_account = AccountSharedData::from(Account {
                 lamports: (idx + 1) as u64,
                 ..Account::default()
@@ -5912,9 +5955,15 @@ pub mod tests {
         // masking accounts is done at the Accounts level, at accountsDB we see
         // original account
         let ancestors = vec![(0, 0), (1, 1)].into_iter().collect();
-        assert_eq!(db0.load_slow(&ancestors, &key), Some((account1, 1)));
+        assert_eq!(
+            db0.load_without_fixed_root(&ancestors, &key),
+            Some((account1, 1))
+        );
         let ancestors = vec![(0, 0)].into_iter().collect();
-        assert_eq!(db0.load_slow(&ancestors, &key), Some((account0, 0)));
+        assert_eq!(
+            db0.load_without_fixed_root(&ancestors, &key),
+            Some((account0, 0))
+        );
     }
 
     #[test]
@@ -5938,7 +5987,7 @@ pub mod tests {
 
         // Purge the slot
         db.remove_unrooted_slot(unrooted_slot);
-        assert!(db.load_slow(&ancestors, &key).is_none());
+        assert!(db.load_without_fixed_root(&ancestors, &key).is_none());
         assert!(db.bank_hashes.read().unwrap().get(&unrooted_slot).is_none());
         assert!(db.storage.0.get(&unrooted_slot).is_none());
         assert!(db
@@ -5983,7 +6032,9 @@ pub mod tests {
 
         // Check purged account stays gone
         let unrooted_slot_ancestors: HashMap<_, _> = vec![(unrooted_slot, 1)].into_iter().collect();
-        assert!(db.load_slow(&unrooted_slot_ancestors, &key).is_none());
+        assert!(db
+            .load_without_fixed_root(&unrooted_slot_ancestors, &key)
+            .is_none());
     }
 
     fn create_account(
@@ -6000,7 +6051,9 @@ pub mod tests {
             let account =
                 AccountSharedData::new((t + 1) as u64, space, &AccountSharedData::default().owner);
             pubkeys.push(pubkey);
-            assert!(accounts.load_slow(&ancestors, &pubkey).is_none());
+            assert!(accounts
+                .load_without_fixed_root(&ancestors, &pubkey)
+                .is_none());
             accounts.store_uncached(slot, &[(&pubkey, &account)]);
         }
         for t in 0..num_vote {
@@ -6009,7 +6062,9 @@ pub mod tests {
                 AccountSharedData::new((num + t + 1) as u64, space, &solana_vote_program::id());
             pubkeys.push(pubkey);
             let ancestors = vec![(slot, 0)].into_iter().collect();
-            assert!(accounts.load_slow(&ancestors, &pubkey).is_none());
+            assert!(accounts
+                .load_without_fixed_root(&ancestors, &pubkey)
+                .is_none());
             accounts.store_uncached(slot, &[(&pubkey, &account)]);
         }
     }
@@ -6018,12 +6073,16 @@ pub mod tests {
         for _ in 1..1000 {
             let idx = thread_rng().gen_range(0, range);
             let ancestors = vec![(slot, 0)].into_iter().collect();
-            if let Some((mut account, _)) = accounts.load_slow(&ancestors, &pubkeys[idx]) {
+            if let Some((mut account, _)) =
+                accounts.load_without_fixed_root(&ancestors, &pubkeys[idx])
+            {
                 account.lamports += 1;
                 accounts.store_uncached(slot, &[(&pubkeys[idx], &account)]);
                 if account.lamports == 0 {
                     let ancestors = vec![(slot, 0)].into_iter().collect();
-                    assert!(accounts.load_slow(&ancestors, &pubkeys[idx]).is_none());
+                    assert!(accounts
+                        .load_without_fixed_root(&ancestors, &pubkeys[idx])
+                        .is_none());
                 } else {
                     let default_account = AccountSharedData::from(Account {
                         lamports: account.lamports,
@@ -6078,7 +6137,7 @@ pub mod tests {
         let ancestors = vec![(slot, 0)].into_iter().collect();
         for _ in 0..num {
             let idx = thread_rng().gen_range(0, num);
-            let account = accounts.load_slow(&ancestors, &pubkeys[idx]);
+            let account = accounts.load_without_fixed_root(&ancestors, &pubkeys[idx]);
             let account1 = Some((
                 AccountSharedData::new(
                     (idx + count) as u64,
@@ -6116,7 +6175,7 @@ pub mod tests {
         let mut pubkeys: Vec<Pubkey> = vec![];
         create_account(&db, &mut pubkeys, 0, 1, 0, 0);
         let ancestors = vec![(0, 0)].into_iter().collect();
-        let account = db.load_slow(&ancestors, &pubkeys[0]).unwrap();
+        let account = db.load_without_fixed_root(&ancestors, &pubkeys[0]).unwrap();
         let default_account = AccountSharedData::from(Account {
             lamports: 1,
             ..Account::default()
@@ -6157,7 +6216,11 @@ pub mod tests {
         let ancestors = vec![(0, 0)].into_iter().collect();
         for (i, key) in keys.iter().enumerate() {
             assert_eq!(
-                accounts.load_slow(&ancestors, &key).unwrap().0.lamports,
+                accounts
+                    .load_without_fixed_root(&ancestors, &key)
+                    .unwrap()
+                    .0
+                    .lamports,
                 (i as u64) + 1
             );
         }
@@ -6206,11 +6269,17 @@ pub mod tests {
         }
         let ancestors = vec![(0, 0)].into_iter().collect();
         assert_eq!(
-            accounts.load_slow(&ancestors, &pubkey1).unwrap().0,
+            accounts
+                .load_without_fixed_root(&ancestors, &pubkey1)
+                .unwrap()
+                .0,
             account1
         );
         assert_eq!(
-            accounts.load_slow(&ancestors, &pubkey2).unwrap().0,
+            accounts
+                .load_without_fixed_root(&ancestors, &pubkey2)
+                .unwrap()
+                .0,
             account2
         );
 
@@ -6226,11 +6295,17 @@ pub mod tests {
             }
             let ancestors = vec![(0, 0)].into_iter().collect();
             assert_eq!(
-                accounts.load_slow(&ancestors, &pubkey1).unwrap().0,
+                accounts
+                    .load_without_fixed_root(&ancestors, &pubkey1)
+                    .unwrap()
+                    .0,
                 account1
             );
             assert_eq!(
-                accounts.load_slow(&ancestors, &pubkey2).unwrap().0,
+                accounts
+                    .load_without_fixed_root(&ancestors, &pubkey2)
+                    .unwrap()
+                    .0,
                 account2
             );
         }
@@ -6281,7 +6356,10 @@ pub mod tests {
 
         //new value is there
         let ancestors = vec![(1, 1)].into_iter().collect();
-        assert_eq!(accounts.load_slow(&ancestors, &pubkey), Some((account, 1)));
+        assert_eq!(
+            accounts.load_without_fixed_root(&ancestors, &pubkey),
+            Some((account, 1))
+        );
     }
 
     impl AccountsDb {
@@ -6736,13 +6814,17 @@ pub mod tests {
         expected_lamports: u64,
     ) {
         let ancestors = vec![(slot, 0)].into_iter().collect();
-        let (account, slot) = accounts.load_slow(&ancestors, &pubkey).unwrap();
+        let (account, slot) = accounts
+            .load_without_fixed_root(&ancestors, &pubkey)
+            .unwrap();
         assert_eq!((account.lamports, slot), (expected_lamports, slot));
     }
 
     fn assert_not_load_account(accounts: &AccountsDb, slot: Slot, pubkey: Pubkey) {
         let ancestors = vec![(slot, 0)].into_iter().collect();
-        assert!(accounts.load_slow(&ancestors, &pubkey).is_none());
+        assert!(accounts
+            .load_without_fixed_root(&ancestors, &pubkey)
+            .is_none());
     }
 
     fn reconstruct_accounts_db_via_serialization(accounts: &AccountsDb, slot: Slot) -> AccountsDb {
@@ -7062,8 +7144,9 @@ pub mod tests {
                             account.lamports = account_bal;
                             db.store_uncached(slot, &[(&pubkey, &account)]);
 
-                            let (account, slot) =
-                                db.load_slow(&HashMap::new(), &pubkey).unwrap_or_else(|| {
+                            let (account, slot) = db
+                                .load_without_fixed_root(&HashMap::new(), &pubkey)
+                                .unwrap_or_else(|| {
                                     panic!("Could not fetch stored account {}, iter {}", pubkey, i)
                                 });
                             assert_eq!(slot, slot);
@@ -7141,7 +7224,13 @@ pub mod tests {
 
         db.print_accounts_stats("post");
         let ancestors = vec![(2, 0)].into_iter().collect();
-        assert_eq!(db.load_slow(&ancestors, &key1).unwrap().0.lamports, 3);
+        assert_eq!(
+            db.load_without_fixed_root(&ancestors, &key1)
+                .unwrap()
+                .0
+                .lamports,
+            3
+        );
     }
 
     #[test]
@@ -7156,7 +7245,7 @@ pub mod tests {
         db.store_uncached(0, &[(&key, &account)]);
 
         let ancestors = vec![(0, 0)].into_iter().collect();
-        let ret = db.load_slow(&ancestors, &key).unwrap();
+        let ret = db.load_without_fixed_root(&ancestors, &key).unwrap();
         assert_eq!(ret.0.data().len(), data_len);
     }
 
@@ -7363,7 +7452,7 @@ pub mod tests {
         let ancestors = vec![(some_slot, 0)].into_iter().collect();
 
         db.store_uncached(some_slot, &[(&key, &account)]);
-        let mut account = db.load_slow(&ancestors, &key).unwrap().0;
+        let mut account = db.load_without_fixed_root(&ancestors, &key).unwrap().0;
         account.lamports -= 1;
         account.executable = true;
         db.store_uncached(some_slot, &[(&key, &account)]);
@@ -8468,7 +8557,10 @@ pub mod tests {
         ancestors.insert(1, 0);
         ancestors.insert(2, 1);
         for (key, account_ref) in keys[..num_to_store].iter().zip(account_refs) {
-            assert_eq!(accounts.load_slow(&ancestors, key).unwrap().0, account_ref);
+            assert_eq!(
+                accounts.load_without_fixed_root(&ancestors, key).unwrap().0,
+                account_ref
+            );
         }
     }
 
@@ -8492,7 +8584,7 @@ pub mod tests {
 
         // Should still be able to find zero lamport account in slot 1
         assert_eq!(
-            db.load_slow(&HashMap::new(), &account_key),
+            db.load_without_fixed_root(&HashMap::new(), &account_key),
             Some((zero_lamport_account, 1))
         );
     }
@@ -8507,22 +8599,25 @@ pub mod tests {
         db.store_cached(slot, &[(&key, &account0)]);
 
         // Load with no ancestors and no root will return nothing
-        assert!(db.load_slow(&HashMap::new(), &key).is_none());
+        assert!(db.load_without_fixed_root(&HashMap::new(), &key).is_none());
 
         // Load with ancestors not equal to `slot` will return nothing
         let ancestors = vec![(slot + 1, 1)].into_iter().collect();
-        assert!(db.load_slow(&ancestors, &key).is_none());
+        assert!(db.load_without_fixed_root(&ancestors, &key).is_none());
 
         // Load with ancestors equal to `slot` will return the account
         let ancestors = vec![(slot, 1)].into_iter().collect();
         assert_eq!(
-            db.load_slow(&ancestors, &key),
+            db.load_without_fixed_root(&ancestors, &key),
             Some((account0.clone(), slot))
         );
 
         // Adding root will return the account even without ancestors
         db.add_root(slot);
-        assert_eq!(db.load_slow(&HashMap::new(), &key), Some((account0, slot)));
+        assert_eq!(
+            db.load_without_fixed_root(&HashMap::new(), &key),
+            Some((account0, slot))
+        );
     }
 
     #[test]
@@ -8540,14 +8635,17 @@ pub mod tests {
         db.flush_accounts_cache(true, None);
         let ancestors = vec![(slot, 1)].into_iter().collect();
         assert_eq!(
-            db.load_slow(&ancestors, &key),
+            db.load_without_fixed_root(&ancestors, &key),
             Some((account0.clone(), slot))
         );
 
         // Add root then flush
         db.add_root(slot);
         db.flush_accounts_cache(true, None);
-        assert_eq!(db.load_slow(&HashMap::new(), &key), Some((account0, slot)));
+        assert_eq!(
+            db.load_without_fixed_root(&HashMap::new(), &key),
+            Some((account0, slot))
+        );
     }
 
     #[test]
@@ -8574,13 +8672,15 @@ pub mod tests {
         // Unrooted slot should be able to be fetched before the flush
         let ancestors = vec![(unrooted_slot, 1)].into_iter().collect();
         assert_eq!(
-            db.load_slow(&ancestors, &unrooted_key),
+            db.load_without_fixed_root(&ancestors, &unrooted_key),
             Some((account0.clone(), unrooted_slot))
         );
         db.flush_accounts_cache(true, None);
 
         // After the flush, the unrooted slot is still in the cache
-        assert!(db.load_slow(&ancestors, &unrooted_key).is_some());
+        assert!(db
+            .load_without_fixed_root(&ancestors, &unrooted_key)
+            .is_some());
         assert!(db
             .accounts_index
             .get_account_read_entry(&unrooted_key)
@@ -8588,11 +8688,11 @@ pub mod tests {
         assert_eq!(db.accounts_cache.num_slots(), 1);
         assert!(db.accounts_cache.slot_cache(unrooted_slot).is_some());
         assert_eq!(
-            db.load_slow(&HashMap::new(), &key5),
+            db.load_without_fixed_root(&HashMap::new(), &key5),
             Some((account0.clone(), root5))
         );
         assert_eq!(
-            db.load_slow(&HashMap::new(), &key6),
+            db.load_without_fixed_root(&HashMap::new(), &key6),
             Some((account0, root6))
         );
     }
@@ -8654,7 +8754,7 @@ pub mod tests {
                 vec![(slot, 1)].into_iter().collect()
             };
             assert_eq!(
-                db.load_slow(&ancestors, &key),
+                db.load_without_fixed_root(&ancestors, &key),
                 Some((account0.clone(), slot))
             );
         }

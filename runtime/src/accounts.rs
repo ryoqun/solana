@@ -215,7 +215,7 @@ impl Accounts {
                     } else {
                         let (account, rent) = self
                             .accounts_db
-                            .load_slow_with_fixed_root(ancestors, key)
+                            .load_with_fixed_root(ancestors, key)
                             .map(|(mut account, _)| {
                                 if message.is_writable(i, demote_sysvar_write_locks) {
                                     let rent_due = rent_collector
@@ -235,7 +235,7 @@ impl Accounts {
                             {
                                 if let Some(account) = self
                                     .accounts_db
-                                    .load_slow_with_fixed_root(ancestors, &programdata_address)
+                                    .load_with_fixed_root(ancestors, &programdata_address)
                                     .map(|(account, _)| account)
                                 {
                                     account_deps.push((programdata_address, account));
@@ -342,7 +342,7 @@ impl Accounts {
 
             let program = match self
                 .accounts_db
-                .load_slow_with_fixed_root(ancestors, &program_id)
+                .load_with_fixed_root(ancestors, &program_id)
                 .map(|(account, _)| account)
             {
                 Some(program) => program,
@@ -367,7 +367,7 @@ impl Accounts {
                 {
                     if let Some(program) = self
                         .accounts_db
-                        .load_slow_with_fixed_root(ancestors, &programdata_address)
+                        .load_with_fixed_root(ancestors, &programdata_address)
                         .map(|(account, _)| account)
                     {
                         accounts.insert(0, (programdata_address, program));
@@ -469,20 +469,28 @@ impl Accounts {
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
+        is_root_fixed: bool,
     ) -> Option<(AccountSharedData, Slot)> {
-        let (account, slot) = self.accounts_db.load_slow(ancestors, pubkey)?;
+        let (account, slot) = self
+            .accounts_db
+            .load_slow(ancestors, pubkey, is_root_fixed)?;
         Self::filter_zero_lamport_account(account, slot)
     }
 
-    pub fn load_slow_with_fixed_root(
+    pub fn load_with_fixed_root(
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        let (account, slot) = self
-            .accounts_db
-            .load_slow_with_fixed_root(ancestors, pubkey)?;
-        Self::filter_zero_lamport_account(account, slot)
+        self.load_slow(ancestors, pubkey, true)
+    }
+
+    pub fn load_without_fixed_root(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+    ) -> Option<(AccountSharedData, Slot)> {
+        self.load_slow(ancestors, pubkey, false)
     }
 
     /// scans underlying accounts_db for this delta (slot) with a map function

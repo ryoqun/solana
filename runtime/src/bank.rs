@@ -4046,11 +4046,13 @@ impl Bank {
     }
 
     pub fn get_account_modified_slot(&self, pubkey: &Pubkey) -> Option<(AccountSharedData, Slot)> {
-        // fixed_root variant must be used because get_account (= this fn caller) is called for
-        // various on-consensus code like inflation, feature activation and native program loading..
+        // get_account (= this fn caller) can be called for
+        // various on-consensus code like inflation, feature activation and native program loading
+        // before freezing and it's generally impossible to make static/lexical guarantee of rpc or
+        // on-consensus.. so just pass freeze_started for is_root_fixed
         self.rc
             .accounts
-            .load_slow_with_fixed_root(&self.ancestors, pubkey)
+            .load_slow(&self.ancestors, pubkey, !self.freeze_started())
     }
 
     // Exclude self to really fetch the parent Bank's account hash and data.
@@ -4065,7 +4067,7 @@ impl Bank {
         ancestors.remove(&self.slot());
         self.rc
             .accounts
-            .load_slow_with_fixed_root(&ancestors, pubkey)
+            .load_with_fixed_root(&ancestors, pubkey)
             .map(|(acc, _slot)| acc)
     }
 
@@ -4137,7 +4139,11 @@ impl Bank {
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
         let just_self: Ancestors = vec![(self.slot(), 0)].into_iter().collect();
-        if let Some((account, slot)) = self.rc.accounts.load_slow(&just_self, pubkey) {
+        if let Some((account, slot)) =
+            self.rc
+                .accounts
+                .load_slow(&just_self, pubkey, !self.freeze_started())
+        {
             if slot == self.slot() {
                 return Some((account, slot));
             }
