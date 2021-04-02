@@ -2436,6 +2436,9 @@ impl AccountsDb {
                         //
                         // In both these cases, it should be safe to retry and recheck the accounts
                         // index indefinitely, without incrementing num_acceptable_failed_iterations.
+                        // That's because if the root is fixed, there should be a bounded number
+                        // of pending cleans/shrinks (depends how far behind the AccountsBackgroundService
+                        // is), termination to the desired condition is guaranteed.
                         //
                         // Also note that in both cases, if we do find the storage entry,
                         // we can guarantee that the storage entry is safe to read from because
@@ -2443,6 +2446,8 @@ impl AccountsDb {
                         // storage map. This means even if the storage entry is removed from the storage
                         // map after we grabbed the storage entry, the recycler should not reset the
                         // storage entry until we drop the reference to the storage entry.
+                        //
+                        // eh, no code in this branch? yes!
                     } else {
                         // RPC get_account() may have fetched an old root from the index that was
                         // either:
