@@ -247,12 +247,12 @@ fn main() {
     );
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod test {
     use super::*;
     use solana_sdk::timing::timestamp;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_dos() {
         let nodes = [ContactInfo::new_localhost(
             &solana_sdk::pubkey::new_rand(),

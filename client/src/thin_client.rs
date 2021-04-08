@@ -620,12 +620,12 @@ pub fn create_client_with_timeout(
     ThinClient::new_socket_with_timeout(rpc, tpu, transactions_socket, timeout)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use rayon::prelude::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_client_optimizer() {
         solana_logger::setup();
 

@@ -222,13 +222,13 @@ impl ShredFetchStage {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_ledger::blockstore::MAX_DATA_SHREDS_PER_SLOT;
     use solana_ledger::shred::Shred;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_data_code_same_index() {
         solana_logger::setup();
         let mut shreds_received = LruCache::new(DEFAULT_LRU_SIZE);
@@ -280,7 +280,7 @@ mod tests {
         assert!(!packet.meta.discard);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_shred_filter() {
         solana_logger::setup();
         let mut shreds_received = LruCache::new(DEFAULT_LRU_SIZE);

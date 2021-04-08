@@ -531,21 +531,21 @@ fn build_gossip_thread_pool() -> ThreadPool {
         .unwrap()
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_star_network_pull_50() {
     let mut network = star_network_create(50);
     let thread_pool = build_gossip_thread_pool();
     network_simulator_pull_only(&thread_pool, &mut network);
 }
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_star_network_pull_100() {
     let mut network = star_network_create(100);
     let thread_pool = build_gossip_thread_pool();
     network_simulator_pull_only(&thread_pool, &mut network);
 }
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_star_network_push_star_200() {
     let mut network = star_network_create(200);
@@ -553,20 +553,20 @@ fn test_star_network_push_star_200() {
     network_simulator(&thread_pool, &mut network, 0.9);
 }
 #[ignore]
-#[cfg(testkun)]
+#[test]
 fn test_star_network_push_rstar_200() {
     let mut network = rstar_network_create(200);
     let thread_pool = build_gossip_thread_pool();
     network_simulator(&thread_pool, &mut network, 0.9);
 }
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_star_network_push_ring_200() {
     let mut network = ring_network_create(200);
     let thread_pool = build_gossip_thread_pool();
     network_simulator(&thread_pool, &mut network, 0.9);
 }
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_connected_staked_network() {
     solana_logger::setup();
@@ -595,7 +595,7 @@ fn test_connected_staked_network() {
         "network should prune lower stakes more often"
     )
 }
-#[cfg(testkun)]
+#[test]
 #[ignore]
 fn test_star_network_large_pull() {
     solana_logger::setup();
@@ -603,7 +603,7 @@ fn test_star_network_large_pull() {
     let thread_pool = build_gossip_thread_pool();
     network_simulator_pull_only(&thread_pool, &mut network);
 }
-#[cfg(testkun)]
+#[test]
 #[ignore]
 fn test_rstar_network_large_push() {
     solana_logger::setup();
@@ -611,7 +611,7 @@ fn test_rstar_network_large_push() {
     let thread_pool = build_gossip_thread_pool();
     network_simulator(&thread_pool, &mut network, 0.9);
 }
-#[cfg(testkun)]
+#[test]
 #[ignore]
 fn test_ring_network_large_push() {
     solana_logger::setup();
@@ -619,7 +619,7 @@ fn test_ring_network_large_push() {
     let thread_pool = build_gossip_thread_pool();
     network_simulator(&thread_pool, &mut network, 0.9);
 }
-#[cfg(testkun)]
+#[test]
 #[ignore]
 fn test_star_network_large_push() {
     solana_logger::setup();
@@ -627,7 +627,7 @@ fn test_star_network_large_push() {
     let thread_pool = build_gossip_thread_pool();
     network_simulator(&thread_pool, &mut network, 0.9);
 }
-#[cfg(testkun)]
+#[test]
 fn test_prune_errors() {
     let mut crds_gossip = CrdsGossip {
         id: Pubkey::new(&[0; 32]),

@@ -11,12 +11,12 @@ pub trait DecodeError<E> {
     fn type_of() -> &'static str;
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use num_derive::FromPrimitive;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_decode_custom_error_to_enum() {
         #[derive(Debug, FromPrimitive, PartialEq)]
         enum TestEnum {

@@ -580,13 +580,13 @@ impl ProgressMap {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::consensus::test::VoteSimulator;
     use trees::tr;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_vote_pubkey() {
         let mut stats = PropagatedStats::default();
         let mut vote_pubkey = solana_sdk::pubkey::new_rand();
@@ -609,7 +609,7 @@ mod test {
         assert_eq!(stats.propagated_validators_stake, 3);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_node_pubkey_internal() {
         let num_vote_accounts = 10;
         let staked_vote_accounts = 5;
@@ -671,7 +671,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_propagated_status_on_construction() {
         // If the given ValidatorStakeInfo == None, then this is not
         // a leader slot and is_propagated == false
@@ -743,7 +743,7 @@ mod test {
         assert!(!progress.propagated_stats.is_propagated);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_propagated() {
         let mut progress_map = ProgressMap::default();
 
@@ -865,7 +865,7 @@ mod test {
         (progress, bank_forks)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_set_unconfirmed_duplicate_confirm_smaller_slot_first() {
         let smaller_duplicate_slot = 1;
         let larger_duplicate_slot = 4;
@@ -930,7 +930,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_set_unconfirmed_duplicate_confirm_larger_slot_first() {
         let smaller_duplicate_slot = 1;
         let larger_duplicate_slot = 4;

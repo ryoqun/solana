@@ -147,7 +147,7 @@ impl Entry {
         entry
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn new_tick(num_hashes: u64, hash: &Hash) -> Self {
         Entry {
             num_hashes,
@@ -695,7 +695,7 @@ pub fn next_entry(prev_hash: &Hash, num_hashes: u64, transactions: Vec<Transacti
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::entry::Entry;
@@ -732,7 +732,7 @@ mod tests {
         Transaction::new(&[keypair], message, hash)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_entry_verify() {
         let zero = Hash::default();
         let one = hash(&zero.as_ref());
@@ -742,7 +742,7 @@ mod tests {
         assert!(!next_entry(&zero, 1, vec![]).verify(&one)); // inductive step, bad
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_reorder_attack() {
         let zero = Hash::default();
 
@@ -759,7 +759,7 @@ mod tests {
         assert!(!e0.verify(&zero));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_signing() {
         use solana_sdk::signature::Signature;
         let zero = Hash::default();
@@ -793,7 +793,7 @@ mod tests {
         assert!(e0.verify(&zero));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_witness_reorder_attack() {
         let zero = Hash::default();
 
@@ -810,7 +810,7 @@ mod tests {
         assert!(!e0.verify(&zero));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_next_entry() {
         let zero = Hash::default();
         let tick = next_entry(&zero, 1, vec![]);
@@ -828,7 +828,7 @@ mod tests {
         assert_eq!(entry0.hash, next_hash(&zero, 1, &[tx0]));
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_next_entry_panic() {
         let zero = Hash::default();
@@ -837,7 +837,7 @@ mod tests {
         next_entry(&zero, 0, vec![tx]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_slice1() {
         solana_logger::setup();
         let zero = Hash::default();
@@ -855,7 +855,7 @@ mod tests {
         assert_eq!(bad_ticks.verify(&zero), false); // inductive step, bad
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_slice_with_hashes1() {
         solana_logger::setup();
         let zero = Hash::default();
@@ -875,7 +875,7 @@ mod tests {
         assert_eq!(bad_ticks.verify(&one), false); // inductive step, bad
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_slice_with_hashes_and_transactions() {
         solana_logger::setup();
         let zero = Hash::default();
@@ -908,7 +908,7 @@ mod tests {
         assert_eq!(bad_ticks.verify(&one), false); // inductive step, bad
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_transaction_signatures_packet_data_size() {
         let mut rng = rand::thread_rng();
         let recent_blockhash = hash_new_rand(&mut rng);
@@ -952,7 +952,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_tick_hash_count() {
         let hashes_per_tick = 10;
         let tx = Transaction::default();
@@ -1069,7 +1069,7 @@ mod tests {
         assert_eq!(tick_hash_count, u64::MAX);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_verify_fuzz() {
         solana_logger::setup();
         for _ in 0..100 {

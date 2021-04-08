@@ -419,14 +419,14 @@ impl AccountsBackgroundService {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::genesis_utils::create_genesis_config;
     use crossbeam_channel::unbounded;
     use solana_sdk::{account::AccountSharedData, pubkey::Pubkey};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accounts_background_service_remove_dead_slots() {
         let genesis = create_genesis_config(10);
         let bank0 = Arc::new(Bank::new(&genesis.genesis_config));

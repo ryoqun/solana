@@ -581,7 +581,7 @@ impl CrdsValue {
         }
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     fn vote(&self) -> Option<&Vote> {
         match &self.data {
             CrdsData::Vote(_, vote) => Some(vote),
@@ -678,7 +678,7 @@ pub(crate) fn sanitize_wallclock(wallclock: u64) -> Result<(), SanitizeError> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
@@ -692,7 +692,7 @@ mod test {
     use std::cmp::Ordering;
     use std::iter::repeat_with;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_keys_and_values() {
         let v = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::default()));
         assert_eq!(v.wallclock(), 0);
@@ -716,7 +716,7 @@ mod test {
         assert_eq!(v.label(), CrdsValueLabel::LowestSlot(key));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_lowest_slot_sanitize() {
         let ls = LowestSlot::new(Pubkey::default(), 0, 0);
         let v = CrdsValue::new_unsigned(CrdsData::LowestSlot(0, ls.clone()));
@@ -742,7 +742,7 @@ mod test {
         assert_eq!(v.sanitize(), Err(SanitizeError::InvalidValue));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_signature() {
         let keypair = Keypair::new();
         let wrong_keypair = Keypair::new();
@@ -763,7 +763,7 @@ mod test {
         verify_signatures(&mut v, &keypair, &wrong_keypair);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_vote_index() {
         let keypair = Keypair::new();
         let vote = CrdsValue::new_signed(
@@ -776,7 +776,7 @@ mod test {
         assert!(vote.sanitize().is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_round_trip() {
         let mut rng = rand::thread_rng();
         let vote = vote_state::Vote::new(
@@ -808,7 +808,7 @@ mod test {
         assert_eq!(other.slot, Some(7));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_epoch_slots_index() {
         let keypair = Keypair::new();
         let item = CrdsValue::new_signed(
@@ -851,7 +851,7 @@ mod test {
         serialize_deserialize_value(value, correct_keypair);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_filter_current() {
         let seed = [48u8; 32];
         let mut rng = ChaChaRng::from_seed(seed);
@@ -890,7 +890,7 @@ mod test {
         assert!(currents.len() <= keys.len() * (5 + MAX_VOTES as usize));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_node_instance_crds_lable() {
         fn make_crds_value(node: NodeInstance) -> CrdsValue {
             CrdsValue::new_unsigned(CrdsData::NodeInstance(node))
@@ -937,7 +937,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_duplicate_instance() {
         fn make_crds_value(node: NodeInstance) -> CrdsValue {
             CrdsValue::new_unsigned(CrdsData::NodeInstance(node))
@@ -994,7 +994,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_should_force_push() {
         let mut rng = rand::thread_rng();
         let pubkey = Pubkey::new_unique();

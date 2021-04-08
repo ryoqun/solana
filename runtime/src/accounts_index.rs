@@ -1089,7 +1089,7 @@ impl<T: 'static + Clone + IsCached + ZeroLamport> AccountsIndex<T> {
         std::mem::replace(&mut w_roots_tracker.previous_uncleaned_roots, cleaned_roots)
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn clear_uncleaned_roots(&self, max_clean_root: Option<Slot>) -> HashSet<Slot> {
         let mut cleaned_roots = HashSet::new();
         let mut w_roots_tracker = self.roots_tracker.write().unwrap();
@@ -1128,17 +1128,17 @@ impl<T: 'static + Clone + IsCached + ZeroLamport> AccountsIndex<T> {
             .collect()
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn clear_roots(&self) {
         self.roots_tracker.write().unwrap().roots.clear()
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn uncleaned_roots_len(&self) -> usize {
         self.roots_tracker.read().unwrap().uncleaned_roots.len()
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     // filter any rooted entries and return them along with a bool that indicates
     // if this account has no more entries. Note this does not update the secondary
     // indexes!
@@ -1152,7 +1152,7 @@ impl<T: 'static + Clone + IsCached + ZeroLamport> AccountsIndex<T> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use solana_sdk::signature::{Keypair, Signer};
@@ -1198,7 +1198,7 @@ pub mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_empty() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1211,7 +1211,7 @@ pub mod tests {
         assert_eq!(num, 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_no_ancestors() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1236,7 +1236,7 @@ pub mod tests {
         assert_eq!(num, 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_wrong_ancestors() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1260,7 +1260,7 @@ pub mod tests {
         assert_eq!(num, 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_with_ancestors() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1386,7 +1386,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_range_scan_accounts() {
         let (index, mut pubkeys) = setup_accounts_index_keys(3 * ITER_BATCH_SIZE);
         pubkeys.sort();
@@ -1430,7 +1430,7 @@ pub mod tests {
         assert_eq!(scanned_keys.len(), num_pubkeys);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_scan_accounts() {
         run_test_scan_accounts(0);
         run_test_scan_accounts(1);
@@ -1439,7 +1439,7 @@ pub mod tests {
         run_test_scan_accounts(ITER_BATCH_SIZE * 10 + 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accounts_iter_finished() {
         let (index, _) = setup_accounts_index_keys(0);
         let mut iter = index.iter(None::<Range<Pubkey>>);
@@ -1457,7 +1457,7 @@ pub mod tests {
         assert!(iter.next().is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_root() {
         let index = AccountsIndex::<bool>::default();
         assert!(!index.is_root(0));
@@ -1465,7 +1465,7 @@ pub mod tests {
         assert!(index.is_root(0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_with_root() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1486,7 +1486,7 @@ pub mod tests {
         assert_eq!(list.slot_list()[idx], (0, true));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clean_first() {
         let index = AccountsIndex::<bool>::default();
         index.add_root(0, false);
@@ -1496,7 +1496,7 @@ pub mod tests {
         assert!(!index.is_root(0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clean_last() {
         //this behavior might be undefined, clean up should only occur on older slots
         let index = AccountsIndex::<bool>::default();
@@ -1507,7 +1507,7 @@ pub mod tests {
         assert!(index.is_root(0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clean_and_unclean_slot() {
         let index = AccountsIndex::<bool>::default();
         assert_eq!(0, index.roots_tracker.read().unwrap().uncleaned_roots.len());
@@ -1578,7 +1578,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_last_wins() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1613,7 +1613,7 @@ pub mod tests {
         assert_eq!(list.slot_list()[idx], (0, false));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_new_slot() {
         solana_logger::setup();
         let key = Keypair::new();
@@ -1647,7 +1647,7 @@ pub mod tests {
         assert_eq!(list.slot_list()[idx], (1, false));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_gc_purged_slot() {
         let key = Keypair::new();
         let index = AccountsIndex::<bool>::default();
@@ -1721,7 +1721,7 @@ pub mod tests {
         assert!(found_key);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_purge() {
         let key = Keypair::new();
         let index = AccountsIndex::<u64>::default();
@@ -1764,7 +1764,7 @@ pub mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_latest_slot() {
         let slot_slice = vec![(0, true), (5, true), (3, true), (7, true)];
         let index = AccountsIndex::<bool>::default();
@@ -1866,7 +1866,7 @@ pub mod tests {
         assert!(secondary_index.reverse_index.is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_purge_exact_dashmap_secondary_index() {
         let (key_start, key_end, account_index) = create_dashmap_secondary_index_state();
         let index = AccountsIndex::<bool>::default();
@@ -1879,7 +1879,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_purge_exact_rwlock_secondary_index() {
         let (key_start, key_end, account_index) = create_rwlock_secondary_index_state();
         let index = AccountsIndex::<bool>::default();
@@ -1892,7 +1892,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_purge_older_root_entries() {
         // No roots, should be no reclaims
         let index = AccountsIndex::<bool>::default();
@@ -2098,7 +2098,7 @@ pub mod tests {
         assert!(index.spl_token_mint_index.reverse_index.is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_dashmap_secondary_index() {
         let (key_start, key_end, account_index) = create_dashmap_secondary_index_state();
         let index = AccountsIndex::<bool>::default();
@@ -2111,7 +2111,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rwlock_secondary_index() {
         let (key_start, key_end, account_index) = create_rwlock_secondary_index_state();
         let index = AccountsIndex::<bool>::default();
@@ -2207,7 +2207,7 @@ pub mod tests {
         check_secondary_index_unique(secondary_index, fork, &secondary_key1, &account_key);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_dashmap_secondary_index_same_slot_and_forks() {
         let (key_start, key_end, account_index) = create_dashmap_secondary_index_state();
         let index = AccountsIndex::<bool>::default();
@@ -2220,7 +2220,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rwlock_secondary_index_same_slot_and_forks() {
         let (key_start, key_end, account_index) = create_rwlock_secondary_index_state();
         let index = AccountsIndex::<bool>::default();

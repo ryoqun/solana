@@ -815,11 +815,11 @@ impl TryFrom<tx_by_addr::TransactionByAddr> for Vec<TransactionByAddrInfo> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reward_type_encode() {
         let mut reward = Reward {
             pubkey: "invalid".to_string(),
@@ -847,7 +847,7 @@ mod test {
         assert_eq!(reward, gen_reward.into());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_by_addr_encode() {
         let info = TransactionByAddrInfo {
             signature: Signature::new(&bs58::decode("Nfo6rgemG1KLbk1xuNwfrQTsdxaGfLuWURHNRy9LYnDrubG7LFQZaA5obPNas9LQ6DdorJqxh2LxA3PsnWdkSrL").into_vec().unwrap()),
@@ -861,7 +861,7 @@ mod test {
         assert_eq!(info, tx_by_addr_transaction_info.try_into().unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_error_encode() {
         let transaction_error = TransactionError::AccountInUse;
         let tx_by_addr_transaction_error: tx_by_addr::TransactionError =

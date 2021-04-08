@@ -147,9 +147,9 @@ macro_rules! datapoint_trace {
     };
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
-    #[cfg(testkun)]
+    #[test]
     fn test_datapoint() {
         datapoint_debug!("name", ("field name", "test".to_string(), String));
         datapoint_info!("name", ("field name", 12.34_f64, f64));

@@ -338,7 +338,7 @@ pub fn process_instruction(
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::{
@@ -350,7 +350,7 @@ mod tests {
     use std::str::FromStr;
 
     // these are for 100% coverage in this file
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_process_instruction_decode_bail() {
         assert_eq!(
             super::process_instruction(
@@ -412,7 +412,7 @@ mod tests {
         Pubkey::from_str("BadVote111111111111111111111111111111111111").unwrap()
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_spoofed_vote() {
         assert_eq!(
             process_instruction(&vote(
@@ -424,7 +424,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_process_instruction() {
         solana_logger::setup();
         let instructions = create_account(
@@ -491,7 +491,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_minimum_balance() {
         let rent = solana_sdk::rent::Rent::default();
         let minimum_balance = rent.minimum_balance(VoteState::size_of());
@@ -499,7 +499,7 @@ mod tests {
         assert!(minimum_balance as f64 / 10f64.powf(9.0) < 0.04)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_custom_error_decode() {
         use num_traits::FromPrimitive;
         fn pretty_err<T>(err: InstructionError) -> String

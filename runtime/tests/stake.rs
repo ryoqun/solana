@@ -101,7 +101,7 @@ fn get_staked(bank: &Bank, stake_pubkey: &Pubkey) -> u64 {
         )
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_stake_create_and_split_single_signature() {
     solana_logger::setup();
 
@@ -169,7 +169,7 @@ fn test_stake_create_and_split_single_signature() {
     // w00t!
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_stake_create_and_split_to_existing_system_account() {
     // Ensure stake-split does not allow the user to promote an existing system account into
     // a stake account.
@@ -254,7 +254,7 @@ fn test_stake_create_and_split_to_existing_system_account() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_stake_account_lifetime() {
     let stake_keypair = Keypair::new();
     let stake_pubkey = stake_keypair.pubkey();
@@ -500,7 +500,7 @@ fn test_stake_account_lifetime() {
     assert_eq!(bank.get_balance(&stake_pubkey), lamports - lamports / 2);
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_create_stake_account_from_seed() {
     let vote_keypair = Keypair::new();
     let vote_pubkey = vote_keypair.pubkey();

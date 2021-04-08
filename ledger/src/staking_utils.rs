@@ -59,7 +59,7 @@ where
     None
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub(crate) mod tests {
     use super::*;
     use crate::genesis_utils::{
@@ -142,7 +142,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_epoch_stakes_and_lockouts() {
         solana_logger::setup();
         let stake = bootstrap_validator_stake_lamports();
@@ -229,7 +229,7 @@ pub(crate) mod tests {
         assert_eq!(result, expected);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_supermajority_slot() {
         let supermajority = 10;
 
@@ -276,7 +276,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_to_staked_nodes() {
         let mut stakes = Vec::new();
         let node1 = solana_sdk::pubkey::new_rand();

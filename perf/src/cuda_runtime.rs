@@ -375,11 +375,11 @@ impl<T: Sized + Default + Clone> Drop for PinnedVec<T> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_pinned_vec() {
         let mut mem = PinnedVec::with_capacity(10);
         mem.set_pinnable();

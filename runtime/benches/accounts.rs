@@ -36,7 +36,7 @@ fn deposit_many(bank: &Bank, pubkeys: &mut Vec<Pubkey>, num: usize) {
     }
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_has_duplicates(bencher: &mut Bencher) {
     bencher.iter(|| {
         let data = test::black_box([1, 2, 3]);
@@ -44,7 +44,7 @@ fn bench_has_duplicates(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn test_accounts_create(bencher: &mut Bencher) {
     let (genesis_config, _) = create_genesis_config(10_000);
     let bank0 = Bank::new_with_paths(
@@ -62,7 +62,7 @@ fn test_accounts_create(bencher: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn test_accounts_squash(bencher: &mut Bencher) {
     let (mut genesis_config, _) = create_genesis_config(100_000);
     genesis_config.rent.burn_percent = 100; // Avoid triggering an assert in Bank::distribute_rent_to_validators()
@@ -92,7 +92,7 @@ fn test_accounts_squash(bencher: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn test_accounts_hash_bank_hash(bencher: &mut Bencher) {
     let accounts = Accounts::new_with_config(
         vec![PathBuf::from("bench_accounts_hash_internal")],
@@ -109,7 +109,7 @@ fn test_accounts_hash_bank_hash(bencher: &mut Bencher) {
     bencher.iter(|| assert!(accounts.verify_bank_hash_and_lamports(0, &ancestors, total_lamports)));
 }
 
-#[cfg(testkun)]
+#[bench]
 fn test_update_accounts_hash(bencher: &mut Bencher) {
     solana_logger::setup();
     let accounts = Accounts::new_with_config(
@@ -126,7 +126,7 @@ fn test_update_accounts_hash(bencher: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn test_accounts_delta_hash(bencher: &mut Bencher) {
     solana_logger::setup();
     let accounts = Accounts::new_with_config(
@@ -142,7 +142,7 @@ fn test_accounts_delta_hash(bencher: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_delete_dependencies(bencher: &mut Bencher) {
     solana_logger::setup();
     let accounts = Accounts::new_with_config(
@@ -223,7 +223,7 @@ fn store_accounts_with_possible_contention<F: 'static>(
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_concurrent_read_write(bencher: &mut Bencher) {
     store_accounts_with_possible_contention(
@@ -243,7 +243,7 @@ fn bench_concurrent_read_write(bencher: &mut Bencher) {
     )
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_concurrent_scan_write(bencher: &mut Bencher) {
     store_accounts_with_possible_contention("concurrent_scan_write", bencher, |accounts, _| loop {
@@ -253,7 +253,7 @@ fn bench_concurrent_scan_write(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_dashmap_single_reader_with_n_writers(bencher: &mut Bencher) {
     let num_readers = 5;
@@ -278,7 +278,7 @@ fn bench_dashmap_single_reader_with_n_writers(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_rwlock_hashmap_single_reader_with_n_writers(bencher: &mut Bencher) {
     let num_readers = 5;
@@ -331,7 +331,7 @@ fn setup_bench_dashmap_iter() -> (Arc<Accounts>, DashMap<Pubkey, (AccountSharedD
     (accounts, dashmap)
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_dashmap_par_iter(bencher: &mut Bencher) {
     let (accounts, dashmap) = setup_bench_dashmap_iter();
 
@@ -345,7 +345,7 @@ fn bench_dashmap_par_iter(bencher: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_dashmap_iter(bencher: &mut Bencher) {
     let (_accounts, dashmap) = setup_bench_dashmap_iter();
 
@@ -359,7 +359,7 @@ fn bench_dashmap_iter(bencher: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_load_largest_accounts(b: &mut Bencher) {
     let accounts =
         Accounts::new_with_config(Vec::new(), &ClusterType::Development, HashSet::new(), false);

@@ -16,11 +16,11 @@ where
         .map_err(|_| InstructionError::InvalidInstructionData)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_limited_deserialize() {
         #[derive(Deserialize, Serialize)]
         enum Foo {

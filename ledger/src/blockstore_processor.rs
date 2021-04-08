@@ -1200,7 +1200,7 @@ pub fn fill_blockstore_slot_with_ticks(
     last_entry_hash
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{
@@ -1233,7 +1233,7 @@ pub mod tests {
     use std::{collections::BTreeSet, sync::RwLock};
     use trees::tr;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_missing_hashes() {
         solana_logger::setup();
 
@@ -1279,7 +1279,7 @@ pub mod tests {
         assert_eq!(frozen_bank_slots(&bank_forks), vec![0]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_invalid_slot_tick_count() {
         solana_logger::setup();
 
@@ -1343,7 +1343,7 @@ pub mod tests {
         assert_eq!(bank_forks.root(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_slot_with_trailing_entry() {
         solana_logger::setup();
 
@@ -1393,7 +1393,7 @@ pub mod tests {
         assert_eq!(frozen_bank_slots(&bank_forks), vec![0]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_incomplete_slot() {
         solana_logger::setup();
 
@@ -1479,7 +1479,7 @@ pub mod tests {
         assert_eq!(frozen_bank_slots(&bank_forks), vec![0, 3]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_two_forks_and_squash() {
         solana_logger::setup();
 
@@ -1558,7 +1558,7 @@ pub mod tests {
         assert_eq!(bank_forks.root(), 4);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_two_forks() {
         solana_logger::setup();
 
@@ -1648,7 +1648,7 @@ pub mod tests {
         verify_fork_infos(&bank_forks);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_dead_slot() {
         solana_logger::setup();
 
@@ -1695,7 +1695,7 @@ pub mod tests {
         verify_fork_infos(&bank_forks);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_dead_child() {
         solana_logger::setup();
 
@@ -1755,7 +1755,7 @@ pub mod tests {
         verify_fork_infos(&bank_forks);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_root_with_all_dead_children() {
         solana_logger::setup();
 
@@ -1788,7 +1788,7 @@ pub mod tests {
         verify_fork_infos(&bank_forks);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_epoch_boundary_root() {
         solana_logger::setup();
 
@@ -1844,7 +1844,7 @@ pub mod tests {
             .is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_first_err() {
         assert_eq!(first_err(&[Ok(())]), Ok(()));
         assert_eq!(
@@ -1877,7 +1877,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_empty_entry_is_registered() {
         solana_logger::setup();
 
@@ -1908,7 +1908,7 @@ pub mod tests {
         assert_eq!(bank.process_transaction(&tx), Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_ledger_simple() {
         solana_logger::setup();
         let leader_pubkey = solana_sdk::pubkey::new_rand();
@@ -1989,7 +1989,7 @@ pub mod tests {
         assert_eq!(bank.last_blockhash(), last_blockhash);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_ledger_with_one_tick_per_slot() {
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -2010,7 +2010,7 @@ pub mod tests {
         assert_eq!(bank.tick_height(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_ledger_options_override_threads() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(123);
         let (ledger_path, _blockhash) = create_new_tmp_ledger!(&genesis_config);
@@ -2026,7 +2026,7 @@ pub mod tests {
         });
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_ledger_options_full_leader_cache() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(123);
         let (ledger_path, _blockhash) = create_new_tmp_ledger!(&genesis_config);
@@ -2041,7 +2041,7 @@ pub mod tests {
         assert_eq!(leader_schedule.max_schedules(), std::usize::MAX);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_ledger_options_entry_callback() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2101,7 +2101,7 @@ pub mod tests {
         assert_eq!(*callback_counter.write().unwrap(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_tick() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(1000);
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -2116,7 +2116,7 @@ pub mod tests {
         assert_eq!(bank.tick_height(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_2_entries_collision() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2153,7 +2153,7 @@ pub mod tests {
         assert_eq!(bank.last_blockhash(), blockhash);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_2_txes_collision() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2216,7 +2216,7 @@ pub mod tests {
         assert_eq!(bank.get_balance(&keypair3.pubkey()), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_2_txes_collision_and_error() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2301,7 +2301,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_2nd_entry_collision_with_self_and_error() {
         solana_logger::setup();
 
@@ -2400,7 +2400,7 @@ pub mod tests {
         assert_eq!(bank.get_balance(&keypair3.pubkey()), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_2_entries_par() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2446,7 +2446,7 @@ pub mod tests {
         assert_eq!(bank.last_blockhash(), blockhash);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entry_tx_random_execution_with_error() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2504,7 +2504,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entry_tx_random_execution_no_error() {
         // entropy multiplier should be big enough to provide sufficient entropy
         // but small enough to not take too much time while executing the test.
@@ -2580,7 +2580,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entries_2_entries_tick() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2644,7 +2644,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_transaction_statuses() {
         // Make sure instruction errors still update the signature cache
         let GenesisConfigInfo {
@@ -2686,7 +2686,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_transaction_statuses_fail() {
         let GenesisConfigInfo {
             genesis_config,
@@ -2727,7 +2727,7 @@ pub mod tests {
         assert_eq!(bank.process_transaction(&fail_tx), Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_halt_at_slot_starting_snapshot_root() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(123);
 
@@ -2758,7 +2758,7 @@ pub mod tests {
         assert!(bank_forks.get(0).is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_from_root() {
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -2838,7 +2838,7 @@ pub mod tests {
         verify_fork_infos(&bank_forks);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[ignore]
     fn test_process_entries_stress() {
         // this test throws lots of rayon threads at process_entries()
@@ -2951,7 +2951,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_ledger_ticks_ordering() {
         let GenesisConfigInfo {
             genesis_config,
@@ -3026,7 +3026,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_first_error() {
         let GenesisConfigInfo {
             genesis_config,
@@ -3080,7 +3080,7 @@ pub mod tests {
         assert_eq!(signature, account_not_found_sig);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_replay_vote_sender() {
         let validator_keypairs: Vec<_> =
             (0..10).map(|_| ValidatorVoteKeypairs::new_rand()).collect();
@@ -3346,17 +3346,17 @@ pub mod tests {
         assert_eq!(bank_forks.root(), really_expected_root_slot);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_supermajority_root_without_blockstore_root() {
         run_test_process_blockstore_with_supermajority_root(None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_blockstore_with_supermajority_root_with_blockstore_root() {
         run_test_process_blockstore_with_supermajority_root(Some(1))
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::field_reassign_with_default)]
     fn test_supermajority_root_from_vote_accounts() {
         let convert_to_vote_accounts =

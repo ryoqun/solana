@@ -1,4 +1,4 @@
-#[cfg(testkun)]
+#[cfg(test)]
 use {
     super::*,
     crate::{
@@ -23,7 +23,7 @@ use {
     tempfile::TempDir,
 };
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn copy_append_vecs<P: AsRef<Path>>(
     accounts_db: &AccountsDb,
     output_dir: P,
@@ -41,7 +41,7 @@ fn copy_append_vecs<P: AsRef<Path>>(
     Ok(unpacked_append_vec_map)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn check_accounts(accounts: &Accounts, pubkeys: &[Pubkey], num: usize) {
     for _ in 1..num {
         let idx = thread_rng().gen_range(0, num - 1);
@@ -55,7 +55,7 @@ fn check_accounts(accounts: &Accounts, pubkeys: &[Pubkey], num: usize) {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn context_accountsdb_from_stream<'a, C, R>(
     stream: &mut BufReader<R>,
     account_paths: &[PathBuf],
@@ -76,7 +76,7 @@ where
     )
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn accountsdb_from_stream<R>(
     serde_style: SerdeStyle,
     stream: &mut BufReader<R>,
@@ -95,7 +95,7 @@ where
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn accountsdb_to_stream<W>(
     serde_style: SerdeStyle,
     stream: &mut W,
@@ -119,7 +119,7 @@ where
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn test_accounts_serialize_style(serde_style: SerdeStyle) {
     solana_logger::setup();
     let (_accounts_dir, paths) = get_temp_accounts_paths(4).unwrap();
@@ -163,7 +163,7 @@ fn test_accounts_serialize_style(serde_style: SerdeStyle) {
     assert_eq!(accounts.bank_hash_at(0), daccounts.bank_hash_at(0));
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 fn test_bank_serialize_style(serde_style: SerdeStyle) {
     solana_logger::setup();
     let (genesis_config, _) = create_genesis_config(500);
@@ -231,7 +231,7 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
     assert!(bank2 == dbank);
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub(crate) fn reconstruct_accounts_db_via_serialization(
     accounts: &AccountsDb,
     slot: Slot,
@@ -268,12 +268,12 @@ pub(crate) fn reconstruct_accounts_db_via_serialization(
     accounts_db
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_accounts_serialize_newer() {
     test_accounts_serialize_style(SerdeStyle::Newer)
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_bank_serialize_newer() {
     test_bank_serialize_style(SerdeStyle::Newer)
 }

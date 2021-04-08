@@ -32,14 +32,14 @@ impl<'a> Iterator for NextSlotsIterator<'a> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::blockstore_processor::fill_blockstore_slot_with_ticks;
     use solana_sdk::hash::Hash;
     use std::collections::HashSet;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_next_slots_iterator() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();

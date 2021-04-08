@@ -54,11 +54,11 @@ pub fn create_vesting_schedule(start_date: Date<Utc>, mut lamports: u64) -> Vec<
     schedule
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_month() {
         let start = Utc.ymd(2018, 1, 31);
         assert_eq!(get_month(start, 0), Utc.ymd(2018, 1, 31));
@@ -66,7 +66,7 @@ mod tests {
         assert_eq!(get_month(start, 2), Utc.ymd(2018, 3, 31));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_create_vesting_schedule() {
         assert_eq!(
             create_vesting_schedule(Utc.ymd(2018, 1, 1), 36_000),

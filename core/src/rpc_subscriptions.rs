@@ -1329,7 +1329,7 @@ impl RpcSubscriptions {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub(crate) mod tests {
     use super::*;
     use crate::optimistically_confirmed_bank_tracker::{
@@ -1382,7 +1382,7 @@ pub(crate) mod tests {
         inner_receiver.recv().expect("recv error")
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_check_account_subscribe() {
         let GenesisConfigInfo {
@@ -1527,7 +1527,7 @@ pub(crate) mod tests {
             .contains_key(&alice.pubkey()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_check_program_subscribe() {
         let GenesisConfigInfo {
@@ -1620,7 +1620,7 @@ pub(crate) mod tests {
             .contains_key(&solana_stake_program::id()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_check_signature_subscribe() {
         let GenesisConfigInfo {
@@ -1828,7 +1828,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_check_slot_subscribe() {
         let (subscriber, _id_receiver, transport_receiver) =
@@ -1879,7 +1879,7 @@ pub(crate) mod tests {
             .contains_key(&sub_id));
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_check_root_subscribe() {
         let (subscriber, _id_receiver, mut transport_receiver) =
@@ -1929,7 +1929,7 @@ pub(crate) mod tests {
             .contains_key(&sub_id));
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_add_and_remove_subscription() {
         let mut subscriptions: HashMap<u64, HashMap<SubscriptionId, SubscriptionData<(), ()>>> =
@@ -1985,7 +1985,7 @@ pub(crate) mod tests {
         assert!(subscriptions.get(&0).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_gossip_separate_account_notifications() {
         let GenesisConfigInfo {
@@ -2150,7 +2150,7 @@ pub(crate) mod tests {
             .contains_key(&alice.pubkey()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_total_nested_subscriptions() {
         let mock_subscriptions = RwLock::new(HashMap::new());
         assert_eq!(total_nested_subscriptions(&mock_subscriptions), 0);
@@ -2195,7 +2195,7 @@ pub(crate) mod tests {
         assert_eq!(total_nested_subscriptions(&mock_subscriptions), 3);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_total_subscriptions() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(100);
         let bank = Bank::new(&genesis_config);

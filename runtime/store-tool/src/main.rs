@@ -41,5 +41,5 @@ fn main() {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod test {}

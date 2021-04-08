@@ -2159,7 +2159,7 @@ fn send_and_confirm_transactions_with_spinner<T: Signers>(
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::cli::{app, parse_command, process_command};
@@ -2181,7 +2181,7 @@ mod tests {
         path
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_deploy() {
         let test_commands = app("test", "desc", "version");
@@ -2392,7 +2392,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_write_buffer() {
         let test_commands = app("test", "desc", "version");
@@ -2543,7 +2543,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_set_upgrade_authority() {
         let test_commands = app("test", "desc", "version");
@@ -2654,7 +2654,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_set_buffer_authority() {
         let test_commands = app("test", "desc", "version");
@@ -2714,7 +2714,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_show() {
         let test_commands = app("test", "desc", "version");
@@ -2816,7 +2816,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_close() {
         let test_commands = app("test", "desc", "version");
@@ -2924,7 +2924,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cli_keypair_file() {
         solana_logger::setup();
 

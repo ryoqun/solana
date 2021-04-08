@@ -168,11 +168,11 @@ impl EpochSchedule {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_epoch_schedule() {
         // one week of slots at 8 ticks/slot, 10 ticks/sec is
         // (1 * 7 * 24 * 4500u64).next_power_of_two();

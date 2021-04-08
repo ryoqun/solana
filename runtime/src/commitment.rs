@@ -225,11 +225,11 @@ impl CommitmentSlots {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_block_commitment() {
         let mut cache = BlockCommitment::default();
         assert_eq!(cache.get_confirmation_stake(1), 0);
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!(cache.get_confirmation_stake(1), 30);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_confirmations() {
         // Build BlockCommitmentCache with votes at depths 0 and 1 for 2 slots
         let mut cache0 = BlockCommitment::default();
@@ -270,7 +270,7 @@ mod tests {
         assert_eq!(block_commitment_cache.get_confirmation_count(3), None,);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_highest_confirmed_slot() {
         let bank_slot_5 = 5;
         let total_stake = 50;

@@ -84,11 +84,11 @@ impl Rent {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_due() {
         let default_rent = Rent::default();
 
@@ -137,7 +137,7 @@ mod tests {
     }
 
     #[ignore]
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn show_rent_model() {
         use crate::{clock::*, sysvar::Sysvar};

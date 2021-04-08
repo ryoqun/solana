@@ -221,7 +221,7 @@ pub fn from_keyed_account<S: Sysvar>(
         .ok_or(InstructionError::InvalidArgument)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
@@ -243,7 +243,7 @@ mod tests {
     }
     impl Sysvar for TestSysvar {}
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sysvar_keyed_account_to_from() {
         let test_sysvar = TestSysvar::default();
         let key = crate::keyed_account::tests::id();

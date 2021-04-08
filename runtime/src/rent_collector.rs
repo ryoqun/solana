@@ -120,12 +120,12 @@ impl RentCollector {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::account::Account;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_collect_from_account_created_and_existing() {
         let old_lamports = 1000;
         let old_epoch = 1;
@@ -162,7 +162,7 @@ mod tests {
         assert_eq!(created_account.rent_epoch, existing_account.rent_epoch);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_exempt_temporal_escape() {
         let mut account = AccountSharedData::default();
         let epoch = 3;

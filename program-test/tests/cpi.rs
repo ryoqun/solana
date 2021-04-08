@@ -41,7 +41,7 @@ fn invoked_process_instruction(
     Ok(())
 }
 
-#[cfg(testkun)]
+#[tokio::test]
 async fn cpi() {
     let invoker_program_id = Pubkey::new_unique();
     // Initialize and start the test network

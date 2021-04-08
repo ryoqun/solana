@@ -37,14 +37,14 @@ impl GenKeys {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     pub use solana_sdk::pubkey::Pubkey;
     use solana_sdk::signature::Signer;
     use std::collections::HashSet;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_new_key_is_deterministic() {
         let seed = [0u8; 32];
         let mut gen0 = GenKeys::new(seed);
@@ -55,7 +55,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_gen_keypair_is_deterministic() {
         let seed = [0u8; 32];
         let mut gen0 = GenKeys::new(seed);
@@ -74,7 +74,7 @@ mod tests {
             .collect()
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_gen_n_pubkeys_deterministic() {
         let seed = [0u8; 32];
         assert_eq!(gen_n_pubkeys(seed, 50), gen_n_pubkeys(seed, 50));

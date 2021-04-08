@@ -580,7 +580,7 @@ impl ServeRepair {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{repair_response, result::Error};
@@ -594,7 +594,7 @@ mod tests {
     };
     use solana_sdk::{hash::Hash, pubkey::Pubkey, timing::timestamp};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_run_highest_window_request() {
         run_highest_window_request(5, 3, 9);
     }
@@ -662,7 +662,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_run_window_request() {
         run_window_request(2, 9);
     }
@@ -746,7 +746,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn window_index_request() {
         let cluster_slots = ClusterSlots::default();
         let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
@@ -830,7 +830,7 @@ mod tests {
         assert!(one && two);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_run_orphan() {
         run_orphan(2, 3, 9);
     }
@@ -905,7 +905,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn run_orphan_corrupted_shred_size() {
         solana_logger::setup();
         let recycler = PacketsRecycler::new_without_limit("");
@@ -965,7 +965,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_repair_with_repair_validators() {
         let cluster_slots = ClusterSlots::default();
         let me = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());

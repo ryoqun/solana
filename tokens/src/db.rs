@@ -206,7 +206,7 @@ pub(crate) fn check_output_file(path: &str, db: &PickleDb) {
     assert_eq!(logged_infos, transaction_infos);
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use csv::{ReaderBuilder, Trim};
@@ -214,7 +214,7 @@ mod tests {
     use solana_transaction_status::TransactionConfirmationStatus;
     use tempfile::NamedTempFile;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sort_transaction_infos_finalized_first() {
         let info0 = TransactionInfo {
             finalized_date: Some(Utc.ymd(2014, 7, 8).and_hms(9, 10, 11)),
@@ -240,7 +240,7 @@ mod tests {
         assert_eq!(compare_transaction_infos(&info2, &info3), Ordering::Less);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_write_transaction_log() {
         let mut db =
             PickleDb::new_yaml(NamedTempFile::new().unwrap(), PickleDbDumpPolicy::NeverDump);
@@ -263,7 +263,7 @@ mod tests {
         assert_eq!(signed_infos, vec![signed_info]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_finalized_transaction_not_landed() {
         // Keep waiting for a transaction that hasn't landed yet.
         let mut db =
@@ -295,7 +295,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_finalized_transaction_confirming() {
         // Keep waiting for a transaction that is still being confirmed.
         let mut db =
@@ -323,7 +323,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_finalized_transaction_failed() {
         // Don't wait if the transaction failed to execute.
         let mut db =
@@ -348,7 +348,7 @@ mod tests {
         assert_eq!(db.get::<TransactionInfo>(&signature.to_string()), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_finalized_transaction_finalized() {
         // Don't wait once the transaction has been finalized.
         let mut db =

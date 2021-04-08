@@ -31,12 +31,12 @@ pub fn read_pubkey_file(infile: &str) -> Result<Pubkey, Box<dyn std::error::Erro
     Ok(Pubkey::from_str(&printable)?)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::fs::remove_file;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_read_write_pubkey() -> Result<(), Box<dyn std::error::Error>> {
         let filename = "test_pubkey.json";
         let pubkey = solana_sdk::pubkey::new_rand();

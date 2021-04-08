@@ -43,11 +43,11 @@ impl Deref for StakeHistory {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stake_history() {
         let mut stake_history = StakeHistory::default();
 

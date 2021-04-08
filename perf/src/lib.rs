@@ -12,7 +12,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-#[cfg(testkun)]
+#[cfg(test)]
 #[macro_use]
 extern crate matches;
 

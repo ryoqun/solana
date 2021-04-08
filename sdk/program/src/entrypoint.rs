@@ -231,12 +231,12 @@ pub unsafe fn deserialize<'a>(input: *mut u8) -> (&'a Pubkey, Vec<AccountInfo<'a
     (program_id, accounts, instruction_data)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use std::alloc::GlobalAlloc;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bump_allocator() {
         // alloc the entire
         {

@@ -1677,7 +1677,7 @@ fn parse_keyed_accounts(
     Ok(pubkey_accounts)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{client_error::ClientErrorKind, mock_sender::PUBKEY};
@@ -1691,7 +1691,7 @@ mod tests {
     };
     use std::{io, sync::mpsc::channel, thread};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_send() {
         let (sender, receiver) = channel();
         thread::spawn(move || {
@@ -1745,7 +1745,7 @@ mod tests {
         assert_eq!(blockhash.is_err(), true);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_send_transaction() {
         let rpc_client = RpcClient::new_mock("succeeds".to_string());
 
@@ -1767,7 +1767,7 @@ mod tests {
         let signature = rpc_client.send_transaction(&tx);
         assert!(signature.is_err());
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_get_recent_blockhash() {
         let rpc_client = RpcClient::new_mock("succeeds".to_string());
 
@@ -1781,7 +1781,7 @@ mod tests {
         assert!(rpc_client.get_recent_blockhash().is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_signature_status() {
         let signature = Signature::default();
 
@@ -1798,7 +1798,7 @@ mod tests {
         assert_eq!(status, Some(Err(TransactionError::AccountInUse)));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_send_and_confirm_transaction() {
         let rpc_client = RpcClient::new_mock("succeeds".to_string());
 
@@ -1830,7 +1830,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rpc_client_thread() {
         let rpc_client = RpcClient::new_mock("succeeds".to_string());
         thread::spawn(move || rpc_client);

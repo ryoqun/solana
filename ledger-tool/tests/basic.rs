@@ -16,7 +16,7 @@ fn count_newlines(chars: &[u8]) -> usize {
     bytecount::count(chars, b'\n')
 }
 
-#[cfg(testkun)]
+#[test]
 fn bad_arguments() {
     // At least a ledger path is required
     assert!(!run_ledger_tool(&[]).status.success());
@@ -27,7 +27,7 @@ fn bad_arguments() {
         .success());
 }
 
-#[cfg(testkun)]
+#[test]
 fn nominal() {
     let genesis_config = create_genesis_config(100).genesis_config;
     let ticks_per_slot = genesis_config.ticks_per_slot;

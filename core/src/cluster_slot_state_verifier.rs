@@ -291,7 +291,7 @@ pub(crate) fn check_slot_agrees_with_cluster(
     );
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::consensus::test::VoteSimulator;
@@ -332,7 +332,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_frozen_duplicate() {
         // Common state
         let slot = 0;
@@ -370,7 +370,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_frozen_duplicate_confirmed() {
         // Common state
         let slot = 0;
@@ -427,7 +427,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_frozen_duplicate_confirmed() {
         // Common state
         let slot = 0;
@@ -498,7 +498,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_duplicate_confirmed() {
         let slot = 0;
         let correct_hash = Hash::new_unique();
@@ -521,7 +521,7 @@ mod test {
         .is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_dead() {
         let slot = 0;
         let cluster_duplicate_confirmed_hash = None;
@@ -543,7 +543,7 @@ mod test {
         .is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_confirmed_dead_duplicate() {
         let slot = 0;
         let correct_hash = Hash::new_unique();
@@ -589,7 +589,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_apply_state_changes() {
         // Common state
         let InitialState {
@@ -652,7 +652,7 @@ mod test {
             .unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_state_ancestor_confirmed_descendant_duplicate() {
         // Common state
         let InitialState {
@@ -701,7 +701,7 @@ mod test {
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_state_ancestor_duplicate_descendant_confirmed() {
         // Common state
         let InitialState {

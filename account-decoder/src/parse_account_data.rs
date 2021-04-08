@@ -110,7 +110,7 @@ pub fn parse_account_data(
     })
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::nonce::{
@@ -119,7 +119,7 @@ mod test {
     };
     use solana_vote_program::vote_state::{VoteState, VoteStateVersions};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_account_data() {
         let account_pubkey = solana_sdk::pubkey::new_rand();
         let other_program = solana_sdk::pubkey::new_rand();

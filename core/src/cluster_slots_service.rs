@@ -182,12 +182,12 @@ impl ClusterSlotsService {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::cluster_info::Node;
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_update_lowest_slot() {
         let node_info = Node::new_localhost_with_pubkey(&Pubkey::default());
         let cluster_info = ClusterInfo::new_with_invalid_keypair(node_info.info);

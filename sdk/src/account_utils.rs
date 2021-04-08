@@ -58,12 +58,12 @@ where
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{account::AccountSharedData, pubkey::Pubkey};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_state() {
         let state = 42u64;
 

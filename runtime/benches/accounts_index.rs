@@ -8,7 +8,7 @@ use solana_sdk::pubkey::{self, Pubkey};
 use std::collections::HashSet;
 use test::Bencher;
 
-#[cfg(testkun)]
+#[bench]
 fn bench_accounts_index(bencher: &mut Bencher) {
     const NUM_PUBKEYS: usize = 10_000;
     let pubkeys: Vec<_> = (0..NUM_PUBKEYS).map(|_| pubkey::new_rand()).collect();

@@ -7,7 +7,7 @@ use solana_sdk::{
     signature::{Keypair, Signer},
 };
 
-#[cfg(testkun)]
+#[test]
 fn test_cli_request_airdrop() {
     let mint_keypair = Keypair::new();
     let test_validator = TestValidator::with_no_fees(mint_keypair.pubkey());

@@ -83,11 +83,11 @@ impl Memcmp {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bytes_match() {
         let data = vec![1, 2, 3, 4, 5];
 
@@ -148,7 +148,7 @@ mod tests {
         .bytes_match(&data));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_memcmp() {
         let base58_bytes = "\
             1111111111111111111111111111111111111111111111111111111111111111\

@@ -387,12 +387,12 @@ pub fn unix_timestamp_to_string(unix_timestamp: UnixTimestamp) -> String {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::pubkey::Pubkey;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_format_labeled_address() {
         let pubkey = Pubkey::default().to_string();
         let mut address_labels = HashMap::new();

@@ -801,12 +801,12 @@ impl AccountsHash {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use std::str::FromStr;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_div_ceil() {
         assert_eq!(AccountsHash::div_ceil(10, 3), 4);
         assert_eq!(AccountsHash::div_ceil(0, 1), 0);
@@ -815,13 +815,13 @@ pub mod tests {
         assert_eq!(AccountsHash::div_ceil(9, 9), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "attempt to divide by zero")]
     fn test_accountsdb_div_ceil_fail() {
         assert_eq!(AccountsHash::div_ceil(10, 0), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_rest_of_hash_calculation() {
         solana_logger::setup();
 
@@ -884,7 +884,7 @@ pub mod tests {
         assert_eq!((result.0, result.1), (expected_hash, 118));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_multi_pass_rest_of_hash_calculation() {
         solana_logger::setup();
 
@@ -976,7 +976,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_multi_pass_rest_of_hash_calculation_partial() {
         solana_logger::setup();
 
@@ -1050,7 +1050,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_multi_pass_rest_of_hash_calculation_partial_hashes() {
         solana_logger::setup();
 
@@ -1173,7 +1173,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_de_dup_accounts_zero_chunks() {
         let (hashes, lamports) =
             AccountsHash::de_dup_accounts_in_parallel(&[CalculateHashIntermediate::default()], 0);
@@ -1181,7 +1181,7 @@ pub mod tests {
         assert_eq!(lamports, 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_de_dup_accounts_empty() {
         solana_logger::setup();
 
@@ -1216,7 +1216,7 @@ pub mod tests {
         assert_eq!(lamports, 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_de_dup_accounts_from_stores() {
         solana_logger::setup();
 
@@ -1403,7 +1403,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sort_hash_intermediate() {
         solana_logger::setup();
         let mut stats = HashStats::default();
@@ -1438,7 +1438,7 @@ pub mod tests {
         assert_eq!(result, src);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_compare_two_hash_entries() {
         solana_logger::setup();
         let key = Pubkey::new_unique();
@@ -1490,7 +1490,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_remove_zero_balance_accounts() {
         solana_logger::setup();
 
@@ -1517,7 +1517,7 @@ pub mod tests {
         assert_eq!(result, (vec![], 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_cumulative_offsets1_d() {
         let input = vec![vec![0, 1], vec![], vec![2, 3, 4], vec![]];
         let cumulative = CumulativeOffsets::from_raw(&input);
@@ -1571,7 +1571,7 @@ pub mod tests {
         assert_eq!(cumulative.cumulative_offsets.len(), 0); // 2 non-empty vectors
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_cumulative_offsets2_d() {
         let input = vec![vec![vec![0, 1], vec![], vec![2, 3, 4], vec![]]];
         let cumulative = CumulativeOffsets::from_raw_2d(&input);
@@ -1675,7 +1675,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_flatten_hash_intermediate() {
         solana_logger::setup();
         let test = vec![vec![vec![CalculateHashIntermediate::new(
@@ -1723,7 +1723,7 @@ pub mod tests {
         assert_eq!(stats.unreduced_entries, expected.len());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_flatten_hash_intermediate2() {
         solana_logger::setup();
         // data is ordered:
@@ -1854,7 +1854,7 @@ pub mod tests {
         result
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_compute_merkle_root_large() {
         solana_logger::setup();
 
@@ -1884,7 +1884,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accountsdb_compute_merkle_root() {
         solana_logger::setup();
 
@@ -1958,7 +1958,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "overflow is detected while summing capitalization")]
     fn test_accountsdb_lamport_overflow() {
         solana_logger::setup();
@@ -1983,7 +1983,7 @@ pub mod tests {
         AccountsHash::de_dup_accounts_in_parallel(&input, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "overflow is detected while summing capitalization")]
     fn test_accountsdb_lamport_overflow2() {
         solana_logger::setup();

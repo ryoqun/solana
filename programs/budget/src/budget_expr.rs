@@ -260,17 +260,17 @@ impl BudgetExpr {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_signature_satisfied() {
         let from = Pubkey::default();
         assert!(Condition::Signature(from).is_satisfied(&Witness::Signature, &from));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_timestamp_satisfied() {
         let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
         let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
@@ -280,7 +280,7 @@ mod tests {
         assert!(!Condition::Timestamp(dt2, from).is_satisfied(&Witness::Timestamp(dt1), &from));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify() {
         let dt = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
         let from = Pubkey::default();
@@ -293,7 +293,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_authorized_payment() {
         let from = Pubkey::default();
         let to = Pubkey::default();
@@ -303,7 +303,7 @@ mod tests {
         assert_eq!(expr, BudgetExpr::new_payment(42, &to));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_future_payment() {
         let dt = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
         let from = solana_sdk::pubkey::new_rand();
@@ -314,7 +314,7 @@ mod tests {
         assert_eq!(expr, BudgetExpr::new_payment(42, &to));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_unauthorized_future_payment() {
         // Ensure timestamp will only be acknowledged if it came from the
         // whitelisted public key.
@@ -328,7 +328,7 @@ mod tests {
         assert_eq!(expr, orig_expr);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cancelable_future_payment() {
         let dt = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
         let from = Pubkey::default();
@@ -342,7 +342,7 @@ mod tests {
         expr.apply_witness(&Witness::Signature, &from);
         assert_eq!(expr, BudgetExpr::new_payment(42, &from));
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_2_2_multisig_payment() {
         let from0 = solana_sdk::pubkey::new_rand();
         let from1 = solana_sdk::pubkey::new_rand();
@@ -353,7 +353,7 @@ mod tests {
         assert_eq!(expr, BudgetExpr::new_authorized_payment(&from1, 42, &to));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_multisig_after_sig() {
         let from0 = solana_sdk::pubkey::new_rand();
         let from1 = solana_sdk::pubkey::new_rand();
@@ -368,7 +368,7 @@ mod tests {
         assert_eq!(expr, BudgetExpr::new_authorized_payment(&from1, 42, &to));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_multisig_after_ts() {
         let from0 = solana_sdk::pubkey::new_rand();
         let from1 = solana_sdk::pubkey::new_rand();

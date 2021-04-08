@@ -277,7 +277,7 @@ impl Crds {
         self.table.is_empty()
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub(crate) fn values(&self) -> impl Iterator<Item = &VersionedCrdsValue> {
         self.table.values()
     }
@@ -490,7 +490,7 @@ impl Crds {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::{contact_info::ContactInfo, crds_value::NodeInstance};
@@ -499,7 +499,7 @@ mod test {
     use solana_sdk::signature::Signer;
     use std::{collections::HashSet, iter::repeat_with};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert() {
         let mut crds = Crds::default();
         let val = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::default()));
@@ -508,7 +508,7 @@ mod test {
         assert!(crds.table.contains_key(&val.label()));
         assert_eq!(crds.table[&val.label()].local_timestamp, 0);
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_update_old() {
         let mut crds = Crds::default();
         let val = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::default()));
@@ -516,7 +516,7 @@ mod test {
         assert_eq!(crds.insert(val.clone(), 1), Err(CrdsError::InsertFailed));
         assert_eq!(crds.table[&val.label()].local_timestamp, 0);
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_update_new() {
         let mut crds = Crds::default();
         let original = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::new_localhost(
@@ -534,7 +534,7 @@ mod test {
         );
         assert_eq!(crds.table[&val.label()].local_timestamp, 1);
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_update_timestamp() {
         let mut crds = Crds::default();
         let val = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::new_localhost(
@@ -566,7 +566,7 @@ mod test {
         assert_eq!(crds.table[&val2.label()].local_timestamp, 3);
         assert_eq!(crds.table[&val2.label()].insert_timestamp, 3);
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_find_old_records_default() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let mut crds = Crds::default();
@@ -586,7 +586,7 @@ mod test {
             vec![val.label()]
         );
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_find_old_records_with_override() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let mut rng = thread_rng();
@@ -612,7 +612,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_old_records_unlimited() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let mut rng = thread_rng();
@@ -646,7 +646,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_remove_default() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let mut crds = Crds::default();
@@ -661,7 +661,7 @@ mod test {
         crds.remove(&val.label());
         assert!(crds.find_old_labels(&thread_pool, 2, &set).is_empty());
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_find_old_records_staked() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let mut crds = Crds::default();
@@ -693,7 +693,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_crds_shards() {
         fn check_crds_shards(crds: &Crds) {
             crds.shards
@@ -736,7 +736,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_crds_value_indices() {
         fn check_crds_value_indices<R: rand::Rng>(
             rng: &mut R,
@@ -838,7 +838,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_crds_records() {
         fn check_crds_records(crds: &Crds) {
             assert_eq!(
@@ -877,7 +877,7 @@ mod test {
         assert!(crds.records.is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_drop() {
         fn num_unique_pubkeys<'a, I>(values: I) -> usize
         where
@@ -927,7 +927,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_remove_staked() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let mut crds = Crds::default();
@@ -946,7 +946,7 @@ mod test {
         assert!(crds.find_old_labels(&thread_pool, 2, &set).is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::neg_cmp_op_on_partial_ord)]
     fn test_equal() {
         let val = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::default()));
@@ -957,7 +957,7 @@ mod test {
         assert_eq!(v1.partial_cmp(&v2), Some(cmp::Ordering::Equal));
         assert_eq!(v2.partial_cmp(&v1), Some(cmp::Ordering::Equal));
     }
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::neg_cmp_op_on_partial_ord)]
     fn test_hash_order() {
         let v1 = VersionedCrdsValue::new(
@@ -992,7 +992,7 @@ mod test {
             panic!("bad PartialOrd implementation?");
         }
     }
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::neg_cmp_op_on_partial_ord)]
     fn test_wallclock_order() {
         let v1 = VersionedCrdsValue::new(
@@ -1017,7 +1017,7 @@ mod test {
         assert_eq!(v1.partial_cmp(&v2), Some(cmp::Ordering::Greater));
         assert_eq!(v2.partial_cmp(&v1), Some(cmp::Ordering::Less));
     }
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::neg_cmp_op_on_partial_ord)]
     fn test_label_order() {
         let v1 = VersionedCrdsValue::new(

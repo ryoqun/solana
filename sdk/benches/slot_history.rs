@@ -7,7 +7,7 @@ use solana_sdk::{
 };
 use test::Bencher;
 
-#[cfg(testkun)]
+#[bench]
 fn bench_to_from_account(b: &mut Bencher) {
     let mut slot_history = SlotHistory::default();
 
@@ -17,7 +17,7 @@ fn bench_to_from_account(b: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_slot_history_add_new(b: &mut Bencher) {
     let mut slot_history = SlotHistory::default();
 

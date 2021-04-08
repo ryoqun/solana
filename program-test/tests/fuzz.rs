@@ -18,7 +18,7 @@ fn process_instruction(
     Ok(())
 }
 
-#[cfg(testkun)]
+#[test]
 fn simulate_fuzz() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let program_id = Pubkey::new_unique();
@@ -46,7 +46,7 @@ fn simulate_fuzz() {
     });
 }
 
-#[cfg(testkun)]
+#[test]
 fn simulate_fuzz_with_context() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let program_id = Pubkey::new_unique();

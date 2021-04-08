@@ -10,22 +10,22 @@ macro_rules! DEFINE_SNAPSHOT_VERSION_PARAMETERIZED_TEST_FUNCTIONS {
             const SNAPSHOT_VERSION: SnapshotVersion = SnapshotVersion::$x;
             const CLUSTER_TYPE: ClusterType = ClusterType::$y;
 
-            #[cfg(testkun)]
+            #[test]
             fn test_bank_forks_status_cache_snapshot_n() {
                 run_test_bank_forks_status_cache_snapshot_n(SNAPSHOT_VERSION, CLUSTER_TYPE)
             }
 
-            #[cfg(testkun)]
+            #[test]
             fn test_bank_forks_snapshot_n() {
                 run_test_bank_forks_snapshot_n(SNAPSHOT_VERSION, CLUSTER_TYPE)
             }
 
-            #[cfg(testkun)]
+            #[test]
             fn test_concurrent_snapshot_packaging() {
                 run_test_concurrent_snapshot_packaging(SNAPSHOT_VERSION, CLUSTER_TYPE)
             }
 
-            #[cfg(testkun)]
+            #[test]
             fn test_slots_to_snapshot() {
                 run_test_slots_to_snapshot(SNAPSHOT_VERSION, CLUSTER_TYPE)
             }
@@ -33,7 +33,7 @@ macro_rules! DEFINE_SNAPSHOT_VERSION_PARAMETERIZED_TEST_FUNCTIONS {
     };
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use bincode::serialize_into;
     use crossbeam_channel::unbounded;

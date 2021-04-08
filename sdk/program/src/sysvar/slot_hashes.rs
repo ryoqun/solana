@@ -16,12 +16,12 @@ impl Sysvar for SlotHashes {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{clock::Slot, hash::Hash, slot_hashes::MAX_ENTRIES};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_size_of() {
         assert_eq!(
             SlotHashes::size_of(),

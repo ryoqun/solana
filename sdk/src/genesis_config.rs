@@ -283,7 +283,7 @@ impl fmt::Display for GenesisConfig {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::signature::{Keypair, Signer};
@@ -309,7 +309,7 @@ mod tests {
         path
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_genesis_config() {
         let faucet_keypair = Keypair::new();
         let mut config = GenesisConfig::default();

@@ -415,7 +415,7 @@ pub fn keypair_from_seed_phrase_and_passphrase(
     keypair_from_seed(&seed[..])
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use bip39::{Language, Mnemonic, MnemonicType, Seed};
@@ -429,7 +429,7 @@ mod tests {
         format!("{}/tmp/{}-{}", out_dir, name, keypair.pubkey())
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_write_keypair_file() {
         let outfile = tmp_file_path("test_write_keypair_file.json");
         let serialized_keypair = write_keypair_file(&Keypair::new(), &outfile).unwrap();
@@ -463,7 +463,7 @@ mod tests {
         assert!(!Path::new(&outfile).exists());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_write_keypair_file_overwrite_ok() {
         let outfile = tmp_file_path("test_write_keypair_file_overwrite_ok.json");
 
@@ -471,7 +471,7 @@ mod tests {
         write_keypair_file(&Keypair::new(), &outfile).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_write_keypair_file_truncate() {
         let outfile = tmp_file_path("test_write_keypair_file_truncate.json");
 
@@ -488,7 +488,7 @@ mod tests {
         read_keypair_file(&outfile).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_keypair_from_seed() {
         let good_seed = vec![0; 32];
         assert!(keypair_from_seed(&good_seed).is_ok());
@@ -497,7 +497,7 @@ mod tests {
         assert!(keypair_from_seed(&too_short_seed).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_signature_fromstr() {
         let signature = Keypair::new().sign_message(&[0u8]);
 
@@ -541,7 +541,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_keypair_from_seed_phrase_and_passphrase() {
         let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
         let passphrase = "42";
@@ -552,7 +552,7 @@ mod tests {
         assert_eq!(keypair.pubkey(), expected_keypair.pubkey());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_keypair() {
         let keypair = keypair_from_seed(&[0u8; 32]).unwrap();
         let pubkey = keypair.pubkey();
@@ -570,7 +570,7 @@ mod tests {
         assert_eq!(keypair, keypair2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_presigner() {
         let keypair = keypair_from_seed(&[0u8; 32]).unwrap();
         let pubkey = keypair.pubkey();
@@ -598,7 +598,7 @@ mod tests {
         signers.iter().map(|x| x.pubkey()).collect()
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_unique_signers() {
         let alice = Keypair::new();
         let bob = Keypair::new();
@@ -608,7 +608,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_off_curve_pubkey_verify_fails() {
         // Golden point off the ed25519 curve
         let off_curve_bytes = bs58::decode("9z5nJyQar1FUxVJxpBXzon6kHehbomeYiDaLi9WAMhCq")

@@ -152,7 +152,7 @@ impl StandardBroadcastRun {
         data_shreds
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     fn test_process_receive_results(
         &mut self,
         cluster_info: &ClusterInfo,
@@ -494,7 +494,7 @@ impl BroadcastRun for StandardBroadcastRun {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::cluster_info::{ClusterInfo, Node};
@@ -544,7 +544,7 @@ mod test {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_interrupted_slot_last_shred() {
         let keypair = Arc::new(Keypair::new());
         let mut run = StandardBroadcastRun::new(keypair.clone(), 0);
@@ -579,7 +579,7 @@ mod test {
         assert!(shred.verify(&keypair.pubkey()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_slot_interrupt() {
         // Setup
         let num_shreds_per_slot = 2;
@@ -694,7 +694,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_buffer_data_shreds() {
         let num_shreds_per_slot = 2;
         let (blockstore, genesis_config, _cluster_info, bank, leader_keypair, _socket) =
@@ -738,7 +738,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_slot_finish() {
         // Setup
         let num_shreds_per_slot = 2;

@@ -49,12 +49,12 @@ impl Deref for SlotHashes {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::hash::hash;
 
-    #[cfg(testkun)]
+    #[test]
     fn test() {
         let mut slot_hashes = SlotHashes::new(&[(1, Hash::default()), (3, Hash::default())]);
         slot_hashes.add(2, Hash::default());

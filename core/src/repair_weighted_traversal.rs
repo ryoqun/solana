@@ -127,7 +127,7 @@ pub fn get_best_repair_shreds<'a>(
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod test {
     use super::*;
     use solana_ledger::{get_tmp_ledger_path, shred::Shred};
@@ -135,7 +135,7 @@ pub mod test {
     use solana_sdk::hash::Hash;
     use trees::tr;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_repair_traversal_single() {
         let heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new(42);
         let weighted_traversal = RepairWeightTraversal::new(&heaviest_subtree_fork_choice);
@@ -143,7 +143,7 @@ pub mod test {
         assert_eq!(steps, vec![Visit::Unvisited(42), Visit::Visited(42)]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_repair_traversal() {
         let stake = 100;
         let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(1, stake);
@@ -201,7 +201,7 @@ pub mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_best_repair_shreds() {
         let (blockstore, heaviest_subtree_fork_choice) = setup_forks();
 
@@ -306,7 +306,7 @@ pub mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_best_repair_shreds_no_duplicates() {
         let (blockstore, heaviest_subtree_fork_choice) = setup_forks();
         // Add a branch to slot 2, make sure it doesn't repair child
@@ -330,7 +330,7 @@ pub mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_best_repair_shreds_ignore() {
         let (blockstore, heaviest_subtree_fork_choice) = setup_forks();
 

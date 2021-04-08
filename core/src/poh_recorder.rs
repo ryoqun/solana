@@ -695,13 +695,13 @@ impl PohRecorder {
         })
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn schedule_dummy_max_height_reached_failure(&mut self) {
         self.reset(Hash::default(), 1, None);
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use bincode::serialize;
@@ -712,7 +712,7 @@ mod tests {
     use solana_sdk::hash::hash;
     use std::sync::mpsc::sync_channel;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_no_zero_tick() {
         let prev_hash = Hash::default();
         let ledger_path = get_tmp_ledger_path!();
@@ -739,7 +739,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_tick_height_is_last_tick() {
         let prev_hash = Hash::default();
         let ledger_path = get_tmp_ledger_path!();
@@ -767,7 +767,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_reset_clears_cache() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -792,7 +792,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_clear() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -828,7 +828,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_tick_sent_after_min() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -879,7 +879,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_tick_sent_upto_and_including_max() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -928,7 +928,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_record_to_early() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -966,7 +966,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_record_bad_slot() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1008,7 +1008,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_record_at_min_passes() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1054,7 +1054,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_record_at_max_fails() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1098,7 +1098,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_cache_on_disconnect() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1138,7 +1138,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reset_current() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1165,7 +1165,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reset_with_cached() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1191,7 +1191,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reset_to_new_value() {
         solana_logger::setup();
 
@@ -1224,7 +1224,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reset_clear_bank() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1257,7 +1257,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_clear_signal() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1286,7 +1286,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_recorder_reset_start_slot() {
         solana_logger::setup();
         let ledger_path = get_tmp_ledger_path!();
@@ -1338,7 +1338,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reached_leader_tick() {
         solana_logger::setup();
 
@@ -1401,7 +1401,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reached_leader_slot() {
         solana_logger::setup();
 
@@ -1532,7 +1532,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_would_be_leader_soon() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1598,7 +1598,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_flush_virtual_ticks() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -1631,7 +1631,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_leader_slot_tick_heights() {
         assert_eq!(
             PohRecorder::compute_leader_slot_tick_heights(None, 0),

@@ -81,19 +81,19 @@ fn bench_read_rewards<F, G>(
     Blockstore::destroy(ledger_path).expect("Expected successful database destruction");
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_serialize_write_bincode(bencher: &mut Bencher) {
     let ledger_path = get_tmp_ledger_path!();
     bench_write_rewards(bencher, &ledger_path, write_bincode_rewards);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_serialize_write_protobuf(bencher: &mut Bencher) {
     let ledger_path = get_tmp_ledger_path!();
     bench_write_rewards(bencher, &ledger_path, write_protobuf_rewards);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_read_bincode(bencher: &mut Bencher) {
     let ledger_path = get_tmp_ledger_path!();
     bench_read_rewards(
@@ -104,7 +104,7 @@ fn bench_read_bincode(bencher: &mut Bencher) {
     );
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_read_protobuf(bencher: &mut Bencher) {
     let ledger_path = get_tmp_ledger_path!();
     bench_read_rewards(

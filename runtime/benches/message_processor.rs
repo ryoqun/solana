@@ -7,7 +7,7 @@ use solana_runtime::message_processor::{ExecuteDetailsTimings, PreAccount};
 use solana_sdk::{account::AccountSharedData, pubkey, rent::Rent};
 use test::Bencher;
 
-#[cfg(testkun)]
+#[bench]
 fn bench_verify_account_changes_data(bencher: &mut Bencher) {
     solana_logger::setup();
 
@@ -74,26 +74,26 @@ const BUFSIZE: usize = 1024 * 1024 + 127;
 static BUF0: [u8; BUFSIZE] = [0; BUFSIZE];
 static BUF1: [u8; BUFSIZE] = [1; BUFSIZE];
 
-#[cfg(testkun)]
+#[bench]
 fn bench_is_zeroed(bencher: &mut Bencher) {
     bencher.iter(|| {
         PreAccount::is_zeroed(&BUF0);
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_is_zeroed_not(bencher: &mut Bencher) {
     bencher.iter(|| {
         PreAccount::is_zeroed(&BUF1);
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_is_zeroed_by_iter(bencher: &mut Bencher) {
     bencher.iter(|| BUF0.iter().all(|item| *item == 0));
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_is_zeroed_not_by_iter(bencher: &mut Bencher) {
     bencher.iter(|| BUF1.iter().all(|item| *item == 0));
 }

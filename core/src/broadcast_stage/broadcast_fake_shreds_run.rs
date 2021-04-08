@@ -136,13 +136,13 @@ impl BroadcastRun for BroadcastFakeShredsRun {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::contact_info::ContactInfo;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_tvu_peers_ordering() {
         let cluster = ClusterInfo::new_with_invalid_keypair(ContactInfo::new_localhost(
             &solana_sdk::pubkey::new_rand(),

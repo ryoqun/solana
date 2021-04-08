@@ -39,11 +39,11 @@ pub fn compute_shred_version(genesis_hash: &Hash, hard_forks: Option<&HardForks>
     version_from_hash(&hash)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_shred_version() {
         assert_eq!(compute_shred_version(&Hash::default(), None), 1);
         let mut hard_forks = HardForks::default();

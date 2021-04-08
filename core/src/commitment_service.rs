@@ -244,7 +244,7 @@ impl AggregateCommitmentService {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
@@ -260,7 +260,7 @@ mod tests {
         vote_transaction,
     };
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_highest_confirmed_root() {
         assert_eq!(get_highest_confirmed_root(vec![], 10), 0);
         let rooted_stake = vec![(0, 5), (1, 5)];
@@ -269,7 +269,7 @@ mod tests {
         assert_eq!(get_highest_confirmed_root(rooted_stake, 10), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_aggregate_commitment_for_vote_account_1() {
         let ancestors = vec![3, 4, 5, 7, 9, 11];
         let mut commitment = HashMap::new();
@@ -295,7 +295,7 @@ mod tests {
         assert_eq!(rooted_stake[0], (root, lamports));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_aggregate_commitment_for_vote_account_2() {
         let ancestors = vec![3, 4, 5, 7, 9, 11];
         let mut commitment = HashMap::new();
@@ -328,7 +328,7 @@ mod tests {
         assert_eq!(rooted_stake[0], (root, lamports));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_aggregate_commitment_for_vote_account_3() {
         let ancestors = vec![3, 4, 5, 7, 9, 10, 11];
         let mut commitment = HashMap::new();
@@ -367,7 +367,7 @@ mod tests {
         assert_eq!(rooted_stake[0], (root, lamports));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_aggregate_commitment_validity() {
         let ancestors = vec![3, 4, 5, 7, 9, 10, 11];
         let GenesisConfigInfo {
@@ -484,7 +484,7 @@ mod tests {
         assert_eq!(get_highest_confirmed_root(rooted_stake, 100), 1)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_highest_confirmed_root_advance() {
         fn get_vote_account_root_slot(vote_pubkey: Pubkey, bank: &Arc<Bank>) -> Slot {
             let (_stake, vote_account) = bank.get_vote_account(&vote_pubkey).unwrap();

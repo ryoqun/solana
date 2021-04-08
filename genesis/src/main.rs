@@ -647,7 +647,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     Ok(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::genesis_config::GenesisConfig;
@@ -656,7 +656,7 @@ mod tests {
     use std::io::Write;
     use std::path::Path;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_append_primordial_accounts_to_genesis() {
         // Test invalid file returns error
         assert!(load_genesis_accounts("unknownfile", &mut GenesisConfig::default()).is_err());
@@ -926,7 +926,7 @@ mod tests {
         });
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_genesis_account_struct_compatibility() {
         let yaml_string_pubkey = "---
 98frSc8R8toHoS3tQ1xWSvHCvGEADRM9hAm5qmUKjSDX:

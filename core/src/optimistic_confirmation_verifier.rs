@@ -137,7 +137,7 @@ impl OptimisticConfirmationVerifier {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::consensus::test::VoteSimulator;
@@ -147,7 +147,7 @@ mod test {
     use std::collections::HashMap;
     use trees::tr;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_new_optimistic_confirmed_slots() {
         let snapshot_start_slot = 10;
         let bank_hash = Hash::default();
@@ -165,7 +165,7 @@ mod test {
             .contains(&(snapshot_start_slot + 1, bank_hash)));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_unrooted_optimistic_slots_same_slot_different_hash() {
         let snapshot_start_slot = 0;
         let mut optimistic_confirmation_verifier =
@@ -197,7 +197,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_unrooted_optimistic_slots() {
         let snapshot_start_slot = 0;
         let mut optimistic_confirmation_verifier =

@@ -150,7 +150,7 @@ pub fn process_instruction(
     vest_state.serialize(contract_account.data_as_mut_slice())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::id;
@@ -266,7 +266,7 @@ mod tests {
         bank_client.send_and_confirm_message(&[payer_keypair], message)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_unauthorized() {
         // Ensure client can't sneak in with an untrusted date account.
         let date_pubkey = solana_sdk::pubkey::new_rand();
@@ -280,7 +280,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_signed_account_missing_signature() {
         // Ensure client can't sneak in with an unsigned account.
         let date_pubkey = solana_sdk::pubkey::new_rand();
@@ -293,7 +293,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_date_account_incorrect_program_id() {
         // Ensure client can't sneak in with a non-Config account.
         let date_pubkey = solana_sdk::pubkey::new_rand();
@@ -305,7 +305,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_date_account_uninitialized_config() {
         // Ensure no panic when `get_config_data()` returns an error.
         let date_pubkey = solana_sdk::pubkey::new_rand();
@@ -317,7 +317,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_date_account_invalid_date_config() {
         // Ensure no panic when `deserialize::<DateConfig>()` returns an error.
         let date_pubkey = solana_sdk::pubkey::new_rand();
@@ -329,7 +329,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_date_account_deserialize() {
         // Ensure no panic when `deserialize::<DateConfig>()` returns an error.
         let date_pubkey = solana_sdk::pubkey::new_rand();
@@ -341,7 +341,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_initialize_no_panic() {
         let (bank_client, alice_keypair) = create_bank_client(3);
 
@@ -367,7 +367,7 @@ mod tests {
             TransactionError::InstructionError(1, InstructionError::NotEnoughAccountKeys)
         );
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_set_payee_and_terminator() {
         let (bank_client, alice_keypair) = create_bank_client(39);
         let alice_pubkey = alice_keypair.pubkey();
@@ -438,7 +438,7 @@ mod tests {
         .unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_set_payee() {
         let (bank_client, alice_keypair) = create_bank_client(38);
         let alice_pubkey = alice_keypair.pubkey();
@@ -490,7 +490,7 @@ mod tests {
         .unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_redeem_tokens() {
         let (bank, alice_keypair) = create_bank(38);
         let bank = Arc::new(bank);
@@ -561,7 +561,7 @@ mod tests {
         assert_eq!(bank_client.get_balance(&bob_pubkey).unwrap(), 13);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_terminate_and_refund() {
         let (bank_client, alice_keypair) = create_bank_client(3);
         let alice_pubkey = alice_keypair.pubkey();
@@ -605,7 +605,7 @@ mod tests {
         assert_eq!(bank_client.get_account_data(&bob_pubkey).unwrap(), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_terminate_and_send_funds() {
         let (bank_client, alice_keypair) = create_bank_client(3);
         let alice_pubkey = alice_keypair.pubkey();
@@ -650,7 +650,7 @@ mod tests {
         assert_eq!(bank_client.get_account_data(&bob_pubkey).unwrap(), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_renege_and_send_funds() {
         let (bank_client, alice_keypair) = create_bank_client(3);
         let alice_pubkey = alice_keypair.pubkey();

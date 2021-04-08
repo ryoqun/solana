@@ -67,7 +67,7 @@ use tempfile::TempDir;
 const RUST_LOG_FILTER: &str =
     "error,solana_core::replay_stage=warn,solana_local_cluster=info,local_cluster=info";
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_ledger_cleanup_service() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -108,7 +108,7 @@ fn test_ledger_cleanup_service() {
     }
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_spend_and_verify_all_nodes_1() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -123,7 +123,7 @@ fn test_spend_and_verify_all_nodes_1() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_spend_and_verify_all_nodes_2() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -138,7 +138,7 @@ fn test_spend_and_verify_all_nodes_2() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_spend_and_verify_all_nodes_3() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -153,7 +153,7 @@ fn test_spend_and_verify_all_nodes_3() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_local_cluster_signature_subscribe() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -226,7 +226,7 @@ fn test_local_cluster_signature_subscribe() {
     assert!(got_received_notification);
 }
 
-#[cfg(testkun)]
+#[test]
 #[allow(unused_attributes)]
 #[ignore]
 fn test_spend_and_verify_all_nodes_env_num_nodes() {
@@ -245,7 +245,7 @@ fn test_spend_and_verify_all_nodes_env_num_nodes() {
 }
 
 // Cluster needs a supermajority to remain, so the minimum size for this test is 4
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_leader_failure_4() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -407,7 +407,7 @@ fn run_cluster_partition<E, F>(
 
 #[allow(unused_attributes)]
 #[ignore]
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_cluster_partition_1_2() {
     let empty = |_: &mut LocalCluster| {};
@@ -417,7 +417,7 @@ fn test_cluster_partition_1_2() {
     run_cluster_partition(&[&[1], &[1, 1]], None, empty, on_partition_resolved, vec![])
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_cluster_partition_1_1() {
     let empty = |_: &mut LocalCluster| {};
@@ -427,7 +427,7 @@ fn test_cluster_partition_1_1() {
     run_cluster_partition(&[&[1], &[1]], None, empty, on_partition_resolved, vec![])
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_cluster_partition_1_1_1() {
     let empty = |_: &mut LocalCluster| {};
@@ -472,7 +472,7 @@ fn create_custom_leader_schedule(
     )
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_kill_heaviest_partition() {
     // This test:
@@ -548,7 +548,7 @@ fn run_kill_partition_switch_threshold<F>(
     )
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_kill_partition_switch_threshold_no_progress() {
     let max_switch_threshold_failure_pct = 1.0 - 2.0 * SWITCH_FORK_THRESHOLD;
@@ -576,7 +576,7 @@ fn test_kill_partition_switch_threshold_no_progress() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_kill_partition_switch_threshold_progress() {
     let max_switch_threshold_failure_pct = 1.0 - 2.0 * SWITCH_FORK_THRESHOLD;
@@ -617,7 +617,7 @@ fn test_kill_partition_switch_threshold_progress() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_two_unbalanced_stakes() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -650,7 +650,7 @@ fn test_two_unbalanced_stakes() {
     cluster_tests::verify_ledger_ticks(&leader_ledger, num_ticks_per_slot as usize);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_forwarding() {
     // Set up a cluster where one node is never the leader, so all txs sent to this node
@@ -677,7 +677,7 @@ fn test_forwarding() {
     cluster_tests::send_many_transactions(&validator_info, &cluster.funding_keypair, 10, 20);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_restart_node() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -716,7 +716,7 @@ fn test_restart_node() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_listener_startup() {
     let mut config = ClusterConfig {
@@ -731,7 +731,7 @@ fn test_listener_startup() {
     assert_eq!(cluster_nodes.len(), 4);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_mainnet_beta_cluster_type() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -838,7 +838,7 @@ fn generate_frozen_account_panic(mut cluster: LocalCluster, frozen_account: Arc<
     cluster.validators = HashMap::default();
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_frozen_account_from_genesis() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -859,7 +859,7 @@ fn test_frozen_account_from_genesis() {
     generate_frozen_account_panic(LocalCluster::new(&mut config), validator_identity);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_frozen_account_from_snapshot() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -902,7 +902,7 @@ fn test_frozen_account_from_snapshot() {
     generate_frozen_account_panic(cluster, validator_identity);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_consistency_halt() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -991,7 +991,7 @@ fn test_consistency_halt() {
     assert!(encountered_error);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_snapshot_download() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -1057,7 +1057,7 @@ fn test_snapshot_download() {
 }
 
 #[allow(unused_attributes)]
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_snapshot_restart_tower() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -1129,7 +1129,7 @@ fn test_snapshot_restart_tower() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_snapshots_blockstore_floor() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -1232,7 +1232,7 @@ fn test_snapshots_blockstore_floor() {
     assert_eq!(first_slot, slot_floor);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_snapshots_restart_validity() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -1315,7 +1315,7 @@ fn test_snapshots_restart_validity() {
     }
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 #[allow(unused_attributes)]
 #[ignore]
@@ -1323,7 +1323,7 @@ fn test_fail_entry_verification_leader() {
     test_faulty_node(BroadcastStageType::FailEntryVerification);
 }
 
-#[cfg(testkun)]
+#[test]
 #[allow(unused_attributes)]
 #[ignore]
 fn test_fake_shreds_broadcast_leader() {
@@ -1359,7 +1359,7 @@ fn test_faulty_node(faulty_node_type: BroadcastStageType) {
     cluster.check_for_new_roots(16, &"test_faulty_node");
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_wait_for_max_stake() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
     let validator_config = ValidatorConfig::default();
@@ -1378,7 +1378,7 @@ fn test_wait_for_max_stake() {
     assert!(client.get_slot().unwrap() > 10);
 }
 
-#[cfg(testkun)]
+#[test]
 // Test that when a leader is leader for banks B_i..B_{i+n}, and B_i is not
 // votable, then B_{i+1} still chains to B_i
 fn test_no_voting() {
@@ -1419,7 +1419,7 @@ fn test_no_voting() {
     }
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_optimistic_confirmation_violation_detection() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -1533,7 +1533,7 @@ fn test_optimistic_confirmation_violation_detection() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_validator_saves_tower() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -2039,19 +2039,19 @@ fn do_test_future_tower(cluster_mode: ClusterMode) {
     }
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_future_tower_master_only() {
     do_test_future_tower(ClusterMode::MasterOnly);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_future_tower_master_slave() {
     do_test_future_tower(ClusterMode::MasterSlave);
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_hard_fork_invalidates_tower() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
 
@@ -2170,25 +2170,25 @@ fn test_hard_fork_invalidates_tower() {
         .check_for_new_roots(16, &"hard fork");
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_no_optimistic_confirmation_violation_with_tower() {
     do_test_optimistic_confirmation_violation_with_or_without_tower(true);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_optimistic_confirmation_violation_without_tower() {
     do_test_optimistic_confirmation_violation_with_or_without_tower(false);
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_run_test_load_program_accounts_root() {
     run_test_load_program_accounts(CommitmentConfig::finalized());
 }
 
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_run_test_load_program_accounts_partition_root() {
     run_test_load_program_accounts_partition(CommitmentConfig::finalized());

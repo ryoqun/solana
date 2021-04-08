@@ -46,7 +46,7 @@ pub fn nonce(buf: &[u8]) -> Option<Nonce> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_ledger::{
@@ -105,7 +105,7 @@ mod test {
         assert_eq!(rv, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sigverify_shred_cpu_repair() {
         run_test_sigverify_shred_cpu_repair(0xdead_c0de);
     }

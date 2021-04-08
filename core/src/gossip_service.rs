@@ -300,14 +300,14 @@ fn make_gossip_node(
     (gossip_service, ip_echo, cluster_info)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::cluster_info::{ClusterInfo, Node};
     use std::sync::atomic::AtomicBool;
     use std::sync::Arc;
 
-    #[cfg(testkun)]
+    #[test]
     #[ignore]
     // test that stage will exit when flag is set
     fn test_exit() {
@@ -327,7 +327,7 @@ mod tests {
         d.join().unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_gossip_services_spy() {
         let keypair = Keypair::new();
         let peer0 = solana_sdk::pubkey::new_rand();

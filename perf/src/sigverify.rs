@@ -15,7 +15,7 @@ use solana_sdk::message::MESSAGE_HEADER_LENGTH;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::short_vec::decode_shortu16_len;
 use solana_sdk::signature::Signature;
-#[cfg(testkun)]
+#[cfg(test)]
 use solana_sdk::transaction::Transaction;
 use std::convert::TryFrom;
 use std::mem::size_of;
@@ -451,7 +451,7 @@ pub fn ed25519_verify(
     inc_new_counter_debug!("ed25519_verify_gpu", count);
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub fn make_packet_from_transaction(tx: Transaction) -> Packet {
     use bincode::serialize;
 
@@ -462,7 +462,7 @@ pub fn make_packet_from_transaction(tx: Transaction) -> Packet {
     packet
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 #[allow(clippy::integer_arithmetic)]
 mod tests {
     use super::*;
@@ -489,7 +489,7 @@ mod tests {
         None
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_mark_disabled() {
         let mut batch = Packets::default();
         batch.packets.push(Packet::default());
@@ -500,7 +500,7 @@ mod tests {
         assert_eq!(batches[0].packets[0].meta.discard, false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_layout() {
         let tx = test_tx();
         let tx_bytes = serialize(&tx).unwrap();
@@ -509,7 +509,7 @@ mod tests {
         assert_matches!(memfind(&packet, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_system_transaction_layout() {
         let tx = test_tx();
         let tx_bytes = serialize(&tx).unwrap();
@@ -553,7 +553,7 @@ mod tests {
         sigverify::make_packet_from_transaction(tx)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_untrustworthy_sigs() {
         let required_num_sigs = 14;
         let actual_num_sigs = 5;
@@ -568,7 +568,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_large_sigs() {
         // use any large number to be misinterpreted as 2 bytes when decoded as short_vec
         let required_num_sigs = 214;
@@ -584,7 +584,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_small_packet() {
         let tx = test_tx();
         let mut packet = sigverify::make_packet_from_transaction(tx);
@@ -597,7 +597,7 @@ mod tests {
         assert_eq!(res, Err(PacketError::InvalidLen));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_large_sig_len() {
         let tx = test_tx();
         let mut packet = sigverify::make_packet_from_transaction(tx);
@@ -609,7 +609,7 @@ mod tests {
         assert_eq!(res, Err(PacketError::InvalidSignatureLen));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_really_large_sig_len() {
         let tx = test_tx();
         let mut packet = sigverify::make_packet_from_transaction(tx);
@@ -624,7 +624,7 @@ mod tests {
         assert_eq!(res, Err(PacketError::InvalidShortVec));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_invalid_pubkey_len() {
         let tx = test_tx();
         let mut packet = sigverify::make_packet_from_transaction(tx);
@@ -638,7 +638,7 @@ mod tests {
         assert_eq!(res, Err(PacketError::InvalidPubkeyLen));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_fee_payer_is_debitable() {
         let message = Message {
             header: MessageHeader {
@@ -658,7 +658,7 @@ mod tests {
         assert_eq!(res, Err(PacketError::PayerNotWritable));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_system_transaction_data_layout() {
         use crate::packet::PACKET_DATA_SIZE;
         let mut tx0 = test_tx();
@@ -691,7 +691,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_packet_offsets() {
         assert_eq!(
             get_packet_offsets_from_tx(test_tx(), 0),
@@ -761,7 +761,7 @@ mod tests {
             .all(|p| p.meta.discard == should_discard));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_tampered_sig_len() {
         let mut tx = test_tx();
         // pretend malicious leader dropped a signature...
@@ -780,22 +780,22 @@ mod tests {
             .all(|p| p.meta.discard));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_zero() {
         test_verify_n(0, false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_one() {
         test_verify_n(1, false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_seventy_one() {
         test_verify_n(71, false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_multisig() {
         solana_logger::setup();
 
@@ -832,7 +832,7 @@ mod tests {
             }));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_fuzz() {
         use rand::{thread_rng, Rng};
         solana_logger::setup();
@@ -872,12 +872,12 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_fail() {
         test_verify_n(5, true);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_checked_scalar() {
         solana_logger::setup();
         use curve25519_dalek::scalar::Scalar;
@@ -917,7 +917,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_ge_small_order() {
         solana_logger::setup();
         use curve25519_dalek::edwards::CompressedEdwardsY;

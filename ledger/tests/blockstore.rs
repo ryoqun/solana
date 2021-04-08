@@ -7,7 +7,7 @@ use solana_sdk::hash::Hash;
 use std::sync::Arc;
 use std::thread::Builder;
 
-#[cfg(testkun)]
+#[test]
 fn test_multiple_threads_insert_shred() {
     let blockstore_path = get_tmp_ledger_path!();
     let blockstore = Arc::new(Blockstore::open(&blockstore_path).unwrap());

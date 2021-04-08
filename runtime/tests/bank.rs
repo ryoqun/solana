@@ -2,7 +2,7 @@ use solana_runtime::bank::Bank;
 use solana_sdk::{genesis_config::create_genesis_config, hash::hash};
 use std::{sync::Arc, thread::Builder};
 
-#[cfg(testkun)]
+#[test]
 fn test_race_register_tick_freeze() {
     solana_logger::setup();
 

@@ -14,7 +14,7 @@ use test::Bencher;
 
 const NUM_PACKETS: usize = 256;
 const NUM_BATCHES: usize = 1;
-#[cfg(testkun)]
+#[bench]
 fn bench_sigverify_shreds_sign_gpu(bencher: &mut Bencher) {
     let recycler_cache = RecyclerCache::new("", "");
 
@@ -51,7 +51,7 @@ fn bench_sigverify_shreds_sign_gpu(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_sigverify_shreds_sign_cpu(bencher: &mut Bencher) {
     let mut packets = Packets::default();
     let slot = 0xdead_c0de;

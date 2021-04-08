@@ -95,7 +95,7 @@ where
     assert!(done);
 }
 /// ring a -> b -> c -> d -> e -> a
-#[cfg(testkun)]
+#[test]
 fn gossip_ring() {
     solana_logger::setup();
     run_gossip_topo(50, |listen| {
@@ -112,7 +112,7 @@ fn gossip_ring() {
 }
 
 /// ring a -> b -> c -> d -> e -> a
-#[cfg(testkun)]
+#[test]
 #[ignore]
 fn gossip_ring_large() {
     solana_logger::setup();
@@ -129,7 +129,7 @@ fn gossip_ring_large() {
     });
 }
 /// star a -> (b,c,d,e)
-#[cfg(testkun)]
+#[test]
 fn gossip_star() {
     solana_logger::setup();
     run_gossip_topo(10, |listen| {
@@ -148,7 +148,7 @@ fn gossip_star() {
 }
 
 /// rstar a <- (b,c,d,e)
-#[cfg(testkun)]
+#[test]
 fn gossip_rstar() {
     solana_logger::setup();
     run_gossip_topo(10, |listen| {
@@ -167,7 +167,7 @@ fn gossip_rstar() {
     });
 }
 
-#[cfg(testkun)]
+#[test]
 pub fn cluster_info_retransmit() {
     solana_logger::setup();
     let exit = Arc::new(AtomicBool::new(false));
@@ -220,7 +220,7 @@ pub fn cluster_info_retransmit() {
     dr3.join().unwrap();
 }
 
-#[cfg(testkun)]
+#[test]
 #[ignore]
 pub fn cluster_info_scale() {
     use solana_measure::measure::Measure;

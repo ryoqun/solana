@@ -50,13 +50,13 @@ impl<'a> Iterator for AncestorIterator<'a> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::blockstore_processor::fill_blockstore_slot_with_ticks;
     use solana_sdk::hash::Hash;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_ancestor_iterator() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -119,7 +119,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_ancestor_iterator_inclusive() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();

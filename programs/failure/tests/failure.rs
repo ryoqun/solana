@@ -7,7 +7,7 @@ use solana_sdk::instruction::InstructionError;
 use solana_sdk::signature::Signer;
 use solana_sdk::transaction::TransactionError;
 
-#[cfg(testkun)]
+#[test]
 fn test_program_native_failure() {
     let (genesis_config, alice_keypair) = create_genesis_config(50);
     let program_id = solana_sdk::pubkey::new_rand();

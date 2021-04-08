@@ -275,7 +275,7 @@ pub(crate) fn move_stake_accounts(
         .collect()
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_runtime::{bank::Bank, bank_client::BankClient};
@@ -343,7 +343,7 @@ mod tests {
             .collect()
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_new_derived_stake_account() {
         let (bank, funding_keypair, rent) = create_bank(10_000_000);
         let funding_pubkey = funding_keypair.pubkey();
@@ -380,7 +380,7 @@ mod tests {
         assert_eq!(authorized.withdrawer, withdraw_authority_pubkey);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_authorize_stake_accounts() {
         let (bank, funding_keypair, rent) = create_bank(10_000_000);
         let funding_pubkey = funding_keypair.pubkey();
@@ -442,7 +442,7 @@ mod tests {
         assert_eq!(authorized.withdrawer, new_withdraw_authority_pubkey);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_lockup_stake_accounts() {
         let (bank, funding_keypair, rent) = create_bank(10_000_000);
         let funding_pubkey = funding_keypair.pubkey();
@@ -512,14 +512,14 @@ mod tests {
         assert_eq!(messages.len(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rebase_empty_account() {
         let pubkey = Pubkey::default();
         let message = rebase_stake_account(&pubkey, &pubkey, 0, &pubkey, &pubkey, 0);
         assert_eq!(message, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_move_empty_account() {
         let pubkey = Pubkey::default();
         let message = move_stake_account(
@@ -528,7 +528,7 @@ mod tests {
         assert_eq!(message, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rebase_stake_accounts() {
         let (bank, funding_keypair, rent) = create_bank(10_000_000);
         let funding_pubkey = funding_keypair.pubkey();
@@ -591,7 +591,7 @@ mod tests {
         assert_eq!(authorized.withdrawer, withdraw_authority_pubkey);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_move_stake_accounts() {
         let (bank, funding_keypair, rent) = create_bank(10_000_000);
         let funding_pubkey = funding_keypair.pubkey();
@@ -660,7 +660,7 @@ mod tests {
         assert_eq!(authorized.withdrawer, new_withdraw_authority_pubkey);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_extend_lockup() {
         let lockup = LockupArgs {
             unix_timestamp: Some(1),

@@ -263,7 +263,7 @@ pub fn decode_shortu16_len(bytes: &[u8]) -> Result<(usize, usize), ()> {
     Err(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use assert_matches::assert_matches;
@@ -283,7 +283,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_short_vec_encode_len() {
         assert_len_encoding(0x0, &[0x0]);
         assert_len_encoding(0x7f, &[0x7f]);
@@ -302,7 +302,7 @@ mod tests {
         assert!(deserialize::<ShortU16>(bytes).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_deserialize() {
         assert_good_deserialized_value(0x0000, &[0x00]);
         assert_good_deserialized_value(0x007f, &[0x7f]);
@@ -346,7 +346,7 @@ mod tests {
         assert_bad_deserialized_value(&[0x80, 0x80, 0x06]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_short_vec_u8() {
         let vec = ShortVec(vec![4u8; 32]);
         let bytes = serialize(&vec).unwrap();
@@ -356,7 +356,7 @@ mod tests {
         assert_eq!(vec.0, vec1.0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_short_vec_u8_too_long() {
         let vec = ShortVec(vec![4u8; std::u16::MAX as usize]);
         assert_matches!(serialize(&vec), Ok(_));
@@ -365,14 +365,14 @@ mod tests {
         assert_matches!(serialize(&vec), Err(_));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_short_vec_json() {
         let vec = ShortVec(vec![0, 1, 2]);
         let s = serde_json::to_string(&vec).unwrap();
         assert_eq!(s, "[[3],0,1,2]");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_short_vec_aliased_length() {
         let bytes = [
             0x81, 0x80, 0x00, // 3-byte alias of 1

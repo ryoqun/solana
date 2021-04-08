@@ -193,7 +193,7 @@ fn get_data_slice<'a>(
     Ok(&instruction_datas[signature_index][start..end])
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod test {
     use super::*;
 
@@ -206,7 +206,7 @@ pub mod test {
         verify_eth_addresses(&instruction_data, &[&[0u8; 100]])
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_invalid_offsets() {
         solana_logger::setup();
 
@@ -250,7 +250,7 @@ pub mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_data_offsets() {
         let offsets = SecpSignatureOffsets {
             message_data_offset: 99,
@@ -293,7 +293,7 @@ pub mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_eth_offset() {
         let offsets = SecpSignatureOffsets {
             eth_address_offset: std::u16::MAX,
@@ -314,7 +314,7 @@ pub mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_signature_offset() {
         let offsets = SecpSignatureOffsets {
             signature_offset: std::u16::MAX,

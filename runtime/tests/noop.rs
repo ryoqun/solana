@@ -3,7 +3,7 @@ use solana_runtime::{
 };
 use solana_sdk::{client::SyncClient, genesis_config::create_genesis_config, signature::Signer};
 
-#[cfg(testkun)]
+#[test]
 fn test_program_native_noop() {
     solana_logger::setup();
 

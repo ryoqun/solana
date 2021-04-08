@@ -55,8 +55,8 @@ fn id_to_tokens(
             ID
         }
 
-        #[cfg(testkun)]
-        #[cfg(testkun)]
+        #[cfg(test)]
+        #[test]
         fn test_id() {
             assert!(check_id(&id()));
         }

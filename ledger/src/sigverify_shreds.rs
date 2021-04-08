@@ -453,7 +453,7 @@ pub fn sign_shreds_gpu(
     inc_new_counter_debug!("ed25519_shred_sign_gpu", count);
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::shred::{Shred, Shredder, SIZE_OF_DATA_SHRED_PAYLOAD};
@@ -500,7 +500,7 @@ pub mod tests {
         assert_eq!(rv, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sigverify_shred_cpu() {
         run_test_sigverify_shred_cpu(0xdead_c0de);
     }
@@ -553,7 +553,7 @@ pub mod tests {
         assert_eq!(rv, vec![vec![0]]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sigverify_shreds_cpu() {
         run_test_sigverify_shreds_cpu(0xdead_c0de);
     }
@@ -617,7 +617,7 @@ pub mod tests {
         assert_eq!(rv, vec![vec![0]]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sigverify_shreds_gpu() {
         run_test_sigverify_shreds_gpu(0xdead_c0de);
     }
@@ -667,7 +667,7 @@ pub mod tests {
         assert_eq!(rv, vec![vec![1; num_packets]; num_batches]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sigverify_shreds_sign_gpu() {
         run_test_sigverify_shreds_sign_gpu(0xdead_c0de);
     }
@@ -707,7 +707,7 @@ pub mod tests {
         assert_eq!(rv, vec![vec![1]]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sigverify_shreds_sign_cpu() {
         run_test_sigverify_shreds_sign_cpu(0xdead_c0de);
     }

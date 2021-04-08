@@ -37,8 +37,8 @@ macro_rules! declare_sysvar_id(
             }
         }
 
-        #[cfg(testkun)]
-        #[cfg(testkun)]
+        #[cfg(test)]
+        #[test]
         fn test_sysvar_id() {
             if !$crate::sysvar::is_sysvar_id(&id()) {
                 panic!("sysvar::is_sysvar_id() doesn't know about {}", $name);
@@ -72,7 +72,7 @@ pub trait Sysvar:
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{clock::Epoch, program_error::ProgramError, pubkey::Pubkey};
@@ -91,7 +91,7 @@ mod tests {
     }
     impl Sysvar for TestSysvar {}
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sysvar_account_info_to_from() {
         let test_sysvar = TestSysvar::default();
         let key = crate::sysvar::tests::id();

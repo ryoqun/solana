@@ -250,13 +250,13 @@ pub struct PerfSample {
     pub sample_period_secs: u16,
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use rand::{seq::SliceRandom, thread_rng};
     use std::iter::repeat;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_erasure_meta_status() {
         use ErasureMetaStatus::*;
 
@@ -307,7 +307,7 @@ mod test {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clear_unconfirmed_slot() {
         let mut slot_meta = SlotMeta::new_orphan(5);
         slot_meta.consumed = 5;

@@ -550,7 +550,7 @@ pub fn create_is_signer_account_infos<'a>(
         .collect()
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
 
@@ -565,7 +565,7 @@ pub mod tests {
         (account1, account2)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_set_data_from_slice() {
         let key = Pubkey::new_unique();
         let (_, mut account) = make_two_accounts(&key);
@@ -586,7 +586,7 @@ pub mod tests {
         assert_eq!(account.data(), &vec![44]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_data_set_data() {
         let key = Pubkey::new_unique();
         let (_, mut account) = make_two_accounts(&key);
@@ -597,7 +597,7 @@ pub mod tests {
         assert_eq!(account.data().len(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(
         expected = "called `Result::unwrap()` on an `Err` value: Io(Kind(UnexpectedEof))"
     )]
@@ -607,7 +607,7 @@ pub mod tests {
         account1.deserialize_data::<String>().unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: SizeLimit")]
     fn test_account_serialize() {
         let key = Pubkey::new_unique();
@@ -615,7 +615,7 @@ pub mod tests {
         account1.serialize_data(&"hello world").unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(
         expected = "called `Result::unwrap()` on an `Err` value: Io(Kind(UnexpectedEof))"
     )]
@@ -625,7 +625,7 @@ pub mod tests {
         account2.deserialize_data::<String>().unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: SizeLimit")]
     fn test_account_shared_data_serialize() {
         let key = Pubkey::new_unique();
@@ -633,7 +633,7 @@ pub mod tests {
         account2.serialize_data(&"hello world").unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_shared_data() {
         let key = Pubkey::new_unique();
         let (account1, account2) = make_two_accounts(&key);
@@ -691,7 +691,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::redundant_clone)]
     fn test_account_shared_data_all_fields() {
         let key = Pubkey::new_unique();

@@ -699,12 +699,12 @@ impl Drop for LocalCluster {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_local_cluster_start_and_exit() {
         solana_logger::setup();
         let num_nodes = 1;
@@ -712,7 +712,7 @@ mod test {
         assert_eq!(cluster.validators.len(), num_nodes);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_local_cluster_start_and_exit_with_config() {
         solana_logger::setup();
         const NUM_NODES: usize = 1;

@@ -105,7 +105,7 @@ impl<T: Signer> Signers for Vec<&T> {
     default_keypairs_impl!();
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -129,7 +129,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_dyn_keypairs_compile() {
         let xs: Vec<Box<dyn Signer>> = vec![Box::new(Foo {}), Box::new(Bar {})];
         assert_eq!(
@@ -145,7 +145,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::blacklisted_name)]
     fn test_dyn_keypairs_by_ref_compile() {
         let foo = Foo {};

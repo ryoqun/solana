@@ -63,11 +63,11 @@ pub fn weighted_best(weights_and_indexes: &[(u64, usize)], seed: [u8; 32]) -> us
     best_index
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_shuffle_iterator() {
         let mut test_set = [0; 6];
         let mut count = 0;
@@ -80,7 +80,7 @@ mod tests {
         assert_eq!(count, 6);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_shuffle_iterator_large() {
         let mut test_set = [0; 100];
         let mut test_weights = vec![0; 100];
@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(count, 100);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_shuffle_compare() {
         let shuffle = weighted_shuffle(&[50, 10, 2, 1, 1, 1], [0x5a; 32]);
 
@@ -108,7 +108,7 @@ mod tests {
             });
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_shuffle_imbalanced() {
         let mut weights = vec![std::u32::MAX as u64; 3];
         weights.push(1);
@@ -122,7 +122,7 @@ mod tests {
         });
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_weighted_best() {
         let weights_and_indexes: Vec<_> = vec![100u64, 1000, 10_000, 10]
             .into_iter()

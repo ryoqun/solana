@@ -19,7 +19,7 @@ use solana_sdk::{
     system_program,
 };
 
-#[cfg(testkun)]
+#[test]
 fn test_nonce() {
     let mint_keypair = Keypair::new();
     full_battery_tests(
@@ -30,7 +30,7 @@ fn test_nonce() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_nonce_with_seed() {
     let mint_keypair = Keypair::new();
     full_battery_tests(
@@ -41,7 +41,7 @@ fn test_nonce_with_seed() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_nonce_with_authority() {
     let mint_keypair = Keypair::new();
     full_battery_tests(
@@ -210,7 +210,7 @@ fn full_battery_tests(
     check_recent_balance(200, &rpc_client, &payee_pubkey);
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_create_account_with_seed() {
     solana_logger::setup();
     let mint_keypair = Keypair::new();

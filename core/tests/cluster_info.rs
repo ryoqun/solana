@@ -199,7 +199,7 @@ fn run_simulation(stakes: &[u64], fanout: usize) {
 //todo add tests with network failures
 
 // Run with a single layer
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_retransmit_small() {
     let stakes: Vec<_> = (0..200).collect();
@@ -207,7 +207,7 @@ fn test_retransmit_small() {
 }
 
 // Make sure at least 2 layers are used
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_retransmit_medium() {
     let num_nodes = 2000;
@@ -216,7 +216,7 @@ fn test_retransmit_medium() {
 }
 
 // Make sure at least 2 layers are used but with equal stakes
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_retransmit_medium_equal_stakes() {
     let num_nodes = 2000;
@@ -225,7 +225,7 @@ fn test_retransmit_medium_equal_stakes() {
 }
 
 // Scale down the network and make sure many layers are used
-#[cfg(testkun)]
+#[test]
 #[serial]
 fn test_retransmit_large() {
     let num_nodes = 4000;

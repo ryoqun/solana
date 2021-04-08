@@ -688,11 +688,11 @@ pub struct TransactionByAddrInfo {
     pub block_time: Option<UnixTimestamp>,
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_decode_invalid_transaction() {
         // This transaction will not pass sanitization
         let unsanitary_transaction = EncodedTransaction::Binary(
@@ -706,7 +706,7 @@ mod test {
         assert!(unsanitary_transaction.decode().is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_satisfies_commitment() {
         let status = TransactionStatus {
             slot: 0,

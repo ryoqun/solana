@@ -58,11 +58,11 @@ impl LargestAccountsCache {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_old_entries_expire() {
         let mut cache = LargestAccountsCache::new(1);
 

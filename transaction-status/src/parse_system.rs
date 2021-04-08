@@ -195,12 +195,12 @@ fn check_num_system_accounts(accounts: &[u8], num: usize) -> Result<(), ParseIns
     check_num_accounts(accounts, num, ParsableProgram::System)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::{message::Message, pubkey::Pubkey, system_instruction};
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::same_item_push)]
     fn test_parse_system_instruction() {
         let mut keys: Vec<Pubkey> = vec![];
@@ -375,7 +375,7 @@ mod test {
         assert!(parse_system(&message.instructions[0], &keys[0..2]).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::same_item_push)]
     fn test_parse_system_instruction_nonce() {
         let mut keys: Vec<Pubkey> = vec![];

@@ -33,37 +33,37 @@ fn bench_crds_shards_find(bencher: &mut Bencher, num_values: usize, mask_bits: u
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_0(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 0);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_1(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 1);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_3(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 3);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_5(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 5);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_7(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 7);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_8(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 8);
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_crds_shards_find_9(bencher: &mut Bencher) {
     bench_crds_shards_find(bencher, 100_000, 9);
 }

@@ -27,7 +27,7 @@ pub struct CounterPoint {
 }
 
 impl CounterPoint {
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn new(name: &'static str) -> Self {
         CounterPoint {
             name,
@@ -204,7 +204,7 @@ impl Counter {
         }
     }
 }
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use crate::counter::{Counter, DEFAULT_LOG_RATE, DEFAULT_METRICS_RATE};
     use log::Level;
@@ -226,7 +226,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_counter() {
         env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("solana=info"))
@@ -258,7 +258,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_metricsrate() {
         env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("solana=info"))
@@ -276,7 +276,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_metricsrate_env() {
         env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("solana=info"))
@@ -291,7 +291,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_inc_new_counter() {
         let _readlock = get_env_lock().read();
@@ -302,7 +302,7 @@ mod tests {
         inc_new_counter_info!("3", 1, 2, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_lograte() {
         env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("solana=info"))
@@ -323,7 +323,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_lograte_env() {
         env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("solana=info"))

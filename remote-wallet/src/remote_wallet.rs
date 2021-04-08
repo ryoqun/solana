@@ -443,11 +443,11 @@ pub fn maybe_wallet_manager() -> Result<Option<Arc<RemoteWalletManager>>, Remote
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_path() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let (wallet_info, derivation_path) =
@@ -588,7 +588,7 @@ mod tests {
         assert!(RemoteWalletInfo::parse_path("usb://ledger/?test=other".to_string()).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_remote_wallet_info_matches() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let info = RemoteWalletInfo {
@@ -619,7 +619,7 @@ mod tests {
         assert!(info.matches(&test_info));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_pretty_path() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let pubkey_str = pubkey.to_string();
@@ -637,7 +637,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_query() {
         let derivation_path = DerivationPath {
             account: None,
@@ -666,7 +666,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_derivation_path_debug() {
         let mut path = DerivationPath::default();
         assert_eq!(format!("{:?}", path), "m/44'/501'".to_string());
@@ -678,7 +678,7 @@ mod tests {
         assert_eq!(format!("{:?}", path), "m/44'/501'/1'/2'".to_string());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_derivation_path_component() {
         let f = DerivationPathComponent::from(1);
         assert_eq!(f.as_u32(), 1 | DerivationPathComponent::HARDENED_BIT);

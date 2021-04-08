@@ -210,7 +210,7 @@ pub struct UiStakeHistoryEntry {
     pub stake_history: StakeHistoryEntry,
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::{
@@ -218,7 +218,7 @@ mod test {
         sysvar::recent_blockhashes::IterItem,
     };
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_sysvars() {
         let clock_sysvar = create_account_for_test(&Clock::default());
         assert_eq!(

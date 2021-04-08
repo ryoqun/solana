@@ -34,7 +34,7 @@ pub struct UiNonceData {
     pub fee_calculator: UiFeeCalculator,
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::{
@@ -46,7 +46,7 @@ mod test {
         pubkey::Pubkey,
     };
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_nonce() {
         let nonce_data = Versions::new_current(State::Initialized(Data::default()));
         let nonce_account_data = bincode::serialize(&nonce_data).unwrap();

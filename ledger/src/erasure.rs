@@ -128,7 +128,7 @@ impl Default for Session {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod test {
     use super::*;
     use log::*;
@@ -152,7 +152,7 @@ pub mod test {
         pub set_specs: Vec<ErasureSpec>,
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_coding() {
         const N_DATA: usize = 4;
         const N_CODING: usize = 2;

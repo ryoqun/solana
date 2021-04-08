@@ -25,11 +25,11 @@ pub extern "C" fn entrypoint(_input: *mut u8) -> u64 {
 
 custom_panic_default!();
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sha256() {
         test_hasher();
     }

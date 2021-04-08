@@ -227,7 +227,7 @@ impl Stakes {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use solana_sdk::{pubkey::Pubkey, rent::Rent};
@@ -295,7 +295,7 @@ pub mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stakes_basic() {
         for i in 0..4 {
             let mut stakes = Stakes {
@@ -352,7 +352,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stakes_highest() {
         let mut stakes = Stakes::default();
 
@@ -375,7 +375,7 @@ pub mod tests {
         assert_eq!(stakes.highest_staked_node(), Some(vote11_node_pubkey))
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stakes_vote_account_disappear_reappear() {
         let mut stakes = Stakes {
             epoch: 4,
@@ -444,7 +444,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stakes_change_delegate() {
         let mut stakes = Stakes {
             epoch: 4,
@@ -490,7 +490,7 @@ pub mod tests {
             );
         }
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_stakes_multiple_stakers() {
         let mut stakes = Stakes {
             epoch: 4,
@@ -514,7 +514,7 @@ pub mod tests {
             assert_eq!(vote_accounts.get(&vote_pubkey).unwrap().0, 20);
         }
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_clone_with_epoch() {
         let mut stakes = Stakes::default();
 
@@ -542,7 +542,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stakes_not_delegate() {
         let mut stakes = Stakes {
             epoch: 4,
@@ -575,13 +575,13 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_balance_and_staked_empty() {
         let stakes = Stakes::default();
         assert_eq!(stakes.vote_balance_and_staked(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_balance_and_staked_normal() {
         let mut stakes = Stakes::default();
         impl Stakes {

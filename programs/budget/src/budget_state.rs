@@ -31,13 +31,13 @@ impl BudgetState {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::id;
     use solana_sdk::account::Account;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_serializer() {
         let mut a = Account::new(0, 512, &id());
         let b = BudgetState::default();
@@ -46,7 +46,7 @@ mod test {
         assert_eq!(b, c);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_serializer_data_too_small() {
         let mut a = Account::new(0, 1, &id());
         let b = BudgetState::default();

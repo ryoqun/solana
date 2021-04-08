@@ -3661,7 +3661,7 @@ fn adjust_ulimit_nofile(enforce_ulimit_nofile: bool) -> Result<()> {
     Ok(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use crate::{
@@ -3706,7 +3706,7 @@ pub mod tests {
         entries
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_create_new_ledger() {
         let mint_total = 1_000_000_000_000;
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(mint_total);
@@ -3723,7 +3723,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_get_bytes() {
         // Create enough entries to ensure there are at least two shreds created
         let num_entries = max_ticks_per_n_shreds(1, None) + 1;
@@ -3754,7 +3754,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_write_entries() {
         solana_logger::setup();
         let ledger_path = get_tmp_ledger_path!();
@@ -3853,7 +3853,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_put_get_simple() {
         let ledger_path = get_tmp_ledger_path!();
         let ledger = Blockstore::open(&ledger_path).unwrap();
@@ -3903,7 +3903,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_read_shred_bytes() {
         let slot = 0;
         let (shreds, _) = make_slot_entries(slot, 0, 100);
@@ -3963,7 +3963,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_shred_cleanup_check() {
         let slot = 1;
         let (shreds, _) = make_slot_entries(slot, 0, 100);
@@ -3985,7 +3985,7 @@ pub mod tests {
         assert!(ledger.get_data_shreds(slot, 0, 1, &mut buf).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_data_shreds_basic() {
         // Create enough entries to ensure there are at least two shreds created
         let num_entries = max_ticks_per_n_shreds(1, None) + 1;
@@ -4032,7 +4032,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_data_shreds_reverse() {
         let num_shreds = 10;
         let num_entries = max_ticks_per_n_shreds(num_shreds, None);
@@ -4068,14 +4068,14 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_slots() {
         test_insert_data_shreds_slots("test_insert_data_shreds_slots_single", false);
         test_insert_data_shreds_slots("test_insert_data_shreds_slots_bulk", true);
     }
 
     /*
-        #[cfg(testkun)]
+        #[test]
         pub fn test_iteration_order() {
             let slot = 0;
             let blockstore_path = get_tmp_ledger_path!();
@@ -4115,7 +4115,7 @@ pub mod tests {
         }
     */
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_get_slot_entries1() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -4144,7 +4144,7 @@ pub mod tests {
 
     // This test seems to be unnecessary with introduction of data shreds. There are no
     // guarantees that a particular shred index contains a complete entry
-    #[cfg(testkun)]
+    #[test]
     #[ignore]
     pub fn test_get_slot_entries2() {
         let blockstore_path = get_tmp_ledger_path!();
@@ -4178,7 +4178,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_get_slot_entries3() {
         // Test inserting/fetching shreds which contain multiple entries per shred
         let blockstore_path = get_tmp_ledger_path!();
@@ -4206,7 +4206,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_insert_data_shreds_consecutive() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -4269,7 +4269,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_insert_data_shreds_duplicate() {
         // Create RocksDb ledger
         let blockstore_path = get_tmp_ledger_path!();
@@ -4307,7 +4307,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_data_set_completed_on_insert() {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals { blockstore, .. } =
@@ -4344,7 +4344,7 @@ pub mod tests {
             .is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_new_shreds_signal() {
         // Initialize ledger
         let ledger_path = get_tmp_ledger_path!();
@@ -4428,7 +4428,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_completed_shreds_signal() {
         // Initialize ledger
         let ledger_path = get_tmp_ledger_path!();
@@ -4454,7 +4454,7 @@ pub mod tests {
         assert_eq!(recvr.try_recv().unwrap(), vec![0]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_completed_shreds_signal_orphans() {
         // Initialize ledger
         let ledger_path = get_tmp_ledger_path!();
@@ -4498,7 +4498,7 @@ pub mod tests {
         assert_eq!(recvr.try_recv().unwrap(), vec![slots[1]]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_completed_shreds_signal_many() {
         // Initialize ledger
         let ledger_path = get_tmp_ledger_path!();
@@ -4533,7 +4533,7 @@ pub mod tests {
         assert_eq!(result, slots);
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_handle_chaining_basic() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -4598,7 +4598,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_handle_chaining_missing_slots() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -4682,7 +4682,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     pub fn test_forward_chaining_is_connected() {
         let blockstore_path = get_tmp_ledger_path!();
@@ -4774,7 +4774,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
     /*
-        #[cfg(testkun)]
+        #[test]
         pub fn test_chaining_tree() {
             let blockstore_path = get_tmp_ledger_path!();
             {
@@ -4875,7 +4875,7 @@ pub mod tests {
             Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
         }
     */
-    #[cfg(testkun)]
+    #[test]
     pub fn test_get_slots_since() {
         let blockstore_path = get_tmp_ledger_path!();
 
@@ -4911,7 +4911,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_orphans() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -5046,7 +5046,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_missing_data_indexes() {
         let slot = 0;
         let blockstore_path = get_tmp_ledger_path!();
@@ -5136,7 +5136,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_missing_data_indexes_timeout() {
         let slot = 0;
         let blockstore_path = get_tmp_ledger_path!();
@@ -5176,7 +5176,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_missing_data_indexes_sanity() {
         let slot = 0;
 
@@ -5236,7 +5236,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_no_missing_shred_indexes() {
         let slot = 0;
         let blockstore_path = get_tmp_ledger_path!();
@@ -5264,7 +5264,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_should_insert_data_shred() {
         solana_logger::setup();
         let (mut shreds, _) = make_slot_entries(0, 0, 200);
@@ -5332,7 +5332,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_is_data_shred_present() {
         let (shreds, _) = make_slot_entries(0, 0, 200);
         let blockstore_path = get_tmp_ledger_path!();
@@ -5369,7 +5369,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_check_cache_coding_shred() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -5414,7 +5414,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_should_insert_coding_shred() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -5560,7 +5560,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     pub fn test_insert_multiple_is_last() {
         solana_logger::setup();
         let (shreds, _) = make_slot_entries(0, 0, 20);
@@ -5591,7 +5591,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_slot_data_iterator() {
         // Construct the shreds
         let blockstore_path = get_tmp_ledger_path!();
@@ -5621,7 +5621,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_set_roots() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -5640,7 +5640,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_skipped() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -5659,7 +5659,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_iter_bounds() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -5674,7 +5674,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_completed_data_ranges() {
         let completed_data_end_indexes = vec![2, 4, 9, 11];
 
@@ -5734,7 +5734,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_slot_entries_with_shred_count_corruption() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -5775,7 +5775,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_no_insert_but_modify_slot_meta() {
         // This tests correctness of the SlotMeta in various cases in which a shred
         // that gets filtered out by checks
@@ -5806,7 +5806,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_trusted_insert_shreds() {
         // Make shred for slot 1
         let (shreds1, _) = make_slot_entries(1, 0, 1);
@@ -5830,7 +5830,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_rooted_block() {
         let slot = 10;
         let entries = make_slot_entries_with_transactions(100);
@@ -6000,7 +6000,7 @@ pub mod tests {
         Blockstore::destroy(&ledger_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_persist_transaction_status() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -6124,7 +6124,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_transaction_status_index() {
         let blockstore_path = get_tmp_ledger_path!();
@@ -6331,7 +6331,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_transaction_status() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -6522,7 +6522,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_rooted_transaction() {
         let slot = 2;
         let entries = make_slot_entries_with_transactions(5);
@@ -6619,7 +6619,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_complete_transaction() {
         let slot = 2;
         let entries = make_slot_entries_with_transactions(5);
@@ -6708,7 +6708,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_empty_transaction_status() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -6721,7 +6721,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_confirmed_signatures_for_address() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -6861,7 +6861,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_address_signatures_for_slot() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -6951,7 +6951,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_confirmed_signatures_for_address2() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7356,7 +7356,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::same_item_push)]
     fn test_get_last_hash() {
         let mut entries: Vec<Entry> = vec![];
@@ -7373,7 +7373,7 @@ pub mod tests {
         assert_eq!(get_last_hash(entries_iterator).unwrap(), entries[9].hash);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_map_transactions_to_statuses() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7427,7 +7427,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_write_get_perf_samples() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7459,7 +7459,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_lowest_slot() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7476,7 +7476,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_recovery() {
         let slot = 1;
         let (data_shreds, coding_shreds, leader_schedule_cache) =
@@ -7508,7 +7508,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_index_integrity() {
         let slot = 1;
         let num_entries = 100;
@@ -7708,7 +7708,7 @@ pub mod tests {
         assert_eq!(num_coding_in_index, num_coding);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_slot() {
         let slot = 0;
         let entries1 = make_slot_entries_with_transactions(1);
@@ -7768,7 +7768,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clear_unconfirmed_slot() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7813,7 +7813,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_completed_data_indexes() {
         let mut completed_data_indexes: Vec<u32> = vec![];
         let mut shred_index = ShredIndex::default();
@@ -7828,7 +7828,7 @@ pub mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_completed_data_indexes_out_of_order() {
         let mut completed_data_indexes = vec![];
         let mut shred_index = ShredIndex::default();
@@ -7873,7 +7873,7 @@ pub mod tests {
         assert_eq!(completed_data_indexes, vec![0, 1, 3]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rewards_protobuf_backward_compatability() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7913,7 +7913,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_status_protobuf_backward_compatability() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -7980,7 +7980,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_remove_shred_data_complete_flag() {
         let (mut shreds, entries) = make_slot_entries(0, 0, 1);
 
@@ -8013,7 +8013,7 @@ pub mod tests {
         Entry::new(&Hash::default(), 1, txs)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn erasure_multiple_config() {
         solana_logger::setup();
         let slot = 1;
@@ -8046,7 +8046,7 @@ pub mod tests {
         assert!(ledger.has_duplicate_shreds_in_slot(slot));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_large_num_coding() {
         solana_logger::setup();
         let slot = 1;
@@ -8071,7 +8071,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_last_index() {
         let num_shreds = 2;
         let num_entries = max_ticks_per_n_shreds(num_shreds, None);

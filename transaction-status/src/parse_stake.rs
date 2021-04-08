@@ -192,7 +192,7 @@ fn check_num_stake_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInst
     check_num_accounts(accounts, num, ParsableProgram::Stake)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::{message::Message, pubkey::Pubkey};
@@ -201,7 +201,7 @@ mod test {
         stake_state::{Authorized, Lockup, StakeAuthorize},
     };
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::same_item_push)]
     fn test_parse_stake_instruction() {
         let mut keys: Vec<Pubkey> = vec![];
@@ -450,7 +450,7 @@ mod test {
         assert!(parse_stake(&message.instructions[0], &keys[0..1]).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::same_item_push)]
     fn test_parse_set_lockup() {
         let mut keys: Vec<Pubkey> = vec![];

@@ -29,7 +29,7 @@ use std::{
 };
 use systemstat::Ipv4Addr;
 
-#[cfg(testkun)]
+#[test]
 fn test_rpc_client() {
     solana_logger::setup();
 
@@ -84,7 +84,7 @@ fn test_rpc_client() {
     );
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_slot_subscription() {
     let pubsub_addr = SocketAddr::new(
         IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),

@@ -166,7 +166,7 @@ pub fn print_token_balances(
     Ok(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     // The following unit tests were written for v1.4 using the ProgramTest framework, passing its
     // BanksClient into the `solana-tokens` methods. With the revert to RpcClient in this module

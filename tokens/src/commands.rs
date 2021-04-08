@@ -1035,7 +1035,7 @@ pub fn test_process_distribute_stake_with_client(client: &RpcClient, sender_keyp
     check_output_file(&output_path, &db::open_db(&transaction_db, true).unwrap());
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_core::test_validator::TestValidator;
@@ -1043,7 +1043,7 @@ mod tests {
     use solana_stake_program::stake_instruction::StakeInstruction;
     use solana_transaction_status::TransactionConfirmationStatus;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_token_allocations() {
         let alice = Keypair::new();
         let test_validator = TestValidator::with_no_fees(alice.pubkey());
@@ -1053,7 +1053,7 @@ mod tests {
         test_process_distribute_tokens_with_client(&client, alice, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_transfer_amount_allocations() {
         let alice = Keypair::new();
         let test_validator = TestValidator::with_no_fees(alice.pubkey());
@@ -1063,7 +1063,7 @@ mod tests {
         test_process_distribute_tokens_with_client(&client, alice, Some(sol_to_lamports(1.5)));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_stake_allocations() {
         let alice = Keypair::new();
         let test_validator = TestValidator::with_no_fees(alice.pubkey());
@@ -1073,7 +1073,7 @@ mod tests {
         test_process_distribute_stake_with_client(&client, alice);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_read_allocations() {
         let alice_pubkey = solana_sdk::pubkey::new_rand();
         let allocation = Allocation {
@@ -1112,7 +1112,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_read_allocations_no_lockup() {
         let pubkey0 = solana_sdk::pubkey::new_rand();
         let pubkey1 = solana_sdk::pubkey::new_rand();
@@ -1143,7 +1143,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_read_allocations_malformed() {
         let pubkey0 = solana_sdk::pubkey::new_rand();
@@ -1175,7 +1175,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_read_allocations_transfer_amount() {
         let pubkey0 = solana_sdk::pubkey::new_rand();
         let pubkey1 = solana_sdk::pubkey::new_rand();
@@ -1214,7 +1214,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_apply_previous_transactions() {
         let alice = solana_sdk::pubkey::new_rand();
         let bob = solana_sdk::pubkey::new_rand();
@@ -1243,7 +1243,7 @@ mod tests {
         assert_eq!(allocations[0].recipient, alice.to_string());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_has_same_recipient() {
         let alice_pubkey = solana_sdk::pubkey::new_rand();
         let bob_pubkey = solana_sdk::pubkey::new_rand();
@@ -1294,7 +1294,7 @@ mod tests {
 
     const SET_LOCKUP_INDEX: usize = 4;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_set_stake_lockup() {
         let lockup_date_str = "2021-01-07T00:00:00Z";
         let allocation = Allocation {
@@ -1375,7 +1375,7 @@ mod tests {
         (allocations, args)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_payer_balances_distribute_tokens_single_payer() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
@@ -1459,7 +1459,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_payer_balances_distribute_tokens_separate_payers() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
@@ -1569,7 +1569,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_payer_balances_distribute_stakes_single_payer() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
@@ -1678,7 +1678,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_payer_balances_distribute_stakes_separate_payers() {
         let fees = 10_000;
         let fees_in_sol = lamports_to_sol(fees);
@@ -1755,7 +1755,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_build_messages_dump_db() {
         let client = RpcClient::new_mock("mock_client".to_string());
         let dir = tempdir().unwrap();
@@ -1877,7 +1877,7 @@ mod tests {
         assert_eq!(messages.len(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_send_messages_dump_db() {
         let client = RpcClient::new_mock("mock_client".to_string());
         let dir = tempdir().unwrap();
@@ -1995,7 +1995,7 @@ mod tests {
         assert_eq!(transaction_info.len(), num_records);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_distribute_allocations_dump_db() {
         let sender_keypair = Keypair::new();
         let test_validator = TestValidator::with_no_fees(sender_keypair.pubkey());
@@ -2050,7 +2050,7 @@ mod tests {
         assert_eq!(transaction_info.len(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_log_transaction_confirmations_dump_db() {
         let client = RpcClient::new_mock("mock_client".to_string());
         let dir = tempdir().unwrap();
@@ -2143,7 +2143,7 @@ mod tests {
         assert!(transaction_info[0].finalized_date.is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_finalized_transactions_dump_db() {
         let client = RpcClient::new_mock("mock_client".to_string());
         let dir = tempdir().unwrap();

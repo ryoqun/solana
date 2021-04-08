@@ -66,7 +66,7 @@ impl BlockhashQueue {
     }
 
     /// check if hash is valid
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn check_hash(&self, hash: Hash) -> bool {
         self.ages.get(&hash).is_some()
     }
@@ -131,7 +131,7 @@ impl BlockhashQueue {
         self.max_age
     }
 }
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use bincode::serialize;
@@ -139,7 +139,7 @@ mod tests {
         clock::MAX_RECENT_BLOCKHASHES, hash::hash, sysvar::recent_blockhashes::IterItem,
     };
 
-    #[cfg(testkun)]
+    #[test]
     fn test_register_hash() {
         let last_hash = Hash::default();
         let mut hash_queue = BlockhashQueue::new(100);
@@ -149,7 +149,7 @@ mod tests {
         assert_eq!(hash_queue.hash_height(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reject_old_last_hash() {
         let mut hash_queue = BlockhashQueue::new(100);
         let last_hash = hash(&serialize(&0).unwrap());
@@ -168,7 +168,7 @@ mod tests {
     }
 
     /// test that when max age is 0, that a valid last_hash still passes the age check
-    #[cfg(testkun)]
+    #[test]
     fn test_queue_init_blockhash() {
         let last_hash = Hash::default();
         let mut hash_queue = BlockhashQueue::new(100);
@@ -177,7 +177,7 @@ mod tests {
         assert_eq!(Some(true), hash_queue.check_hash_age(&last_hash, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_recent_blockhashes() {
         let mut blockhash_queue = BlockhashQueue::new(MAX_RECENT_BLOCKHASHES);
         let recent_blockhashes = blockhash_queue.get_recent_blockhashes();

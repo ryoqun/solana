@@ -133,7 +133,7 @@ solana_sdk::pubkeys!(
     ]
 );
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::{
@@ -149,7 +149,7 @@ mod tests {
         Bank::new_from_parent(parent, &Pubkey::default(), parent.slot() + 1)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_non_circulating_supply() {
         let mut accounts: BTreeMap<Pubkey, Account> = BTreeMap::new();
         let balance = 10;

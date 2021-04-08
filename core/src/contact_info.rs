@@ -1,9 +1,9 @@
 use crate::crds_value::MAX_WALLCLOCK;
 use solana_sdk::pubkey::Pubkey;
-#[cfg(testkun)]
+#[cfg(test)]
 use solana_sdk::rpc_port;
 use solana_sdk::sanitize::{Sanitize, SanitizeError};
-#[cfg(testkun)]
+#[cfg(test)]
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::timing::timestamp;
 use std::cmp::{Ord, Ordering, PartialEq, PartialOrd};
@@ -132,7 +132,7 @@ impl ContactInfo {
         ContactInfo::new_localhost(&pubkey, now)
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     /// ContactInfo with multicast addresses for adversarial testing.
     pub fn new_multicast() -> Self {
         let addr = socketaddr!("224.0.1.255:1000");
@@ -154,7 +154,7 @@ impl ContactInfo {
         }
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub(crate) fn new_with_pubkey_socketaddr(pubkey: &Pubkey, bind_addr: &SocketAddr) -> Self {
         fn next_port(addr: &SocketAddr, nxt: u16) -> SocketAddr {
             let mut nxt_addr = *addr;
@@ -188,7 +188,7 @@ impl ContactInfo {
         }
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub(crate) fn new_with_socketaddr(bind_addr: &SocketAddr) -> Self {
         let keypair = Keypair::new();
         Self::new_with_pubkey_socketaddr(&keypair.pubkey(), bind_addr)
@@ -230,11 +230,11 @@ impl ContactInfo {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_valid_address() {
         let bad_address_port = socketaddr!("127.0.0.1:0");
         assert!(!ContactInfo::is_valid_address(&bad_address_port));
@@ -247,7 +247,7 @@ mod tests {
         //        assert!(!ContactInfo::is_valid_ip_internal(loopback.ip(), false));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_default() {
         let ci = ContactInfo::default();
         assert!(ci.gossip.ip().is_unspecified());
@@ -259,7 +259,7 @@ mod tests {
         assert!(ci.unused.ip().is_unspecified());
         assert!(ci.serve_repair.ip().is_unspecified());
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_multicast() {
         let ci = ContactInfo::new_multicast();
         assert!(ci.gossip.ip().is_multicast());
@@ -271,7 +271,7 @@ mod tests {
         assert!(ci.unused.ip().is_multicast());
         assert!(ci.serve_repair.ip().is_multicast());
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_entry_point() {
         let addr = socketaddr!("127.0.0.1:10");
         let ci = ContactInfo::new_gossip_entry_point(&addr);
@@ -284,7 +284,7 @@ mod tests {
         assert!(ci.unused.ip().is_unspecified());
         assert!(ci.serve_repair.ip().is_unspecified());
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_socketaddr() {
         let addr = socketaddr!("127.0.0.1:10");
         let ci = ContactInfo::new_with_socketaddr(&addr);
@@ -298,7 +298,7 @@ mod tests {
         assert_eq!(ci.serve_repair.port(), 16);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn replayed_data_new_with_socketaddr_with_pubkey() {
         let keypair = Keypair::new();
         let d1 = ContactInfo::new_with_pubkey_socketaddr(
@@ -323,7 +323,7 @@ mod tests {
         assert_eq!(d1.serve_repair, socketaddr!("127.0.0.1:1240"));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_valid_client_facing() {
         let mut ci = ContactInfo::default();
         assert_eq!(ci.valid_client_facing_addr(), None);
@@ -333,7 +333,7 @@ mod tests {
         assert!(ci.valid_client_facing_addr().is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sanitize() {
         let mut ci = ContactInfo::default();
         assert_eq!(ci.sanitize(), Ok(()));

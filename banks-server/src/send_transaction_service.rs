@@ -177,7 +177,7 @@ impl SendTransactionService {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::{
@@ -186,7 +186,7 @@ mod test {
     };
     use std::sync::mpsc::channel;
 
-    #[cfg(testkun)]
+    #[test]
     fn service_exit() {
         let tpu_address = "127.0.0.1:0".parse().unwrap();
         let bank = Bank::default();
@@ -200,7 +200,7 @@ mod test {
         send_tranaction_service.join().unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn process_transactions() {
         let (genesis_config, mint_keypair) = create_genesis_config(4);
         let bank = Bank::new(&genesis_config);

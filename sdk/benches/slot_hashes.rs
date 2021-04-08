@@ -8,7 +8,7 @@ use solana_sdk::{
 };
 use test::Bencher;
 
-#[cfg(testkun)]
+#[bench]
 fn bench_to_from_account(b: &mut Bencher) {
     let mut slot_hashes = SlotHashes::new(&[]);
     for i in 0..MAX_ENTRIES {

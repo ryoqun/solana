@@ -288,14 +288,14 @@ impl<K: AsRef<[u8]>, T: Serialize + Clone> StatusCache<K, T> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::{hash::hash, signature::Signature};
 
     type BankStatusCache = StatusCache<Signature, ()>;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_empty_has_no_sigs() {
         let sig = Signature::default();
         let blockhash = hash(Hash::default().as_ref());
@@ -310,7 +310,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_sig_with_ancestor_fork() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -327,7 +327,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_sig_without_ancestor_fork() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -341,7 +341,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_find_sig_with_root_ancestor_fork() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -355,7 +355,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insert_picks_latest_blockhash_fork() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -371,7 +371,7 @@ mod tests {
             .is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_root_expires() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -384,7 +384,7 @@ mod tests {
         assert_eq!(status_cache.get_status(&sig, &blockhash, &ancestors), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clear_signatures_sigs_are_gone() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -396,7 +396,7 @@ mod tests {
         assert_eq!(status_cache.get_status(&sig, &blockhash, &ancestors), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clear_signatures_insert_works() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -410,7 +410,7 @@ mod tests {
             .is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_signatures_slice() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -423,7 +423,7 @@ mod tests {
         assert!(sig_map.get(&sig_slice).is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_slot_deltas() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -438,7 +438,7 @@ mod tests {
         assert_eq!(cache, status_cache);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_roots_deltas() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();
@@ -458,13 +458,13 @@ mod tests {
         assert_eq!(cache, status_cache);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::assertions_on_constants)]
     fn test_age_sanity() {
         assert!(MAX_CACHE_ENTRIES <= MAX_RECENT_BLOCKHASHES);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_clear_slot_signatures() {
         let sig = Signature::default();
         let mut status_cache = BankStatusCache::default();

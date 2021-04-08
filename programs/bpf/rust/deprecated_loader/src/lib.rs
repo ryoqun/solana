@@ -71,11 +71,11 @@ fn process_instruction(
     Ok(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_return_sstruct() {
         assert_eq!(SStruct { x: 1, y: 2, z: 3 }, return_sstruct());
     }

@@ -66,7 +66,7 @@ fn make_concatenated_shreds(num_shreds: usize) -> Vec<u8> {
     data
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_shredder_ticks(bencher: &mut Bencher) {
     let kp = Arc::new(Keypair::new());
     let shred_size = SIZE_OF_DATA_SHRED_PAYLOAD;
@@ -80,7 +80,7 @@ fn bench_shredder_ticks(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_shredder_large_entries(bencher: &mut Bencher) {
     let kp = Arc::new(Keypair::new());
     let shred_size = SIZE_OF_DATA_SHRED_PAYLOAD;
@@ -99,7 +99,7 @@ fn bench_shredder_large_entries(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_deshredder(bencher: &mut Bencher) {
     let kp = Arc::new(Keypair::new());
     let shred_size = SIZE_OF_DATA_SHRED_PAYLOAD;
@@ -115,7 +115,7 @@ fn bench_deshredder(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_deserialize_hdr(bencher: &mut Bencher) {
     let data = vec![0; SIZE_OF_DATA_SHRED_PAYLOAD];
 
@@ -127,7 +127,7 @@ fn bench_deserialize_hdr(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_shredder_coding(bencher: &mut Bencher) {
     let symbol_count = MAX_DATA_SHREDS_PER_FEC_BLOCK as usize;
     let data_shreds = make_shreds(symbol_count);
@@ -141,7 +141,7 @@ fn bench_shredder_coding(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_shredder_decoding(bencher: &mut Bencher) {
     let symbol_count = MAX_DATA_SHREDS_PER_FEC_BLOCK as usize;
     let data_shreds = make_shreds(symbol_count);
@@ -163,7 +163,7 @@ fn bench_shredder_decoding(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_shredder_coding_raptorq(bencher: &mut Bencher) {
     let symbol_count = MAX_DATA_SHREDS_PER_FEC_BLOCK;
     let data = make_concatenated_shreds(symbol_count as usize);
@@ -174,7 +174,7 @@ fn bench_shredder_coding_raptorq(bencher: &mut Bencher) {
     })
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_shredder_decoding_raptorq(bencher: &mut Bencher) {
     let symbol_count = MAX_DATA_SHREDS_PER_FEC_BLOCK;
     let data = make_concatenated_shreds(symbol_count as usize);

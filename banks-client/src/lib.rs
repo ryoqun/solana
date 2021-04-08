@@ -311,7 +311,7 @@ pub async fn start_tcp_client<T: ToSocketAddrs>(addr: T) -> io::Result<BanksClie
     })
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_banks_server::banks_server::start_local_server;
@@ -324,13 +324,13 @@ mod tests {
     use tarpc::transport;
     use tokio::{runtime::Runtime, time::sleep};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_banks_client_new() {
         let (client_transport, _server_transport) = transport::channel::unbounded();
         BanksClient::new(client::Config::default(), client_transport);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_banks_server_transfer_via_server() -> io::Result<()> {
         // This test shows the preferred way to interact with BanksServer.
         // It creates a runtime explicitly (no globals via tokio macros) and calls
@@ -361,7 +361,7 @@ mod tests {
         })
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_banks_server_transfer_via_client() -> io::Result<()> {
         // The caller may not want to hold the connection open until the transaction
         // is processed (or blockhash expires). In this test, we verify the

@@ -36,11 +36,11 @@ impl From<LogCollector> for Vec<String> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub(crate) mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_log_messages_bytes_limit() {
         let lc = LogCollector::default();
 

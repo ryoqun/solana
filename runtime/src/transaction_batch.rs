@@ -44,13 +44,13 @@ impl<'a, 'b> Drop for TransactionBatch<'a, 'b> {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::genesis_utils::{create_genesis_config_with_leader, GenesisConfigInfo};
     use solana_sdk::{signature::Keypair, system_transaction};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_batch() {
         let (bank, txs) = setup();
 
@@ -72,7 +72,7 @@ mod tests {
         assert!(batch2.lock_results().iter().all(|x| x.is_ok()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_simulation_batch() {
         let (bank, txs) = setup();
 

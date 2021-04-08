@@ -304,12 +304,12 @@ impl BankClient {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::{genesis_config::create_genesis_config, instruction::AccountMeta};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_client_new_with_keypairs() {
         let (genesis_config, john_doe_keypair) = create_genesis_config(10_000);
         let john_pubkey = john_doe_keypair.pubkey();

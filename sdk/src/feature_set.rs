@@ -248,11 +248,11 @@ impl FeatureSet {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_full_inflation_features_enabled_devnet_and_testnet() {
         let mut feature_set = FeatureSet::default();
         assert!(feature_set.full_inflation_features_enabled().is_empty());
@@ -268,7 +268,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_full_inflation_features_enabled() {
         // Normal sequence: vote_id then enable_id
         let mut feature_set = FeatureSet::default();

@@ -130,12 +130,12 @@ impl From<Delegation> for UiDelegation {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use bincode::serialize;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_stake() {
         let stake_state = StakeState::Uninitialized;
         let stake_data = serialize(&stake_state).unwrap();

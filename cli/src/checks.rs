@@ -147,7 +147,7 @@ pub fn check_unique_pubkeys(
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
@@ -158,7 +158,7 @@ mod tests {
     use solana_sdk::system_instruction;
     use std::collections::HashMap;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_account_for_fees() {
         let account_balance = 1;
         let account_balance_response = json!(Response {
@@ -218,7 +218,7 @@ mod tests {
         .expect("unexpected result");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_account_for_balance() {
         let account_balance = 50;
         let account_balance_response = json!(Response {
@@ -245,7 +245,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_fee() {
         let fee_calculator = FeeCalculator::new(1);
         // No messages, no fee.
@@ -269,7 +269,7 @@ mod tests {
         assert_eq!(calculate_fee(&fee_calculator, &[&message0, &message1]), 3);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_unique_pubkeys() {
         let pubkey0 = solana_sdk::pubkey::new_rand();
         let pubkey_clone = pubkey0;

@@ -11,7 +11,7 @@ use solana_sdk::pubkey::Pubkey;
 use std::collections::HashMap;
 use test::Bencher;
 
-#[cfg(testkun)]
+#[bench]
 fn bench_find_old_labels(bencher: &mut Bencher) {
     let thread_pool = ThreadPoolBuilder::new().build().unwrap();
     let mut rng = thread_rng();

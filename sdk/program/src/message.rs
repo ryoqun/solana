@@ -485,13 +485,13 @@ impl Message {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{hash, instruction::AccountMeta};
     use std::collections::HashSet;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_program_ids() {
         let program_id0 = Pubkey::default();
         let program_ids = get_program_ids(&[
@@ -501,7 +501,7 @@ mod tests {
         assert_eq!(program_ids, vec![program_id0]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_builtin_program_keys() {
         let keys: HashSet<Pubkey> = BUILTIN_PROGRAMS_KEYS.iter().copied().collect();
         assert_eq!(keys.len(), 10);
@@ -511,7 +511,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_builtin_program_keys_abi_freeze() {
         // Once the feature is flipped on, we can't further modify
         // BUILTIN_PROGRAMS_KEYS without the risk of breaking consensus.
@@ -522,7 +522,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_program_ids_not_adjacent() {
         let program_id0 = Pubkey::default();
         let program_id1 = Pubkey::new_unique();
@@ -534,7 +534,7 @@ mod tests {
         assert_eq!(program_ids, vec![program_id0, program_id1]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_program_ids_order_preserved() {
         let program_id0 = Pubkey::new_unique();
         let program_id1 = Pubkey::default(); // Key less than program_id0
@@ -546,7 +546,7 @@ mod tests {
         assert_eq!(program_ids, vec![program_id0, program_id1]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_both_signed() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -560,7 +560,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id0], vec![], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_signed_and_payer() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -575,7 +575,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id0], vec![], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_unsigned_and_payer() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -590,7 +590,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id0], vec![], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_one_signed() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -604,7 +604,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id0], vec![], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_one_readonly_signed() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -624,7 +624,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id0], vec![], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_one_readonly_unsigned() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -644,7 +644,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![], vec![id0], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_order_preserved() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::new_unique();
@@ -659,7 +659,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![], vec![id0, id1], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_unique_keys_not_adjacent() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -675,7 +675,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id0], vec![id1], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_signed_keys_first() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default();
@@ -690,7 +690,7 @@ mod tests {
         assert_eq!(keys, InstructionKeys::new(vec![id1], vec![id0], 0, 0));
     }
 
-    #[cfg(testkun)]
+    #[test]
     // Ensure there's a way to calculate the number of required signatures.
     fn test_message_signed_keys_len() {
         let program_id = Pubkey::default();
@@ -704,7 +704,7 @@ mod tests {
         assert_eq!(message.header.num_required_signatures, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_readonly_keys_last() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::default(); // Identical key/program_id should be de-duped
@@ -734,7 +734,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_kitchen_sink() {
         let program_id0 = Pubkey::new_unique();
         let program_id1 = Pubkey::new_unique();
@@ -762,7 +762,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_payer_first() {
         let program_id = Pubkey::default();
         let payer = Pubkey::new_unique();
@@ -785,7 +785,7 @@ mod tests {
         assert_eq!(message.header.num_required_signatures, 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_program_last() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::new_unique();
@@ -811,7 +811,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_program_position() {
         let program_id0 = Pubkey::default();
         let program_id1 = Pubkey::new_unique();
@@ -828,7 +828,7 @@ mod tests {
         assert_eq!(message.program_position(2), Some(1));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_writable() {
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
@@ -856,7 +856,7 @@ mod tests {
         assert_eq!(message.is_writable(5, demote_sysvar_write_locks), false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_account_keys_by_lock_type() {
         let program_id = Pubkey::default();
         let id0 = Pubkey::new_unique();
@@ -888,7 +888,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_decompile_instructions() {
         solana_logger::setup();
         let program_id0 = Pubkey::new_unique();
@@ -924,7 +924,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_decompile_instructions_out_of_bounds() {
         solana_logger::setup();
         let program_id0 = Pubkey::new_unique();
@@ -945,7 +945,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_program_ids() {
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
@@ -962,7 +962,7 @@ mod tests {
         assert_eq!(message.program_ids(), vec![&loader2]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_key_passed_to_program() {
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
@@ -982,7 +982,7 @@ mod tests {
         assert!(!message.is_key_passed_to_program(2));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_non_loader_key() {
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
@@ -1002,7 +1002,7 @@ mod tests {
         assert!(!message.is_non_loader_key(&loader2, 2));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_message_header_len_constant() {
         assert_eq!(
             bincode::serialized_size(&MessageHeader::default()).unwrap() as usize,

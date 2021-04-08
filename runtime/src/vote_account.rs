@@ -304,7 +304,7 @@ impl<'de> Deserialize<'de> for VoteAccounts {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use bincode::Options;
@@ -372,7 +372,7 @@ mod tests {
         staked_nodes
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_account() {
         let mut rng = rand::thread_rng();
         let (account, vote_state) = new_rand_vote_account(&mut rng, None);
@@ -384,7 +384,7 @@ mod tests {
         assert_eq!(vote_state, *vote_account.vote_state().as_ref().unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_account_serialize() {
         let mut rng = rand::thread_rng();
         let (account, vote_state) = new_rand_vote_account(&mut rng, None);
@@ -397,7 +397,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_account_deserialize() {
         let mut rng = rand::thread_rng();
         let (account, vote_state) = new_rand_vote_account(&mut rng, None);
@@ -412,7 +412,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_account_round_trip() {
         let mut rng = rand::thread_rng();
         let (account, vote_state) = new_rand_vote_account(&mut rng, None);
@@ -428,7 +428,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_accounts_serialize() {
         let mut rng = rand::thread_rng();
         let vote_accounts_hash_map: HashMap<Pubkey, (u64, ArcVoteAccount)> =
@@ -447,7 +447,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_accounts_deserialize() {
         let mut rng = rand::thread_rng();
         let vote_accounts_hash_map: HashMap<Pubkey, (u64, ArcVoteAccount)> =
@@ -463,7 +463,7 @@ mod tests {
         assert_eq!(vote_accounts.vote_accounts, vote_accounts_hash_map);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_staked_nodes() {
         let mut rng = rand::thread_rng();
         let mut accounts: Vec<_> = new_rand_vote_accounts(&mut rng, 64).take(1024).collect();

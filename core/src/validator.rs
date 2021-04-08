@@ -286,7 +286,7 @@ pub(crate) fn abort() -> ! {
         std::process::exit(1);
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     panic!("process::exit(1) is intercepted for friendly test failure...");
 }
 
@@ -1514,7 +1514,7 @@ pub fn is_snapshot_config_invalid(
             || snapshot_interval_slots % accounts_hash_interval_slots != 0)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_ledger::{create_new_tmp_ledger, genesis_utils::create_genesis_config_with_leader};
@@ -1522,7 +1522,7 @@ mod tests {
     use solana_sdk::poh_config::PohConfig;
     use std::fs::remove_dir_all;
 
-    #[cfg(testkun)]
+    #[test]
     fn validator_exit() {
         solana_logger::setup();
         let leader_keypair = Keypair::new();
@@ -1560,7 +1560,7 @@ mod tests {
         remove_dir_all(validator_ledger_path).unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_backup_and_clear_blockstore() {
         use std::time::Instant;
         solana_logger::setup();
@@ -1597,7 +1597,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn validator_parallel_exit() {
         let leader_keypair = Keypair::new();
         let leader_node = Node::new_localhost_with_pubkey(&leader_keypair.pubkey());
@@ -1644,7 +1644,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_wait_for_supermajority() {
         solana_logger::setup();
         use solana_sdk::hash::hash;
@@ -1709,7 +1709,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_interval_check() {
         assert!(!is_snapshot_config_invalid(0, 100));
         assert!(is_snapshot_config_invalid(1, 100));
@@ -1718,7 +1718,7 @@ mod tests {
         assert!(!is_snapshot_config_invalid(5, 5));
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_poh_speed() {
         solana_logger::setup();
@@ -1735,7 +1735,7 @@ mod tests {
         check_poh_speed(&genesis_config, Some(10_000));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_poh_speed_no_hashes_per_tick() {
         let poh_config = PohConfig {
             target_tick_duration: Duration::from_millis(solana_sdk::clock::MS_PER_TICK),

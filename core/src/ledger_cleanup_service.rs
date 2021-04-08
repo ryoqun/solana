@@ -289,14 +289,14 @@ impl LedgerCleanupService {
         self.t_compact.join()
     }
 }
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_ledger::blockstore::make_many_slot_entries;
     use solana_ledger::get_tmp_ledger_path;
     use std::sync::mpsc::channel;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cleanup1() {
         solana_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
@@ -344,7 +344,7 @@ mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cleanup_speed() {
         solana_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();

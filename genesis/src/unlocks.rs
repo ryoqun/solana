@@ -138,11 +138,11 @@ impl Unlock {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::float_cmp)]
     fn test_make_lockups() {
         // this number just a random val

@@ -16,12 +16,12 @@ where
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use bincode::deserialize;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_default_on_eof() {
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
         struct Foo {
@@ -93,7 +93,7 @@ pub mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_default_on_eof_additional_untagged_fields() {
         // If later fields are not tagged `deserialize_with = "default_on_eof"`, deserialization

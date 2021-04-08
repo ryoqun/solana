@@ -187,12 +187,12 @@ fn slice_data(data: &[u8], data_slice_config: Option<UiDataSliceConfig>) -> &[u8
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_sdk::account::{Account, AccountSharedData};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_slice_data() {
         let data = vec![1, 2, 3, 4, 5];
         let slice_config = Some(UiDataSliceConfig {
@@ -220,7 +220,7 @@ mod test {
         assert_eq!(slice_data(&data, slice_config), &[] as &[u8]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_base64_zstd() {
         let encoded_account = UiAccount::encode(
             &Pubkey::default(),

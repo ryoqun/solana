@@ -48,16 +48,16 @@ pub fn many_args_sret(
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_many_args() {
         assert_eq!(45, many_args(1, 2, 3, 4, 5, 6, 7, 8, 9));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sret() {
         assert_eq!(
             Ret {

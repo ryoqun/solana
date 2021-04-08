@@ -1060,7 +1060,7 @@ pub fn update_accounts_bench(accounts: &Accounts, pubkeys: &[Pubkey], slot: u64)
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::rent_collector::RentCollector;
@@ -1128,7 +1128,7 @@ mod tests {
         load_accounts_with_fee(tx, ka, &fee_calculator, error_counters)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_no_key() {
         let accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1152,7 +1152,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_no_account_0_exists() {
         let accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1178,7 +1178,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_unknown_program_id() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1212,7 +1212,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_insufficient_funds() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1246,7 +1246,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_invalid_account_for_fee() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1276,7 +1276,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_fee_payer_is_nonce() {
         let mut error_counters = ErrorCounters::default();
         let rent_collector = RentCollector::new(
@@ -1351,7 +1351,7 @@ mod tests {
         assert_eq!(*load_res, Err(TransactionError::InsufficientFundsForFee));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_no_loaders() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1392,7 +1392,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_max_call_depth() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1458,7 +1458,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_bad_program_id() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1493,7 +1493,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_bad_owner() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1528,7 +1528,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_not_executable() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1562,7 +1562,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_accounts_multiple_loaders() {
         let mut accounts: Vec<(Pubkey, AccountSharedData)> = Vec::new();
         let mut error_counters = ErrorCounters::default();
@@ -1622,7 +1622,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_by_program_slot() {
         let accounts =
             Accounts::new_with_config(Vec::new(), &ClusterType::Development, HashSet::new(), false);
@@ -1646,7 +1646,7 @@ mod tests {
         assert_eq!(loaded, vec![]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accounts_account_not_found() {
         let accounts =
             Accounts::new_with_config(Vec::new(), &ClusterType::Development, HashSet::new(), false);
@@ -1664,7 +1664,7 @@ mod tests {
         assert_eq!(error_counters.account_not_found, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_accounts_empty_bank_hash() {
         let accounts =
@@ -1672,7 +1672,7 @@ mod tests {
         accounts.bank_hash_at(1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accounts_locks() {
         let keypair0 = Keypair::new();
         let keypair1 = Keypair::new();
@@ -1790,7 +1790,7 @@ mod tests {
             .is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_accounts_locks_multithreaded() {
         let counter = Arc::new(AtomicU64::new(0));
         let exit = Arc::new(AtomicBool::new(false));
@@ -1876,7 +1876,7 @@ mod tests {
         exit.store(true, Ordering::Relaxed);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_collect_accounts_to_store() {
         let keypair0 = Keypair::new();
         let keypair1 = Keypair::new();
@@ -1980,13 +1980,13 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_has_duplicates() {
         assert!(!Accounts::has_duplicates(&[1, 2]));
         assert!(Accounts::has_duplicates(&[1, 2, 1]));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn huge_clean() {
         solana_logger::setup();
         let accounts =
@@ -2029,7 +2029,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_instructions() {
         solana_logger::setup();
         let accounts =
@@ -2111,7 +2111,7 @@ mod tests {
         expect_account == account
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_prepare_if_nonce_account_expected() {
         let (
             pre_account_pubkey,
@@ -2143,7 +2143,7 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_prepare_if_nonce_account_not_nonce_tx() {
         let (
             pre_account_pubkey,
@@ -2167,7 +2167,7 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_prepare_if_nonce_account_not_nonce_pubkey() {
         let (
             pre_account_pubkey,
@@ -2194,7 +2194,7 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_prepare_if_nonce_account_tx_error() {
         let (
             pre_account_pubkey,
@@ -2234,7 +2234,7 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nonced_failure_accounts_rollback_from_pays() {
         let rent_collector = RentCollector::default();
 
@@ -2346,7 +2346,7 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nonced_failure_accounts_rollback_nonce_pays() {
         let rent_collector = RentCollector::default();
 
@@ -2448,7 +2448,7 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_load_largest_accounts() {
         let accounts =
             Accounts::new_with_config(Vec::new(), &ClusterType::Development, HashSet::new(), false);

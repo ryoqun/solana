@@ -312,12 +312,12 @@ fn quote_for_test(
     // escape from nits.sh...
     let p = Ident::new(&("ep".to_owned() + "rintln"), Span::call_site());
     quote! {
-        #[cfg(testkun)]
+        #[cfg(test)]
         mod #test_mod_ident {
             use super::*;
             use ::solana_frozen_abi::abi_example::{AbiExample, AbiEnumVisitor};
 
-            #[cfg(testkun)]
+            #[test]
             fn test_abi_digest() {
                 ::solana_logger::setup();
                 let mut digester = ::solana_frozen_abi::abi_digester::AbiDigester::create();

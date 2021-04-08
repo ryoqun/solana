@@ -399,12 +399,12 @@ fn sanitize_seed_phrase(seed_phrase: &str) -> String {
         .join(" ")
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::system_instruction;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sanitize_seed_phrase() {
         let seed_phrase = " Mary   had\ta\u{2009}little  \n\t lamb";
         assert_eq!(
@@ -413,7 +413,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_signer_info_signers_for_message() {
         let source = Keypair::new();
         let fee_payer = Keypair::new();

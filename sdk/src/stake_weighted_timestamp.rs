@@ -103,12 +103,12 @@ where
     Some(estimate)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub mod tests {
     use super::*;
     use solana_sdk::{account::Account, native_token::sol_to_lamports};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_stake_weighted_timestamp_uses_median() {
         let recent_timestamp: UnixTimestamp = 1_578_909_061;
         let slot = 5;
@@ -315,7 +315,7 @@ pub mod tests {
         assert_eq!(recent_timestamp - bounded, 1578909061); // outliers > 1/2 of available stake can affect timestamp
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_stake_weighted_timestamp_poh() {
         let epoch_start_timestamp: UnixTimestamp = 1_578_909_061;
         let slot = 20;
@@ -447,7 +447,7 @@ pub mod tests {
         assert_eq!(bounded, poh_estimate - acceptable_delta);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_stake_weighted_timestamp_levels() {
         let epoch_start_timestamp: UnixTimestamp = 1_578_909_061;
         let slot = 20;
@@ -587,7 +587,7 @@ pub mod tests {
         assert_eq!(bounded, poh_estimate + acceptable_delta_50);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_stake_weighted_timestamp_fast_slow() {
         let epoch_start_timestamp: UnixTimestamp = 1_578_909_061;
         let slot = 20;
@@ -730,7 +730,7 @@ pub mod tests {
         assert_eq!(bounded, poh_estimate + acceptable_delta_slow);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_calculate_stake_weighted_timestamp_early() {
         let epoch_start_timestamp: UnixTimestamp = 1_578_909_061;
         let slot = 20;

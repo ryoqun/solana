@@ -1150,7 +1150,7 @@ impl MessageProcessor {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::{
@@ -1160,7 +1160,7 @@ mod tests {
         native_loader::create_loadable_account_for_test,
     };
 
-    #[cfg(testkun)]
+    #[test]
     fn test_invoke_context() {
         const MAX_DEPTH: usize = 10;
         let mut program_ids = vec![];
@@ -1269,7 +1269,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_zeroed() {
         const ZEROS_LEN: usize = 1024;
         let mut buf = [0; ZEROS_LEN];
@@ -1291,7 +1291,7 @@ mod tests {
         assert_eq!(PreAccount::is_zeroed(&buf), true);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_references() {
         let accounts = vec![(
             solana_sdk::pubkey::new_rand(),
@@ -1376,7 +1376,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_owner() {
         let system_program_id = system_program::id();
         let alice_program_id = solana_sdk::pubkey::new_rand();
@@ -1438,7 +1438,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_executable() {
         let owner = solana_sdk::pubkey::new_rand();
         let mallory_program_id = solana_sdk::pubkey::new_rand();
@@ -1545,7 +1545,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_data_len() {
         let alice_program_id = solana_sdk::pubkey::new_rand();
 
@@ -1565,7 +1565,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_data() {
         let alice_program_id = solana_sdk::pubkey::new_rand();
         let mallory_program_id = solana_sdk::pubkey::new_rand();
@@ -1594,7 +1594,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_rent_epoch() {
         let alice_program_id = solana_sdk::pubkey::new_rand();
 
@@ -1612,7 +1612,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_deduct_lamports_and_reassign_account() {
         let alice_program_id = solana_sdk::pubkey::new_rand();
         let bob_program_id = solana_sdk::pubkey::new_rand();
@@ -1629,7 +1629,7 @@ mod tests {
     );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_lamports() {
         let alice_program_id = solana_sdk::pubkey::new_rand();
 
@@ -1667,7 +1667,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_account_changes_data_size_changed() {
         let alice_program_id = solana_sdk::pubkey::new_rand();
 
@@ -1694,7 +1694,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_message_readonly_handling() {
         #[derive(Serialize, Deserialize)]
         enum MockSystemInstruction {
@@ -1840,7 +1840,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_message_duplicate_accounts() {
         #[derive(Serialize, Deserialize)]
         enum MockSystemInstruction {
@@ -2010,7 +2010,7 @@ mod tests {
         assert_eq!(accounts[0].borrow().data(), &vec![42]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_cross_program() {
         #[derive(Debug, Serialize, Deserialize)]
         enum MockInstruction {
@@ -2161,7 +2161,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_debug() {
         let mut message_processor = MessageProcessor::default();
         #[allow(clippy::unnecessary_wraps)]

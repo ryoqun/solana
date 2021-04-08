@@ -692,7 +692,7 @@ impl RetransmitStage {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::contact_info::ContactInfo;
@@ -704,7 +704,7 @@ mod tests {
     use solana_perf::packet::{Packet, Packets};
     use std::net::{IpAddr, Ipv4Addr};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_skip_repair() {
         solana_logger::setup();
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(123);
@@ -776,7 +776,7 @@ mod tests {
         assert_eq!(packets.packets[0].meta.repair, false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_already_received() {
         let mut packet = Packet::default();
         let slot = 1;

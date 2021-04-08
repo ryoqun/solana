@@ -17,7 +17,7 @@ use std::{
 };
 use test::Bencher;
 
-#[cfg(testkun)]
+#[bench]
 fn broadcast_shreds_bench(bencher: &mut Bencher) {
     solana_logger::setup();
     let leader_pubkey = pubkey::new_rand();

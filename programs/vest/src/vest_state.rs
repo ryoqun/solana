@@ -115,14 +115,14 @@ impl VestState {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use crate::id;
     use solana_sdk::account::{AccountSharedData, ReadableAccount, WritableAccount};
     use solana_sdk::system_program;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_serializer() {
         let mut a = AccountSharedData::new(0, 512, &id());
         let b = VestState::default();
@@ -131,7 +131,7 @@ mod test {
         assert_eq!(b, c);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_serializer_data_too_small() {
         let mut a = AccountSharedData::new(0, 1, &id());
         let b = VestState::default();
@@ -141,7 +141,7 @@ mod test {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_schedule_after_renege() {
         let total_lamports = 3;
         let mut contract_account = AccountSharedData::new(total_lamports, 512, &id());
@@ -170,7 +170,7 @@ mod test {
         assert_eq!(vest_state.calc_vested_lamports(Utc.ymd(2022, 1, 1)), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vest_all() {
         let total_lamports = 3;
         let mut contract_account = AccountSharedData::new(total_lamports, 512, &id());

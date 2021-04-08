@@ -14,7 +14,7 @@ fn make_instructions() -> Vec<Instruction> {
     vec![inst; 4]
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_bincode_instruction_serialize(b: &mut Bencher) {
     let instructions = make_instructions();
     b.iter(|| {
@@ -22,7 +22,7 @@ fn bench_bincode_instruction_serialize(b: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_manual_instruction_serialize(b: &mut Bencher) {
     let instructions = make_instructions();
     let message = Message::new(&instructions, None);
@@ -33,7 +33,7 @@ fn bench_manual_instruction_serialize(b: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_bincode_instruction_deserialize(b: &mut Bencher) {
     let instructions = make_instructions();
     let serialized = serialize(&instructions).unwrap();
@@ -42,7 +42,7 @@ fn bench_bincode_instruction_deserialize(b: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_manual_instruction_deserialize(b: &mut Bencher) {
     let instructions = make_instructions();
     let message = Message::new(&instructions, None);
@@ -56,7 +56,7 @@ fn bench_manual_instruction_deserialize(b: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_manual_instruction_deserialize_single(b: &mut Bencher) {
     let instructions = make_instructions();
     let message = Message::new(&instructions, None);

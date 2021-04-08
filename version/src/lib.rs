@@ -104,11 +104,11 @@ macro_rules! version {
     };
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_commit() {
         assert_eq!(compute_commit(None), None);
         assert_eq!(compute_commit(Some("1234567890")), Some(0x1234_5678));

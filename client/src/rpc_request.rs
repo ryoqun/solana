@@ -206,13 +206,13 @@ pub enum TokenAccountsFilter {
     ProgramId(Pubkey),
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::rpc_config::RpcTokenAccountsFilter;
     use solana_sdk::commitment_config::{CommitmentConfig, CommitmentLevel};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_build_request_json() {
         let test_request = RpcRequest::GetAccountInfo;
         let addr = json!("deadbeefXjn8o3yroDHxUtKsZZgoy4GPkPPXfouKNHhx");
@@ -257,7 +257,7 @@ mod tests {
         assert_eq!(request["method"], "sendTransaction");
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_build_request_json_config_options() {
         let commitment_config = CommitmentConfig {
             commitment: CommitmentLevel::Finalized,

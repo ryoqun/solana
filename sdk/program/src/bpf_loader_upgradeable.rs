@@ -241,11 +241,11 @@ pub fn close(
     Instruction::new_with_bincode(id(), &UpgradeableLoaderInstruction::Close, metas)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_lengths() {
         assert_eq!(
             4,
@@ -262,7 +262,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_upgrade_instruction() {
         assert_eq!(
             false,

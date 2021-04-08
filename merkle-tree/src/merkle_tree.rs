@@ -177,7 +177,7 @@ impl MerkleTree {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -187,13 +187,13 @@ mod tests {
     ];
     const BAD: &[&[u8]] = &[b"bad", b"missing", b"false"];
 
-    #[cfg(testkun)]
+    #[test]
     fn test_tree_from_empty() {
         let mt = MerkleTree::new::<[u8; 0]>(&[]);
         assert_eq!(mt.get_root(), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_tree_from_one() {
         let input = b"test";
         let mt = MerkleTree::new(&[input]);
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(mt.get_root(), Some(&expected));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_tree_from_many() {
         let mt = MerkleTree::new(TEST);
         // This golden hash will need to be updated whenever the contents of `TEST` change in any
@@ -213,7 +213,7 @@ mod tests {
         assert_eq!(mt.get_root(), Some(&expected));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_path_creation() {
         let mt = MerkleTree::new(TEST);
         for (i, _s) in TEST.iter().enumerate() {
@@ -221,13 +221,13 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_path_creation_bad_index() {
         let mt = MerkleTree::new(TEST);
         assert_eq!(mt.find_path(TEST.len()), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_path_verify_good() {
         let mt = MerkleTree::new(TEST);
         for (i, s) in TEST.iter().enumerate() {
@@ -237,7 +237,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_path_verify_bad() {
         let mt = MerkleTree::new(TEST);
         for (i, s) in BAD.iter().enumerate() {
@@ -247,17 +247,17 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_proof_entry_instantiation_lsib_set() {
         ProofEntry::new(&Hash::default(), Some(&Hash::default()), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_proof_entry_instantiation_rsib_set() {
         ProofEntry::new(&Hash::default(), None, Some(&Hash::default()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nodes_capacity_compute() {
         let iteration_count = |mut leaf_count: usize| -> usize {
             let mut capacity = 0;
@@ -276,13 +276,13 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_proof_entry_instantiation_both_clear() {
         ProofEntry::new(&Hash::default(), None, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic]
     fn test_proof_entry_instantiation_both_set() {
         ProofEntry::new(

@@ -188,7 +188,7 @@ impl OptimisticallyConfirmedBankTracker {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
@@ -197,7 +197,7 @@ mod tests {
     };
     use solana_sdk::pubkey::Pubkey;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_notification() {
         let exit = Arc::new(AtomicBool::new(false));
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(100);

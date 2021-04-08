@@ -161,7 +161,7 @@ impl VoteTracker {
         false
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn insert_vote(&self, slot: Slot, pubkey: Pubkey) {
         let mut w_slot_vote_trackers = self.slot_vote_trackers.write().unwrap();
 
@@ -478,7 +478,7 @@ impl ClusterInfoVoteListener {
         }
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn get_and_process_votes_for_tests(
         gossip_vote_txs_receiver: &VerifiedVoteTransactionsReceiver,
         vote_tracker: &VoteTracker,
@@ -800,7 +800,7 @@ impl ClusterInfoVoteListener {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank;
@@ -818,7 +818,7 @@ mod tests {
     use solana_vote_program::vote_state::Vote;
     use std::collections::BTreeSet;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_vote_tx_fits() {
         solana_logger::setup();
         let node_keypair = Keypair::new();
@@ -904,13 +904,13 @@ mod tests {
         ));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_contains_authorized_voter() {
         run_vote_contains_authorized_voter(None);
         run_vote_contains_authorized_voter(Some(Hash::default()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_new_root() {
         let (vote_tracker, bank, _, _) = setup();
 
@@ -949,7 +949,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_new_leader_schedule_epoch() {
         let (vote_tracker, bank, _, _) = setup();
 
@@ -990,7 +990,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_votes_in_range() {
         // Create some voters at genesis
         let stake_per_validator = 100;
@@ -1197,13 +1197,13 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_votes1() {
         run_test_process_votes(None);
         run_test_process_votes(Some(Hash::default()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_votes2() {
         // Create some voters at genesis
         let (vote_tracker, _, validator_voting_keypairs, subscriptions) = setup();
@@ -1386,13 +1386,13 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_run_test_process_votes3() {
         run_test_process_votes3(None);
         run_test_process_votes3(Some(Hash::default()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_voters_by_epoch() {
         // Create some voters at genesis
         let (vote_tracker, bank, validator_voting_keypairs, _) = setup();
@@ -1445,7 +1445,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_tracker_references() {
         // Create some voters at genesis
         let validator_keypairs: Vec<_> =
@@ -1618,7 +1618,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_votes_empty() {
         solana_logger::setup();
         let votes = vec![];
@@ -1657,7 +1657,7 @@ mod tests {
         verify_packets_len(&packets, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_votes_1_pass() {
         run_test_verify_votes_1_pass(None);
         run_test_verify_votes_1_pass(Some(Hash::default()));
@@ -1675,7 +1675,7 @@ mod tests {
         verify_packets_len(&packets, 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_sum_stake() {
         let (_, bank, validator_voting_keypairs, _) = setup();
         let vote_keypair = &validator_voting_keypairs[0].vote_keypair;
@@ -1690,7 +1690,7 @@ mod tests {
         assert_eq!(gossip_only_stake, 100);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bad_vote() {
         run_test_bad_vote(None);
         run_test_bad_vote(Some(Hash::default()));

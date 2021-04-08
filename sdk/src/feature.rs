@@ -20,11 +20,11 @@ pub fn create_account(feature: &Feature, lamports: u64) -> AccountSharedData {
     account
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
 
-    #[cfg(testkun)]
+    #[test]
     fn feature_deserialize_none() {
         let just_initialized = AccountSharedData::new(42, Feature::size_of(), &id());
         assert_eq!(

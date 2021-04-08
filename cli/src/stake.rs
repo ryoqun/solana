@@ -1961,7 +1961,7 @@ pub fn is_stake_program_v2_enabled(
         .is_some())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::cli::{app, parse_command};
@@ -1979,7 +1979,7 @@ mod tests {
         (String::from(tmp_file.path().to_str().unwrap()), tmp_file)
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_parse_command() {
         let test_commands = app("test", "desc", "version");

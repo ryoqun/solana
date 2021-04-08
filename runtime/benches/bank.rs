@@ -155,31 +155,31 @@ fn do_bench_transactions(
     info!("  {:?} TPS", tps);
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_bank_sync_process_builtin_transactions(bencher: &mut Bencher) {
     do_bench_transactions(bencher, &sync_bencher, &create_builtin_transactions);
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_bank_sync_process_native_loader_transactions(bencher: &mut Bencher) {
     do_bench_transactions(bencher, &sync_bencher, &create_native_loader_transactions);
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_bank_async_process_builtin_transactions(bencher: &mut Bencher) {
     do_bench_transactions(bencher, &async_bencher, &create_builtin_transactions);
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_bank_async_process_native_loader_transactions(bencher: &mut Bencher) {
     do_bench_transactions(bencher, &async_bencher, &create_native_loader_transactions);
 }
 
-#[cfg(testkun)]
+#[bench]
 #[ignore]
 fn bench_bank_update_recent_blockhashes(bencher: &mut Bencher) {
     let (genesis_config, _mint_keypair) = create_genesis_config(100);

@@ -350,7 +350,7 @@ pub struct PruneData {
 
 impl PruneData {
     /// New random PruneData for tests and benchmarks.
-    #[cfg(testkun)]
+    #[cfg(test)]
     fn new_rand<R: Rng>(rng: &mut R, self_keypair: &Keypair, num_nodes: Option<usize>) -> Self {
         let wallclock = crds_value::new_rand_timestamp(rng);
         let num_nodes = num_nodes.unwrap_or_else(|| rng.gen_range(0, MAX_PRUNE_DATA_NODES + 1));
@@ -1697,7 +1697,7 @@ impl ClusterInfo {
         let mut push_queue = self.local_message_pending_push_queue.write().unwrap();
         std::mem::take(&mut *push_queue)
     }
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn flush_push_queue(&self) {
         let pending_push_messages = self.drain_push_queue();
         let mut gossip = self.gossip.write().unwrap();
@@ -3457,7 +3457,7 @@ pub fn stake_weight_peers(
     ClusterInfo::sorted_stakes_with_index(peers, stakes)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
@@ -3474,7 +3474,7 @@ mod tests {
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddrV4};
     use std::sync::Arc;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_gossip_node() {
         //check that a gossip nodes always show up as spies
         let (node, _, _) = ClusterInfo::spy_node(&solana_sdk::pubkey::new_rand(), 0);
@@ -3487,7 +3487,7 @@ mod tests {
         assert!(ClusterInfo::is_spy_node(&node));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_handle_pull() {
         solana_logger::setup();
         let node = Node::new_localhost();
@@ -3540,7 +3540,7 @@ mod tests {
         (keypair, socket)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_handle_pong_messages() {
         let now = Instant::now();
         let mut rng = rand::thread_rng();
@@ -3594,7 +3594,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_handle_ping_messages() {
         let mut rng = rand::thread_rng();
         let this_node = Arc::new(Keypair::new());
@@ -3646,7 +3646,7 @@ mod tests {
         vec![entrypoint_crdsvalue]
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_filter_shred_version() {
         let from = solana_sdk::pubkey::new_rand();
         let my_shred_version = 1;
@@ -3699,7 +3699,7 @@ mod tests {
         assert_eq!(values.len(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_snapshot_hashes_with_push_messages() {
         let mut rng = rand::thread_rng();
         for _ in 0..256 {
@@ -3712,7 +3712,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_snapshot_hashes_with_pull_responses() {
         let mut rng = rand::thread_rng();
         for _ in 0..256 {
@@ -3725,7 +3725,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_prune_data_pubkeys() {
         let mut rng = rand::thread_rng();
         for _ in 0..64 {
@@ -3745,7 +3745,7 @@ mod tests {
         assert!(Packet::from_data(&socket, prune_message).is_err());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_push_message_max_payload_size() {
         let header = Protocol::PushMessage(Pubkey::default(), Vec::default());
         assert_eq!(
@@ -3754,7 +3754,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_shred_max_payload_size() {
         let mut rng = rand::thread_rng();
         let leader = Arc::new(Keypair::new());
@@ -3801,7 +3801,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_pull_response_min_serialized_size() {
         let mut rng = rand::thread_rng();
         for _ in 0..100 {
@@ -3816,7 +3816,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cluster_spy_gossip() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         //check that gossip doesn't try to push to invalid addresses
@@ -3844,14 +3844,14 @@ mod tests {
         });
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cluster_info_new() {
         let d = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = ClusterInfo::new_with_invalid_keypair(d.clone());
         assert_eq!(d.id, cluster_info.id());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn insert_info_test() {
         let d = ContactInfo::new_localhost(&solana_sdk::pubkey::new_rand(), timestamp());
         let cluster_info = ClusterInfo::new_with_invalid_keypair(d);
@@ -3895,7 +3895,7 @@ mod tests {
         check_sockets(&node.sockets.tpu, ip, range);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn new_with_external_ip_test_random() {
         let ip = Ipv4Addr::from(0);
         let node = Node::new_with_external_ip(
@@ -3908,7 +3908,7 @@ mod tests {
         check_node_sockets(&node, IpAddr::V4(ip), VALIDATOR_PORT_RANGE);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn new_with_external_ip_test_gossip() {
         // Can't use VALIDATOR_PORT_RANGE because if this test runs in parallel with others, the
         // port returned by `bind_in_range()` might be snatched up before `Node::new_with_external_ip()` runs
@@ -3930,7 +3930,7 @@ mod tests {
 
     //test that all cluster_info objects only generate signed messages
     //when constructed with keypairs
-    #[cfg(testkun)]
+    #[test]
     fn test_gossip_signature_verification() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         //create new cluster info, leader, and peer
@@ -3973,7 +3973,7 @@ mod tests {
         assert!(val.verify());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_push_vote() {
         let mut rng = rand::thread_rng();
         let keys = Keypair::new();
@@ -4036,7 +4036,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_push_votes_with_tower() {
         let get_vote_slots = |cluster_info: &ClusterInfo, now| -> Vec<Slot> {
             let (labels, _, _) = cluster_info.get_votes(now);
@@ -4098,7 +4098,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_push_epoch_slots() {
         let keys = Keypair::new();
         let contact_info = ContactInfo::new_localhost(&keys.pubkey(), 0);
@@ -4122,7 +4122,7 @@ mod tests {
         assert_eq!(since2, None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_append_entrypoint_to_pulls() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let node_keypair = Arc::new(Keypair::new());
@@ -4165,13 +4165,13 @@ mod tests {
         assert_eq!(*cluster_info.entrypoints.read().unwrap(), vec![entrypoint]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_split_messages_small() {
         let value = CrdsValue::new_unsigned(CrdsData::ContactInfo(ContactInfo::default()));
         test_split_messages(value);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_split_messages_large() {
         let value = CrdsValue::new_unsigned(CrdsData::LowestSlot(
             0,
@@ -4180,7 +4180,7 @@ mod tests {
         test_split_messages(value);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_split_gossip_messages() {
         const NUM_CRDS_VALUES: usize = 2048;
         let mut rng = rand::thread_rng();
@@ -4218,7 +4218,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_split_messages_packet_size() {
         // Test that if a value is smaller than payload size but too large to be wrapped in a vec
         // that it is still dropped
@@ -4257,7 +4257,7 @@ mod tests {
         assert!(split.len() as u64 <= expected_len);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_crds_filter_size() {
         //sanity test to ensure filter size never exceeds MTU size
         check_pull_request_size(CrdsFilter::new_rand(1000, 10));
@@ -4272,7 +4272,7 @@ mod tests {
         assert!(serialized_size(&protocol).unwrap() <= PACKET_DATA_SIZE as u64);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_tvu_peers_and_stakes() {
         let d = ContactInfo::new_localhost(&Pubkey::new(&[0; 32]), timestamp());
         let cluster_info = ClusterInfo::new_with_invalid_keypair(d.clone());
@@ -4318,7 +4318,7 @@ mod tests {
         assert_eq!(peers_and_stakes[1].0, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_pull_from_entrypoint_if_not_present() {
         let thread_pool = ThreadPoolBuilder::new().build().unwrap();
         let node_keypair = Arc::new(Keypair::new());
@@ -4360,7 +4360,7 @@ mod tests {
         assert_eq!(pulls.get(0).unwrap().0, other_node.gossip);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_repair_peers() {
         let node_keypair = Arc::new(Keypair::new());
         let cluster_info = ClusterInfo::new(
@@ -4388,13 +4388,13 @@ mod tests {
         assert_eq!(cluster_info.repair_peers(5).len(), 5);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_max_bloom_size() {
         // check that the constant fits into the dynamic size
         assert!(MAX_BLOOM_SIZE <= max_bloom_size());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_protocol_sanitize() {
         let pd = PruneData {
             wallclock: MAX_WALLCLOCK,
@@ -4404,7 +4404,7 @@ mod tests {
         assert_eq!(msg.sanitize(), Err(SanitizeError::ValueOutOfBounds));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_protocol_prune_message_sanitize() {
         let keypair = Keypair::new();
         let mut prune_data = PruneData {
@@ -4434,7 +4434,7 @@ mod tests {
         PACKET_DATA_SIZE - (protocol_size - filter_size)
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::same_item_push)]
     fn test_push_epoch_slots_large() {
         let node_keypair = Arc::new(Keypair::new());
@@ -4458,7 +4458,7 @@ mod tests {
         assert!(since.is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_size() {
         let slots = vec![1; 32];
         let vote = Vote::new(slots, Hash::default());
@@ -4485,7 +4485,7 @@ mod tests {
         assert!(bincode::serialized_size(&vote).unwrap() <= PUSH_MESSAGE_MAX_PAYLOAD_SIZE as u64);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entrypoint_adopt_shred_version() {
         let node_keypair = Arc::new(Keypair::new());
         let cluster_info = Arc::new(ClusterInfo::new(
@@ -4565,7 +4565,7 @@ mod tests {
         assert_eq!(cluster_info.my_shred_version(), 1); // <-- shred version now adopted from entrypoint2
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_entrypoint_without_adopt_shred_version() {
         let node_keypair = Arc::new(Keypair::new());
         let cluster_info = Arc::new(ClusterInfo::new(
@@ -4606,7 +4606,7 @@ mod tests {
         assert_eq!(cluster_info.my_shred_version(), 2); // <--- No change to shred version
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_retransmit_peers_small() {
         const FANOUT: usize = 3;
         let index = vec![
@@ -4691,7 +4691,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_retransmit_peers_with_fanout_five() {
         const FANOUT: usize = 5;
         const NUM_NODES: usize = 2048;
@@ -4704,7 +4704,7 @@ mod tests {
         assert_eq!(children, vec![511, 1989, 283, 1606, 1154]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_retransmit_peers_large() {
         const FANOUT: usize = 7;
         const NUM_NODES: usize = 512;
@@ -4744,7 +4744,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[serial]
     fn test_pull_request_time_pruning() {
         let node = Node::new_localhost();

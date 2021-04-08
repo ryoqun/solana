@@ -127,7 +127,7 @@ pub fn process_instruction(
     Ok(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{config_instruction, get_config_data, id, ConfigKeys, ConfigState};
@@ -203,7 +203,7 @@ mod tests {
         (config_keypair, config_account)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_create_ok() {
         solana_logger::setup();
         let keys = vec![];
@@ -214,7 +214,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_store_ok() {
         solana_logger::setup();
         let keys = vec![];
@@ -240,7 +240,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_store_fail_instruction_data_too_large() {
         solana_logger::setup();
         let keys = vec![];
@@ -263,7 +263,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_store_fail_account0_not_signer() {
         solana_logger::setup();
         let keys = vec![];
@@ -286,7 +286,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_store_with_additional_signers() {
         solana_logger::setup();
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -327,7 +327,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_store_without_config_signer() {
         solana_logger::setup();
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -355,7 +355,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_store_with_bad_additional_signer() {
         solana_logger::setup();
         let signer0_pubkey = solana_sdk::pubkey::new_rand();
@@ -402,7 +402,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_config_updates() {
         solana_logger::setup();
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -508,7 +508,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_config_updates_requiring_config() {
         solana_logger::setup();
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -587,7 +587,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_config_initialize_no_panic() {
         let from_pubkey = solana_sdk::pubkey::new_rand();
         let config_pubkey = solana_sdk::pubkey::new_rand();
@@ -606,7 +606,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_config_bad_owner() {
         let from_pubkey = solana_sdk::pubkey::new_rand();
         let config_pubkey = solana_sdk::pubkey::new_rand();

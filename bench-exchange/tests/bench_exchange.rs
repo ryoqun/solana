@@ -19,7 +19,7 @@ use solana_sdk::{
 };
 use std::{process::exit, sync::mpsc::channel, time::Duration};
 
-#[cfg(testkun)]
+#[test]
 #[ignore]
 fn test_exchange_local_cluster() {
     solana_logger::setup();
@@ -90,7 +90,7 @@ fn test_exchange_local_cluster() {
     do_bench_exchange(vec![client], config);
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_exchange_bank_client() {
     solana_logger::setup();
     let (genesis_config, identity) = create_genesis_config(100_000_000_000_000);

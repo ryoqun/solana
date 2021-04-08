@@ -899,7 +899,7 @@ where
         self.backend.cf_handle(C::NAME)
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn is_empty(&self) -> Result<bool> {
         let mut iter = self.backend.raw_iterator_cf(self.handle());
         iter.seek_to_first();

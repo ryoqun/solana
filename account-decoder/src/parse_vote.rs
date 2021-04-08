@@ -119,12 +119,12 @@ struct UiEpochCredits {
     previous_credits: StringAmount,
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_vote_program::vote_state::VoteStateVersions;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_vote() {
         let vote_state = VoteState::default();
         let mut vote_account_data: Vec<u8> = vec![0; VoteState::size_of()];

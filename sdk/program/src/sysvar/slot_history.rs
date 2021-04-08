@@ -17,10 +17,10 @@ impl Sysvar for SlotHistory {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(testkun)]
+    #[test]
     fn test_size_of() {
         assert_eq!(
             SlotHistory::size_of(),

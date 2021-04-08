@@ -776,7 +776,7 @@ pub fn create_account(
     create_account_with_authorized(node_pubkey, vote_pubkey, vote_pubkey, commission, lamports)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::vote_state;
@@ -804,7 +804,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_initialize_vote_account() {
         let vote_account_pubkey = solana_sdk::pubkey::new_rand();
         let vote_account = AccountSharedData::new_ref(100, VoteState::size_of(), &id());
@@ -953,7 +953,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_serialize() {
         let mut buffer: Vec<u8> = vec![0; VoteState::size_of()];
         let mut vote_state = VoteState::default();
@@ -969,7 +969,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_voter_registration() {
         let (vote_pubkey, vote_account) = create_test_account();
 
@@ -984,7 +984,7 @@ mod tests {
         assert!(vote_state.votes.is_empty());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote() {
         let (vote_pubkey, vote_account) = create_test_account();
 
@@ -998,7 +998,7 @@ mod tests {
         assert_eq!(vote_state.credits(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_slot_hashes() {
         let (vote_pubkey, vote_account) = create_test_account();
 
@@ -1030,7 +1030,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_update_validator_identity() {
         let (vote_pubkey, _authorized_voter, authorized_withdrawer, vote_account) =
             create_test_account_with_authorized();
@@ -1079,7 +1079,7 @@ mod tests {
         assert_eq!(vote_state.node_pubkey, node_pubkey);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_update_commission() {
         let (vote_pubkey, _authorized_voter, authorized_withdrawer, vote_account) =
             create_test_account_with_authorized();
@@ -1123,7 +1123,7 @@ mod tests {
         assert_eq!(vote_state.commission, u8::MAX);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_signature() {
         let (vote_pubkey, vote_account) = create_test_account();
         let vote = Vote::new(vec![1], Hash::default());
@@ -1306,7 +1306,7 @@ mod tests {
         assert_eq!(res, Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_without_initialization() {
         let vote_pubkey = solana_sdk::pubkey::new_rand();
         let vote_account = RefCell::new(AccountSharedData::new(100, VoteState::size_of(), &id()));
@@ -1319,7 +1319,7 @@ mod tests {
         assert_eq!(res, Err(InstructionError::UninitializedAccount));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_lockout() {
         let (_vote_pubkey, vote_account) = create_test_account();
 
@@ -1351,7 +1351,7 @@ mod tests {
         assert_eq!(vote_state.votes.len(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_double_lockout_after_expiration() {
         let voter_pubkey = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
@@ -1379,7 +1379,7 @@ mod tests {
         check_lockouts(&vote_state);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_expire_multiple_votes() {
         let voter_pubkey = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
@@ -1410,7 +1410,7 @@ mod tests {
         assert_eq!(vote_state.votes[2].confirmation_count, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_credits() {
         let voter_pubkey = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
@@ -1429,7 +1429,7 @@ mod tests {
         assert_eq!(vote_state.credits(), 3);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_vote() {
         let voter_pubkey = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
@@ -1441,7 +1441,7 @@ mod tests {
         assert!(vote_state.nth_recent_vote(2).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nth_recent_vote() {
         let voter_pubkey = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new_for_test(&voter_pubkey);
@@ -1472,7 +1472,7 @@ mod tests {
     }
 
     /// check that two accounts with different data can be brought to the same state with one vote submission
-    #[cfg(testkun)]
+    #[test]
     fn test_process_missed_votes() {
         let account_a = solana_sdk::pubkey::new_rand();
         let mut vote_state_a = VoteState::new_for_test(&account_a);
@@ -1493,7 +1493,7 @@ mod tests {
         assert_eq!(recent_votes(&vote_state_a), recent_votes(&vote_state_b));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_vote_skips_old_vote() {
         let mut vote_state = VoteState::default();
 
@@ -1508,7 +1508,7 @@ mod tests {
         assert_eq!(recent, recent_votes(&vote_state));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_vote_empty_slot_hashes() {
         let vote_state = VoteState::default();
 
@@ -1519,7 +1519,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_new_vote() {
         let vote_state = VoteState::default();
 
@@ -1531,7 +1531,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_bad_hash() {
         let vote_state = VoteState::default();
 
@@ -1543,7 +1543,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_bad_slot() {
         let vote_state = VoteState::default();
 
@@ -1555,7 +1555,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_duplicate_vote() {
         let mut vote_state = VoteState::default();
 
@@ -1568,7 +1568,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_next_vote() {
         let mut vote_state = VoteState::default();
 
@@ -1584,7 +1584,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_slots_are_valid_next_vote_only() {
         let mut vote_state = VoteState::default();
 
@@ -1599,7 +1599,7 @@ mod tests {
             Ok(())
         );
     }
-    #[cfg(testkun)]
+    #[test]
     fn test_process_vote_empty_slots() {
         let mut vote_state = VoteState::default();
 
@@ -1610,7 +1610,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_state_commission_split() {
         let vote_state = VoteState::default();
 
@@ -1634,7 +1634,7 @@ mod tests {
         assert_eq!((voter_portion, staker_portion, was_split), (5, 5, true));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_state_withdraw() {
         let (vote_pubkey, vote_account) = create_test_account();
 
@@ -1728,7 +1728,7 @@ mod tests {
         assert!(post_state.is_uninitialized());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_state_epoch_credits() {
         let mut vote_state = VoteState::default();
 
@@ -1754,7 +1754,7 @@ mod tests {
         assert_eq!(vote_state.epoch_credits().clone(), expected);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_state_epoch0_no_credits() {
         let mut vote_state = VoteState::default();
 
@@ -1766,7 +1766,7 @@ mod tests {
         assert_eq!(vote_state.epoch_credits().len(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_state_increment_credits() {
         let mut vote_state = VoteState::default();
 
@@ -1778,7 +1778,7 @@ mod tests {
         assert!(vote_state.epoch_credits().len() <= MAX_EPOCH_CREDITS_HISTORY);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_process_timestamp() {
         let (slot, timestamp) = (15, 1_575_412_285);
         let mut vote_state = VoteState {
@@ -1832,7 +1832,7 @@ mod tests {
         assert_eq!(vote_state.process_timestamp(0, timestamp), Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_and_update_authorized_voter() {
         let original_voter = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new(
@@ -1892,7 +1892,7 @@ mod tests {
         assert_eq!(vote_state.authorized_voters.len(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_set_new_authorized_voter() {
         let original_voter = solana_sdk::pubkey::new_rand();
         let epoch_offset = 15;
@@ -1991,7 +1991,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_authorized_voter_is_locked_within_epoch() {
         let original_voter = solana_sdk::pubkey::new_rand();
         let mut vote_state = VoteState::new(
@@ -2032,7 +2032,7 @@ mod tests {
         assert_eq!(vote_state.get_authorized_voter(3), Some(new_voter));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_state_max_size() {
         let mut max_sized_data = vec![0; VoteState::size_of()];
         let vote_state = VoteState::get_max_sized_vote_state();
@@ -2057,7 +2057,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_default_vote_state_is_uninitialized() {
         // The default `VoteState` is stored to de-initialize a zero-balance vote account,
         // so must remain such that `VoteStateVersions::is_uninitialized()` returns true
@@ -2065,7 +2065,7 @@ mod tests {
         assert!(VoteStateVersions::new_current(VoteState::default()).is_uninitialized());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_uninitialized_no_deser() {
         // Check all zeroes
         let mut vote_account_data = vec![0; VoteState::size_of()];

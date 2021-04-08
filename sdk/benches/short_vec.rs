@@ -19,7 +19,7 @@ fn create_encoded_vec() -> Vec<u8> {
     bytes
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_short_vec(b: &mut Bencher) {
     b.iter(|| {
         let bytes = test::black_box(create_encoded_short_vec());
@@ -27,7 +27,7 @@ fn bench_short_vec(b: &mut Bencher) {
     });
 }
 
-#[cfg(testkun)]
+#[bench]
 fn bench_vec(b: &mut Bencher) {
     b.iter(|| {
         let bytes = test::black_box(create_encoded_vec());

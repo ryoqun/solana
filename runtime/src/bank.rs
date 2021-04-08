@@ -490,7 +490,7 @@ pub struct NonceRollbackFull {
 }
 
 impl NonceRollbackFull {
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub fn new(
         nonce_address: Pubkey,
         nonce_account: AccountSharedData,
@@ -916,7 +916,7 @@ impl Bank {
         bank
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub(crate) fn new_with_config(
         genesis_config: &GenesisConfig,
         account_indexes: HashSet<AccountIndex>,
@@ -2599,7 +2599,7 @@ impl Bank {
     // Determine if the bank is currently in an upgrade epoch, where only votes are permitted
     fn upgrade_epoch(&self) -> bool {
         match self.cluster_type() {
-            #[cfg(testkun)]
+            #[cfg(test)]
             ClusterType::Development => self.epoch == 0xdead, // Value assumed by `test_upgrade_epoch()`
             #[cfg(not(test))]
             ClusterType::Development => false,
@@ -3240,7 +3240,7 @@ impl Bank {
             })
             .collect::<Vec<(Pubkey, u64)>>();
 
-        #[cfg(testkun)]
+        #[cfg(test)]
         if validator_stakes.is_empty() {
             // some tests bank.freezes() with bad staking state
             self.capitalization
@@ -3378,7 +3378,7 @@ impl Bank {
         inc_new_counter_info!("collect_rent_eagerly-ms", measure.as_ms() as usize);
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     fn restore_old_behavior_for_fragile_tests(&self) {
         self.lazy_rent_collection.store(true, Relaxed);
         self.no_stake_rewrite.store(true, Relaxed);
@@ -4935,7 +4935,7 @@ fn is_simple_vote_transaction(transaction: &Transaction) -> bool {
     false
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub(crate) mod tests {
     use super::*;
     use crate::{
@@ -4982,7 +4982,7 @@ pub(crate) mod tests {
     };
     use std::{result, thread::Builder, time::Duration};
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nonce_rollback_info() {
         let nonce_authority = keypair_from_seed(&[0; 32]).unwrap();
         let nonce_address = nonce_authority.pubkey();
@@ -5047,7 +5047,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_unix_timestamp_from_genesis() {
         let (genesis_config, _mint_keypair) = create_genesis_config(1);
         let mut bank = Arc::new(Bank::new(&genesis_config));
@@ -5067,7 +5067,7 @@ pub(crate) mod tests {
         assert!(bank.unix_timestamp_from_genesis() - genesis_config.creation_time >= 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::float_cmp)]
     fn test_bank_new() {
         let dummy_leader_pubkey = solana_sdk::pubkey::new_rand();
@@ -5105,7 +5105,7 @@ pub(crate) mod tests {
         assert_eq!(rent.lamports_per_byte_year, 5);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_block_height() {
         let (genesis_config, _mint_keypair) = create_genesis_config(1);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -5114,7 +5114,7 @@ pub(crate) mod tests {
         assert_eq!(bank1.block_height(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_update_epoch_stakes() {
         impl Bank {
             fn epoch_stake_keys(&self) -> Vec<Epoch> {
@@ -5176,7 +5176,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_capitalization() {
         let bank0 = Arc::new(Bank::new(&GenesisConfig {
             accounts: (0..42)
@@ -5203,7 +5203,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_credit_debit_rent_no_side_effect_on_hash() {
         solana_logger::setup();
 
@@ -5486,7 +5486,7 @@ pub(crate) mod tests {
         assert_eq!(bank.capitalization(), bank.calculate_capitalization());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_store_account_and_update_capitalization_missing() {
         let (genesis_config, _mint_keypair) = create_genesis_config(0);
         let bank = Bank::new(&genesis_config);
@@ -5503,7 +5503,7 @@ pub(crate) mod tests {
         assert_eq!(account, bank.get_account(&pubkey).unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_store_account_and_update_capitalization_increased() {
         let old_lamports = 400;
         let (genesis_config, mint_keypair) = create_genesis_config(old_lamports);
@@ -5521,7 +5521,7 @@ pub(crate) mod tests {
         assert_eq!(account, bank.get_account(&pubkey).unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_store_account_and_update_capitalization_decreased() {
         let old_lamports = 400;
         let (genesis_config, mint_keypair) = create_genesis_config(old_lamports);
@@ -5539,7 +5539,7 @@ pub(crate) mod tests {
         assert_eq!(account, bank.get_account(&pubkey).unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_store_account_and_update_capitalization_unchanged() {
         let lamports = 400;
         let (genesis_config, mint_keypair) = create_genesis_config(lamports);
@@ -5556,7 +5556,7 @@ pub(crate) mod tests {
         assert_eq!(account, bank.get_account(&pubkey).unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_distribution() {
         solana_logger::setup();
 
@@ -5800,7 +5800,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_distribute_rent_to_validators_overflow() {
         solana_logger::setup();
 
@@ -5844,7 +5844,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_exempt_executable_account() {
         let (mut genesis_config, mint_keypair) = create_genesis_config(100_000);
         genesis_config.rent = Rent {
@@ -5885,7 +5885,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&account_pubkey), account_balance);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_rent_complex() {
         solana_logger::setup();
@@ -6058,7 +6058,7 @@ pub(crate) mod tests {
         assert_eq!(bank.collected_rent.load(Relaxed), rent_collected);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_across_epoch_without_gap() {
         let (genesis_config, _mint_keypair) = create_genesis_config(1);
 
@@ -6075,7 +6075,7 @@ pub(crate) mod tests {
         assert_eq!(bank.rent_collection_partitions(), vec![(0, 0, 64)]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_across_epoch_with_full_gap() {
         let (mut genesis_config, _mint_keypair) = create_genesis_config(1);
         activate_all_features(&mut genesis_config);
@@ -6098,7 +6098,7 @@ pub(crate) mod tests {
         assert_eq!(bank.rent_collection_partitions(), vec![(17, 18, 64)]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_across_epoch_with_half_gap() {
         let (mut genesis_config, _mint_keypair) = create_genesis_config(1);
         activate_all_features(&mut genesis_config);
@@ -6121,7 +6121,7 @@ pub(crate) mod tests {
         assert_eq!(bank.rent_collection_partitions(), vec![(0, 1, 64)]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[allow(clippy::cognitive_complexity)]
     fn test_rent_eager_across_epoch_without_gap_under_multi_epoch_cycle() {
         let leader_pubkey = solana_sdk::pubkey::new_rand();
@@ -6192,7 +6192,7 @@ pub(crate) mod tests {
         assert_eq!(bank.rent_collection_partitions(), vec![(0, 1, 432_000)]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_across_epoch_with_gap_under_multi_epoch_cycle() {
         let leader_pubkey = solana_sdk::pubkey::new_rand();
         let leader_lamports = 3;
@@ -6250,7 +6250,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_with_warmup_epochs_under_multi_epoch_cycle() {
         let leader_pubkey = solana_sdk::pubkey::new_rand();
         let leader_lamports = 3;
@@ -6306,7 +6306,7 @@ pub(crate) mod tests {
         assert_eq!(bank.rent_collection_partitions(), vec![(0, 0, 431_872)]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_under_fixed_cycle_for_development() {
         solana_logger::setup();
         let leader_pubkey = solana_sdk::pubkey::new_rand();
@@ -6376,7 +6376,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_pubkey_range_minimal() {
         let range = Bank::pubkey_range_from_partition((0, 0, 1));
         assert_eq!(
@@ -6385,7 +6385,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_pubkey_range_maximum() {
         let max = !0;
 
@@ -6482,7 +6482,7 @@ pub(crate) mod tests {
         map
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "range start is greater than range end in BTreeMap")]
     fn test_rent_eager_bad_range() {
         let test_map = map_to_test_bad_range();
@@ -6500,7 +6500,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_pubkey_range_noop_range() {
         let test_map = map_to_test_bad_range();
 
@@ -6553,7 +6553,7 @@ pub(crate) mod tests {
         test_map.range(range);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_pubkey_range_dividable() {
         let test_map = map_to_test_bad_range();
         let range = Bank::pubkey_range_from_partition((0, 0, 2));
@@ -6590,7 +6590,7 @@ pub(crate) mod tests {
         test_map.range(range);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_pubkey_range_not_dividable() {
         solana_logger::setup();
 
@@ -6644,7 +6644,7 @@ pub(crate) mod tests {
         test_map.range(range);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_pubkey_range_gap() {
         solana_logger::setup();
 
@@ -6683,7 +6683,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_collect_rent_in_partition() {
         solana_logger::setup();
 
@@ -6766,7 +6766,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_rent_eager_collect_rent_zero_lamport_deterministic() {
         solana_logger::setup();
 
@@ -6825,7 +6825,7 @@ pub(crate) mod tests {
         assert_ne!(hash2_with_zero, Hash::default());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_update_vote_stake_rewards() {
         solana_logger::setup();
 
@@ -7042,7 +7042,7 @@ pub(crate) mod tests {
         bank1.capitalization()
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_update_rewards_determinism() {
         solana_logger::setup();
 
@@ -7057,7 +7057,7 @@ pub(crate) mod tests {
     }
 
     // Test that purging 0 lamports accounts works.
-    #[cfg(testkun)]
+    #[test]
     fn test_purge_empty_accounts() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(500_000);
@@ -7130,7 +7130,7 @@ pub(crate) mod tests {
         assert!(bank1.verify_bank_hash());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_two_payments_to_one_party() {
         let (genesis_config, mint_keypair) = create_genesis_config(10_000);
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -7145,7 +7145,7 @@ pub(crate) mod tests {
         assert_eq!(bank.transaction_count(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_one_source_two_tx_one_batch() {
         let (genesis_config, mint_keypair) = create_genesis_config(1);
         let key1 = solana_sdk::pubkey::new_rand();
@@ -7169,7 +7169,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_signature_status(&t2.signatures[0]), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_one_tx_two_out_atomic_fail() {
         let (genesis_config, mint_keypair) = create_genesis_config(1);
         let key1 = solana_sdk::pubkey::new_rand();
@@ -7188,7 +7188,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&key2), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_one_tx_two_out_atomic_pass() {
         let (genesis_config, mint_keypair) = create_genesis_config(2);
         let key1 = solana_sdk::pubkey::new_rand();
@@ -7205,7 +7205,7 @@ pub(crate) mod tests {
     }
 
     // This test demonstrates that fees are paid even when a program fails.
-    #[cfg(testkun)]
+    #[test]
     fn test_detect_failed_duplicate_transactions() {
         let (mut genesis_config, mint_keypair) = create_genesis_config(2);
         genesis_config.fee_rate_governor = FeeRateGovernor::new(1, 0);
@@ -7234,7 +7234,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&mint_keypair.pubkey()), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_not_found() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(0);
@@ -7247,7 +7247,7 @@ pub(crate) mod tests {
         assert_eq!(bank.transaction_count(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_insufficient_funds() {
         let (genesis_config, mint_keypair) = create_genesis_config(11_000);
         let bank = Bank::new(&genesis_config);
@@ -7269,7 +7269,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&pubkey), 1_000);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transfer_to_newb() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(10_000);
@@ -7279,7 +7279,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&pubkey), 500);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transfer_to_sysvar() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(10_000);
@@ -7300,7 +7300,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&sysvar_pubkey), 501);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_deposit() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100);
         let bank = Bank::new(&genesis_config);
@@ -7317,7 +7317,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&key.pubkey()), 13);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_withdraw() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100);
         let bank = Bank::new(&genesis_config);
@@ -7343,7 +7343,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&key.pubkey()), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_withdraw_from_nonce_account() {
         let (mut genesis_config, _mint_keypair) = create_genesis_config(100_000);
         genesis_config.rent.lamports_per_byte_year = 42;
@@ -7380,7 +7380,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_tx_fee() {
         solana_logger::setup();
 
@@ -7484,7 +7484,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_blockhash_fee_schedule() {
         //solana_logger::setup();
 
@@ -7538,7 +7538,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_filter_program_errors_and_collect_fee() {
         let leader = solana_sdk::pubkey::new_rand();
         let GenesisConfigInfo {
@@ -7581,7 +7581,7 @@ pub(crate) mod tests {
         assert_eq!(results[1], Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_debits_before_credits() {
         let (genesis_config, mint_keypair) = create_genesis_config(2);
         let bank = Bank::new(&genesis_config);
@@ -7606,7 +7606,7 @@ pub(crate) mod tests {
         assert_eq!(bank.transaction_count(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_readonly_accounts() {
         let GenesisConfigInfo {
             genesis_config,
@@ -7682,7 +7682,7 @@ pub(crate) mod tests {
         assert_eq!(results[1], Err(TransactionError::AccountInUse));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_interleaving_locks() {
         let (genesis_config, mint_keypair) = create_genesis_config(3);
         let bank = Bank::new(&genesis_config);
@@ -7724,7 +7724,7 @@ pub(crate) mod tests {
         assert!(bank.transfer(2, &mint_keypair, &bob.pubkey()).is_ok());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_readonly_relaxed_locks() {
         let (genesis_config, _) = create_genesis_config(3);
         let bank = Bank::new(&genesis_config);
@@ -7785,7 +7785,7 @@ pub(crate) mod tests {
         assert!(batch2.lock_results()[0].is_ok());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_invalid_account_index() {
         let (genesis_config, mint_keypair) = create_genesis_config(1);
         let keypair = Keypair::new();
@@ -7813,7 +7813,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_pay_to_self() {
         let (genesis_config, mint_keypair) = create_genesis_config(1);
         let key1 = Keypair::new();
@@ -7835,7 +7835,7 @@ pub(crate) mod tests {
     }
 
     /// Verify that the parent's vector is computed correctly
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_parents() {
         let (genesis_config, _) = create_genesis_config(1);
         let parent = Arc::new(Bank::new(&genesis_config));
@@ -7845,7 +7845,7 @@ pub(crate) mod tests {
     }
 
     /// Verifies that last ids and status cache are correctly referenced from parent
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_parent_duplicate_signature() {
         let (genesis_config, mint_keypair) = create_genesis_config(2);
         let key1 = Keypair::new();
@@ -7862,7 +7862,7 @@ pub(crate) mod tests {
     }
 
     /// Verifies that last ids and accounts are correctly referenced from parent
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_parent_account_spend() {
         let (genesis_config, mint_keypair) = create_genesis_config(2);
         let key1 = Keypair::new();
@@ -7878,7 +7878,7 @@ pub(crate) mod tests {
         assert_eq!(parent.get_signature_status(&tx.signatures[0]), None);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_hash_internal_state() {
         let (genesis_config, mint_keypair) = create_genesis_config(2_000);
         let bank0 = Bank::new(&genesis_config);
@@ -7903,7 +7903,7 @@ pub(crate) mod tests {
         assert!(bank2.verify_bank_hash());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_hash_internal_state_verify() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(2_000);
@@ -7939,7 +7939,7 @@ pub(crate) mod tests {
         assert!(bank3.verify_bank_hash());
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(expected = "assertion failed: self.is_frozen()")]
     fn test_verify_hash_unfrozen() {
         let (genesis_config, _mint_keypair) = create_genesis_config(2_000);
@@ -7947,7 +7947,7 @@ pub(crate) mod tests {
         assert!(bank.verify_hash());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_verify_snapshot_bank() {
         solana_logger::setup();
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -7964,7 +7964,7 @@ pub(crate) mod tests {
     }
 
     // Test that two bank forks with the same accounts should not hash to the same value.
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_hash_internal_state_same_account_different_fork() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(2_000);
@@ -7986,7 +7986,7 @@ pub(crate) mod tests {
         assert_ne!(bank1.hash_internal_state(), bank2.hash_internal_state());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_hash_internal_state_genesis() {
         let bank0 = Bank::new(&create_genesis_config(10).0);
         let bank1 = Bank::new(&create_genesis_config(20).0);
@@ -7995,7 +7995,7 @@ pub(crate) mod tests {
 
     // See that the order of two transfers does not affect the result
     // of hash_internal_state
-    #[cfg(testkun)]
+    #[test]
     fn test_hash_internal_state_order() {
         let (genesis_config, mint_keypair) = create_genesis_config(100);
         let bank0 = Bank::new(&genesis_config);
@@ -8012,7 +8012,7 @@ pub(crate) mod tests {
         assert_eq!(bank0.hash_internal_state(), bank1.hash_internal_state());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_hash_internal_state_error() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(100);
@@ -8031,7 +8031,7 @@ pub(crate) mod tests {
         assert_eq!(orig, bank.hash_internal_state());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_hash_internal_state_squash() {
         let collector_id = Pubkey::default();
         let bank0 = Arc::new(Bank::new(&create_genesis_config(10).0));
@@ -8050,7 +8050,7 @@ pub(crate) mod tests {
     }
 
     /// Verifies that last ids and accounts are correctly referenced from parent
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_squash() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(2);
@@ -8112,7 +8112,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_get_account_in_parent_after_squash() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let parent = Arc::new(Bank::new(&genesis_config));
@@ -8126,7 +8126,7 @@ pub(crate) mod tests {
         assert_eq!(parent.get_balance(&key1.pubkey()), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_get_account_in_parent_after_squash2() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(500);
@@ -8172,7 +8172,7 @@ pub(crate) mod tests {
         assert_eq!(bank4.get_balance(&key1.pubkey()), 8);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_get_account_modified_since_parent() {
         let pubkey = solana_sdk::pubkey::new_rand();
 
@@ -8205,7 +8205,7 @@ pub(crate) mod tests {
         assert_eq!(None, bank3.get_account_modified_since_parent(&pubkey));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_update_sysvar_account() {
         use sysvar::clock::Clock;
 
@@ -8329,7 +8329,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_epoch_vote_accounts() {
         let leader_pubkey = solana_sdk::pubkey::new_rand();
         let leader_lamports = 3;
@@ -8432,7 +8432,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_zero_signatures() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(500);
@@ -8453,7 +8453,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&key.pubkey()), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_get_slots_in_epoch() {
         let (genesis_config, _) = create_genesis_config(500);
 
@@ -8470,7 +8470,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_delta_true() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -8490,7 +8490,7 @@ pub(crate) mod tests {
         assert_eq!(bank1.hash_internal_state(), hash1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_empty() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -8506,7 +8506,7 @@ pub(crate) mod tests {
         assert_eq!(bank0.is_empty(), false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_inherit_tx_count() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -8549,7 +8549,7 @@ pub(crate) mod tests {
         assert_eq!(bank6.transaction_count(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_inherit_fee_rate_governor() {
         let (mut genesis_config, _mint_keypair) = create_genesis_config(500);
         genesis_config
@@ -8567,7 +8567,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_vote_accounts() {
         let GenesisConfigInfo {
             genesis_config,
@@ -8615,7 +8615,7 @@ pub(crate) mod tests {
         assert_eq!(vote_accounts.len(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_cloned_stake_delegations() {
         let GenesisConfigInfo {
             genesis_config,
@@ -8665,7 +8665,7 @@ pub(crate) mod tests {
         assert!(stake_delegations.get(&stake_keypair.pubkey()).is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_fees_account() {
         let (mut genesis_config, _) = create_genesis_config(500);
         genesis_config.fee_rate_governor = FeeRateGovernor::new(12345, 0);
@@ -8680,7 +8680,7 @@ pub(crate) mod tests {
         assert_eq!(fees.fee_calculator.lamports_per_signature, 12345);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_is_delta_with_no_committables() {
         let (genesis_config, mint_keypair) = create_genesis_config(8000);
         let bank = Bank::new(&genesis_config);
@@ -8715,7 +8715,7 @@ pub(crate) mod tests {
         assert!(bank.is_delta.load(Relaxed));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_get_program_accounts() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let parent = Arc::new(Bank::new(&genesis_config));
@@ -8776,7 +8776,7 @@ pub(crate) mod tests {
         assert_eq!(bank3.get_program_accounts(&program_id).len(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_filtered_indexed_accounts() {
         let (genesis_config, _mint_keypair) = create_genesis_config(500);
         let mut account_indexes = HashSet::new();
@@ -8827,7 +8827,7 @@ pub(crate) mod tests {
         assert_eq!(indexed_accounts[0], (address, new_account));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_status_cache_ancestors() {
         solana_logger::setup();
         let (genesis_config, _mint_keypair) = create_genesis_config(500);
@@ -8846,7 +8846,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_builtin() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let mut bank = Bank::new(&genesis_config);
@@ -8903,7 +8903,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_duplicate_static_program() {
         let GenesisConfigInfo {
             genesis_config,
@@ -8958,7 +8958,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_instruction_processor_for_existing_unrelated_accounts() {
         let (genesis_config, _mint_keypair) = create_genesis_config(500);
         let mut bank = Bank::new(&genesis_config);
@@ -9022,7 +9022,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_recent_blockhashes_sysvar() {
         let (genesis_config, _mint_keypair) = create_genesis_config(500);
         let mut bank = Arc::new(Bank::new(&genesis_config));
@@ -9041,7 +9041,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_blockhash_queue_sysvar_consistency() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100_000);
         let mut bank = Arc::new(Bank::new(&genesis_config));
@@ -9056,7 +9056,7 @@ pub(crate) mod tests {
         assert_eq!(sysvar_recent_blockhash, bank_last_blockhash);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_inherit_last_vote_sync() {
         let (genesis_config, _) = create_genesis_config(500);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -9069,7 +9069,7 @@ pub(crate) mod tests {
         assert_eq!(last_ts, 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_hash_internal_state_unchanged() {
         let (genesis_config, _) = create_genesis_config(500);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -9082,7 +9082,7 @@ pub(crate) mod tests {
         assert_ne!(bank0_hash, bank1_hash);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_ticks_change_state() {
         let (genesis_config, _) = create_genesis_config(500);
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -9097,7 +9097,7 @@ pub(crate) mod tests {
     }
 
     #[ignore]
-    #[cfg(testkun)]
+    #[test]
     fn test_banks_leak() {
         fn add_lotsa_stake_accounts(genesis_config: &mut GenesisConfig) {
             const LOTSA: usize = 4_096;
@@ -9229,7 +9229,7 @@ pub(crate) mod tests {
         Ok((bank, mint_keypair, custodian_keypair, nonce_keypair))
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_tx_durable_nonce_ok() {
         let (bank, _mint_keypair, custodian_keypair, nonce_keypair) =
             setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
@@ -9253,7 +9253,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_tx_durable_nonce_not_durable_nonce_fail() {
         let (bank, _mint_keypair, custodian_keypair, nonce_keypair) =
             setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
@@ -9273,7 +9273,7 @@ pub(crate) mod tests {
         assert!(bank.check_tx_durable_nonce(&tx).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_tx_durable_nonce_missing_ix_pubkey_fail() {
         let (bank, _mint_keypair, custodian_keypair, nonce_keypair) =
             setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
@@ -9294,7 +9294,7 @@ pub(crate) mod tests {
         assert!(bank.check_tx_durable_nonce(&tx).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_tx_durable_nonce_nonce_acc_does_not_exist_fail() {
         let (bank, _mint_keypair, custodian_keypair, nonce_keypair) =
             setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
@@ -9316,7 +9316,7 @@ pub(crate) mod tests {
         assert!(bank.check_tx_durable_nonce(&tx).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_tx_durable_nonce_bad_tx_hash_fail() {
         let (bank, _mint_keypair, custodian_keypair, nonce_keypair) =
             setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
@@ -9335,7 +9335,7 @@ pub(crate) mod tests {
         assert!(bank.check_tx_durable_nonce(&tx).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_assign_from_nonce_account_fail() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100_000_000);
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -9362,7 +9362,7 @@ pub(crate) mod tests {
         assert_eq!(bank.process_transaction(&tx), expect);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_durable_nonce_transaction() {
         let (mut bank, _mint_keypair, custodian_keypair, nonce_keypair) =
             setup_nonce_with_bank(10_000_000, |_| {}, 5_000_000, 250_000, None).unwrap();
@@ -9471,7 +9471,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nonce_payer() {
         solana_logger::setup();
         let (mut bank, _mint_keypair, custodian_keypair, nonce_keypair) =
@@ -9515,7 +9515,7 @@ pub(crate) mod tests {
         assert_ne!(nonce_hash, get_nonce_account(&bank, &nonce_pubkey).unwrap());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_nonce_fee_calculator_updates() {
         let (mut genesis_config, mint_keypair) = create_genesis_config(1_000_000);
         genesis_config.rent.lamports_per_byte_year = 0;
@@ -9583,7 +9583,7 @@ pub(crate) mod tests {
         assert_ne!(stored_fee_calculator, fee_calculator);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_collect_balances() {
         let (genesis_config, _mint_keypair) = create_genesis_config(500);
         let parent = Arc::new(Bank::new(&genesis_config));
@@ -9631,7 +9631,7 @@ pub(crate) mod tests {
         assert_eq!(balances[1], vec![8, 11, 1]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_pre_post_transaction_balances() {
         let (mut genesis_config, _mint_keypair) = create_genesis_config(500);
         let fee_rate_governor = FeeRateGovernor::new(1, 0);
@@ -9692,7 +9692,7 @@ pub(crate) mod tests {
         assert_eq!(transaction_balances_set.post_balances[2], vec![8, 0, 1]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_with_duplicate_accounts_in_instruction() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let mut bank = Bank::new(&genesis_config);
@@ -9745,7 +9745,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&to_pubkey), 20);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transaction_with_program_ids_passed_to_programs() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let mut bank = Bank::new(&genesis_config);
@@ -9789,7 +9789,7 @@ pub(crate) mod tests {
         assert_eq!(result, Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_ids_after_program_ids() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(500);
@@ -9826,7 +9826,7 @@ pub(crate) mod tests {
         assert!(account.executable);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_incinerator() {
         let (genesis_config, mint_keypair) = create_genesis_config(1_000_000_000_000);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -9854,7 +9854,7 @@ pub(crate) mod tests {
         assert_eq!(bank.capitalization(), pre_capitalization - burn_amount);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_duplicate_account_key() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(500);
@@ -9888,7 +9888,7 @@ pub(crate) mod tests {
         assert_eq!(result, Err(TransactionError::AccountLoadedTwice));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_program_id_as_payer() {
         solana_logger::setup();
         let (genesis_config, mint_keypair) = create_genesis_config(500);
@@ -9947,7 +9947,7 @@ pub(crate) mod tests {
         Ok(())
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_ref_account_key_after_program_id() {
         let (genesis_config, mint_keypair) = create_genesis_config(500);
         let mut bank = Bank::new(&genesis_config);
@@ -9984,7 +9984,7 @@ pub(crate) mod tests {
         assert_eq!(result, Ok(()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_fuzz_instructions() {
         solana_logger::setup();
         use rand::{thread_rng, Rng};
@@ -10139,7 +10139,7 @@ pub(crate) mod tests {
         info!("results: {:?}", results);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_hash_consistency() {
         solana_logger::setup();
 
@@ -10187,7 +10187,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_same_program_id_uses_unqiue_executable_accounts() {
         fn nested_processor(
             _program_id: &Pubkey,
@@ -10254,7 +10254,7 @@ pub(crate) mod tests {
         pubkey0_size as usize
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_shrink_candidate_slots_cached() {
         solana_logger::setup();
 
@@ -10324,7 +10324,7 @@ pub(crate) mod tests {
         assert_eq!(alive_counts, vec![9, 1, 7]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_process_stale_slot_with_budget() {
         solana_logger::setup();
 
@@ -10372,7 +10372,7 @@ pub(crate) mod tests {
         assert_eq!(consumed_budgets, 10);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_upgrade_epoch() {
         let GenesisConfigInfo {
             mut genesis_config,
@@ -10464,7 +10464,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_balance(&mint_keypair.pubkey()), 496); // no transaction fee charged
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_builtin_no_overwrite() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100_000);
 
@@ -10510,7 +10510,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_builtin_loader_no_overwrite() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100_000);
 
@@ -10546,7 +10546,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_account_modified_slot(&loader_id).unwrap().1, slot);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_native_program() {
         let (mut genesis_config, _mint_keypair) = create_genesis_config(100_000);
         activate_all_features(&mut genesis_config);
@@ -10608,7 +10608,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_native_program_inherited_cap_while_replacing() {
         let (genesis_config, mint_keypair) = create_genesis_config(100_000);
         let bank = Bank::new(&genesis_config);
@@ -10627,7 +10627,7 @@ pub(crate) mod tests {
         assert_eq!(bank.capitalization(), bank.calculate_capitalization());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_add_native_program_squatted_while_not_replacing() {
         let (genesis_config, mint_keypair) = create_genesis_config(100_000);
         let bank = Bank::new(&genesis_config);
@@ -10643,7 +10643,7 @@ pub(crate) mod tests {
         assert_eq!(bank.capitalization(), bank.calculate_capitalization());
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(
         expected = "Can't change frozen bank by adding not-existing new native \
                    program (mock_program, CiXgo2KHKSDmDnV1F6B69eWFgNAPiSBjjYvfB4cvRNre). \
@@ -10666,7 +10666,7 @@ pub(crate) mod tests {
         bank.add_native_program("mock_program", &program_id, false);
     }
 
-    #[cfg(testkun)]
+    #[test]
     #[should_panic(
         expected = "There is no account to replace with native program (mock_program, \
                     CiXgo2KHKSDmDnV1F6B69eWFgNAPiSBjjYvfB4cvRNre)."
@@ -10687,7 +10687,7 @@ pub(crate) mod tests {
         bank.add_native_program("mock_program", &program_id, true);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_reconfigure_token2_native_mint() {
         solana_logger::setup();
 
@@ -10753,7 +10753,7 @@ pub(crate) mod tests {
         assert_eq!(native_mint_account.owner, inline_spl_token_v2_0::id());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_ensure_no_storage_rewards_pool() {
         solana_logger::setup();
 
@@ -10820,7 +10820,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_cached_executors() {
         let key1 = solana_sdk::pubkey::new_rand();
         let key2 = solana_sdk::pubkey::new_rand();
@@ -10855,7 +10855,7 @@ pub(crate) mod tests {
         assert!(cache.get(&key4).is_some());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_executor_cache() {
         solana_logger::setup();
 
@@ -10935,7 +10935,7 @@ pub(crate) mod tests {
         assert!(!executors.borrow().executors.contains_key(&key4));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bank_executor_cow() {
         solana_logger::setup();
 
@@ -10985,7 +10985,7 @@ pub(crate) mod tests {
         assert_eq!(executors.borrow().executors.len(), 1);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_active_feature_set() {
         let (genesis_config, _mint_keypair) = create_genesis_config(100_000);
         let bank0 = Arc::new(Bank::new(&genesis_config));
@@ -11040,7 +11040,7 @@ pub(crate) mod tests {
         assert!(bank.feature_set.is_active(&test_feature));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_spl_token_v2_self_transfer_fix() {
         let (genesis_config, _mint_keypair) = create_genesis_config(0);
         let mut bank = Bank::new(&genesis_config);
@@ -11102,7 +11102,7 @@ pub(crate) mod tests {
         bank.store_account(vote_pubkey, &vote_account);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_clock_timestamp() {
         let leader_pubkey = solana_sdk::pubkey::new_rand();
         let GenesisConfigInfo {
@@ -11195,7 +11195,7 @@ pub(crate) mod tests {
             * Duration::from_nanos(bank.ns_per_slot as u64)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_warp_timestamp_again_feature_slow() {
         fn max_allowable_delta_since_epoch(bank: &Bank, max_allowable_drift: u32) -> i64 {
             let poh_estimate_offset = poh_estimate_offset(bank);
@@ -11293,7 +11293,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_timestamp_fast() {
         fn max_allowable_delta_since_epoch(bank: &Bank, max_allowable_drift: u32) -> i64 {
             let poh_estimate_offset = poh_estimate_offset(bank);
@@ -11335,7 +11335,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_program_is_native_loader() {
         let (genesis_config, mint_keypair) = create_genesis_config(50000);
         let bank = Bank::new(&genesis_config);
@@ -11359,7 +11359,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_bad_native_loader() {
         let (genesis_config, mint_keypair) = create_genesis_config(50000);
         let bank = Bank::new(&genesis_config);
@@ -11420,7 +11420,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_debug_bank() {
         let (genesis_config, _mint_keypair) = create_genesis_config(50000);
         let mut bank = Bank::new(&genesis_config);
@@ -11540,7 +11540,7 @@ pub(crate) mod tests {
         update_thread.join().unwrap();
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_store_scan_consistency_unrooted() {
         for accounts_db_caching_enabled in &[false, true] {
             test_store_scan_consistency(
@@ -11623,7 +11623,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_store_scan_consistency_root() {
         for accounts_db_caching_enabled in &[false, true] {
             test_store_scan_consistency(
@@ -11666,7 +11666,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stake_rewrite() {
         let GenesisConfigInfo { genesis_config, .. } =
             create_genesis_config_with_leader(500, &solana_sdk::pubkey::new_rand(), 1);
@@ -11686,7 +11686,7 @@ pub(crate) mod tests {
         assert_eq!(bank.rewrite_stakes(), (1, 1));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_inflation_start_slot_devnet_testnet() {
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -11767,7 +11767,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_inflation_start_slot(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_inflation_start_slot_mainnet() {
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -11852,7 +11852,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_inflation_start_slot(), 2);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_inflation_num_slots_with_activations() {
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -11916,7 +11916,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_inflation_num_slots(), 2 * slots_per_epoch);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_inflation_num_slots_already_activated() {
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -11935,7 +11935,7 @@ pub(crate) mod tests {
         assert_eq!(bank.get_inflation_num_slots(), 2 * slots_per_epoch);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_stake_vote_account_validity() {
         let validator_vote_keypairs0 = ValidatorVoteKeypairs::new_rand();
         let validator_vote_keypairs1 = ValidatorVoteKeypairs::new_rand();
@@ -11993,7 +11993,7 @@ pub(crate) mod tests {
         assert_eq!(stake_delegation_accounts.len(), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_vote_epoch_panic() {
         let GenesisConfigInfo {
             genesis_config,
@@ -12061,7 +12061,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_tx_log_order() {
         let GenesisConfigInfo {
             genesis_config,
@@ -12134,7 +12134,7 @@ pub(crate) mod tests {
         assert!(failure_log.contains(&"failed".to_string()));
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_get_largest_accounts() {
         let GenesisConfigInfo { genesis_config, .. } =
             create_genesis_config_with_leader(42, &solana_sdk::pubkey::new_rand(), 42);
@@ -12235,7 +12235,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_transfer_sysvar() {
         solana_logger::setup();
         let GenesisConfigInfo {

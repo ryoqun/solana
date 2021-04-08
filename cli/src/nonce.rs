@@ -543,7 +543,7 @@ pub fn process_withdraw_from_nonce_account(
     log_instruction_custom_error::<NonceError>(result, &config)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::cli::{app, parse_command};
@@ -564,7 +564,7 @@ mod tests {
         (String::from(tmp_file.path().to_str().unwrap()), tmp_file)
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_command() {
         let test_commands = app("test", "desc", "version");
         let default_keypair = Keypair::new();
@@ -804,7 +804,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_check_nonce_account() {
         let blockhash = Hash::default();
         let nonce_pubkey = solana_sdk::pubkey::new_rand();
@@ -863,7 +863,7 @@ mod tests {
         }
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_account_identity_ok() {
         let nonce_account = nonce_account::create_account(1).into_inner();
         assert_eq!(account_identity_ok(&nonce_account), Ok(()));
@@ -882,7 +882,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_state_from_account() {
         let mut nonce_account = nonce_account::create_account(1).into_inner();
         assert_eq!(state_from_account(&nonce_account), Ok(State::Uninitialized));
@@ -907,7 +907,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_data_from_helpers() {
         let mut nonce_account = nonce_account::create_account(1).into_inner();
         let state = state_from_account(&nonce_account).unwrap();

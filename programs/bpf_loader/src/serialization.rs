@@ -275,7 +275,7 @@ pub fn deserialize_parameters_aligned(
     Ok(())
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_sdk::{
@@ -291,7 +291,7 @@ mod tests {
         slice::{from_raw_parts, from_raw_parts_mut},
     };
 
-    #[cfg(testkun)]
+    #[test]
     fn test_serialize_parameters() {
         let program_id = solana_sdk::pubkey::new_rand();
         let dup_key = solana_sdk::pubkey::new_rand();

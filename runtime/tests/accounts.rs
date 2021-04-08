@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
-#[cfg(testkun)]
+#[test]
 fn test_shrink_and_clean() {
     solana_logger::setup();
 
@@ -62,7 +62,7 @@ fn test_shrink_and_clean() {
     }
 }
 
-#[cfg(testkun)]
+#[test]
 fn test_bad_bank_hash() {
     solana_logger::setup();
     use solana_sdk::signature::{Keypair, Signer};

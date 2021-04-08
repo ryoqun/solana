@@ -76,7 +76,7 @@ pub fn try_from_slice_unchecked<T: BorshDeserialize>(data: &[u8]) -> Result<T, E
     Ok(result)
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use {
         super::*,
@@ -114,7 +114,7 @@ mod tests {
         pub data: Vec<Child>,
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn unchecked_deserialization() {
         let data = vec![
             Child { data: [0u8; 64] },
@@ -142,7 +142,7 @@ mod tests {
         assert_eq!(deserialized, parent);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn packed_len() {
         assert_eq!(
             get_packed_len::<TestEnum>(),

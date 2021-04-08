@@ -56,12 +56,12 @@ pub fn activate_with_lamports(
     ]
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod test {
     use super::*;
     use solana_program::clock::Slot;
 
-    #[cfg(testkun)]
+    #[test]
     fn feature_sizeof() {
         assert!(
             Feature::size_of() >= bincode::serialized_size(&Feature::default()).unwrap() as usize

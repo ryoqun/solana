@@ -113,7 +113,7 @@ impl EpochStakes {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 pub(crate) mod tests {
     use super::*;
     use solana_sdk::account::AccountSharedData;
@@ -126,7 +126,7 @@ pub(crate) mod tests {
         authorized_voter: Pubkey,
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_parse_epoch_vote_accounts() {
         let stake_per_account = 100;
         let num_vote_accounts_per_node = 2;

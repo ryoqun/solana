@@ -101,7 +101,7 @@ impl ClusterSlots {
             .collect()
     }
 
-    #[cfg(testkun)]
+    #[cfg(test)]
     pub(crate) fn insert_node_id(&self, slot: Slot, node_id: Pubkey) {
         let balance = self
             .validator_stakes
@@ -198,19 +198,19 @@ impl ClusterSlots {
     }
 }
 
-#[cfg(testkun)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use solana_runtime::epoch_stakes::NodeVoteAccounts;
 
-    #[cfg(testkun)]
+    #[test]
     fn test_default() {
         let cs = ClusterSlots::default();
         assert!(cs.cluster_slots.read().unwrap().is_empty());
         assert_eq!(cs.since.load(Ordering::Relaxed), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_noop() {
         let cs = ClusterSlots::default();
         cs.update_internal(0, vec![], None);
@@ -218,7 +218,7 @@ mod tests {
         assert_eq!(cs.since.load(Ordering::Relaxed), 0);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_empty() {
         let cs = ClusterSlots::default();
         let epoch_slot = EpochSlots::default();
@@ -227,7 +227,7 @@ mod tests {
         assert!(cs.lookup(0).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_rooted() {
         //root is 0, so it should clear out the slot
         let cs = ClusterSlots::default();
@@ -238,7 +238,7 @@ mod tests {
         assert!(cs.lookup(0).is_none());
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_new_slot() {
         let cs = ClusterSlots::default();
         let mut epoch_slot = EpochSlots::default();
@@ -257,14 +257,14 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_compute_weights() {
         let cs = ClusterSlots::default();
         let ci = ContactInfo::default();
         assert_eq!(cs.compute_weights(0, &[ci]), vec![1]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_best_peer_2() {
         let cs = ClusterSlots::default();
         let mut c1 = ContactInfo::default();
@@ -286,7 +286,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_best_peer_3() {
         let cs = ClusterSlots::default();
         let mut c1 = ContactInfo::default();
@@ -318,7 +318,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_best_completed_slot_peer() {
         let cs = ClusterSlots::default();
         let mut contact_infos = vec![ContactInfo::default(); 2];
@@ -355,7 +355,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_update_new_staked_slot() {
         let cs = ClusterSlots::default();
         let mut epoch_slot = EpochSlots::default();
@@ -386,7 +386,7 @@ mod tests {
         );
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_generate_repairs() {
         let cs = ClusterSlots::default();
         let mut epoch_slot = EpochSlots::default();
@@ -399,7 +399,7 @@ mod tests {
         )
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_collect_my_slots() {
         let cs = ClusterSlots::default();
         let mut epoch_slot = EpochSlots::default();
@@ -410,7 +410,7 @@ mod tests {
         assert_eq!(slots, vec![1]);
     }
 
-    #[cfg(testkun)]
+    #[test]
     fn test_generate_repairs_existing() {
         let cs = ClusterSlots::default();
         let mut epoch_slot = EpochSlots::default();
