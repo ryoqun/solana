@@ -7,7 +7,7 @@ use futures::{
 use solana_banks_interface::{
     Banks, BanksRequest, BanksResponse, TransactionConfirmationStatus, TransactionStatus,
 };
-use solana_runtime::{bank::Bank, bank_forks::BankForks, commitment::BlockCommitmentCache};
+use solana_runtime::{bank::{Bank, LoadSafety}, bank_forks::BankForks, commitment::BlockCommitmentCache};
 use solana_sdk::{
     account::Account,
     clock::Slot,
@@ -242,7 +242,7 @@ impl Banks for BanksServer {
         commitment: CommitmentLevel,
     ) -> Option<Account> {
         let bank = self.bank(commitment);
-        bank.get_account(&address).map(Account::from)
+        bank.get_account(&address, LoadSafety::Unspecified).map(Account::from)
     }
 }
 

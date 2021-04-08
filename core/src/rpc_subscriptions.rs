@@ -654,7 +654,7 @@ impl RpcSubscriptions {
             .read()
             .unwrap()
             .get(slot)
-            .and_then(|bank| bank.get_account_modified_slot(&pubkey))
+            .and_then(|bank| bank.get_account_modified_slot(&pubkey, LoadSafety::Unspecified))
         {
             slot
         } else {

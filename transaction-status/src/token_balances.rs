@@ -38,7 +38,7 @@ fn get_mint_decimals(bank: &Bank, mint: &Pubkey) -> Option<u8> {
     if mint == &spl_token_v2_0_native_mint() {
         Some(spl_token_v2_0::native_mint::DECIMALS)
     } else {
-        let mint_account = bank.get_account(mint)?;
+        let mint_account = bank.get_account_for_test(mint)?;
 
         let decimals = Mint::unpack(&mint_account.data())
             .map(|mint| mint.decimals)
@@ -89,7 +89,7 @@ pub fn collect_token_balance_from_account(
     account_id: &Pubkey,
     mint_decimals: &mut HashMap<Pubkey, u8>,
 ) -> Option<(String, UiTokenAmount)> {
-    let account = bank.get_account(account_id)?;
+    let account = bank.get_account_for_test(account_id)?;
 
     let token_account = TokenAccount::unpack(&account.data()).ok()?;
     let mint_string = &token_account.mint.to_string();

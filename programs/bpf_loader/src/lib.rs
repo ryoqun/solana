@@ -879,7 +879,7 @@ mod tests {
     use super::*;
     use rand::Rng;
     use solana_runtime::{
-        bank::Bank,
+        bank::{Bank, LoadSafety},
         bank_client::BankClient,
         message_processor::{Executors, ThisInvokeContext},
     };
@@ -1575,6 +1575,7 @@ mod tests {
             "solana_bpf_loader_upgradeable_program",
             bpf_loader_upgradeable::id(),
             process_instruction,
+            LoadSafety::FixedMaxRoot,
         );
         let bank = Arc::new(bank);
         let bank_client = BankClient::new_shared(&bank);
@@ -1623,7 +1624,7 @@ mod tests {
         bank.store_account(&buffer_address, &buffer_account);
         bank.store_account(&program_keypair.pubkey(), &AccountSharedData::default());
         bank.store_account(&programdata_address, &AccountSharedData::default());
-        let before = bank.get_balance(&mint_keypair.pubkey());
+        let before = bank.get_balance_for_test(&mint_keypair.pubkey());
         let message = Message::new(
             &bpf_loader_upgradeable::deploy_with_max_program_len(
                 &mint_keypair.pubkey(),
@@ -1643,12 +1644,12 @@ mod tests {
             )
             .is_ok());
         assert_eq!(
-            bank.get_balance(&mint_keypair.pubkey()),
+            bank.get_balance_for_test(&mint_keypair.pubkey()),
             before - min_program_balance
         );
-        assert_eq!(bank.get_balance(&buffer_address), 0);
-        assert_eq!(None, bank.get_account(&buffer_address));
-        let post_program_account = bank.get_account(&program_keypair.pubkey()).unwrap();
+        assert_eq!(bank.get_balance_for_test(&buffer_address), 0);
+        assert_eq!(None, bank.get_account_for_test(&buffer_address));
+        let post_program_account = bank.get_account_for_test(&program_keypair.pubkey()).unwrap();
         assert_eq!(post_program_account.lamports, min_program_balance);
         assert_eq!(post_program_account.owner, bpf_loader_upgradeable::id());
         assert_eq!(
@@ -1662,7 +1663,7 @@ mod tests {
                 programdata_address
             }
         );
-        let post_programdata_account = bank.get_account(&programdata_address).unwrap();
+        let post_programdata_account = bank.get_account_for_test(&programdata_address).unwrap();
         assert_eq!(post_programdata_account.lamports, min_programdata_balance);
         assert_eq!(post_programdata_account.owner, bpf_loader_upgradeable::id());
         let state: UpgradeableLoaderState = post_programdata_account.state().unwrap();

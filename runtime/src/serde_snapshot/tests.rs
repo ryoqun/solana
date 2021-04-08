@@ -4,7 +4,7 @@ use {
     crate::{
         accounts::{create_test_accounts, Accounts},
         accounts_db::get_temp_accounts_paths,
-        bank::{Bank, StatusCacheRc},
+        bank::{Bank, StatusCacheRc, LoadSafety},
         hardened_unpack::UnpackedAppendVecMap,
     },
     bincode::serialize_into,
@@ -180,7 +180,7 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
     // Test new account
     let key2 = Keypair::new();
     bank2.deposit(&key2.pubkey(), 10);
-    assert_eq!(bank2.get_balance(&key2.pubkey()), 10);
+    assert_eq!(bank2.get_balance_for_test(&key2.pubkey()), 10);
 
     let key3 = Keypair::new();
     bank2.deposit(&key3.pubkey(), 0);
@@ -225,9 +225,9 @@ fn test_bank_serialize_style(serde_style: SerdeStyle) {
     )
     .unwrap();
     dbank.src = ref_sc;
-    assert_eq!(dbank.get_balance(&key1.pubkey()), 0);
-    assert_eq!(dbank.get_balance(&key2.pubkey()), 10);
-    assert_eq!(dbank.get_balance(&key3.pubkey()), 0);
+    assert_eq!(dbank.get_balance_for_test(&key1.pubkey()), 0);
+    assert_eq!(dbank.get_balance_for_test(&key2.pubkey()), 10);
+    assert_eq!(dbank.get_balance_for_test(&key3.pubkey()), 0);
     assert!(bank2 == dbank);
 }
 

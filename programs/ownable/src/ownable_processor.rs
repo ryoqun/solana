@@ -60,7 +60,7 @@ pub fn process_instruction(
 mod tests {
     use super::*;
     use crate::ownable_instruction;
-    use solana_runtime::{bank::Bank, bank_client::BankClient};
+    use solana_runtime::{bank::{Bank, LoadSafety}, bank_client::BankClient};
     use solana_sdk::{
         account::AccountSharedData,
         client::SyncClient,
@@ -74,7 +74,7 @@ mod tests {
     fn create_bank(lamports: u64) -> (Bank, Keypair) {
         let (genesis_config, mint_keypair) = create_genesis_config(lamports);
         let mut bank = Bank::new(&genesis_config);
-        bank.add_builtin("ownable_program", crate::id(), process_instruction);
+        bank.add_builtin("ownable_program", crate::id(), process_instruction, LoadSafety::FixedMaxRoot);
         (bank, mint_keypair)
     }
 

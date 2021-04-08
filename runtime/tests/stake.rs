@@ -1,6 +1,6 @@
 #![allow(clippy::integer_arithmetic)]
 use solana_runtime::{
-    bank::Bank,
+    bank::{Bank, LoadSafety},
     bank_client::BankClient,
     genesis_utils::{create_genesis_config_with_leader, GenesisConfigInfo},
 };
@@ -71,14 +71,14 @@ fn fill_epoch_with_votes(
 }
 
 fn warmed_up(bank: &Bank, stake_pubkey: &Pubkey) -> bool {
-    let stake = StakeState::stake_from(&bank.get_account(stake_pubkey).unwrap()).unwrap();
+    let stake = StakeState::stake_from(&bank.get_account_for_test(stake_pubkey).unwrap()).unwrap();
 
     stake.delegation.stake
         == stake.stake(
             bank.epoch(),
             Some(
                 &from_account::<StakeHistory, _>(
-                    &bank.get_account(&sysvar::stake_history::id()).unwrap(),
+                    &bank.get_account_for_test(&sysvar::stake_history::id()).unwrap(),
                 )
                 .unwrap(),
             ),
@@ -87,13 +87,13 @@ fn warmed_up(bank: &Bank, stake_pubkey: &Pubkey) -> bool {
 }
 
 fn get_staked(bank: &Bank, stake_pubkey: &Pubkey) -> u64 {
-    StakeState::stake_from(&bank.get_account(stake_pubkey).unwrap())
+    StakeState::stake_from(&bank.get_account_for_test(stake_pubkey).unwrap())
         .unwrap()
         .stake(
             bank.epoch(),
             Some(
                 &from_account::<StakeHistory, _>(
-                    &bank.get_account(&sysvar::stake_history::id()).unwrap(),
+                    &bank.get_account_for_test(&sysvar::stake_history::id()).unwrap(),
                 )
                 .unwrap(),
             ),
@@ -314,7 +314,7 @@ fn test_stake_account_lifetime() {
         .expect("failed to create and delegate stake account");
 
     // Test that correct lamports are staked
-    let account = bank.get_account(&stake_pubkey).expect("account not found");
+    let account = bank.get_account_for_test(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
         assert_eq!(stake.delegation.stake, 1_000_000);
@@ -338,7 +338,7 @@ fn test_stake_account_lifetime() {
         .is_err());
 
     // Test that lamports are still staked
-    let account = bank.get_account(&stake_pubkey).expect("account not found");
+    let account = bank.get_account_for_test(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
         assert_eq!(stake.delegation.stake, 1_000_000);
@@ -359,7 +359,7 @@ fn test_stake_account_lifetime() {
     bank = fill_epoch_with_votes(&bank, &vote_keypair, &mint_keypair);
 
     // Test that votes and credits are there
-    let account = bank.get_account(&vote_pubkey).expect("account not found");
+    let account = bank.get_account_for_test(&vote_pubkey).expect("account not found");
     let vote_state: VoteState = StateMut::<VoteStateVersions>::state(&account)
         .expect("couldn't unpack account data")
         .convert_to_current();
@@ -377,7 +377,7 @@ fn test_stake_account_lifetime() {
 
     // Test that balance increased, and that the balance got staked
     let staked = get_staked(&bank, &stake_pubkey);
-    let lamports = bank.get_balance(&stake_pubkey);
+    let lamports = bank.get_balance_for_test(&stake_pubkey);
     assert!(staked > pre_staked);
     assert!(lamports > 1_000_000);
 
@@ -496,8 +496,8 @@ fn test_stake_account_lifetime() {
         .is_ok());
 
     // verify all the math sums to zero
-    assert_eq!(bank.get_balance(&split_stake_pubkey), 0);
-    assert_eq!(bank.get_balance(&stake_pubkey), lamports - lamports / 2);
+    assert_eq!(bank.get_balance_for_test(&split_stake_pubkey), 0);
+    assert_eq!(bank.get_balance_for_test(&stake_pubkey), lamports - lamports / 2);
 }
 
 #[test]
@@ -564,7 +564,7 @@ fn test_create_stake_account_from_seed() {
         .expect("failed to create and delegate stake account");
 
     // Test that correct lamports are staked
-    let account = bank.get_account(&stake_pubkey).expect("account not found");
+    let account = bank.get_account_for_test(&stake_pubkey).expect("account not found");
     let stake_state = account.state().expect("couldn't unpack account data");
     if let StakeState::Stake(_meta, stake) = stake_state {
         assert_eq!(stake.delegation.stake, 1_000_000);

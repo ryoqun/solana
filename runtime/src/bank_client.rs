@@ -1,4 +1,4 @@
-use crate::bank::Bank;
+use crate::bank::{Bank, LoadSafety};
 use solana_sdk::{
     account::Account,
     client::{AsyncClient, Client, SyncClient},
@@ -115,12 +115,12 @@ impl SyncClient for BankClient {
     fn get_account_data(&self, pubkey: &Pubkey) -> Result<Option<Vec<u8>>> {
         Ok(self
             .bank
-            .get_account(pubkey)
+            .get_account(pubkey, LoadSafety::Unspecified)
             .map(|account| Account::from(account).data))
     }
 
     fn get_account(&self, pubkey: &Pubkey) -> Result<Option<Account>> {
-        Ok(self.bank.get_account(pubkey).map(Account::from))
+        Ok(self.bank.get_account(pubkey, LoadSafety::Unspecified).map(Account::from))
     }
 
     fn get_account_with_commitment(
@@ -128,11 +128,11 @@ impl SyncClient for BankClient {
         pubkey: &Pubkey,
         _commitment_config: CommitmentConfig,
     ) -> Result<Option<Account>> {
-        Ok(self.bank.get_account(pubkey).map(Account::from))
+        Ok(self.bank.get_account(pubkey, LoadSafety::Unspecified).map(Account::from))
     }
 
     fn get_balance(&self, pubkey: &Pubkey) -> Result<u64> {
-        Ok(self.bank.get_balance(pubkey))
+        Ok(self.bank.get_balance(pubkey, LoadSafety::Unspecified))
     }
 
     fn get_balance_with_commitment(
@@ -140,7 +140,7 @@ impl SyncClient for BankClient {
         pubkey: &Pubkey,
         _commitment_config: CommitmentConfig,
     ) -> Result<u64> {
-        Ok(self.bank.get_balance(pubkey))
+        Ok(self.bank.get_balance(pubkey, LoadSafety::Unspecified))
     }
 
     fn get_minimum_balance_for_rent_exemption(&self, data_len: usize) -> Result<u64> {

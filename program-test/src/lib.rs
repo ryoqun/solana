@@ -638,7 +638,7 @@ impl ProgramTest {
             solana_bpf_loader_deprecated_program!(),
             solana_bpf_loader_program!(),
         ] {
-            bank.add_builtin(&loader.0, loader.1, loader.2);
+            bank.add_builtin_for_test(&loader.0, loader.1, loader.2);
         }
 
         // Add commonly-used SPL programs as a convenience to the user
@@ -648,7 +648,7 @@ impl ProgramTest {
 
         // User-supplied additional builtins
         for builtin in self.builtins.iter() {
-            bank.add_builtin(
+            bank.add_builtin_for_test(
                 &builtin.name,
                 builtin.id,
                 builtin.process_instruction_with_context,
@@ -656,7 +656,7 @@ impl ProgramTest {
         }
 
         for (address, account) in self.accounts.iter() {
-            if bank.get_account(&address).is_some() {
+            if bank.get_account_for_test(&address).is_some() {
                 info!("Overriding account at {}", address);
             }
             bank.store_account(&address, &account);
@@ -850,7 +850,7 @@ impl ProgramTestContext {
         let bank = bank_forks.working_bank();
 
         // generate some vote activity for rewards
-        let mut vote_account = bank.get_account(vote_account_address).unwrap();
+        let mut vote_account = bank.get_account_for_test(vote_account_address).unwrap();
         let mut vote_state = VoteState::from(&vote_account).unwrap();
 
         let epoch = bank.epoch();

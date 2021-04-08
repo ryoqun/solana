@@ -423,6 +423,7 @@ impl AccountsBackgroundService {
 mod test {
     use super::*;
     use crate::genesis_utils::create_genesis_config;
+    use crate::bank::LoadSafety;
     use crossbeam_channel::unbounded;
     use solana_sdk::{account::AccountSharedData, pubkey::Pubkey};
 
@@ -442,7 +443,7 @@ mod test {
             &account_key,
             &AccountSharedData::new(264, 0, &Pubkey::default()),
         );
-        assert!(bank0.get_account(&account_key).is_some());
+        assert!(bank0.get_account(&account_key, LoadSafety::FixedMaxRoot).is_some());
         pruned_banks_sender.send(0).unwrap();
 
         assert!(!bank0.rc.accounts.scan_slot(0, |_| Some(())).is_empty());

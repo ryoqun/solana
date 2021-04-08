@@ -188,6 +188,7 @@ impl Versioned for (u64, AccountInfo) {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum LoadSafety {
     // Caller guarantee that an assumption that it's loading transactions 
     // for a block which is descended from the current root, and at the 
@@ -2311,20 +2312,20 @@ impl AccountsDb {
         self.do_load(ancestors, pubkey, None, load_safety)
     }
 
-    pub fn load_without_fixed_root(
-        &self,
-        ancestors: &Ancestors,
-        pubkey: &Pubkey,
-    ) -> Option<(AccountSharedData, Slot)> {
-        self.load(ancestors, pubkey, false)
-    }
-
     pub fn load_with_fixed_root(
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.load(ancestors, pubkey, true)
+        self.load(ancestors, pubkey, LoadSafety::FixedMaxRoot)
+    }
+
+    pub fn load_without_fixed_root(
+        &self,
+        ancestors: &Ancestors,
+        pubkey: &Pubkey,
+    ) -> Option<(AccountSharedData, Slot)> {
+        self.load(ancestors, pubkey, LoadSafety::Unspecified)
     }
 
     fn read_index_for_accessor(
@@ -2490,7 +2491,7 @@ impl AccountsDb {
                             // find more up to date entries than the current `slot`
                             assert!(num_acceptable_failed_iterations <= 1);
                         },
-                        LoadSafety::Unspecified {
+                        LoadSafety::Unspecified => {
                             // Because newer root can be added to the index (= not fixed),
                             // multiple flush race conditions can be observed under very rare
                             // condition, at least theoretically
@@ -2526,7 +2527,7 @@ impl AccountsDb {
                             //
                             // eh, no code in this branch? yes!
                         },
-                        LoadSafety::Unspecified {
+                        LoadSafety::Unspecified => {
                             // RPC get_account() may have fetched an old root from the index that was
                             // either:
                             // 1) Cleaned up by clean_accounts(), so the accounts index has been updated
@@ -2545,7 +2546,7 @@ impl AccountsDb {
                 // accounts/purge_slots
                 let message = format!(
                     "do_load() failed to get key: {} from storage, latest attempt was for \
-                     slot: {}, storage_entry: {} offset: {}, load_safety: {}",
+                     slot: {}, storage_entry: {} offset: {}, load_safety: {:?}",
                     pubkey, slot, store_id, offset, load_safety,
                 );
                 datapoint_warn!("accounts_db-do_load_warn", ("warn", message, String));
@@ -2579,7 +2580,7 @@ impl AccountsDb {
                 // For details, see the comment in AccountIndex::do_checked_scan_accounts(),
                 // which is referring back here.
                 panic!(
-                    "Bad index entry detected ({}, {}, {}, {}, {})",
+                    "Bad index entry detected ({}, {}, {}, {}, {:?})",
                     pubkey, slot, store_id, offset, load_safety
                 );
             }
@@ -9065,7 +9066,7 @@ pub mod tests {
         // Clean should not remove anything yet as nothing has been flushed
         db.clean_accounts(None);
         let account = db
-            .do_load(&Ancestors::default(), &account_key, Some(0), false)
+            .do_load(&Ancestors::default(), &account_key, Some(0), LoadSafety::Unspecified)
             .unwrap();
         assert_eq!(account.0.lamports, 0);
         // since this item is in the cache, it should not be in the read only cache
@@ -9076,7 +9077,7 @@ pub mod tests {
         db.flush_accounts_cache(true, None);
         db.clean_accounts(None);
         assert!(db
-            .do_load(&Ancestors::default(), &account_key, Some(0), false)
+            .do_load(&Ancestors::default(), &account_key, Some(0), LoadSafety::Unspecified)
             .is_none());
     }
 
@@ -9267,7 +9268,7 @@ pub mod tests {
         // Intra cache cleaning should not clean the entry for `account_key` from slot 0,
         // even though it was updated in slot `2` because of the ongoing scan
         let account = db
-            .do_load(&Ancestors::default(), &account_key, Some(0), false)
+            .do_load(&Ancestors::default(), &account_key, Some(0), LoadSafety::Unspecified)
             .unwrap();
         assert_eq!(account.0.lamports, zero_lamport_account.lamports);
 
@@ -9275,7 +9276,7 @@ pub mod tests {
         // because we're still doing a scan on it.
         db.clean_accounts(None);
         let account = db
-            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), false)
+            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), LoadSafety::Unspecified)
             .unwrap();
         assert_eq!(account.0.lamports, slot1_account.lamports);
 
@@ -9284,14 +9285,14 @@ pub mod tests {
         scan_tracker.exit().unwrap();
         db.clean_accounts(None);
         let account = db
-            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), false)
+            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), LoadSafety::Unspecified)
             .unwrap();
         assert_eq!(account.0.lamports, slot1_account.lamports);
 
         // Simulate dropping the bank, which finally removes the slot from the cache
         db.purge_slot(1);
         assert!(db
-            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), false)
+            .do_load(&scan_ancestors, &account_key, Some(max_scan_root), LoadSafety::Unspecified)
             .is_none());
     }
 
@@ -9427,7 +9428,7 @@ pub mod tests {
         // a smaller max root
         for key in &keys {
             assert!(accounts_db
-                .do_load(&Ancestors::default(), key, Some(last_dead_slot), false)
+                .do_load(&Ancestors::default(), key, Some(last_dead_slot), LoadSafety::Unspecified)
                 .is_some());
         }
 
@@ -9450,7 +9451,7 @@ pub mod tests {
         // as those have been purged from the accounts index for the dead slots.
         for key in &keys {
             assert!(accounts_db
-                .do_load(&Ancestors::default(), key, Some(last_dead_slot), false)
+                .do_load(&Ancestors::default(), key, Some(last_dead_slot), LoadSafety::Unspecified)
                 .is_none());
         }
         // Each slot should only have one entry in the storage, since all other accounts were
@@ -9958,7 +9959,7 @@ pub mod tests {
 
     fn start_load_thread(
         no_account_with_retry: Option<bool>, // silly tribool!
-        load_safety: LoadSafety
+        load_safety: LoadSafety,
         ancestors: Ancestors,
         db: Arc<AccountsDb>,
         exit: Arc<AtomicBool>,

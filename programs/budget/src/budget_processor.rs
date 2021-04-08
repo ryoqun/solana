@@ -245,7 +245,7 @@ mod tests {
     use super::*;
     use crate::budget_instruction;
     use crate::id;
-    use solana_runtime::bank::Bank;
+    use solana_runtime::bank::{Bank, LoadSafety};
     use solana_runtime::bank_client::BankClient;
     use solana_sdk::account::{Account, AccountSharedData};
     use solana_sdk::client::SyncClient;
@@ -259,7 +259,7 @@ mod tests {
     fn create_bank(lamports: u64) -> (Bank, Keypair) {
         let (genesis_config, mint_keypair) = create_genesis_config(lamports);
         let mut bank = Bank::new(&genesis_config);
-        bank.add_builtin("budget_program", id(), process_instruction);
+        bank.add_builtin("budget_program", id(), process_instruction, LoadSafety::FixedMaxRoot);
         (bank, mint_keypair)
     }
 
@@ -547,7 +547,7 @@ mod tests {
         });
         bank.store_account(&game_pubkey, &game_account);
         assert_eq!(
-            bank.get_account(&game_pubkey).unwrap().data(),
+            bank.get_account_for_test(&game_pubkey).unwrap().data(),
             &vec![1, 2, 3]
         );
 

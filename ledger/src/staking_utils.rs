@@ -212,7 +212,7 @@ pub(crate) mod tests {
         let mut result: Vec<_> = epoch_stakes_and_lockouts(&bank, next_leader_schedule_epoch);
         result.sort();
         let stake_history =
-            from_account::<StakeHistory, _>(&bank.get_account(&stake_history::id()).unwrap())
+            from_account::<StakeHistory, _>(&bank.get_account_for_test(&stake_history::id()).unwrap())
                 .unwrap();
         let mut expected = vec![
             (

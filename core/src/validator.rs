@@ -47,7 +47,7 @@ use solana_measure::measure::Measure;
 use solana_metrics::datapoint_info;
 use solana_runtime::{
     accounts_index::AccountIndex,
-    bank::Bank,
+    bank::{Bank, LoadSafety},
     bank_forks::{BankForks, SnapshotConfig},
     commitment::BlockCommitmentCache,
     hardened_unpack::{open_genesis_config, MAX_GENESIS_ARCHIVE_UNPACKED_SIZE},
@@ -884,7 +884,7 @@ impl Validator {
 }
 
 fn active_vote_account_exists_in_bank(bank: &Arc<Bank>, vote_account: &Pubkey) -> bool {
-    if let Some(account) = &bank.get_account(vote_account) {
+    if let Some(account) = &bank.get_account(vote_account, LoadSafety::FixedMaxRoot) {
         if let Some(vote_state) = VoteState::from(account) {
             return !vote_state.votes.is_empty();
         }
@@ -934,7 +934,7 @@ fn post_process_restored_tower(
     restored_tower
         .and_then(|tower| {
             let root_bank = bank_forks.root_bank();
-            let slot_history = root_bank.get_slot_history();
+            let slot_history = root_bank.get_slot_history(LoadSafety::FixedMaxRoot);
             let tower = tower.adjust_lockouts_after_replay(root_bank.slot(), &slot_history);
 
             if let Some(wait_slot_for_supermajority) = config.wait_for_supermajority {

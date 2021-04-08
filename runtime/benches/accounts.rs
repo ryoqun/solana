@@ -30,9 +30,9 @@ fn deposit_many(bank: &Bank, pubkeys: &mut Vec<Pubkey>, num: usize) {
         let account =
             AccountSharedData::new((t + 1) as u64, 0, &AccountSharedData::default().owner);
         pubkeys.push(pubkey);
-        assert!(bank.get_account(&pubkey).is_none());
+        assert!(bank.get_account_for_test(&pubkey).is_none());
         bank.deposit(&pubkey, (t + 1) as u64);
-        assert_eq!(bank.get_account(&pubkey).unwrap(), account);
+        assert_eq!(bank.get_account_for_test(&pubkey).unwrap(), account);
     }
 }
 

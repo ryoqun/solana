@@ -514,7 +514,7 @@ pub fn process_instruction(
 mod test {
     use super::*;
     use crate::{exchange_instruction, id};
-    use solana_runtime::bank::Bank;
+    use solana_runtime::bank::{Bank, LoadSafety};
     use solana_runtime::bank_client::BankClient;
     use solana_sdk::client::SyncClient;
     use solana_sdk::genesis_config::create_genesis_config;
@@ -604,7 +604,7 @@ mod test {
     fn create_bank(lamports: u64) -> (Bank, Keypair) {
         let (genesis_config, mint_keypair) = create_genesis_config(lamports);
         let mut bank = Bank::new(&genesis_config);
-        bank.add_builtin("exchange_program", id(), process_instruction);
+        bank.add_builtin("exchange_program", id(), process_instruction, LoadSafety::FixedMaxRoot);
         (bank, mint_keypair)
     }
 

@@ -1982,7 +1982,7 @@ pub mod tests {
 
         let bank = bank_forks[1].clone();
         assert_eq!(
-            bank.get_balance(&mint_keypair.pubkey()),
+            bank.get_balance_for_test(&mint_keypair.pubkey()),
             mint - deducted_from_mint
         );
         assert_eq!(bank.tick_height(), 2 * genesis_config.ticks_per_slot);
@@ -2086,8 +2086,8 @@ pub mod tests {
             let pubkeys: Vec<Pubkey> = keypairs.iter().map(|k| k.pubkey()).collect();
             Arc::new(move |bank: &Bank| {
                 let mut counter = counter.write().unwrap();
-                assert_eq!(bank.get_balance(&pubkeys[*counter]), 1);
-                assert_eq!(bank.get_balance(&pubkeys[*counter + 1]), 0);
+                assert_eq!(bank.get_balance_for_test(&pubkeys[*counter]), 1);
+                assert_eq!(bank.get_balance_for_test(&pubkeys[*counter + 1]), 0);
                 *counter += 1;
             })
         };
@@ -2148,8 +2148,8 @@ pub mod tests {
             process_entries(&bank, &mut [entry_1, entry_2], true, None, None),
             Ok(())
         );
-        assert_eq!(bank.get_balance(&keypair1.pubkey()), 2);
-        assert_eq!(bank.get_balance(&keypair2.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair1.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair2.pubkey()), 2);
         assert_eq!(bank.last_blockhash(), blockhash);
     }
 
@@ -2211,9 +2211,9 @@ pub mod tests {
             Ok(())
         );
 
-        assert_eq!(bank.get_balance(&keypair1.pubkey()), 1);
-        assert_eq!(bank.get_balance(&keypair2.pubkey()), 2);
-        assert_eq!(bank.get_balance(&keypair3.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair1.pubkey()), 1);
+        assert_eq!(bank.get_balance_for_test(&keypair2.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair3.pubkey()), 2);
     }
 
     #[test]
@@ -2283,8 +2283,8 @@ pub mod tests {
         .is_err());
 
         // First transaction in first entry succeeded, so keypair1 lost 1 lamport
-        assert_eq!(bank.get_balance(&keypair1.pubkey()), 3);
-        assert_eq!(bank.get_balance(&keypair2.pubkey()), 4);
+        assert_eq!(bank.get_balance_for_test(&keypair1.pubkey()), 3);
+        assert_eq!(bank.get_balance_for_test(&keypair2.pubkey()), 4);
 
         // Check all accounts are unlocked
         let txs1 = &entry_1_to_mint.transactions[..];
@@ -2395,9 +2395,9 @@ pub mod tests {
         .is_err());
 
         // last entry should have been aborted before par_execute_entries
-        assert_eq!(bank.get_balance(&keypair1.pubkey()), 2);
-        assert_eq!(bank.get_balance(&keypair2.pubkey()), 2);
-        assert_eq!(bank.get_balance(&keypair3.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair1.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair2.pubkey()), 2);
+        assert_eq!(bank.get_balance_for_test(&keypair3.pubkey()), 2);
     }
 
     #[test]
@@ -2441,8 +2441,8 @@ pub mod tests {
             process_entries(&bank, &mut [entry_1, entry_2], true, None, None),
             Ok(())
         );
-        assert_eq!(bank.get_balance(&keypair3.pubkey()), 1);
-        assert_eq!(bank.get_balance(&keypair4.pubkey()), 1);
+        assert_eq!(bank.get_balance_for_test(&keypair3.pubkey()), 1);
+        assert_eq!(bank.get_balance_for_test(&keypair4.pubkey()), 1);
         assert_eq!(bank.last_blockhash(), blockhash);
     }
 
@@ -2573,9 +2573,9 @@ pub mod tests {
         // consistent.
         for (i, keypair) in keypairs.iter().enumerate() {
             if i % 2 == 0 {
-                assert_eq!(bank.get_balance(&keypair.pubkey()), 2 * initial_lamports);
+                assert_eq!(bank.get_balance_for_test(&keypair.pubkey()), 2 * initial_lamports);
             } else {
-                assert_eq!(bank.get_balance(&keypair.pubkey()), 0);
+                assert_eq!(bank.get_balance_for_test(&keypair.pubkey()), 0);
             }
         }
     }
@@ -2631,8 +2631,8 @@ pub mod tests {
             ),
             Ok(())
         );
-        assert_eq!(bank.get_balance(&keypair3.pubkey()), 1);
-        assert_eq!(bank.get_balance(&keypair4.pubkey()), 1);
+        assert_eq!(bank.get_balance_for_test(&keypair3.pubkey()), 1);
+        assert_eq!(bank.get_balance_for_test(&keypair4.pubkey()), 1);
 
         // ensure that an error is returned for an empty account (keypair2)
         let tx =
@@ -2656,7 +2656,7 @@ pub mod tests {
         let pubkey = solana_sdk::pubkey::new_rand();
         bank.transfer(1_000, &mint_keypair, &pubkey).unwrap();
         assert_eq!(bank.transaction_count(), 1);
-        assert_eq!(bank.get_balance(&pubkey), 1_000);
+        assert_eq!(bank.get_balance_for_test(&pubkey), 1_000);
         assert_eq!(
             bank.transfer(10_001, &mint_keypair, &pubkey),
             Err(TransactionError::InstructionError(
@@ -2984,7 +2984,7 @@ pub mod tests {
             &mut ExecuteTimings::default(),
         )
         .unwrap();
-        assert_eq!(bank0.get_balance(&keypair.pubkey()), 1)
+        assert_eq!(bank0.get_balance_for_test(&keypair.pubkey()), 1)
     }
 
     fn get_epoch_schedule(

@@ -1,5 +1,5 @@
 use crate::{
-    accounts_db::{AccountsDb, BankHashInfo, ErrorCounters, LoadedAccount, ScanStorageResult},
+    accounts_db::{AccountsDb, BankHashInfo, ErrorCounters, LoadedAccount, LoadSafety, ScanStorageResult},
     accounts_index::{AccountIndex, Ancestors, IndexKey},
     bank::{
         NonceRollbackFull, NonceRollbackInfo, TransactionCheckResult, TransactionExecutionResult,
@@ -467,9 +467,9 @@ impl Accounts {
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
-        is_root_fixed: bool,
+        load_safety: LoadSafety,
     ) -> Option<(AccountSharedData, Slot)> {
-        let (account, slot) = self.accounts_db.load(ancestors, pubkey, is_root_fixed)?;
+        let (account, slot) = self.accounts_db.load(ancestors, pubkey, load_safety)?;
         Self::filter_zero_lamport_account(account, slot)
     }
 
@@ -478,7 +478,7 @@ impl Accounts {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.load_slow(ancestors, pubkey, true)
+        self.load_slow(ancestors, pubkey, LoadSafety::FixedMaxRoot)
     }
 
     pub fn load_without_fixed_root(
@@ -486,7 +486,7 @@ impl Accounts {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.load_slow(ancestors, pubkey, false)
+        self.load_slow(ancestors, pubkey, LoadSafety::Unspecified)
     }
 
     /// scans underlying accounts_db for this delta (slot) with a map function
