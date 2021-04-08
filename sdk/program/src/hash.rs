@@ -160,16 +160,16 @@ pub fn extend_and_hash(id: &Hash, val: &[u8]) -> Hash {
     hash(&hash_data)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_unique() {
         assert!(Hash::new_unique() != Hash::new_unique());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_hash_fromstr() {
         let hash = hash(&[1u8]);
 

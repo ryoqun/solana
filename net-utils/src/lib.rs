@@ -520,12 +520,12 @@ pub fn find_available_port_in_range(ip_addr: IpAddr, range: PortRange) -> io::Re
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use std::net::Ipv4Addr;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_port_or_addr() {
         let p1 = parse_port_or_addr(Some("9000"), SocketAddr::from(([1, 2, 3, 4], 1)));
         assert_eq!(p1.port(), 9000);
@@ -537,7 +537,7 @@ mod tests {
         assert_eq!(p3.port(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_port_range() {
         assert_eq!(parse_port_range("garbage"), None);
         assert_eq!(parse_port_range("1-"), None);
@@ -546,7 +546,7 @@ mod tests {
         assert_eq!(parse_port_range("2-1"), None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_host() {
         parse_host("localhost:1234").unwrap_err();
         parse_host("localhost").unwrap();
@@ -554,7 +554,7 @@ mod tests {
         parse_host("127.0.0.0").unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_host_port() {
         parse_host_port("localhost:1234").unwrap();
         parse_host_port("localhost").unwrap_err();
@@ -562,13 +562,13 @@ mod tests {
         parse_host_port("127.0.0.0").unwrap_err();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_host_port() {
         assert!(is_host_port("localhost:1234".to_string()).is_ok());
         assert!(is_host_port("localhost".to_string()).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bind() {
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         assert_eq!(bind_in_range(ip_addr, (2000, 2001)).unwrap().0, 2000);
@@ -588,14 +588,14 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bind_in_range_nil() {
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         bind_in_range(ip_addr, (2000, 2000)).unwrap_err();
         bind_in_range(ip_addr, (2000, 1999)).unwrap_err();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_find_available_port_in_range() {
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         assert_eq!(
@@ -609,7 +609,7 @@ mod tests {
         find_available_port_in_range(ip_addr, (port, port + 1)).unwrap_err();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bind_common_in_range() {
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
         let (port, _sockets) = bind_common_in_range(ip_addr, (3100, 3150)).unwrap();
@@ -618,7 +618,7 @@ mod tests {
         bind_common_in_range(ip_addr, (port, port + 1)).unwrap_err();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_public_ip_addr_none() {
         solana_logger::setup();
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -636,7 +636,7 @@ mod tests {
         assert!(verify_reachable_ports(&server_ip_echo_addr, vec![], &[],));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_public_ip_addr_reachable() {
         solana_logger::setup();
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -660,7 +660,7 @@ mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_public_ip_addr_tcp_unreachable() {
         solana_logger::setup();
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -683,7 +683,7 @@ mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_public_ip_addr_udp_unreachable() {
         solana_logger::setup();
         let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));

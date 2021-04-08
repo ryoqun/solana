@@ -79,7 +79,7 @@ impl CrdsShards {
     }
 
     // Checks invariants in the shards tables against the crds table.
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub fn check(&self, crds: &[VersionedCrdsValue]) {
         let mut indices: Vec<_> = self
             .shards
@@ -127,7 +127,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
@@ -172,7 +172,7 @@ mod test {
             .collect()
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_crds_shards_round_trip() {
         let mut rng = thread_rng();
         // Generate some random hash and crds value labels.

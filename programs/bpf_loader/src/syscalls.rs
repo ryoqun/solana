@@ -1739,7 +1739,7 @@ fn call<'a>(
     Ok(SUCCESS)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_rbpf::{memory_region::MemoryRegion, vm::Config};
@@ -1766,7 +1766,7 @@ mod tests {
         };
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_translate() {
         const START: u64 = 100;
         const LENGTH: u64 = 1000;
@@ -1805,7 +1805,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_translate_type() {
         // Pubkey
         let pubkey = solana_sdk::pubkey::new_rand();
@@ -1848,7 +1848,7 @@ mod tests {
         assert!(translate_type::<Instruction>(&memory_mapping, 100, &bpf_loader::id()).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_translate_slice() {
         // zero len
         let good_data = vec![1u8, 2, 3, 4, 5];
@@ -1948,7 +1948,7 @@ mod tests {
         assert_eq!(data, translated_data);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_translate_string_and_do() {
         let string = "Gaggablaghblagh!";
         let addr = string.as_ptr() as *const _ as u64;
@@ -1978,7 +1978,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "UserError(SyscallError(Abort))")]
     fn test_syscall_abort() {
         let memory_mapping = MemoryMapping::new(vec![MemoryRegion::default()], &DEFAULT_CONFIG);
@@ -1996,7 +1996,7 @@ mod tests {
         result.unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "UserError(SyscallError(Panic(\"Gaggablaghblagh!\", 42, 84)))")]
     fn test_syscall_sol_panic() {
         let string = "Gaggablaghblagh!";
@@ -2058,7 +2058,7 @@ mod tests {
         result.unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_syscall_sol_log() {
         let string = "Gaggablaghblagh!";
         let addr = string.as_ptr() as *const _ as u64;
@@ -2170,7 +2170,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_syscall_sol_log_u64() {
         let compute_meter: Rc<RefCell<dyn ComputeMeter>> =
             Rc::new(RefCell::new(MockComputeMeter {
@@ -2194,7 +2194,7 @@ mod tests {
         assert_eq!(log.borrow()[0], "Program log: 0x1, 0x2, 0x3, 0x4, 0x5");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_syscall_sol_pubkey() {
         let pubkey = Pubkey::from_str("MoqiU1vryuCGQSxFKA1SZ316JdLEFFhoAu6cKUNk7dN").unwrap();
         let addr = &pubkey.as_ref()[0] as *const _ as u64;
@@ -2250,7 +2250,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_syscall_sol_alloc_free() {
         // large alloc
         {
@@ -2346,7 +2346,7 @@ mod tests {
         check_alignment::<u128>();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_syscall_sha256() {
         let bytes1 = "Gaggablaghblagh!";
         let bytes2 = "flurbos";

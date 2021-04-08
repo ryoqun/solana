@@ -3289,7 +3289,7 @@ pub(crate) fn create_validator_exit(exit: &Arc<AtomicBool>) -> Arc<RwLock<Valida
     Arc::new(RwLock::new(validator_exit))
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::{rpc_full::*, rpc_minimal::*, *};
     use crate::{
@@ -3533,7 +3533,7 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_request_processor_new() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let genesis = create_genesis_config(100);
@@ -3544,7 +3544,7 @@ pub mod tests {
         assert_eq!(request_processor.get_transaction_count(None), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_balance() {
         let genesis = create_genesis_config(20);
         let mint_pubkey = genesis.mint_keypair.pubkey();
@@ -3572,7 +3572,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_balance_via_client() {
         let genesis = create_genesis_config(20);
         let mint_pubkey = genesis.mint_keypair.pubkey();
@@ -3601,7 +3601,7 @@ pub mod tests {
         assert_eq!(response, 20);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_cluster_nodes() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -3628,7 +3628,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_recent_performance_samples() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3657,7 +3657,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_recent_performance_samples_invalid_limit() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3683,7 +3683,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_slot_leader() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -3703,7 +3703,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_tx_count() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let genesis = create_genesis_config(10);
@@ -3733,7 +3733,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_minimum_ledger_slot() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3748,7 +3748,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_total_supply() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3773,7 +3773,7 @@ pub mod tests {
         assert!(supply >= TEST_MINT_LAMPORTS);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_supply() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3798,7 +3798,7 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_largest_accounts() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -3857,7 +3857,7 @@ pub mod tests {
         assert_eq!(largest_accounts.len(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_minimum_balance_for_rent_exemption() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let data_len = 50;
@@ -3889,7 +3889,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_inflation() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3935,7 +3935,7 @@ pub mod tests {
         assert_eq!(inflation_rate, expected_inflation_rate);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_epoch_schedule() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -3957,7 +3957,7 @@ pub mod tests {
         assert_eq!(epoch_schedule, *bank.epoch_schedule());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_leader_schedule() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4013,7 +4013,7 @@ pub mod tests {
         assert_eq!(schedule, None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_slot_leaders() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4069,7 +4069,7 @@ pub mod tests {
         assert!(res.get("error").is_some());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_account_info() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4151,7 +4151,7 @@ pub mod tests {
         result["error"].as_object().unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_multiple_accounts() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4268,7 +4268,7 @@ pub mod tests {
         result["error"].as_object().unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_program_accounts() {
         let bob = Keypair::new();
         let RpcHandler {
@@ -4468,7 +4468,7 @@ pub mod tests {
         assert_eq!(accounts.len(), 0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_simulate_transaction() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -4578,7 +4578,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_rpc_simulate_transaction_panic_on_unfrozen_bank() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
@@ -4605,7 +4605,7 @@ pub mod tests {
         let _ = io.handle_request_sync(&req, meta);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_confirm_tx() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -4637,7 +4637,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_signature_status() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -4707,7 +4707,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_signature_statuses() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -4763,7 +4763,7 @@ pub mod tests {
         assert_eq!(expected_res, result.as_ref().unwrap().status);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_recent_blockhash() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -4794,7 +4794,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_fees() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -4826,7 +4826,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_fee_calculator_for_blockhash() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, bank, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4874,7 +4874,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_fee_rate_governor() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4903,7 +4903,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_fail_request_airdrop() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -4923,7 +4923,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_send_bad_tx() {
         let genesis = create_genesis_config(100);
         let bank = Arc::new(Bank::new(&genesis.genesis_config));
@@ -4939,7 +4939,7 @@ pub mod tests {
         assert_eq!(error["code"], ErrorCode::InvalidParams.code());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_send_transaction_preflight() {
         let exit = Arc::new(AtomicBool::new(false));
         let validator_exit = create_validator_exit(&exit);
@@ -5079,7 +5079,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_verify_filter() {
         let filter = RpcFilterType::Memcmp(Memcmp {
             offset: 0,
@@ -5098,7 +5098,7 @@ pub mod tests {
         assert!(verify_filter(&filter).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_verify_pubkey() {
         let pubkey = solana_sdk::pubkey::new_rand();
         assert_eq!(verify_pubkey(pubkey.to_string()).unwrap(), pubkey);
@@ -5109,7 +5109,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_verify_signature() {
         let tx = system_transaction::transfer(
             &Keypair::new(),
@@ -5148,7 +5148,7 @@ pub mod tests {
         )
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_identity() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -5181,13 +5181,13 @@ pub mod tests {
         assert_eq!(slot, expected);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_max_slots() {
         test_basic_slot("getMaxRetransmitSlot", 42);
         test_basic_slot("getMaxShredInsertSlot", 43);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_version() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler { io, meta, .. } = start_rpc_handler_with_tx(&bob_pubkey);
@@ -5210,7 +5210,7 @@ pub mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_processor_get_block_commitment() {
         let exit = Arc::new(AtomicBool::new(false));
         let validator_exit = create_validator_exit(&exit);
@@ -5277,7 +5277,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_get_block_commitment() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -5331,7 +5331,7 @@ pub mod tests {
         assert_eq!(commitment_response.total_stake, 10);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_confirmed_block() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -5431,7 +5431,7 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_confirmed_block_config() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -5482,7 +5482,7 @@ pub mod tests {
         assert_eq!(confirmed_block.rewards.unwrap(), vec![]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_confirmed_blocks() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let roots = vec![0, 1, 3, 4, 8];
@@ -5559,7 +5559,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_confirmed_blocks_with_limit() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let roots = vec![0, 1, 3, 4, 8];
@@ -5622,7 +5622,7 @@ pub mod tests {
         assert_eq!(confirmed_blocks, Vec::<Slot>::new());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_block_time() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
         let RpcHandler {
@@ -5702,7 +5702,7 @@ pub mod tests {
         std::mem::swap(&mut *w_block_commitment_cache, &mut new_block_commitment);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_vote_accounts() {
         let RpcHandler {
             io,
@@ -5872,7 +5872,7 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_finalized() {
         let bank = Arc::new(Bank::default());
         let ledger_path = get_tmp_ledger_path!();
@@ -5917,7 +5917,7 @@ pub mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_token_rpcs() {
         let RpcHandler { io, meta, bank, .. } =
             start_rpc_handler_with_tx(&solana_sdk::pubkey::new_rand());
@@ -6318,7 +6318,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_token_parsing() {
         let RpcHandler { io, meta, bank, .. } =
             start_rpc_handler_with_tx(&solana_sdk::pubkey::new_rand());
@@ -6436,7 +6436,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_spl_token_owner_filter() {
         let owner = Pubkey::new_unique();
         assert_eq!(
@@ -6484,7 +6484,7 @@ pub mod tests {
         .is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_single_gossip() {
         let exit = Arc::new(AtomicBool::new(false));
         let validator_exit = create_validator_exit(&exit);
@@ -6609,7 +6609,7 @@ pub mod tests {
         assert_eq!(slot, 3);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_worst_case_encoded_tx_goldens() {
         let ff_tx = vec![0xffu8; PACKET_DATA_SIZE];
         let tx58 = bs58::encode(&ff_tx).into_string();
@@ -6618,7 +6618,7 @@ pub mod tests {
         assert_eq!(tx64.len(), WORST_CASE_BASE64_TX);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_transaction_too_large_payloads_fail() {
         // +2 because +1 still fits in base64 encoded worst-case
         let too_big = PACKET_DATA_SIZE + 2;
@@ -6661,7 +6661,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_transaction_unsanitary() {
         let unsanitary_tx58 = "ju9xZWuDBX4pRxX2oZkTjxU5jB4SSTgEGhX8bQ8PURNzyzqKMPPpNvWihx8zUe\
              FfrbVNoAaEsNKZvGzAnTDy5bhNT9kt6KFCTBixpvrLCzg4M5UdFUQYrn1gdgjX\

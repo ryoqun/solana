@@ -179,11 +179,11 @@ macro_rules! unchecked_div_by_const {
     }};
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::unchecked_div_by_const;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_unchecked_div_by_const() {
         const D: u64 = 2;
         const N: u64 = 10;

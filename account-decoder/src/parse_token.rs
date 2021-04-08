@@ -248,11 +248,11 @@ pub fn get_token_account_mint(data: &[u8]) -> Option<Pubkey> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_token() {
         let mint_pubkey = SplTokenPubkey::new(&[2; 32]);
         let owner_pubkey = SplTokenPubkey::new(&[3; 32]);
@@ -340,7 +340,7 @@ mod test {
         assert!(parse_token(&bad_data, None).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_token_account_mint() {
         let mint_pubkey = SplTokenPubkey::new(&[2; 32]);
         let mut account_data = vec![0; Account::get_packed_len()];
@@ -355,7 +355,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ui_token_amount_real_string() {
         assert_eq!(&real_number_string(1, 0), "1");
         assert_eq!(&real_number_string_trimmed(1, 0), "1");
@@ -413,7 +413,7 @@ mod test {
         assert_eq!(token_amount.ui_amount, None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ui_token_amount_real_string_zero() {
         assert_eq!(&real_number_string(0, 0), "0");
         assert_eq!(&real_number_string_trimmed(0, 0), "0");

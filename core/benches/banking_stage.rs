@@ -53,7 +53,7 @@ fn check_txs(receiver: &Arc<Receiver<WorkingBankEntry>>, ref_tx_count: usize) {
     assert_eq!(total, ref_tx_count);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_consume_buffered(bencher: &mut Bencher) {
     let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(100_000);
     let bank = Arc::new(Bank::new(&genesis_config));
@@ -261,12 +261,12 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
     let _unused = Blockstore::destroy(&ledger_path);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_banking_stage_multi_accounts(bencher: &mut Bencher) {
     bench_banking(bencher, TransactionType::Accounts);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_banking_stage_multi_programs(bencher: &mut Bencher) {
     bench_banking(bencher, TransactionType::Programs);
 }
@@ -342,12 +342,12 @@ fn bench_process_entries(randomize_txs: bool, bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_process_entries_without_order_shuffeling(bencher: &mut Bencher) {
     bench_process_entries(false, bencher);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_process_entries_with_order_shuffeling(bencher: &mut Bencher) {
     bench_process_entries(true, bencher);
 }

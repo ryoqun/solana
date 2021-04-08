@@ -60,7 +60,7 @@ impl SigVerifier for ShredSigVerifier {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
     use solana_ledger::genesis_utils::create_genesis_config_with_leader;
@@ -69,7 +69,7 @@ pub mod tests {
     use solana_runtime::bank::Bank;
     use solana_sdk::signature::{Keypair, Signer};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_sigverify_shreds_read_slots() {
         solana_logger::setup();
         let mut shred = Shred::new_from_data(
@@ -111,7 +111,7 @@ pub mod tests {
         assert_eq!(ShredSigVerifier::read_slots(&batch), expected);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_sigverify_shreds_verify_batch() {
         let leader_keypair = Arc::new(Keypair::new());
         let leader_pubkey = leader_keypair.pubkey();

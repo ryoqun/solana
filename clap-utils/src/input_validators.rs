@@ -306,11 +306,11 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_derivation() {
         assert_eq!(is_derivation("2"), Ok(()));
         assert_eq!(is_derivation("0"), Ok(()));

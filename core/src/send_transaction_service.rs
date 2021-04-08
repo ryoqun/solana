@@ -310,7 +310,7 @@ impl SendTransactionService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
@@ -333,7 +333,7 @@ mod test {
     };
     use std::sync::mpsc::channel;
 
-    #[test]
+    #[cfg(testkun)]
     fn service_exit() {
         let tpu_address = "127.0.0.1:0".parse().unwrap();
         let bank = Bank::default();
@@ -347,7 +347,7 @@ mod test {
         send_tranaction_service.join().unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn process_transactions() {
         solana_logger::setup();
 
@@ -501,7 +501,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_retry_durable_nonce_transactions() {
         solana_logger::setup();
 
@@ -776,7 +776,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_leader_tpus() {
         let ledger_path = get_tmp_ledger_path!();
         {

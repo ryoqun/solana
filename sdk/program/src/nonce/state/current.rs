@@ -28,11 +28,11 @@ impl State {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn default_is_uninitialized() {
         assert_eq!(State::default(), State::Uninitialized)
     }

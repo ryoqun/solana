@@ -84,12 +84,12 @@ impl SlotHistory {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use log::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn slot_history_test1() {
         solana_logger::setup();
         // should be divisible by 64 since the clear logic works on blocks
@@ -133,7 +133,7 @@ mod tests {
         assert_eq!(slot_history.check(slot), Check::Found);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn slot_history_test_wrap() {
         solana_logger::setup();
         let mut slot_history = SlotHistory::default();
@@ -161,7 +161,7 @@ mod tests {
         assert_eq!(slot_history.check(MAX_ENTRIES + 20), Check::Future);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn slot_history_test_same_index() {
         solana_logger::setup();
         let mut slot_history = SlotHistory::default();
@@ -180,7 +180,7 @@ mod tests {
         assert_eq!(slot_history.check(MAX_ENTRIES + 5), Check::Found);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_older_slot() {
         let mut slot_history = SlotHistory::default();
         slot_history.add(10);
@@ -193,7 +193,7 @@ mod tests {
         assert_eq!(slot_history.check(11), Check::Future);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_oldest() {
         let mut slot_history = SlotHistory::default();
         assert_eq!(slot_history.oldest(), 0);

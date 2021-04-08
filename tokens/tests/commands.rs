@@ -3,7 +3,7 @@ use solana_core::test_validator::TestValidator;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_tokens::commands::test_process_distribute_tokens_with_client;
 
-#[test]
+#[cfg(testkun)]
 fn test_process_distribute_with_rpc_client() {
     solana_logger::setup();
 

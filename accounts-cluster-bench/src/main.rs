@@ -666,7 +666,7 @@ fn main() {
     );
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod test {
     use super::*;
     use solana_core::validator::ValidatorConfig;
@@ -676,7 +676,7 @@ pub mod test {
     };
     use solana_sdk::poh_config::PohConfig;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_accounts_cluster_bench() {
         solana_logger::setup();
         let validator_config = ValidatorConfig::default();

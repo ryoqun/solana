@@ -248,7 +248,7 @@ impl LeaderScheduleCache {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -269,7 +269,7 @@ mod tests {
     use solana_sdk::signature::{Keypair, Signer};
     use std::{sync::mpsc::channel, sync::Arc, thread::Builder};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_cache() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
         let bank = Bank::new(&genesis_config);
@@ -305,7 +305,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_retain_latest() {
         let mut cached_schedules = HashMap::new();
         let mut order = VecDeque::new();
@@ -323,7 +323,7 @@ mod tests {
         assert_eq!(expected_order, order);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_thread_race_leader_schedule_cache() {
         let num_runs = 10;
         for _ in 0..num_runs {
@@ -370,7 +370,7 @@ mod tests {
         assert_eq!(order.len(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_next_leader_slot() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let mut genesis_config =
@@ -420,7 +420,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_next_leader_slot_blockstore() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let mut genesis_config =
@@ -501,7 +501,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_next_leader_slot_next_epoch() {
         let GenesisConfigInfo {
             mut genesis_config,
@@ -575,7 +575,7 @@ mod tests {
         assert_eq!(res.1, expected_slot + NUM_CONSECUTIVE_LEADER_SLOTS - 2);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_schedule_for_unconfirmed_epoch() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -606,7 +606,7 @@ mod tests {
         assert!(cache.slot_leader_at(224, Some(&bank2)).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_max_schedules() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);
         let bank = Arc::new(Bank::new(&genesis_config));

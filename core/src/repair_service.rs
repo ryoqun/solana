@@ -653,7 +653,7 @@ impl RepairService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::cluster_info::Node;
@@ -668,7 +668,7 @@ mod test {
     use solana_vote_program::vote_transaction;
     use std::collections::HashSet;
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_repair_orphan() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -697,7 +697,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_repair_empty_slot() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -727,7 +727,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_generate_repairs() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -795,7 +795,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_generate_highest_repair() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -833,7 +833,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_repair_range() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -883,7 +883,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_repair_range_highest() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -924,7 +924,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_generate_duplicate_repairs_for_slot() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -954,7 +954,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_generate_and_send_duplicate_repairs() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -1032,7 +1032,7 @@ mod test {
         assert!(duplicate_slot_repair_statuses.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_update_duplicate_slot_repair_addr() {
         let dummy_addr = Some((
             Pubkey::default(),
@@ -1095,7 +1095,7 @@ mod test {
         assert_ne!(duplicate_status.repair_pubkey_and_addr, dummy_addr);
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_process_new_duplicate_slots() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -1171,7 +1171,7 @@ mod test {
         assert!(reset_receiver.try_recv().is_ok());
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_find_new_duplicate_slots() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();

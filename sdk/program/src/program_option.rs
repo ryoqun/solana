@@ -970,11 +970,11 @@ impl<T> Into<Option<T>> for COption<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_from_rust_option() {
         let option = Some(99u64);
         let c_option: COption<u64> = option.into();

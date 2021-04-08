@@ -20,12 +20,12 @@ pub fn parse_accounts(message: &Message) -> Vec<ParsedAccount> {
     accounts
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use solana_sdk::message::MessageHeader;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_accounts() {
         let pubkey0 = solana_sdk::pubkey::new_rand();
         let pubkey1 = solana_sdk::pubkey::new_rand();

@@ -20,7 +20,7 @@ pub struct RpcHealth {
     trusted_validators: Option<HashSet<Pubkey>>,
     health_check_slot_distance: u64,
     override_health_check: Arc<AtomicBool>,
-    #[cfg(test)]
+    #[cfg(testkun)]
     stub_health_status: std::sync::RwLock<Option<RpcHealthStatus>>,
 }
 
@@ -36,13 +36,13 @@ impl RpcHealth {
             trusted_validators,
             health_check_slot_distance,
             override_health_check,
-            #[cfg(test)]
+            #[cfg(testkun)]
             stub_health_status: std::sync::RwLock::new(None),
         }
     }
 
     pub fn check(&self) -> RpcHealthStatus {
-        #[cfg(test)]
+        #[cfg(testkun)]
         {
             if let Some(stub_health_status) = *self.stub_health_status.read().unwrap() {
                 return stub_health_status;
@@ -107,7 +107,7 @@ impl RpcHealth {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub(crate) fn stub() -> Arc<Self> {
         Arc::new(Self::new(
             Arc::new(ClusterInfo::default()),
@@ -117,7 +117,7 @@ impl RpcHealth {
         ))
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub(crate) fn stub_set_health_status(&self, stub_health_status: Option<RpcHealthStatus>) {
         *self.stub_health_status.write().unwrap() = stub_health_status;
     }

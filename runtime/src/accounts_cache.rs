@@ -271,11 +271,11 @@ impl AccountsCache {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_remove_slots_le() {
         let cache = AccountsCache::default();
         // Cache is empty, should return nothing
@@ -293,7 +293,7 @@ pub mod tests {
         assert_eq!(removed[0].0, inserted_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_find_older_frozen_slots() {
         let cache = AccountsCache::default();
         // Cache is empty, should return nothing

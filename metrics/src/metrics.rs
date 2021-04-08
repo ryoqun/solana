@@ -451,7 +451,7 @@ pub fn set_panic_hook(program: &'static str) {
     });
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
@@ -488,7 +488,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_submit() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = MetricsAgent::new(writer.clone(), Duration::from_secs(10), 1000);
@@ -506,7 +506,7 @@ mod test {
         assert_eq!(writer.points_written(), 43);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_submit_counter() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = MetricsAgent::new(writer.clone(), Duration::from_secs(10), 1000);
@@ -520,7 +520,7 @@ mod test {
         assert_eq!(writer.points_written(), 21);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_submit_counter_increment() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = MetricsAgent::new(writer.clone(), Duration::from_secs(10), 1000);
@@ -544,7 +544,7 @@ mod test {
         assert_eq!(submitted_point.fields[0], ("count", "100i".to_string()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_submit_bucketed_counter() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = MetricsAgent::new(writer.clone(), Duration::from_secs(10), 1000);
@@ -558,7 +558,7 @@ mod test {
         assert_eq!(writer.points_written(), 11);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_submit_with_delay() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = MetricsAgent::new(writer.clone(), Duration::from_secs(1), 1000);
@@ -568,7 +568,7 @@ mod test {
         assert_eq!(writer.points_written(), 2);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_submit_exceed_max_rate() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = MetricsAgent::new(writer.clone(), Duration::from_secs(1), 100);
@@ -588,7 +588,7 @@ mod test {
         assert_eq!(writer.points_written(), 100);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_multithread_submit() {
         let writer = Arc::new(MockMetricsWriter::new());
         let agent = Arc::new(Mutex::new(MetricsAgent::new(
@@ -618,7 +618,7 @@ mod test {
         assert_eq!(writer.points_written(), 43);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_flush_before_drop() {
         let writer = Arc::new(MockMetricsWriter::new());
         {
@@ -629,7 +629,7 @@ mod test {
         assert_eq!(writer.points_written(), 2);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_live_submit() {
         let agent = MetricsAgent::default();
 

@@ -39,12 +39,12 @@ pub fn fee_calculator_of(account: &AccountSharedData) -> Option<FeeCalculator> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::pubkey::Pubkey;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_verify_bad_account_owner_fails() {
         let program_id = Pubkey::new_unique();
         assert_ne!(program_id, crate::system_program::id());

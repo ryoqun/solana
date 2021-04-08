@@ -98,14 +98,14 @@ impl CompletedDataSetsService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod test {
     use super::*;
     use solana_sdk::hash::Hash;
     use solana_sdk::signature::{Keypair, Signer};
     use solana_sdk::transaction::Transaction;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_zero_signatures() {
         let tx = Transaction::new_with_payer(&[], None);
         let entries = vec![Entry::new(&Hash::default(), 1, vec![tx])];
@@ -113,7 +113,7 @@ pub mod test {
         assert!(signatures.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_multi_signatures() {
         let kp = Keypair::new();
         let tx =

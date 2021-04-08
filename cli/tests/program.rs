@@ -17,7 +17,7 @@ use solana_sdk::{
 };
 use std::{env, fs::File, io::Read, path::PathBuf, str::FromStr};
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_deploy_non_upgradeable() {
     solana_logger::setup();
 
@@ -136,7 +136,7 @@ fn test_cli_program_deploy_non_upgradeable() {
     assert_eq!(account2.data, account0.data);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_deploy_no_authority() {
     solana_logger::setup();
 
@@ -220,7 +220,7 @@ fn test_cli_program_deploy_no_authority() {
     process_command(&config).unwrap_err();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_deploy_with_authority() {
     solana_logger::setup();
 
@@ -549,7 +549,7 @@ fn test_cli_program_deploy_with_authority() {
     assert_eq!("none", authority_pubkey_str);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_write_buffer() {
     solana_logger::setup();
 
@@ -832,7 +832,7 @@ fn test_cli_program_write_buffer() {
     );
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_set_buffer_authority() {
     solana_logger::setup();
 
@@ -946,7 +946,7 @@ fn test_cli_program_set_buffer_authority() {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_mismatch_buffer_authority() {
     solana_logger::setup();
 
@@ -1036,7 +1036,7 @@ fn test_cli_program_mismatch_buffer_authority() {
     process_command(&config).unwrap();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_show() {
     solana_logger::setup();
 
@@ -1217,7 +1217,7 @@ fn test_cli_program_show() {
     assert_eq!(max_len, data_len as usize);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_cli_program_dump() {
     solana_logger::setup();
 

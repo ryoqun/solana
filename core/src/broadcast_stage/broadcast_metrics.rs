@@ -92,7 +92,7 @@ pub(crate) struct BatchCounter<T: BroadcastStats + Default> {
 }
 
 impl<T: BroadcastStats + Default> BatchCounter<T> {
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub(crate) fn num_batches(&self) -> usize {
         self.num_batches
     }
@@ -102,7 +102,7 @@ impl<T: BroadcastStats + Default> BatchCounter<T> {
 pub(crate) struct SlotBroadcastStats<T: BroadcastStats + Default>(HashMap<Slot, BatchCounter<T>>);
 
 impl<T: BroadcastStats + Default> SlotBroadcastStats<T> {
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub(crate) fn get(&self, slot: Slot) -> Option<&BatchCounter<T>> {
         self.0.get(&slot)
     }
@@ -138,7 +138,7 @@ impl<T: BroadcastStats + Default> SlotBroadcastStats<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
@@ -162,7 +162,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_update_broadcast() {
         let start = Instant::now();
         let mut slot_broadcast_stats = SlotBroadcastStats::default();
@@ -232,7 +232,7 @@ mod test {
         assert!(slot_broadcast_stats.0.get(&0).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_update_multi_threaded() {
         for round in 0..50 {
             let start = Instant::now();

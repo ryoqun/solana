@@ -24,11 +24,11 @@ impl<'a> TestDep {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dep() {
         let array = [0xA, 0xB, 0xC, 0xD, 0xE, 0xF];
         let data = Data {

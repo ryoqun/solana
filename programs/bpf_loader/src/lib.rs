@@ -874,7 +874,7 @@ impl Executor for BpfExecutor {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use rand::Rng;
@@ -916,7 +916,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "ExceededMaxInstructions(31, 10)")]
     fn test_bpf_loader_non_terminating_program() {
         #[rustfmt::skip]
@@ -940,7 +940,7 @@ mod tests {
             .unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "VerifierError(LDDWCannotBeLast)")]
     fn test_bpf_loader_check_load_dw() {
         let prog = &[
@@ -949,7 +949,7 @@ mod tests {
         bpf_verifier::check(prog).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_write() {
         let program_id = bpf_loader::id();
         let program_key = solana_sdk::pubkey::new_rand();
@@ -1016,7 +1016,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_finalize() {
         let program_id = bpf_loader::id();
         let program_key = solana_sdk::pubkey::new_rand();
@@ -1081,7 +1081,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_invoke_main() {
         let program_id = bpf_loader::id();
         let program_key = solana_sdk::pubkey::new_rand();
@@ -1177,7 +1177,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_serialize_unaligned() {
         let program_id = bpf_loader_deprecated::id();
         let program_key = solana_sdk::pubkey::new_rand();
@@ -1221,7 +1221,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_serialize_aligned() {
         let program_id = bpf_loader::id();
         let program_key = solana_sdk::pubkey::new_rand();
@@ -1265,7 +1265,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_initialize_buffer() {
         let instruction =
             bincode::serialize(&UpgradeableLoaderInstruction::InitializeBuffer).unwrap();
@@ -1325,7 +1325,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_write() {
         let buffer_address = Pubkey::new_unique();
         let buffer_account = AccountSharedData::new_ref(
@@ -1566,7 +1566,7 @@ mod tests {
         account.set_data(data);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_deploy_with_max_len() {
         let (genesis_config, mint_keypair) = create_genesis_config(1_000_000_000);
         let mut bank = Bank::new(&genesis_config);
@@ -2206,7 +2206,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_upgrade() {
         let instruction = bincode::serialize(&UpgradeableLoaderInstruction::Upgrade).unwrap();
         let mut file = File::open("test_elfs/noop_aligned.so").expect("file open failed");
@@ -2872,7 +2872,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_set_upgrade_authority() {
         let instruction = bincode::serialize(&UpgradeableLoaderInstruction::SetAuthority).unwrap();
         let slot = 0;
@@ -3065,7 +3065,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_set_buffer_authority() {
         let instruction = bincode::serialize(&UpgradeableLoaderInstruction::SetAuthority).unwrap();
         let authority_address = Pubkey::new_unique();
@@ -3254,7 +3254,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bpf_loader_upgradeable_close() {
         let instruction = bincode::serialize(&UpgradeableLoaderInstruction::Close).unwrap();
         let authority_address = Pubkey::new_unique();
@@ -3362,7 +3362,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[ignore]
     fn test_fuzz() {
         let program_id = solana_sdk::pubkey::new_rand();

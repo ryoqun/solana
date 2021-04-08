@@ -12,7 +12,7 @@
 //! ```
 //! Modify the test function
 //! ```
-//! #[test]
+//! #[cfg(testkun)]
 //! #[ignore]
 //! fn test_all_partitions() {
 //!     test_with_partitions(100, 0.0, 5, 0.25, false)
@@ -330,28 +330,28 @@ impl Tower {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_is_trunk_of_1() {
     let tree = HashMap::new();
     let b1 = Fork { id: 1, base: 0 };
     let b2 = Fork { id: 2, base: 0 };
     assert!(!b1.is_trunk_of(&b2, &tree));
 }
-#[test]
+#[cfg(testkun)]
 fn test_is_trunk_of_2() {
     let tree = HashMap::new();
     let b1 = Fork { id: 1, base: 0 };
     let b2 = Fork { id: 0, base: 0 };
     assert!(!b1.is_trunk_of(&b2, &tree));
 }
-#[test]
+#[cfg(testkun)]
 fn test_is_trunk_of_3() {
     let tree = HashMap::new();
     let b1 = Fork { id: 1, base: 0 };
     let b2 = Fork { id: 1, base: 0 };
     assert!(b1.is_trunk_of(&b2, &tree));
 }
-#[test]
+#[cfg(testkun)]
 fn test_is_trunk_of_4() {
     let mut tree = HashMap::new();
     let b1 = Fork { id: 1, base: 0 };
@@ -360,7 +360,7 @@ fn test_is_trunk_of_4() {
     assert!(b1.is_trunk_of(&b2, &tree));
     assert!(!b2.is_trunk_of(&b1, &tree));
 }
-#[test]
+#[cfg(testkun)]
 #[allow(clippy::cognitive_complexity)]
 fn test_push_vote() {
     let tree = HashMap::new();
@@ -467,7 +467,7 @@ fn calc_tip_converged(towers: &[Tower], bmap: &HashMap<usize, usize>) -> usize {
         .sum();
     sum / towers.len()
 }
-#[test]
+#[cfg(testkun)]
 fn test_no_partitions() {
     let mut tree = HashMap::new();
     let len = 100;
@@ -583,17 +583,17 @@ fn test_with_partitions(
     assert_eq!(trunk.1, len);
 }
 
-#[test]
+#[cfg(testkun)]
 #[ignore]
 fn test_3_partitions() {
     test_with_partitions(3, 0.0, 0, 0.0, true)
 }
-#[test]
+#[cfg(testkun)]
 #[ignore]
 fn test_3_partitions_large_packet_drop() {
     test_with_partitions(3, 0.9, 0, 0.0, false)
 }
-#[test]
+#[cfg(testkun)]
 #[ignore]
 fn test_all_partitions() {
     test_with_partitions(100, 0.0, 5, 0.25, false)

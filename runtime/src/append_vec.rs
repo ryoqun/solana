@@ -551,7 +551,7 @@ pub mod test_utils {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::test_utils::*;
     use super::*;
@@ -591,14 +591,14 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "too small file size 0 for AppendVec")]
     fn test_append_vec_new_bad_size() {
         let path = get_append_vec_path("test_append_vec_new_bad_size");
         let _av = AppendVec::new(&path.path, true, 0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_new_from_file_bad_size() {
         let file = get_append_vec_path("test_append_vec_new_from_file_bad_size");
         let path = &file.path;
@@ -614,7 +614,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"too small file size 0 for AppendVec");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_sanitize_len_and_size_too_small() {
         const LEN: usize = 0;
         const SIZE: usize = 0;
@@ -622,7 +622,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"too small file size 0 for AppendVec");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_sanitize_len_and_size_maximum() {
         const LEN: usize = 0;
         const SIZE: usize = 16 * 1024 * 1024 * 1024;
@@ -630,7 +630,7 @@ pub mod tests {
         assert_matches!(result, Ok(_));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_sanitize_len_and_size_too_large() {
         const LEN: usize = 0;
         const SIZE: usize = 16 * 1024 * 1024 * 1024 + 1;
@@ -638,7 +638,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"too large file size 17179869185 for AppendVec");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_sanitize_len_and_size_full_and_same_as_current_len() {
         const LEN: usize = 1024 * 1024;
         const SIZE: usize = 1024 * 1024;
@@ -646,7 +646,7 @@ pub mod tests {
         assert_matches!(result, Ok(_));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_sanitize_len_and_size_larger_current_len() {
         const LEN: usize = 1024 * 1024 + 1;
         const SIZE: usize = 1024 * 1024;
@@ -654,7 +654,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"current_len is larger than file size (1048576)");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_one() {
         let path = get_append_vec_path("test_append");
         let av = AppendVec::new(&path.path, true, 1024 * 1024);
@@ -663,7 +663,7 @@ pub mod tests {
         assert_eq!(av.get_account_test(index).unwrap(), account);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_data() {
         let path = get_append_vec_path("test_append_data");
         let av = AppendVec::new(&path.path, true, 1024 * 1024);
@@ -676,7 +676,7 @@ pub mod tests {
         assert_eq!(av.get_account_test(index1).unwrap(), account1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_append_vec_append_many() {
         let path = get_append_vec_path("test_append_many");
         let av = AppendVec::new(&path.path, true, 1024 * 1024);
@@ -715,7 +715,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_from_file_crafted_zero_lamport_account() {
         let file = get_append_vec_path("test_append");
         let path = &file.path;
@@ -743,7 +743,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"incorrect layout/length/data");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_from_file_crafted_data_len() {
         let file = get_append_vec_path("test_new_from_file_crafted_data_len");
         let path = &file.path;
@@ -771,7 +771,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"incorrect layout/length/data");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_from_file_too_large_data_len() {
         let file = get_append_vec_path("test_new_from_file_too_large_data_len");
         let path = &file.path;
@@ -797,7 +797,7 @@ pub mod tests {
         assert_matches!(result, Err(ref message) if message.to_string() == *"incorrect layout/length/data");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_from_file_crafted_executable() {
         let file = get_append_vec_path("test_new_from_crafted_executable");
         let path = &file.path;

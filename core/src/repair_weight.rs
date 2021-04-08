@@ -503,7 +503,7 @@ impl RepairWeight {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use solana_ledger::{blockstore::Blockstore, get_tmp_ledger_path};
@@ -511,14 +511,14 @@ mod test {
     use solana_sdk::hash::Hash;
     use trees::tr;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_sort_by_stake_weight_slot() {
         let mut slots = vec![(3, 30), (2, 30), (5, 31)];
         RepairWeight::sort_by_stake_weight_slot(&mut slots);
         assert_eq!(slots, vec![(5, 31), (2, 30), (3, 30)]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_votes_invalid() {
         let (blockstore, bank, mut repair_weight) = setup_orphan_repair_weight();
         let root = 3;
@@ -543,7 +543,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_votes() {
         let blockstore = setup_forks();
         let stake = 100;
@@ -619,7 +619,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_votes_orphans() {
         let blockstore = setup_orphans();
         let stake = 100;
@@ -698,7 +698,7 @@ mod test {
         assert!(repair_weight.trees.contains_key(&0));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_update_orphan_ancestors() {
         let blockstore = setup_orphans();
         let stake = 100;
@@ -755,7 +755,7 @@ mod test {
         assert!(repair_weight.trees.contains_key(&0));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_best_orphans() {
         let blockstore = setup_orphans();
         let stake = 100;
@@ -863,7 +863,7 @@ mod test {
         assert!(repairs.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_extra_orphans() {
         let blockstore = setup_orphans();
         let stake = 100;
@@ -914,7 +914,7 @@ mod test {
         assert_eq!(repairs[2].slot(), 100);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_root() {
         let (_, _, mut repair_weight) = setup_orphan_repair_weight();
 
@@ -938,7 +938,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_missing_root() {
         let (_, _, mut repair_weight) = setup_orphan_repair_weight();
 
@@ -962,7 +962,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_root_existing_non_root_tree() {
         let (_, _, mut repair_weight) = setup_orphan_repair_weight();
 
@@ -983,7 +983,7 @@ mod test {
         assert_eq!(*repair_weight.slot_to_tree.get(&20).unwrap(), 20);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_root_check_unrooted_slots() {
         let (blockstore, bank, mut repair_weight) = setup_orphan_repair_weight();
 
@@ -1038,7 +1038,7 @@ mod test {
         assert_eq!(repair_weight.trees.len(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_votes_update_orphans_unrooted() {
         let root = 3;
         // Test chaining back to slots that were purged when the root 3 was set.
@@ -1107,7 +1107,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_find_ancestor_subtree_of_slot() {
         let (blockstore, _, mut repair_weight) = setup_orphan_repair_weight();
 

@@ -482,7 +482,7 @@ pub fn authorize_nonce_account(
     )
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::instruction::{Instruction, InstructionError};
@@ -491,7 +491,7 @@ mod tests {
         instruction.accounts.iter().map(|x| x.pubkey).collect()
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_move_many() {
         let alice_pubkey = Pubkey::new_unique();
         let bob_pubkey = Pubkey::new_unique();
@@ -504,7 +504,7 @@ mod tests {
         assert_eq!(get_keys(&instructions[1]), vec![alice_pubkey, carol_pubkey]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_nonce_account() {
         let from_pubkey = Pubkey::new_unique();
         let nonce_pubkey = Pubkey::new_unique();
@@ -518,7 +518,7 @@ mod tests {
         assert!(pubkeys.contains(&nonce_pubkey));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_nonce_error_decode() {
         use num_traits::FromPrimitive;
         fn pretty_err<T>(err: InstructionError) -> String

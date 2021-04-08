@@ -345,7 +345,7 @@ impl PohService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::poh_recorder::WorkingBank;
@@ -362,7 +362,7 @@ mod tests {
     use solana_sdk::timing;
     use std::time::Duration;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_poh_service() {
         solana_logger::setup();
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(2);

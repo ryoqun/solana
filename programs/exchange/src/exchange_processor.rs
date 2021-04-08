@@ -510,7 +510,7 @@ pub fn process_instruction(
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::{exchange_instruction, id};
@@ -578,7 +578,7 @@ mod test {
         Ok(())
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[rustfmt::skip]
     fn test_calculate_swap() {
         solana_logger::setup();
@@ -689,7 +689,7 @@ mod test {
         (trade, src)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_exchange_new_account() {
         solana_logger::setup();
         let (bank, mint_keypair) = create_bank(10_000);
@@ -708,7 +708,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_exchange_new_account_not_unallocated() {
         solana_logger::setup();
         let (bank, mint_keypair) = create_bank(10_000);
@@ -721,7 +721,7 @@ mod test {
             .expect_err(&format!("{}:{}", line!(), file!()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_exchange_new_transfer_request() {
         solana_logger::setup();
         let (bank, mint_keypair) = create_bank(10_000);
@@ -752,7 +752,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_exchange_new_trade_request() {
         solana_logger::setup();
         let (bank, mint_keypair) = create_bank(10_000);
@@ -793,7 +793,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_exchange_new_swap_request() {
         solana_logger::setup();
         let (bank, mint_keypair) = create_bank(10_000);
@@ -860,7 +860,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_exchange_trade_to_token_account() {
         solana_logger::setup();
         let (bank, mint_keypair) = create_bank(10_000);

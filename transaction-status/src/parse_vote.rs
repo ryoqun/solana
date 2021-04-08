@@ -128,7 +128,7 @@ fn check_num_vote_accounts(accounts: &[u8], num: usize) -> Result<(), ParseInstr
     check_num_accounts(accounts, num, ParsableProgram::Vote)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use solana_sdk::{hash::Hash, message::Message, pubkey::Pubkey};
@@ -137,7 +137,7 @@ mod test {
         vote_state::{Vote, VoteAuthorize, VoteInit},
     };
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::same_item_push)]
     fn test_parse_vote_instruction() {
         let mut keys: Vec<Pubkey> = vec![];

@@ -15,7 +15,7 @@ use std::{
     sync::{Arc, RwLock},
     time::Instant,
 };
-#[cfg(test)]
+#[cfg(testkun)]
 use trees::{Tree, TreeWalk};
 
 pub type ForkWeight = u64;
@@ -104,7 +104,7 @@ impl HeaviestSubtreeForkChoice {
         heaviest_subtree_fork_choice
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub(crate) fn new_from_bank_forks(bank_forks: &BankForks) -> Self {
         let mut frozen_banks: Vec<_> = bank_forks.frozen_banks().values().cloned().collect();
 
@@ -113,7 +113,7 @@ impl HeaviestSubtreeForkChoice {
         Self::new_from_frozen_banks(root, &frozen_banks)
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub(crate) fn new_from_tree(forks: Tree<Slot>) -> Self {
         let root = forks.root().data;
         let mut walk = TreeWalk::from(forks);
@@ -609,12 +609,12 @@ impl HeaviestSubtreeForkChoice {
             .unwrap_or(None)
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     fn set_stake_voted_at(&mut self, slot: Slot, stake_voted_at: u64) {
         self.fork_infos.get_mut(&slot).unwrap().stake_voted_at = stake_voted_at;
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     fn is_leaf(&self, slot: Slot) -> bool {
         self.fork_infos.get(&slot).unwrap().children.is_empty()
     }
@@ -742,7 +742,7 @@ impl<'a> Iterator for AncestorIterator<'a> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::consensus::test::VoteSimulator;
@@ -751,7 +751,7 @@ mod test {
     use std::{collections::HashSet, ops::Range};
     use trees::tr;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_max_by_weight() {
         /*
             Build fork structure:
@@ -782,7 +782,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_root_parent() {
         /*
             Build fork structure:
@@ -816,7 +816,7 @@ mod test {
         assert!(heaviest_subtree_fork_choice.parent(2).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ancestor_iterator() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let parents: Vec<_> = heaviest_subtree_fork_choice.ancestor_iterator(6).collect();
@@ -834,7 +834,7 @@ mod test {
         assert_eq!(parents, vec![2]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_from_frozen_banks() {
         /*
             Build fork structure:
@@ -874,7 +874,7 @@ mod test {
         assert!(heaviest_subtree_fork_choice.children(4).unwrap().is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_root() {
         let mut heaviest_subtree_fork_choice = setup_forks();
 
@@ -899,7 +899,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_root_and_add_votes() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
@@ -946,7 +946,7 @@ mod test {
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot(), 7);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_root_and_add_outdated_votes() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
@@ -1020,7 +1020,7 @@ mod test {
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot(), 4);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_best_overall_slot() {
         let heaviest_subtree_fork_choice = setup_forks();
         // Best overall path is 0 -> 1 -> 2 -> 4, so best leaf
@@ -1028,7 +1028,7 @@ mod test {
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot(), 4);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_propagate_new_leaf() {
         let mut heaviest_subtree_fork_choice = setup_forks();
 
@@ -1114,7 +1114,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_propagate_new_leaf_2() {
         /*
             Build fork structure:
@@ -1157,7 +1157,7 @@ mod test {
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot(), 6);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_aggregate_slot() {
         let mut heaviest_subtree_fork_choice = setup_forks();
 
@@ -1249,7 +1249,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_update_operations() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
@@ -1322,7 +1322,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_generate_update_operations() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
@@ -1435,7 +1435,7 @@ mod test {
         assert_eq!(expected_update_operations, generated_update_operations);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_votes() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;
@@ -1458,7 +1458,7 @@ mod test {
         assert_eq!(heaviest_subtree_fork_choice.best_overall_slot(), 4)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_best_child() {
         /*
             Build fork structure:
@@ -1495,7 +1495,7 @@ mod test {
         assert!(!heaviest_subtree_fork_choice.is_best_child(10));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge() {
         let stake = 100;
         let (bank, vote_pubkeys) = bank_utils::setup_bank_and_vote_pubkeys(3, stake);
@@ -1590,7 +1590,7 @@ mod test {
         assert_eq!(tree1.best_overall_slot(), 17);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_subtree_diff() {
         let mut heaviest_subtree_fork_choice = setup_forks();
 
@@ -1627,7 +1627,7 @@ mod test {
         assert!(heaviest_subtree_fork_choice.subtree_diff(0, 6).is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stray_restored_slot() {
         let forks = tr(0) / (tr(1) / tr(2));
         let heaviest_subtree_fork_choice = HeaviestSubtreeForkChoice::new_from_tree(forks);
@@ -1669,7 +1669,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_mark_valid_invalid_forks() {
         let mut heaviest_subtree_fork_choice = setup_forks();
         let stake = 100;

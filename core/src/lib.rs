@@ -89,7 +89,7 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-#[cfg(test)]
+#[cfg(testkun)]
 #[macro_use]
 extern crate serde_json;
 
@@ -99,6 +99,6 @@ extern crate solana_metrics;
 #[macro_use]
 extern crate solana_frozen_abi_macro;
 
-#[cfg(test)]
+#[cfg(testkun)]
 #[macro_use]
 extern crate matches;

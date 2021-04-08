@@ -13,7 +13,7 @@ pub fn process_instruction(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod test {
     use rand::{thread_rng, Rng};
     use solana_sdk::{
@@ -25,7 +25,7 @@ pub mod test {
         transaction::Transaction,
     };
 
-    #[test]
+    #[cfg(testkun)]
     fn test_secp256k1() {
         solana_logger::setup();
         let offsets = SecpSignatureOffsets::default();

@@ -56,7 +56,7 @@ pub fn process_instruction(
         .map_err(|_| InstructionError::AccountDataTooSmall)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::ownable_instruction;
@@ -116,7 +116,7 @@ mod tests {
         bank_client.send_and_confirm_message(&[payer_keypair, old_owner_keypair], message)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ownable_set_owner() {
         let (bank_client, payer_keypair) = create_bank_client(2);
         let account_keypair = Keypair::new();
@@ -152,7 +152,7 @@ mod tests {
         assert_eq!(account_owner_pubkey, new_owner_pubkey);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ownable_missing_owner_signature() {
         let mut account_owner_pubkey = solana_sdk::pubkey::new_rand();
         let owner_pubkey = account_owner_pubkey;
@@ -168,7 +168,7 @@ mod tests {
         assert_eq!(err, InstructionError::MissingRequiredSignature);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ownable_incorrect_owner() {
         let mut account_owner_pubkey = solana_sdk::pubkey::new_rand();
         let new_owner_pubkey = solana_sdk::pubkey::new_rand();

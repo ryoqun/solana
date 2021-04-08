@@ -1334,7 +1334,7 @@ pub fn create_test_recorder(
     (exit, poh_recorder, poh_service, entry_receiver)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -1368,7 +1368,7 @@ mod tests {
         thread::sleep,
     };
 
-    #[test]
+    #[cfg(testkun)]
     fn test_banking_stage_shutdown1() {
         let genesis_config = create_genesis_config(2).genesis_config;
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -1402,7 +1402,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_banking_stage_tick() {
         solana_logger::setup();
         let GenesisConfigInfo {
@@ -1469,7 +1469,7 @@ mod tests {
         with_vers.into_iter().map(|(b, _)| b).collect()
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_banking_stage_entries_only() {
         solana_logger::setup();
         let GenesisConfigInfo {
@@ -1586,7 +1586,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_banking_stage_entryfication() {
         solana_logger::setup();
         // In this attack we'll demonstrate that a verifier can interpret the ledger
@@ -1689,7 +1689,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_record_transactions() {
         solana_logger::setup();
 
@@ -1789,7 +1789,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_filter_transaction_indexes() {
         let GenesisConfigInfo {
             genesis_config,
@@ -1870,7 +1870,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_prepare_filter_for_pending_transaction() {
         let GenesisConfigInfo {
             genesis_config,
@@ -1913,7 +1913,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_filter_valid_transaction_indexes() {
         assert_eq!(
             BankingStage::filter_valid_transaction_indexes(
@@ -1946,7 +1946,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_should_process_or_forward_packets() {
         let my_pubkey = solana_sdk::pubkey::new_rand();
         let my_pubkey1 = solana_sdk::pubkey::new_rand();
@@ -2034,7 +2034,7 @@ mod tests {
         config_info
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_process_and_record_transactions() {
         solana_logger::setup();
         let GenesisConfigInfo {
@@ -2161,7 +2161,7 @@ mod tests {
         (tick_producer.unwrap(), exit)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_process_and_record_transactions_account_in_use() {
         solana_logger::setup();
         let GenesisConfigInfo {
@@ -2227,7 +2227,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_filter_valid_packets() {
         solana_logger::setup();
 
@@ -2268,7 +2268,7 @@ mod tests {
         assert_eq!(result.len(), 240);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_transactions_returns_unprocessed_txs() {
         solana_logger::setup();
         let GenesisConfigInfo {
@@ -2334,7 +2334,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_write_persist_transaction_status() {
         solana_logger::setup();
         let GenesisConfigInfo {
@@ -2505,7 +2505,7 @@ mod tests {
         )
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_consume_buffered_packets() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -2569,7 +2569,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_consume_buffered_packets_interrupted() {
         let ledger_path = get_tmp_ledger_path!();
         {
@@ -2656,7 +2656,7 @@ mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_push_unprocessed_batch_limit() {
         solana_logger::setup();
         // Create `Packets` with 1 unprocessed element

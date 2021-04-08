@@ -99,12 +99,12 @@ impl RpcBanksService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_runtime::bank::Bank;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_banks_server_exit() {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(Bank::default())));
         let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::default()));

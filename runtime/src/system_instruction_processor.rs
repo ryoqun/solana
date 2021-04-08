@@ -440,7 +440,7 @@ pub fn get_system_account_kind(account: &AccountSharedData) -> Option<SystemAcco
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{bank::Bank, bank_client::BankClient};
@@ -504,7 +504,7 @@ mod tests {
         RefCell::new(account::create_account_shared_data_for_test(&Rent::free()))
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account() {
         let new_owner = Pubkey::new(&[9; 32]);
         let from = solana_sdk::pubkey::new_rand();
@@ -534,7 +534,7 @@ mod tests {
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_with_seed() {
         let new_owner = Pubkey::new(&[9; 32]);
         let from = solana_sdk::pubkey::new_rand();
@@ -568,7 +568,7 @@ mod tests {
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_with_seed_separate_base_account() {
         let new_owner = Pubkey::new(&[9; 32]);
         let from = solana_sdk::pubkey::new_rand();
@@ -605,7 +605,7 @@ mod tests {
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_address_create_with_seed_mismatch() {
         let from = solana_sdk::pubkey::new_rand();
         let seed = "dull boy";
@@ -622,7 +622,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_with_seed_missing_sig() {
         let new_owner = Pubkey::new(&[9; 32]);
         let from = solana_sdk::pubkey::new_rand();
@@ -655,7 +655,7 @@ mod tests {
         assert_eq!(*to_account.borrow(), AccountSharedData::default());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_with_zero_lamports() {
         // create account with zero lamports transferred
         let new_owner = Pubkey::new(&[9; 32]);
@@ -688,7 +688,7 @@ mod tests {
         assert_eq!(to_account.borrow().data(), &[0, 0]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_negative_lamports() {
         // Attempt to create account with more lamports than remaining in from_account
         let new_owner = Pubkey::new(&[9; 32]);
@@ -711,7 +711,7 @@ mod tests {
         assert_eq!(result, Err(SystemError::ResultWithNegativeLamports.into()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_request_more_than_allowed_data_length() {
         let from_account = AccountSharedData::new_ref(100, 0, &system_program::id());
         let from = solana_sdk::pubkey::new_rand();
@@ -757,7 +757,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_already_in_use() {
         // Attempt to create system account in account already owned by another program
         let new_owner = Pubkey::new(&[9; 32]);
@@ -824,7 +824,7 @@ mod tests {
         assert_eq!(*owned_account.borrow(), unchanged_account);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_unsigned() {
         // Attempt to create an account without signing the transfer
         let new_owner = Pubkey::new(&[9; 32]);
@@ -878,7 +878,7 @@ mod tests {
         assert_eq!(result, Ok(()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_sysvar_invalid_id() {
         // Attempt to create system account in account already owned by another program
         let from = solana_sdk::pubkey::new_rand();
@@ -905,7 +905,7 @@ mod tests {
         assert_eq!(result, Err(SystemError::InvalidProgramId.into()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_data_populated() {
         // Attempt to create system account in account with populated data
         let new_owner = Pubkey::new(&[9; 32]);
@@ -938,7 +938,7 @@ mod tests {
         assert_eq!(result, Err(SystemError::AccountAlreadyInUse.into()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_from_account_is_nonce_fail() {
         let nonce = solana_sdk::pubkey::new_rand();
         let nonce_account = AccountSharedData::new_ref_data(
@@ -973,7 +973,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_assign() {
         let new_owner = Pubkey::new(&[9; 32]);
 
@@ -1013,7 +1013,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_assign_to_sysvar() {
         let new_owner = sysvar::id();
 
@@ -1032,7 +1032,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_bogus_instruction() {
         // Attempt to assign with no accounts
         let instruction = SystemInstruction::Assign {
@@ -1055,7 +1055,7 @@ mod tests {
         assert_eq!(result, Err(InstructionError::NotEnoughAccountKeys));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_transfer_lamports() {
         let from = solana_sdk::pubkey::new_rand();
         let from_account = AccountSharedData::new_ref(100, 0, &Pubkey::new(&[2; 32])); // account owner should not matter
@@ -1101,7 +1101,7 @@ mod tests {
         assert_eq!(to_keyed_account.account.borrow().lamports, 51);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_transfer_with_seed() {
         let base = solana_sdk::pubkey::new_rand();
         let base_account = AccountSharedData::new_ref(100, 0, &Pubkey::new(&[2; 32])); // account owner should not matter
@@ -1160,7 +1160,7 @@ mod tests {
         assert_eq!(to_keyed_account.account.borrow().lamports, 51);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_transfer_lamports_from_nonce_account_fail() {
         let from = solana_sdk::pubkey::new_rand();
         let from_account = AccountSharedData::new_ref_data(
@@ -1190,7 +1190,7 @@ mod tests {
         )
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_allocate() {
         let (genesis_config, mint_keypair) = create_genesis_config(100);
         let bank = Bank::new(&genesis_config);
@@ -1282,7 +1282,7 @@ mod tests {
         assert!(r.is_ok());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_zero_lamport_with_clean() {
         with_create_zero_lamport(|bank| {
             bank.freeze();
@@ -1295,14 +1295,14 @@ mod tests {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_zero_lamport_without_clean() {
         with_create_zero_lamport(|_| {
             // just do nothing; this should behave identically with test_create_zero_lamport_with_clean
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_assign_with_seed() {
         let (genesis_config, mint_keypair) = create_genesis_config(100);
         let bank = Bank::new(&genesis_config);
@@ -1333,7 +1333,7 @@ mod tests {
             .is_ok());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_system_unsigned_transaction() {
         let (genesis_config, alice_keypair) = create_genesis_config(100);
         let alice_pubkey = alice_keypair.pubkey();
@@ -1395,7 +1395,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_nonce_ix_no_acc_data_fail() {
         assert_eq!(
             process_nonce_instruction(&system_instruction::advance_nonce_account(
@@ -1406,7 +1406,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_nonce_ix_no_keyed_accs_fail() {
         assert_eq!(
             process_instruction(
@@ -1418,7 +1418,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_nonce_ix_only_nonce_acc_fail() {
         assert_eq!(
             process_instruction(
@@ -1434,7 +1434,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_nonce_ix_bad_recent_blockhash_state_fail() {
         assert_eq!(
             process_instruction(
@@ -1453,7 +1453,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_nonce_ix_ok() {
         let nonce_acc = nonce_account::create_account(1_000_000);
         process_instruction(
@@ -1500,7 +1500,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_withdraw_ix_no_acc_data_fail() {
         assert_eq!(
             process_nonce_instruction(&system_instruction::withdraw_nonce_account(
@@ -1513,7 +1513,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_withdraw_ix_no_keyed_accs_fail() {
         assert_eq!(
             process_instruction(
@@ -1525,7 +1525,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_withdraw_ix_only_nonce_acc_fail() {
         assert_eq!(
             process_instruction(
@@ -1541,7 +1541,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_withdraw_ix_bad_recent_blockhash_state_fail() {
         assert_eq!(
             process_instruction(
@@ -1561,7 +1561,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_withdraw_ix_bad_rent_state_fail() {
         assert_eq!(
             process_instruction(
@@ -1586,7 +1586,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_withdraw_ix_ok() {
         assert_eq!(
             process_instruction(
@@ -1611,7 +1611,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_initialize_ix_no_keyed_accs_fail() {
         assert_eq!(
             process_instruction(
@@ -1623,7 +1623,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_initialize_ix_only_nonce_acc_fail() {
         assert_eq!(
             process_instruction(
@@ -1639,7 +1639,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_initialize_bad_recent_blockhash_state_fail() {
         assert_eq!(
             process_instruction(
@@ -1662,7 +1662,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_initialize_ix_bad_rent_state_fail() {
         assert_eq!(
             process_instruction(
@@ -1686,7 +1686,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_initialize_ix_ok() {
         assert_eq!(
             process_instruction(
@@ -1710,7 +1710,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_authorize_ix_ok() {
         let nonce_acc = nonce_account::create_account(1_000_000);
         process_instruction(
@@ -1737,7 +1737,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_authorize_bad_account_data_fail() {
         assert_eq!(
             process_nonce_instruction(&system_instruction::authorize_nonce_account(
@@ -1749,7 +1749,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_system_account_kind_system_ok() {
         let system_account = AccountSharedData::default();
         assert_eq!(
@@ -1758,7 +1758,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_system_account_kind_nonce_ok() {
         let nonce_account = AccountSharedData::new_data(
             42,
@@ -1774,7 +1774,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_system_account_kind_uninitialized_nonce_account_fail() {
         assert_eq!(
             get_system_account_kind(&nonce_account::create_account(42).borrow()),
@@ -1782,14 +1782,14 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_system_account_kind_system_owner_nonzero_nonnonce_data_fail() {
         let other_data_account =
             AccountSharedData::new_data(42, b"other", &Pubkey::default()).unwrap();
         assert_eq!(get_system_account_kind(&other_data_account), None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_system_account_kind_nonsystem_owner_with_nonce_data_fail() {
         let nonce_account = AccountSharedData::new_data(
             42,

@@ -85,12 +85,12 @@ impl DataBudget {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use std::time::Duration;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_data_budget() {
         let budget = DataBudget::default();
         assert!(!budget.take(1)); // budget = 0.

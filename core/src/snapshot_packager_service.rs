@@ -69,7 +69,7 @@ impl SnapshotPackagerService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use bincode::serialize_into;
@@ -101,14 +101,14 @@ mod tests {
         path
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_package_snapshots_relative_ledger_path() {
         let temp_dir = make_tmp_dir_path();
         create_and_verify_snapshot(&temp_dir);
         remove_dir_all(temp_dir).expect("should remove tmp dir");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_package_snapshots() {
         create_and_verify_snapshot(TempDir::new().unwrap().path())
     }

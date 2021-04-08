@@ -157,7 +157,7 @@ pub fn create_and_add_stakes(
     total_lamports
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_sdk::rent::Rent;
@@ -192,7 +192,7 @@ mod tests {
     }
 
     //    #[ignore]
-    //    #[test]
+    //    #[cfg(testkun)]
     //    fn hex_test_keys_to_bs58() {
     //    vec![
     //        "ab22196afde08a090a3721eb20e3e1ea84d36e14d1a3f0815b236b300d9d33ef", // CX2sgoat51bnDgCN2YeesrTcscgVhnhWnwxtWEEEqBs4
@@ -223,7 +223,7 @@ mod tests {
     // );
     //}
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_stakes() {
         // 2 unlocks
 

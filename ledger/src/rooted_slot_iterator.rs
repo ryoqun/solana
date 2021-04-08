@@ -74,13 +74,13 @@ impl<'a> Iterator for RootedSlotIterator<'a> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::blockstore_processor::fill_blockstore_slot_with_ticks;
     use solana_sdk::hash::Hash;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rooted_slot_iterator() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -155,7 +155,7 @@ mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_skipping_rooted_slot_iterator() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();

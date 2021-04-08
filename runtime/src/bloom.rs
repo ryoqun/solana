@@ -215,13 +215,13 @@ impl<T: BloomHashIndex> From<AtomicBloom<T>> for Bloom<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use rayon::prelude::*;
     use solana_sdk::hash::{hash, Hash};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bloom_filter() {
         //empty
         let bloom: Bloom<Hash> = Bloom::random(0, 0.1, 100);
@@ -238,7 +238,7 @@ mod test {
         assert_eq!(bloom.keys.len(), 1);
         assert_eq!(bloom.bits.len(), 100);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_add_contains() {
         let mut bloom: Bloom<Hash> = Bloom::random(100, 0.1, 100);
         //known keys to avoid false positives in the test
@@ -254,7 +254,7 @@ mod test {
         bloom.add(&key);
         assert!(bloom.contains(&key));
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_random() {
         let mut b1: Bloom<Hash> = Bloom::random(10, 0.1, 100);
         let mut b2: Bloom<Hash> = Bloom::random(10, 0.1, 100);
@@ -272,7 +272,7 @@ mod test {
     // p = pow(1 - exp(-k / (m / n)), k)
     // m = ceil((n * log(p)) / log(1 / pow(2, log(2))));
     // k = round((m / n) * log(2));
-    #[test]
+    #[cfg(testkun)]
     fn test_filter_math() {
         assert_eq!(Bloom::<Hash>::num_bits(100f64, 0.1f64) as u64, 480u64);
         assert_eq!(Bloom::<Hash>::num_bits(100f64, 0.01f64) as u64, 959u64);
@@ -283,7 +283,7 @@ mod test {
         assert_eq!(Bloom::<Hash>::num_keys(20f64, 1000f64) as u64, 1u64);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_debug() {
         let mut b: Bloom<Hash> = Bloom::new(3, vec![100]);
         b.add(&Hash::default());
@@ -301,7 +301,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_atomic_bloom() {
         let mut rng = rand::thread_rng();
         let hash_values: Vec<_> = std::iter::repeat_with(|| solana_sdk::hash::new_rand(&mut rng))
@@ -326,7 +326,7 @@ mod test {
         assert!(false_positive < 2_000, "false_positive: {}", false_positive);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_atomic_bloom_round_trip() {
         let mut rng = rand::thread_rng();
         let keys: Vec<_> = std::iter::repeat_with(|| rng.gen()).take(5).collect();

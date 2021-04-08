@@ -15,10 +15,10 @@ use solana_client::{
         SlotUpdate,
     },
 };
-#[cfg(test)]
+#[cfg(testkun)]
 use solana_runtime::bank_forks::BankForks;
 use solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Signature};
-#[cfg(test)]
+#[cfg(testkun)]
 use std::sync::RwLock;
 use std::{
     str::FromStr,
@@ -200,7 +200,7 @@ impl RpcSolPubSubImpl {
         Self { uid, subscriptions }
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     fn default_with_bank_forks(bank_forks: Arc<RwLock<BankForks>>) -> Self {
         let uid = Arc::new(atomic::AtomicUsize::default());
         let subscriptions = Arc::new(RpcSubscriptions::default_with_bank_forks(bank_forks));
@@ -538,7 +538,7 @@ impl RpcSolPubSub for RpcSolPubSubImpl {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -606,7 +606,7 @@ mod tests {
         Arc::new(Session::new(mpsc::unbounded().0))
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_signature_subscribe() {
         let GenesisConfigInfo {
@@ -731,7 +731,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&expected).unwrap(), response);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_signature_unsubscribe() {
         let GenesisConfigInfo {
@@ -776,7 +776,7 @@ mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_account_subscribe() {
         let GenesisConfigInfo {
@@ -890,7 +890,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_account_subscribe_with_encoding() {
         let GenesisConfigInfo {
@@ -980,7 +980,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&expected).unwrap(), response);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_account_unsubscribe() {
         let bob_pubkey = solana_sdk::pubkey::new_rand();
@@ -1018,7 +1018,7 @@ mod tests {
         assert_eq!(expected, result);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_account_commitment_not_fulfilled() {
         let GenesisConfigInfo {
@@ -1068,7 +1068,7 @@ mod tests {
         let _panic = robust_poll_or_panic(receiver);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_account_commitment() {
         let GenesisConfigInfo {
             genesis_config,
@@ -1149,7 +1149,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&expected).unwrap(), response);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_slot_subscribe() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
@@ -1177,7 +1177,7 @@ mod tests {
         assert_eq!(expected, response);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_slot_unsubscribe() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
@@ -1213,7 +1213,7 @@ mod tests {
             .is_ok());
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_vote_subscribe() {
         let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::new_for_tests()));
@@ -1291,7 +1291,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_vote_unsubscribe() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);

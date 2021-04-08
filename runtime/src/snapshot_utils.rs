@@ -1012,14 +1012,14 @@ pub fn process_accounts_package_pre(
     )
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use assert_matches::assert_matches;
     use bincode::{deserialize_from, serialize_into};
     use std::mem::size_of;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_serialize_snapshot_data_file_under_limit() {
         let temp_dir = tempfile::TempDir::new().unwrap();
         let expected_consumed_size = size_of::<u32>() as u64;
@@ -1035,7 +1035,7 @@ mod tests {
         assert_eq!(consumed_size, expected_consumed_size);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_serialize_snapshot_data_file_over_limit() {
         let temp_dir = tempfile::TempDir::new().unwrap();
         let expected_consumed_size = size_of::<u32>() as u64;
@@ -1050,7 +1050,7 @@ mod tests {
         assert_matches!(result, Err(SnapshotError::Io(ref message)) if message.to_string().starts_with("too large snapshot data file to serialize"));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_snapshot_data_file_under_limit() {
         let expected_data = 2323_u32;
         let expected_consumed_size = size_of::<u32>() as u64;
@@ -1075,7 +1075,7 @@ mod tests {
         assert_eq!(actual_data, expected_data);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_snapshot_data_file_over_limit() {
         let expected_data = 2323_u32;
         let expected_consumed_size = size_of::<u32>() as u64;
@@ -1099,7 +1099,7 @@ mod tests {
         assert_matches!(result, Err(SnapshotError::Io(ref message)) if message.to_string().starts_with("too large snapshot data file to deserialize"));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_snapshot_data_file_extra_data() {
         let expected_data = 2323_u32;
         let expected_consumed_size = size_of::<u32>() as u64;
@@ -1124,7 +1124,7 @@ mod tests {
         assert_matches!(result, Err(SnapshotError::Io(ref message)) if message.to_string().starts_with("invalid snapshot data file"));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_snapshot_hash_of() {
         assert_eq!(
             snapshot_hash_of(&format!("snapshot-42-{}.tar.bz2", Hash::default())),

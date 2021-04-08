@@ -10,7 +10,7 @@ use test::Bencher;
 const NUM_HASHES: u64 = 400;
 const NUM_ENTRIES: usize = 800;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_poh_verify_ticks(bencher: &mut Bencher) {
     solana_logger::setup();
     let zero = Hash::default();
@@ -27,7 +27,7 @@ fn bench_poh_verify_ticks(bencher: &mut Bencher) {
     })
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_poh_verify_transaction_entries(bencher: &mut Bencher) {
     let zero = Hash::default();
     let start_hash = hash(&zero.as_ref());

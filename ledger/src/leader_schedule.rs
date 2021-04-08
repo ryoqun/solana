@@ -101,13 +101,13 @@ impl Index<u64> for LeaderSchedule {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use rand::Rng;
     use std::iter::repeat_with;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_leader_schedule_index() {
         let pubkey0 = solana_sdk::pubkey::new_rand();
         let pubkey1 = solana_sdk::pubkey::new_rand();
@@ -117,7 +117,7 @@ mod tests {
         assert_eq!(leader_schedule[2], pubkey0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_leader_schedule_basic() {
         let num_keys = 10;
         let stakes: Vec<_> = (0..num_keys)
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(leader_schedule, leader_schedule2);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_repeated_leader_schedule() {
         let num_keys = 10;
         let stakes: Vec<_> = (0..num_keys)
@@ -159,7 +159,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_repeated_leader_schedule_specific() {
         let alice_pubkey = solana_sdk::pubkey::new_rand();
         let bob_pubkey = solana_sdk::pubkey::new_rand();
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(leaders2, leaders2_expected);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_indices() {
         const NUM_SLOTS: usize = 97;
         let mut rng = rand::thread_rng();

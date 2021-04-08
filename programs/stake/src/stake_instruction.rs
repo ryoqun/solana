@@ -617,7 +617,7 @@ pub fn process_instruction(
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use bincode::serialize;
@@ -714,7 +714,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_process_instruction() {
         assert_eq!(
             process_instruction(&initialize(
@@ -800,7 +800,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_spoofed_stake_accounts() {
         assert_eq!(
             process_instruction(&initialize(
@@ -910,7 +910,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_process_instruction_decode_bail() {
         // these will not call stake_state, have bogus contents
 
@@ -1130,7 +1130,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_custom_error_decode() {
         use num_traits::FromPrimitive;
         fn pretty_err<T>(err: InstructionError) -> String

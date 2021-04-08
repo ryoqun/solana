@@ -35,11 +35,11 @@ fn process_instruction(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ristretto() {
         test_ristretto_mul().unwrap();
     }

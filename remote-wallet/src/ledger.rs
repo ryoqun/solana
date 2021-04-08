@@ -599,11 +599,11 @@ fn is_last_part(p2: u8) -> bool {
     p2 & P2_MORE == 0
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_last_part() {
         // Bytes with bit-2 set to 0 should return true
         assert!(is_last_part(0b00));
@@ -627,7 +627,7 @@ mod tests {
         assert!(is_last_part(p2 & !P2_MORE));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_status() {
         LedgerWallet::parse_status(APDU_SUCCESS_CODE).expect("unexpected result");
         if let RemoteWalletError::LedgerError(err) = LedgerWallet::parse_status(0x6985).unwrap_err()

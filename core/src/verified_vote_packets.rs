@@ -32,7 +32,7 @@ impl VerifiedVotePackets {
         Ok(())
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     fn get_vote_packets(&self, key: &CrdsValueLabel) -> Option<&(u64, Slot, Packets)> {
         self.0.get(key)
     }
@@ -65,14 +65,14 @@ impl VerifiedVotePackets {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::result::Error;
     use crossbeam_channel::{unbounded, RecvTimeoutError};
     use solana_perf::packet::{Meta, Packet};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_latest_votes() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let label1 = CrdsValueLabel::Vote(0, pubkey);
@@ -114,7 +114,7 @@ mod tests {
         assert!(updates.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_get_and_process_vote_packets() {
         let (s, r) = unbounded();
         let pubkey = solana_sdk::pubkey::new_rand();

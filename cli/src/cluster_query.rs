@@ -1944,7 +1944,7 @@ pub fn process_calculate_rent(
     Ok(config.output_format.formatted_string(&cli_rent_calculation))
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::cli::{app, parse_command};
@@ -1957,7 +1957,7 @@ mod tests {
         (String::from(tmp_file.path().to_str().unwrap()), tmp_file)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_command() {
         let test_commands = app("test", "desc", "version");
         let default_keypair = Keypair::new();

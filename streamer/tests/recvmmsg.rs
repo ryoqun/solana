@@ -6,7 +6,7 @@ use solana_streamer::recvmmsg::*;
 use std::net::UdpSocket;
 use std::time::Instant;
 
-#[test]
+#[cfg(testkun)]
 pub fn test_recv_mmsg_batch_size() {
     let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
     let addr = reader.local_addr().unwrap();

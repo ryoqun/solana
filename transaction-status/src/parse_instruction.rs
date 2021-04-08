@@ -143,12 +143,12 @@ pub(crate) fn check_num_accounts(
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use serde_json::json;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse() {
         let memo_instruction = CompiledInstruction {
             program_id_index: 0,

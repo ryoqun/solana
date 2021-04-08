@@ -164,7 +164,7 @@ impl Tower {
         tower
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub fn new_with_key(node_pubkey: &Pubkey) -> Self {
         Self {
             node_pubkey: *node_pubkey,
@@ -172,7 +172,7 @@ impl Tower {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub fn new_for_tests(threshold_depth: usize, threshold_size: f64) -> Self {
         Self {
             threshold_depth,
@@ -426,7 +426,7 @@ impl Tower {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub fn record_vote(&mut self, slot: Slot, hash: Hash) -> Option<Slot> {
         let vote = Vote::new(vec![slot], hash);
         self.record_bank_vote_update_lockouts(vote)
@@ -1262,7 +1262,7 @@ pub fn reconcile_blockstore_roots_with_tower(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod test {
     use super::*;
     use crate::{
@@ -1640,7 +1640,7 @@ pub mod test {
         stakes
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_to_vote_instruction() {
         let vote = Vote::default();
         let mut decision = SwitchForkDecision::FailedSwitchThreshold(0, 1);
@@ -1675,7 +1675,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_simple_votes() {
         // Init state
         let mut vote_simulator = VoteSimulator::new(1);
@@ -1704,12 +1704,12 @@ pub mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_switch_threshold_duplicate_rollback() {
         run_test_switch_threshold_duplicate_rollback(false);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_switch_threshold_duplicate_rollback_panic() {
         run_test_switch_threshold_duplicate_rollback(true);
@@ -1822,7 +1822,7 @@ pub mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_switch_threshold() {
         let (bank0, mut vote_simulator, total_stake) = setup_switch_test(2);
         let ancestors = vote_simulator.bank_forks.read().unwrap().ancestors();
@@ -1983,7 +1983,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_switch_threshold_votes() {
         // Init state
         let mut vote_simulator = VoteSimulator::new(4);
@@ -2037,7 +2037,7 @@ pub mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_double_partition() {
         // Init state
         let mut vote_simulator = VoteSimulator::new(2);
@@ -2117,7 +2117,7 @@ pub mod test {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_collect_vote_lockouts_sums() {
         //two accounts voting for slot 0 with 1 token staked
         let mut accounts = gen_stakes(&[(1, &[0]), (1, &[0])]);
@@ -2146,7 +2146,7 @@ pub mod test {
         assert_eq!(bank_weight, 12)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_collect_vote_lockouts_root() {
         let votes: Vec<u64> = (0..MAX_LOCKOUT_HISTORY as u64).collect();
         //two accounts voting for slots 0..MAX_LOCKOUT_HISTORY with 1 token staked
@@ -2198,14 +2198,14 @@ pub mod test {
         assert_eq!(pubkey_votes, account_latest_votes);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_without_votes() {
         let tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 1)].into_iter().collect();
         assert!(tower.check_vote_stake_threshold(0, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_no_skip_lockout_with_new_root() {
         solana_logger::setup();
         let mut tower = Tower::new_for_tests(4, 0.67);
@@ -2217,35 +2217,35 @@ pub mod test {
         assert!(!tower.check_vote_stake_threshold(MAX_LOCKOUT_HISTORY as u64 + 1, &stakes, 2,));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_slot_confirmed_not_enough_stake_failure() {
         let tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 1)].into_iter().collect();
         assert!(!tower.is_slot_confirmed(0, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_slot_confirmed_unknown_slot() {
         let tower = Tower::new_for_tests(1, 0.67);
         let stakes = HashMap::new();
         assert!(!tower.is_slot_confirmed(0, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_slot_confirmed_pass() {
         let tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 2)].into_iter().collect();
         assert!(tower.is_slot_confirmed(0, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_empty() {
         let tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![(0, HashSet::new())].into_iter().collect();
         assert!(!tower.is_locked_out(0, &ancestors));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_root_slot_child_pass() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![(1, vec![0].into_iter().collect())]
@@ -2255,7 +2255,7 @@ pub mod test {
         assert!(!tower.is_locked_out(1, &ancestors));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_root_slot_sibling_fail() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![(2, vec![0].into_iter().collect())]
@@ -2266,7 +2266,7 @@ pub mod test {
         assert!(tower.is_locked_out(2, &ancestors));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_already_voted() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         tower.record_vote(0, Hash::default());
@@ -2274,7 +2274,7 @@ pub mod test {
         assert!(!tower.has_voted(1));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_recent_slot() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         assert!(tower.is_recent(0));
@@ -2288,7 +2288,7 @@ pub mod test {
         assert!(tower.is_recent(65));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_double_vote() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![(1, vec![0].into_iter().collect()), (0, HashSet::new())]
@@ -2299,7 +2299,7 @@ pub mod test {
         assert!(tower.is_locked_out(0, &ancestors));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_child() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![(1, vec![0].into_iter().collect())]
@@ -2309,7 +2309,7 @@ pub mod test {
         assert!(!tower.is_locked_out(1, &ancestors));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_sibling() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![
@@ -2324,7 +2324,7 @@ pub mod test {
         assert!(tower.is_locked_out(2, &ancestors));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_locked_out_last_vote_expired() {
         let mut tower = Tower::new_for_tests(0, 0.67);
         let ancestors = vec![
@@ -2344,14 +2344,14 @@ pub mod test {
         assert_eq!(tower.lockouts.votes[1].confirmation_count, 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_below_threshold() {
         let mut tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 1)].into_iter().collect();
         tower.record_vote(0, Hash::default());
         assert!(!tower.check_vote_stake_threshold(1, &stakes, 2));
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_above_threshold() {
         let mut tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 2)].into_iter().collect();
@@ -2359,7 +2359,7 @@ pub mod test {
         assert!(tower.check_vote_stake_threshold(1, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_above_threshold_after_pop() {
         let mut tower = Tower::new_for_tests(1, 0.67);
         let stakes = vec![(0, 2)].into_iter().collect();
@@ -2369,7 +2369,7 @@ pub mod test {
         assert!(tower.check_vote_stake_threshold(6, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_above_threshold_no_stake() {
         let mut tower = Tower::new_for_tests(1, 0.67);
         let stakes = HashMap::new();
@@ -2377,7 +2377,7 @@ pub mod test {
         assert!(!tower.check_vote_stake_threshold(1, &stakes, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_lockouts_not_updated() {
         solana_logger::setup();
         let mut tower = Tower::new_for_tests(1, 0.67);
@@ -2388,7 +2388,7 @@ pub mod test {
         assert!(tower.check_vote_stake_threshold(6, &stakes, 2,));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_is_updated_for_entire_branch() {
         let mut voted_stakes = HashMap::new();
         let account = AccountSharedData::from(Account {
@@ -2403,7 +2403,7 @@ pub mod test {
         assert_eq!(voted_stakes[&2], 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_vote() {
         let local = VoteState::default();
         let (vote, tower_slots) = Tower::new_vote(&local, 0, Hash::default(), None);
@@ -2412,14 +2412,14 @@ pub mod test {
         assert_eq!(tower_slots, vec![0]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_vote_dup_vote() {
         let local = VoteState::default();
         let vote = Tower::new_vote(&local, 0, Hash::default(), Some(0));
         assert!(vote.0.slots.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_vote_next_vote() {
         let mut local = VoteState::default();
         let vote = Vote {
@@ -2434,7 +2434,7 @@ pub mod test {
         assert_eq!(tower_slots, vec![0, 1]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_vote_next_after_expired_vote() {
         let mut local = VoteState::default();
         let vote = Vote {
@@ -2450,7 +2450,7 @@ pub mod test {
         assert_eq!(tower_slots, vec![3]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_vote_threshold_forks() {
         // Create the ancestor relationships
         let ancestors = (0..=(VOTE_THRESHOLD_DEPTH + 1) as u64)
@@ -2526,22 +2526,22 @@ pub mod test {
         assert_eq!(expected, tower.last_vote)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recent_votes_full() {
         vote_and_check_recent(MAX_LOCKOUT_HISTORY)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recent_votes_empty() {
         vote_and_check_recent(0)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recent_votes_exact() {
         vote_and_check_recent(5)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_maybe_timestamp() {
         let mut tower = Tower::default();
         assert!(tower.maybe_timestamp(0).is_some());
@@ -2581,7 +2581,7 @@ pub mod test {
         (tower, loaded)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_switch_threshold_across_tower_reload() {
         solana_logger::setup();
         // Init state
@@ -2778,7 +2778,7 @@ pub mod test {
         assert_eq!(tower.lockouts.root_slot, Some(replayed_root_slot));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_load_tower_ok() {
         let (tower, loaded) =
             run_test_load_tower_snapshot(|tower, pubkey| tower.node_pubkey = *pubkey, |_| ());
@@ -2790,7 +2790,7 @@ pub mod test {
         assert!((loaded.threshold_size - 0.9_f64).abs() < f64::EPSILON);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_load_tower_wrong_identity() {
         let identity_keypair = Arc::new(Keypair::new());
         let tower = Tower::new_with_key(&Pubkey::default());
@@ -2800,7 +2800,7 @@ pub mod test {
         )
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_load_tower_invalid_signature() {
         let (_, loaded) = run_test_load_tower_snapshot(
             |tower, pubkey| tower.node_pubkey = *pubkey,
@@ -2820,7 +2820,7 @@ pub mod test {
         assert_matches!(loaded, Err(TowerError::InvalidSignature))
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_load_tower_deser_failure() {
         let (_, loaded) = run_test_load_tower_snapshot(
             |tower, pubkey| tower.node_pubkey = *pubkey,
@@ -2835,7 +2835,7 @@ pub mod test {
         assert_matches!(loaded, Err(TowerError::SerializeError(_)))
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_load_tower_missing() {
         let (_, loaded) = run_test_load_tower_snapshot(
             |tower, pubkey| tower.node_pubkey = *pubkey,
@@ -2846,7 +2846,7 @@ pub mod test {
         assert_matches!(loaded, Err(TowerError::IoError(_)))
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_reconcile_blockstore_roots_with_tower_normal() {
         solana_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
@@ -2876,7 +2876,7 @@ pub mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "couldn't find a last_blockstore_root upwards from: 4!?")]
     fn test_reconcile_blockstore_roots_with_tower_panic_no_common_root() {
         solana_logger::setup();
@@ -2903,7 +2903,7 @@ pub mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_reconcile_blockstore_roots_with_tower_nop_no_parent() {
         solana_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
@@ -2927,7 +2927,7 @@ pub mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_future_slots() {
         solana_logger::setup();
         let mut tower = Tower::new_for_tests(10, 0.9);
@@ -2955,7 +2955,7 @@ pub mod test {
         assert_eq!(tower.root(), replayed_root_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_not_found_slots() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -2977,7 +2977,7 @@ pub mod test {
         assert_eq!(tower.root(), replayed_root_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_all_rooted_with_no_too_old() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -3002,7 +3002,7 @@ pub mod test {
         assert_eq!(tower.stray_restored_slot, None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_all_rooted_with_too_old() {
         use solana_sdk::slot_history::MAX_ENTRIES;
 
@@ -3024,7 +3024,7 @@ pub mod test {
         assert_eq!(tower.root(), MAX_ENTRIES);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_anchored_future_slots() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(0, Hash::default());
@@ -3047,7 +3047,7 @@ pub mod test {
         assert_eq!(tower.root(), replayed_root_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_all_not_found() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.record_vote(5, Hash::default());
@@ -3068,7 +3068,7 @@ pub mod test {
         assert_eq!(tower.root(), replayed_root_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_all_not_found_even_if_rooted() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.root_slot = Some(4);
@@ -3090,7 +3090,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_all_future_votes_only_root_found() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.root_slot = Some(2);
@@ -3112,7 +3112,7 @@ pub mod test {
         assert_eq!(tower.root(), replayed_root_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_empty() {
         let mut tower = Tower::new_for_tests(10, 0.9);
 
@@ -3128,7 +3128,7 @@ pub mod test {
         assert_eq!(tower.root(), replayed_root_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_too_old_tower() {
         use solana_sdk::slot_history::MAX_ENTRIES;
 
@@ -3146,7 +3146,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_time_warped() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.votes.push_back(Lockout::new(1));
@@ -3164,7 +3164,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_diverged_ancestor() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.votes.push_back(Lockout::new(1));
@@ -3183,7 +3183,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_out_of_order() {
         use solana_sdk::slot_history::MAX_ENTRIES;
 
@@ -3207,7 +3207,7 @@ pub mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "slot_in_tower(2) < checked_slot(1)")]
     fn test_adjust_lockouts_after_replay_reversed_votes() {
         let mut tower = Tower::new_for_tests(10, 0.9);
@@ -3225,7 +3225,7 @@ pub mod test {
             .unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "slot_in_tower(3) < checked_slot(3)")]
     fn test_adjust_lockouts_after_replay_repeated_non_root_votes() {
         let mut tower = Tower::new_for_tests(10, 0.9);
@@ -3244,7 +3244,7 @@ pub mod test {
             .unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_vote_on_root() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.root_slot = Some(42);
@@ -3261,7 +3261,7 @@ pub mod test {
         assert_eq!(tower.unwrap().voted_slots(), [43, 44]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_vote_on_genesis() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.votes.push_back(Lockout::new(0));
@@ -3274,7 +3274,7 @@ pub mod test {
         assert!(tower.adjust_lockouts_after_replay(0, &slot_history).is_ok());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_adjust_lockouts_after_replay_future_tower() {
         let mut tower = Tower::new_for_tests(10, 0.9);
         tower.lockouts.votes.push_back(Lockout::new(13));

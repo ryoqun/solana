@@ -325,7 +325,7 @@ impl Tvu {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
     use crate::{
@@ -343,7 +343,7 @@ pub mod tests {
     use std::sync::atomic::Ordering;
 
     #[ignore]
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_tvu_exit() {
         solana_logger::setup();

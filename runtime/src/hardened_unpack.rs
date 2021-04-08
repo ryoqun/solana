@@ -327,13 +327,13 @@ fn is_valid_genesis_archive_entry(parts: &[&str], kind: tar::EntryType) -> bool 
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use assert_matches::assert_matches;
     use tar::{Builder, Header};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_is_valid_entry() {
         assert!(is_valid_snapshot_archive_entry(
             &["snapshots"],
@@ -386,7 +386,7 @@ mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_valid_snapshot_accounts() {
         solana_logger::setup();
         assert!(is_valid_snapshot_archive_entry(
@@ -424,7 +424,7 @@ mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_is_valid_archive_entry() {
         assert!(is_valid_genesis_archive_entry(
             &["genesis.bin"],
@@ -473,7 +473,7 @@ mod tests {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_snapshot_ok() {
         let mut header = Header::new_gnu();
         header.set_path("version").unwrap();
@@ -489,7 +489,7 @@ mod tests {
         assert_matches!(result, Ok(()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_genesis_ok() {
         let mut header = Header::new_gnu();
         header.set_path("genesis.bin").unwrap();
@@ -505,7 +505,7 @@ mod tests {
         assert_matches!(result, Ok(()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_snapshot_invalid_path() {
         let mut header = Header::new_gnu();
         // bypass the sanitization of the .set_path()
@@ -558,7 +558,7 @@ mod tests {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_itself() {
         assert_matches!(
             with_archive_unpack_snapshot_invalid_path("ryoqun/work"),
@@ -572,7 +572,7 @@ mod tests {
         assert_matches!(with_archive_unpack_snapshot_invalid_path("../../../dangerous"), Err(UnpackError::Archive(ref message)) if message == "failed!");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_snapshot_invalid_entry() {
         let mut header = Header::new_gnu();
         header.set_path("foo").unwrap();
@@ -587,7 +587,7 @@ mod tests {
         assert_matches!(result, Err(UnpackError::Archive(ref message)) if message == "extra entry found: \"foo\" Regular");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_snapshot_too_large() {
         let mut header = Header::new_gnu();
         header.set_path("version").unwrap();
@@ -608,13 +608,13 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_unpack_snapshot_bad_unpack() {
         let result = check_unpack_result(false, "abc".to_string());
         assert_matches!(result, Err(UnpackError::Archive(ref message)) if message == "failed to unpack: \"abc\"");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_checked_total_size_sum() {
         let result = checked_total_size_sum(500, 500, MAX_SNAPSHOT_ARCHIVE_UNPACKED_ACTUAL_SIZE);
         assert_matches!(result, Ok(1000));
@@ -633,7 +633,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_archive_checked_total_size_count() {
         let result = checked_total_count_increment(101, MAX_SNAPSHOT_ARCHIVE_UNPACKED_COUNT);
         assert_matches!(result, Ok(102));

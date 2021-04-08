@@ -71,13 +71,13 @@ pub fn from_keyed_account(account: &KeyedAccount) -> Result<Config, InstructionE
     Config::from(&*account.try_account_ref()?).ok_or(InstructionError::InvalidArgument)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_sdk::pubkey::Pubkey;
     use std::cell::RefCell;
 
-    #[test]
+    #[cfg(testkun)]
     fn test() {
         let account = RefCell::new(create_account(0, &Config::default()));
         assert_eq!(Config::from(&account.borrow()), Some(Config::default()));

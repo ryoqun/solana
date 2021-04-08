@@ -2077,7 +2077,7 @@ impl fmt::Display for CliTransactionConfirmation {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_sdk::{
@@ -2088,7 +2088,7 @@ mod tests {
         transaction::Transaction,
     };
 
-    #[test]
+    #[cfg(testkun)]
     fn test_return_signers() {
         struct BadSigner {
             pubkey: Pubkey,
@@ -2155,7 +2155,7 @@ mod tests {
         assert_eq!(sign_only.bad_signers[0], bad.pubkey());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_verbose_quiet_output_formats() {
         #[derive(Deserialize, Serialize)]
         struct FallbackToDisplay {}

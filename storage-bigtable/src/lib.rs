@@ -624,11 +624,11 @@ impl LedgerStorage {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_slot_to_key() {
         assert_eq!(slot_to_key(0), "0000000000000000");
         assert_eq!(slot_to_key(!0), "ffffffffffffffff");

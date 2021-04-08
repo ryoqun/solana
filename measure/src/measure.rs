@@ -53,13 +53,13 @@ impl fmt::Display for Measure {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use std::thread::sleep;
     use std::time::Duration;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_measure() {
         let mut measure = Measure::start("test");
         sleep(Duration::from_secs(1));
@@ -69,7 +69,7 @@ mod tests {
         assert!(measure.as_us() >= 999_000 && measure.as_us() <= 1_010_000);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_measure_display() {
         let measure = Measure {
             name: "test_ns",

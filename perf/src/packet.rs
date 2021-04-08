@@ -69,7 +69,7 @@ pub fn to_packets_chunked<T: Serialize>(xs: &[T], chunks: usize) -> Vec<Packets>
     out
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub fn to_packets<T: Serialize>(xs: &[T]) -> Vec<Packets> {
     to_packets_chunked(xs, NUM_PACKETS)
 }
@@ -106,14 +106,14 @@ where
         .deserialize_from(data)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_sdk::hash::Hash;
     use solana_sdk::signature::{Keypair, Signer};
     use solana_sdk::system_transaction;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_to_packets() {
         let keypair = Keypair::new();
         let hash = Hash::new(&[1; 32]);
@@ -134,7 +134,7 @@ mod tests {
         assert_eq!(rv[1].packets.len(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_to_packets_pinning() {
         let recycler = PacketsRecycler::new_without_limit("");
         for i in 0..2 {

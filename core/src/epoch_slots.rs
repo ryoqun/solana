@@ -330,16 +330,16 @@ impl EpochSlots {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_max_size() {
         let epoch_slots = EpochSlots::default();
         assert!(epoch_slots.max_compressed_slot_size() > 0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_uncompressed_add_1() {
         let mut slots = Uncompressed::new(1);
         assert_eq!(slots.slots.capacity(), 8);
@@ -348,34 +348,34 @@ mod tests {
         assert!(slots.to_slots(2).is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_to_slots_overflow() {
         let mut slots = Uncompressed::new(1);
         slots.num = 100;
         assert!(slots.to_slots(0).is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_uncompressed_add_2() {
         let mut slots = Uncompressed::new(1);
         assert_eq!(slots.add(&[1, 2]), 2);
         assert_eq!(slots.to_slots(1), vec![1, 2]);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_uncompressed_add_3a() {
         let mut slots = Uncompressed::new(1);
         assert_eq!(slots.add(&[1, 3, 2]), 3);
         assert_eq!(slots.to_slots(1), vec![1, 2, 3]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_uncompressed_add_3b() {
         let mut slots = Uncompressed::new(1);
         assert_eq!(slots.add(&[1, 10, 2]), 1);
         assert_eq!(slots.to_slots(1), vec![1]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_uncompressed_add_3c() {
         let mut slots = Uncompressed::new(2);
         assert_eq!(slots.add(&[1, 10, 2]), 3);
@@ -384,7 +384,7 @@ mod tests {
         assert_eq!(slots.to_slots(3), vec![10]);
         assert_eq!(slots.to_slots(11).is_empty(), true);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_compressed() {
         let mut slots = Uncompressed::new(100);
         slots.add(&[1, 701, 2]);
@@ -399,7 +399,7 @@ mod tests {
         assert_eq!(slots.to_slots(1), vec![1, 2, 701]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_sanitize() {
         let mut slots = Uncompressed::new(100);
         slots.add(&[1, 701, 2]);
@@ -444,7 +444,7 @@ mod tests {
         assert_eq!(o.sanitize(), Err(SanitizeError::ValueOutOfBounds));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_fill_range() {
         let range: Vec<Slot> = (0..5000).collect();
         let mut slots = EpochSlots::default();
@@ -454,7 +454,7 @@ mod tests {
         assert_eq!(slots.to_slots(4999), vec![4999]);
         assert_eq!(slots.to_slots(5000).is_empty(), true);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_fill_sparce_range() {
         let range: Vec<Slot> = (0..5000).map(|x| x * 3).collect();
         let mut slots = EpochSlots::default();
@@ -471,7 +471,7 @@ mod tests {
         assert_eq!(slots.to_slots(4999 * 3), vec![4999 * 3]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_epoch_slots_fill_large_sparce_range() {
         let range: Vec<Slot> = (0..5000).map(|x| x * 7).collect();
         let mut slots = EpochSlots::default();
@@ -479,7 +479,7 @@ mod tests {
         assert_eq!(slots.to_slots(0), range);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::same_item_push)]
     fn test_epoch_slots_fill_uncompressed_random_range() {
         use rand::Rng;
@@ -498,7 +498,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::same_item_push)]
     fn test_epoch_slots_fill_compressed_random_range() {
         use rand::Rng;
@@ -519,7 +519,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::same_item_push)]
     fn test_epoch_slots_fill_random_range() {
         use rand::Rng;

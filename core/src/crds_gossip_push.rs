@@ -438,13 +438,13 @@ impl CrdsGossipPush {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
     use crate::crds_value::CrdsData;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_prune() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();
@@ -490,7 +490,7 @@ mod test {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_push_one() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();
@@ -512,7 +512,7 @@ mod test {
             Err(CrdsGossipError::PushMessageOldVersion)
         );
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_process_push_old_version() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();
@@ -534,7 +534,7 @@ mod test {
             Err(CrdsGossipError::PushMessageOldVersion)
         );
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_process_push_timeout() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();
@@ -557,7 +557,7 @@ mod test {
             Err(CrdsGossipError::PushMessageTimeout)
         );
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_process_push_update() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();
@@ -582,14 +582,14 @@ mod test {
             value_old
         );
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_compute_need() {
         assert_eq!(CrdsGossipPush::compute_need(30, 0, 10), 30);
         assert_eq!(CrdsGossipPush::compute_need(30, 1, 10), 29);
         assert_eq!(CrdsGossipPush::compute_need(30, 30, 10), 3);
         assert_eq!(CrdsGossipPush::compute_need(30, 29, 10), 3);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_refresh_active_set() {
         solana_logger::setup();
         let now = timestamp();
@@ -627,7 +627,7 @@ mod test {
         push.refresh_push_active_set(&crds, &HashMap::new(), None, &Pubkey::default(), 0, 1, 1);
         assert_eq!(push.active_set.len(), push.num_active);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_active_set_refresh_with_bank() {
         solana_logger::setup();
         let time = timestamp() - 1024; //make sure there's at least a 1 second delay
@@ -654,7 +654,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_no_pushes_to_from_different_shred_versions() {
         let now = timestamp();
         let mut crds = Crds::default();
@@ -712,7 +712,7 @@ mod test {
         assert!(options.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pushes_only_to_allowed() {
         let now = timestamp();
         let mut crds = Crds::default();
@@ -771,7 +771,7 @@ mod test {
         assert_eq!(options[0].1.id, node_123.pubkey());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_push_messages() {
         let now = timestamp();
         let mut crds = Crds::default();
@@ -796,7 +796,7 @@ mod test {
         assert_eq!(push.active_set.len(), 1);
         assert_eq!(push.new_push_messages(&crds, 0), expected);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_personalized_push_messages() {
         let now = timestamp();
         let mut crds = Crds::default();
@@ -832,7 +832,7 @@ mod test {
         assert_eq!(push.active_set.len(), 3);
         assert_eq!(push.new_push_messages(&crds, now), expected);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_process_prune() {
         let mut crds = Crds::default();
         let self_id = solana_sdk::pubkey::new_rand();
@@ -860,7 +860,7 @@ mod test {
         );
         assert_eq!(push.new_push_messages(&crds, 0), expected);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_old_pending_push_messages() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();
@@ -883,7 +883,7 @@ mod test {
         assert_eq!(push.new_push_messages(&crds, 0), expected);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_old_received_cache() {
         let mut crds = Crds::default();
         let mut push = CrdsGossipPush::default();

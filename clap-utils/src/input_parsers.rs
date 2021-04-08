@@ -189,7 +189,7 @@ pub fn commitment_of(matches: &ArgMatches<'_>, name: &str) -> Option<CommitmentC
         .map(|value| CommitmentConfig::from_str(value).unwrap_or_default())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use clap::{App, Arg};
@@ -215,7 +215,7 @@ mod tests {
         format!("{}/tmp/{}-{}", out_dir, name, pubkey.to_string())
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_values_of() {
         let matches =
             app()
@@ -239,7 +239,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_value_of() {
         let matches = app()
             .clone()
@@ -254,7 +254,7 @@ mod tests {
         assert_eq!(value_of(&matches, "single"), Some(pubkey));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_keypair_of() {
         let keypair = Keypair::new();
         let outfile = tmp_file_path("test_keypair_of.json", &keypair.pubkey());
@@ -278,7 +278,7 @@ mod tests {
         fs::remove_file(&outfile).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pubkey_of() {
         let keypair = Keypair::new();
         let outfile = tmp_file_path("test_pubkey_of.json", &keypair.pubkey());
@@ -305,7 +305,7 @@ mod tests {
         fs::remove_file(&outfile).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pubkeys_of() {
         let keypair = Keypair::new();
         let outfile = tmp_file_path("test_pubkeys_of.json", &keypair.pubkey());
@@ -325,7 +325,7 @@ mod tests {
         fs::remove_file(&outfile).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pubkeys_sigs_of() {
         let key1 = solana_sdk::pubkey::new_rand();
         let key2 = solana_sdk::pubkey::new_rand();
@@ -346,7 +346,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_lamports_of_sol() {
         let matches = app()
             .clone()

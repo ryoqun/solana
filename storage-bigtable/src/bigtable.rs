@@ -659,7 +659,7 @@ where
     })
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::StoredConfirmedBlock;
@@ -671,7 +671,7 @@ mod tests {
     };
     use std::convert::TryInto;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_protobuf_or_bincode_cell_data() {
         let from = Keypair::new();
         let recipient = solana_sdk::pubkey::new_rand();

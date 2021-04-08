@@ -59,11 +59,11 @@ pub fn slot_duration_from_slots_per_year(slots_per_year: f64) -> Duration {
     Duration::from_nanos(slot_in_ns as u64)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::float_cmp)]
     fn test_years_as_slots() {
         let tick_duration = Duration::from_micros(1000 * 1000 / 160);
@@ -84,7 +84,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_slot_duration_from_slots_per_year() {
         let slots_per_year = 1_262_277_039.0;
         let ticks_per_slot = 4;

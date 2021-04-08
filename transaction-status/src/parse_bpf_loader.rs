@@ -152,13 +152,13 @@ fn check_num_bpf_upgradeable_loader_accounts(
     check_num_accounts(accounts, num, ParsableProgram::BpfUpgradeableLoader)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use serde_json::Value;
     use solana_sdk::{message::Message, pubkey};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_bpf_loader_instructions() {
         let account_pubkey = pubkey::new_rand();
         let program_id = pubkey::new_rand();
@@ -216,7 +216,7 @@ mod test {
         assert!(parse_bpf_loader(&bad_compiled_instruction, &account_keys).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_bpf_upgradeable_loader_instructions() {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..8 {

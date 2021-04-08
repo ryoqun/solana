@@ -6,7 +6,7 @@ use solana_perf::{packet::PacketsRecycler, recycler::Recycler};
 
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_recycler(bencher: &mut Bencher) {
     solana_logger::setup();
 

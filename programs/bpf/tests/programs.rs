@@ -397,7 +397,7 @@ fn print_confirmed_tx(name: &str, confirmed_tx: ConfirmedTransaction) {
     println_transaction(&tx, &encoded.transaction.meta, "  ", None, block_time);
 }
 
-#[test]
+#[cfg(testkun)]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_program_bpf_sanity() {
     solana_logger::setup();
@@ -481,7 +481,7 @@ fn test_program_bpf_sanity() {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_program_bpf_loader_deprecated() {
     solana_logger::setup();
@@ -522,7 +522,7 @@ fn test_program_bpf_loader_deprecated() {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_duplicate_accounts() {
     solana_logger::setup();
 
@@ -622,7 +622,7 @@ fn test_program_bpf_duplicate_accounts() {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_error_handling() {
     solana_logger::setup();
 
@@ -725,7 +725,7 @@ fn test_program_bpf_error_handling() {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_invoke_sanity() {
     solana_logger::setup();
 
@@ -1035,7 +1035,7 @@ fn test_program_bpf_invoke_sanity() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_program_id_spoofing() {
     let GenesisConfigInfo {
         genesis_config,
@@ -1088,7 +1088,7 @@ fn test_program_bpf_program_id_spoofing() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_caller_has_access_to_cpi_program() {
     let GenesisConfigInfo {
         genesis_config,
@@ -1126,7 +1126,7 @@ fn test_program_bpf_caller_has_access_to_cpi_program() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_ro_modify() {
     solana_logger::setup();
 
@@ -1183,7 +1183,7 @@ fn test_program_bpf_ro_modify() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_call_depth() {
     use solana_sdk::process_instruction::BpfComputeBudget;
 
@@ -1224,7 +1224,7 @@ fn test_program_bpf_call_depth() {
     assert!(result.is_err());
 }
 
-#[test]
+#[cfg(testkun)]
 fn assert_instruction_count() {
     solana_logger::setup();
 
@@ -1276,7 +1276,7 @@ fn assert_instruction_count() {
 }
 
 #[cfg(any(feature = "bpf_rust"))]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_instruction_introspection() {
     solana_logger::setup();
 
@@ -1345,7 +1345,7 @@ fn test_program_bpf_instruction_introspection() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_test_use_latest_executor() {
     use solana_sdk::{loader_instruction, system_instruction};
 
@@ -1442,7 +1442,7 @@ fn test_program_bpf_test_use_latest_executor() {
 
 #[ignore] // Invoking BPF loaders from CPI not allowed
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_test_use_latest_executor2() {
     use solana_sdk::{loader_instruction, system_instruction};
 
@@ -1574,7 +1574,7 @@ fn test_program_bpf_test_use_latest_executor2() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_upgrade() {
     solana_logger::setup();
 
@@ -1669,7 +1669,7 @@ fn test_program_bpf_upgrade() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
     solana_logger::setup();
 
@@ -1750,7 +1750,7 @@ fn test_program_bpf_upgrade_and_invoke_in_same_tx() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_invoke_upgradeable_via_cpi() {
     solana_logger::setup();
 
@@ -1854,7 +1854,7 @@ fn test_program_bpf_invoke_upgradeable_via_cpi() {
     );
 }
 
-#[test]
+#[cfg(testkun)]
 #[cfg(any(feature = "bpf_c", feature = "bpf_rust"))]
 fn test_program_bpf_disguised_as_bpf_loader() {
     solana_logger::setup();
@@ -1898,7 +1898,7 @@ fn test_program_bpf_disguised_as_bpf_loader() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_upgrade_via_cpi() {
     solana_logger::setup();
 
@@ -1995,7 +1995,7 @@ fn test_program_bpf_upgrade_via_cpi() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_upgrade_self_via_cpi() {
     solana_logger::setup();
 
@@ -2086,7 +2086,7 @@ fn test_program_bpf_upgrade_self_via_cpi() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_upgradeable_locks() {
     fn setup_program_upgradeable_locks(
         payer_keypair: &Keypair,
@@ -2226,7 +2226,7 @@ fn test_program_upgradeable_locks() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_syscall_feature_activation() {
     solana_logger::setup();
 
@@ -2264,7 +2264,7 @@ fn test_program_bpf_syscall_feature_activation() {
 }
 
 #[cfg(feature = "bpf_rust")]
-#[test]
+#[cfg(testkun)]
 fn test_program_bpf_finalize() {
     solana_logger::setup();
 

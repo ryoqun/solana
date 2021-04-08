@@ -157,7 +157,7 @@ impl std::convert::From<duplicate_shred::Error> for Error {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use crate::result::Error;
     use crate::result::Result;
@@ -188,7 +188,7 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn from_test() {
         assert_matches!(addr_parse_error(), Err(Error::AddrParse(_)));
         assert_matches!(Error::from(RecvError {}), Error::RecvError(_));
@@ -201,7 +201,7 @@ mod tests {
         let ioe = io::Error::new(io::ErrorKind::NotFound, "hi");
         assert_matches!(Error::from(ioe), Error::Io(_));
     }
-    #[test]
+    #[cfg(testkun)]
     fn fmt_test() {
         write!(io::sink(), "{:?}", addr_parse_error()).unwrap();
         write!(io::sink(), "{:?}", Error::from(RecvError {})).unwrap();

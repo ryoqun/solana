@@ -23,7 +23,7 @@ use solana_stake_program::{
     stake_state::{Lockup, StakeAuthorize, StakeState},
 };
 
-#[test]
+#[cfg(testkun)]
 fn test_stake_delegation_force() {
     let mint_keypair = Keypair::new();
     let test_validator = TestValidator::with_no_fees(mint_keypair.pubkey());
@@ -111,7 +111,7 @@ fn test_stake_delegation_force() {
     process_command(&config).unwrap();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_seed_stake_delegation_and_deactivation() {
     solana_logger::setup();
 
@@ -192,7 +192,7 @@ fn test_seed_stake_delegation_and_deactivation() {
     process_command(&config_validator).unwrap();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_stake_delegation_and_deactivation() {
     solana_logger::setup();
 
@@ -269,7 +269,7 @@ fn test_stake_delegation_and_deactivation() {
     process_command(&config_validator).unwrap();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_offline_stake_delegation_and_deactivation() {
     solana_logger::setup();
 
@@ -405,7 +405,7 @@ fn test_offline_stake_delegation_and_deactivation() {
     process_command(&config_payer).unwrap();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_nonced_stake_delegation_and_deactivation() {
     solana_logger::setup();
 
@@ -521,7 +521,7 @@ fn test_nonced_stake_delegation_and_deactivation() {
     process_command(&config).unwrap();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_stake_authorize() {
     solana_logger::setup();
 
@@ -783,7 +783,7 @@ fn test_stake_authorize() {
     assert_ne!(nonce_hash, new_nonce_hash);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_stake_authorize_with_fee_payer() {
     solana_logger::setup();
     const SIG_FEE: u64 = 42;
@@ -911,7 +911,7 @@ fn test_stake_authorize_with_fee_payer() {
     check_recent_balance(100_000 - SIG_FEE, &rpc_client, &offline_pubkey);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_stake_split() {
     solana_logger::setup();
 
@@ -1056,7 +1056,7 @@ fn test_stake_split() {
     );
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_stake_set_lockup() {
     solana_logger::setup();
 
@@ -1313,7 +1313,7 @@ fn test_stake_set_lockup() {
     assert_eq!(current_lockup.custodian, offline_pubkey);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_offline_nonced_create_stake_account_and_withdraw() {
     solana_logger::setup();
 

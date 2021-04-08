@@ -31,7 +31,7 @@ use std::thread::Builder;
 use std::time::Duration;
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 #[allow(clippy::same_item_push)]
 fn bench_retransmitter(bencher: &mut Bencher) {
     solana_logger::setup();

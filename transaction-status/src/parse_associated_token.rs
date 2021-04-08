@@ -46,7 +46,7 @@ fn check_num_associated_token_accounts(
     check_num_accounts(accounts, num, ParsableProgram::SplAssociatedTokenAccount)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use spl_associated_token_account_v1_0::{
@@ -71,7 +71,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_associated_token() {
         let mut keys: Vec<Pubkey> = vec![];
         for _ in 0..7 {

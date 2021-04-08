@@ -85,14 +85,14 @@ pub fn recv_mmsg(sock: &UdpSocket, packets: &mut [Packet]) -> io::Result<(usize,
     Ok((total_size, npkts))
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use crate::packet::PACKET_DATA_SIZE;
     use crate::recvmmsg::*;
     use std::time::{Duration, Instant};
 
     const TEST_NUM_MSGS: usize = 32;
-    #[test]
+    #[cfg(testkun)]
     pub fn test_recv_mmsg_one_iter() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();
@@ -113,7 +113,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_recv_mmsg_multi_iter() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();
@@ -141,7 +141,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_recv_mmsg_multi_iter_timeout() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();
@@ -169,7 +169,7 @@ mod tests {
         assert!(start.elapsed().as_secs() < 5);
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_recv_mmsg_multi_addrs() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();

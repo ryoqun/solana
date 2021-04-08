@@ -363,13 +363,13 @@ async fn process(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_sdk::system_instruction::SystemInstruction;
     use std::time::Duration;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_time_request_limit() {
         let keypair = Keypair::new();
         let mut faucet = Faucet::new(keypair, None, Some(3), None);
@@ -380,7 +380,7 @@ mod tests {
         assert!(!faucet.check_time_request_limit(u64::MAX));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_clear_request_count() {
         let keypair = Keypair::new();
         let mut faucet = Faucet::new(keypair, None, None, None);
@@ -390,7 +390,7 @@ mod tests {
         assert_eq!(faucet.request_current, 0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_ip_to_cache() {
         let keypair = Keypair::new();
         let mut faucet = Faucet::new(keypair, None, None, None);
@@ -401,7 +401,7 @@ mod tests {
         assert!(faucet.ip_cache.contains(&ip));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_clear_ip_cache() {
         let keypair = Keypair::new();
         let mut faucet = Faucet::new(keypair, None, None, None);
@@ -414,7 +414,7 @@ mod tests {
         assert!(faucet.ip_cache.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_faucet_default_init() {
         let keypair = Keypair::new();
         let time_slice: Option<u64> = None;
@@ -425,7 +425,7 @@ mod tests {
         assert_eq!(faucet.per_request_cap, Some(100));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_faucet_build_airdrop_transaction() {
         let to = solana_sdk::pubkey::new_rand();
         let blockhash = Hash::default();
@@ -466,7 +466,7 @@ mod tests {
         assert!(tx.is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_faucet_request() {
         let to = solana_sdk::pubkey::new_rand();
         let blockhash = Hash::new(&to.as_ref());

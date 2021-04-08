@@ -240,7 +240,7 @@ pub fn process_instruction(
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::budget_instruction;
@@ -263,7 +263,7 @@ mod tests {
         (bank, mint_keypair)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_initialize_no_panic() {
         let (bank, alice_keypair) = create_bank(1);
         let bank_client = BankClient::new(bank);
@@ -287,7 +287,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_budget_payment() {
         let (bank, alice_keypair) = create_bank(10_000);
         let bank_client = BankClient::new(bank);
@@ -304,7 +304,7 @@ mod tests {
         assert_eq!(bank_client.get_balance(&bob_pubkey).unwrap(), 100);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_unsigned_witness_key() {
         let (bank, alice_keypair) = create_bank(10_000);
         let bank_client = BankClient::new(bank);
@@ -353,7 +353,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_unsigned_timestamp() {
         let (bank, alice_keypair) = create_bank(10_000);
         let bank_client = BankClient::new(bank);
@@ -403,7 +403,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pay_on_date() {
         let (bank, alice_keypair) = create_bank(2);
         let bank_client = BankClient::new(bank);
@@ -474,7 +474,7 @@ mod tests {
         assert_eq!(bank_client.get_account_data(&budget_pubkey).unwrap(), None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_cancel_payment() {
         let (bank, alice_keypair) = create_bank(3);
         let bank_client = BankClient::new(bank);
@@ -536,7 +536,7 @@ mod tests {
         assert_eq!(bank_client.get_account_data(&bob_pubkey).unwrap(), None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pay_when_account_data() {
         let (bank, alice_keypair) = create_bank(42);
         let game_pubkey = solana_sdk::pubkey::new_rand();

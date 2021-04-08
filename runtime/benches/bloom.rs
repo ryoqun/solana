@@ -13,7 +13,7 @@ use std::collections::HashSet;
 use std::hash::Hasher;
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 #[ignore]
 fn bench_bits_set(bencher: &mut Bencher) {
     let mut bits: BitVec<u8> = BitVec::new_fill(false, 38_340_234_u64);
@@ -28,7 +28,7 @@ fn bench_bits_set(bencher: &mut Bencher) {
     //  bits.set()
 }
 
-#[bench]
+#[cfg(testkun)]
 #[ignore]
 fn bench_bits_set_hasher(bencher: &mut Bencher) {
     let bits: BitVec<u8> = BitVec::new_fill(false, 38_340_234_u64);
@@ -40,7 +40,7 @@ fn bench_bits_set_hasher(bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 #[ignore]
 fn bench_sigs_bloom(bencher: &mut Bencher) {
     // 1M TPS * 1s (length of block in sigs) == 1M items in filter
@@ -71,7 +71,7 @@ fn bench_sigs_bloom(bencher: &mut Bencher) {
     assert_eq!(falses, 0);
 }
 
-#[bench]
+#[cfg(testkun)]
 #[ignore]
 fn bench_sigs_hashmap(bencher: &mut Bencher) {
     // same structure as above, new
@@ -99,7 +99,7 @@ fn bench_sigs_hashmap(bencher: &mut Bencher) {
     assert_eq!(falses, 0);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_add_hash(bencher: &mut Bencher) {
     let mut rng = rand::thread_rng();
     let hash_values: Vec<_> = std::iter::repeat_with(|| solana_sdk::hash::new_rand(&mut rng))
@@ -119,7 +119,7 @@ fn bench_add_hash(bencher: &mut Bencher) {
     assert_eq!(fail, 0);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_add_hash_atomic(bencher: &mut Bencher) {
     let mut rng = rand::thread_rng();
     let hash_values: Vec<_> = std::iter::repeat_with(|| solana_sdk::hash::new_rand(&mut rng))

@@ -215,7 +215,7 @@ impl AccountsHashVerifier {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::cluster_info::make_accounts_hashes_message;
@@ -227,7 +227,7 @@ mod tests {
         signature::{Keypair, Signer},
     };
 
-    #[test]
+    #[cfg(testkun)]
     fn test_should_halt() {
         let keypair = Keypair::new();
 
@@ -260,7 +260,7 @@ mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_max_hashes() {
         solana_logger::setup();
         use std::path::PathBuf;

@@ -220,11 +220,11 @@ pub fn next_account_infos<'a, 'b: 'a>(
     Ok(accounts)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_next_account_infos() {
         let k1 = Pubkey::new_unique();
         let k2 = Pubkey::new_unique();

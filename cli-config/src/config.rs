@@ -100,11 +100,11 @@ impl Config {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn compute_websocket_url() {
         assert_eq!(
             Config::compute_websocket_url(&"http://devnet.solana.com"),

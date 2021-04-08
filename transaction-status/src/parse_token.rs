@@ -441,7 +441,7 @@ pub fn spl_token_v2_0_instruction(instruction: SplTokenInstruction) -> Instructi
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use solana_sdk::instruction::CompiledInstruction;
@@ -468,7 +468,7 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::same_item_push)]
     fn test_parse_token() {
         let mut keys: Vec<Pubkey> = vec![];
@@ -1059,7 +1059,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::same_item_push)]
     fn test_token_ix_not_enough_keys() {
         let mut keys: Vec<Pubkey> = vec![];

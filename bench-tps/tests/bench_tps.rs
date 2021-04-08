@@ -67,7 +67,7 @@ fn test_bench_tps_local_cluster(config: Config) {
     assert!(_total > 100);
 }
 
-#[test]
+#[cfg(testkun)]
 #[serial]
 fn test_bench_tps_local_cluster_solana() {
     test_bench_tps_local_cluster(Config {

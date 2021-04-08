@@ -343,17 +343,17 @@ impl fmt::Display for Pubkey {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use std::str::from_utf8;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_new_unique() {
         assert!(Pubkey::new_unique() != Pubkey::new_unique());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn pubkey_fromstr() {
         let pubkey = Pubkey::new_unique();
         let mut pubkey_base58_str = bs58::encode(pubkey.0).into_string();
@@ -393,7 +393,7 @@ mod tests {
         assert_eq!(too_long.parse::<Pubkey>(), Err(ParsePubkeyError::WrongSize));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_with_seed() {
         assert!(
             Pubkey::create_with_seed(&Pubkey::new_unique(), "☉", &Pubkey::new_unique()).is_ok()
@@ -449,7 +449,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_program_address() {
         let exceeded_seed = &[127; MAX_SEED_LEN + 1];
         let max_seed = &[0; MAX_SEED_LEN];
@@ -495,7 +495,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_pubkey_off_curve() {
         // try a bunch of random input, all successful generated program
         // addresses must land off the curve and be unique
@@ -519,7 +519,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_find_program_address() {
         for _ in 0..1_000 {
             let program_id = Pubkey::new_unique();

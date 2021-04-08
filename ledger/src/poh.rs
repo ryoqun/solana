@@ -125,7 +125,7 @@ pub fn compute_hashes_per_tick(duration: Duration, hashes_sample_size: u64) -> u
     duration.as_millis() as u64 * hashes_sample_size / elapsed
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use crate::poh::{Poh, PohEntry};
     use matches::assert_matches;
@@ -153,7 +153,7 @@ mod tests {
         true
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_target_poh_time() {
         let zero = Hash::default();
         for target_ns_per_tick in 10..12 {
@@ -180,7 +180,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic(expected = "assertion failed: hashes_per_tick > 1")]
     fn test_target_poh_time_hashes_per_tick() {
         let zero = Hash::default();
@@ -189,7 +189,7 @@ mod tests {
         poh.target_poh_time(target_ns_per_tick);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_poh_verify() {
         let zero = Hash::default();
         let one = hash(&zero.as_ref());
@@ -288,7 +288,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_poh_verify_assert() {
         verify(
@@ -303,7 +303,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_poh_tick() {
         let mut poh = Poh::new(Hash::default(), Some(2));
         assert_eq!(poh.remaining_hashes, 2);
@@ -313,7 +313,7 @@ mod tests {
         assert_eq!(poh.remaining_hashes, 2); // Ready for the next tick
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_poh_tick_large_batch() {
         let mut poh = Poh::new(Hash::default(), Some(2));
         assert_eq!(poh.remaining_hashes, 2);
@@ -325,14 +325,14 @@ mod tests {
         assert_eq!(poh.remaining_hashes, 2); // Ready for the next tick
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_poh_tick_too_soon() {
         let mut poh = Poh::new(Hash::default(), Some(2));
         assert_eq!(poh.remaining_hashes, 2);
         assert!(poh.tick().is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_poh_record_not_permitted_at_final_hash() {
         let mut poh = Poh::new(Hash::default(), Some(10));
         assert!(poh.hash(9));

@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tempfile::TempDir;
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_save_tower(bench: &mut Bencher) {
     let dir = TempDir::new().unwrap();
     let path = dir.path();

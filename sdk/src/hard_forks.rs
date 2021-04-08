@@ -58,11 +58,11 @@ impl HardForks {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn iter_is_sorted() {
         let mut hf = HardForks::default();
         hf.register(30);
@@ -73,7 +73,7 @@ mod tests {
         assert_eq!(hf.hard_forks, vec![(10, 1), (20, 2), (30, 1)]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn multiple_hard_forks_since_parent() {
         let mut hf = HardForks::default();
         hf.register(10);

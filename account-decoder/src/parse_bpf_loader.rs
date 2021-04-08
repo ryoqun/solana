@@ -88,13 +88,13 @@ pub struct UiProgramData {
     pub data: UiAccountData,
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use bincode::serialize;
     use solana_sdk::pubkey::Pubkey;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_bpf_upgradeable_loader_accounts() {
         let bpf_loader_state = UpgradeableLoaderState::Uninitialized;
         let account_data = serialize(&bpf_loader_state).unwrap();

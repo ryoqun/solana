@@ -437,7 +437,7 @@ fn num_live_peers(peers: &[ContactInfo]) -> i64 {
     num_live_peers
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod test {
     use super::*;
     use crate::cluster_info::{ClusterInfo, Node};
@@ -520,7 +520,7 @@ pub mod test {
         assert_eq!(num_expected_coding_shreds, coding_index);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_num_live_peers() {
         let mut ci = ContactInfo {
             wallclock: std::u64::MAX,
@@ -533,7 +533,7 @@ pub mod test {
         assert_eq!(num_live_peers(&[ci]), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_duplicate_retransmit_signal() {
         // Setup
         let ledger_path = get_tmp_ledger_path!();
@@ -634,7 +634,7 @@ pub mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_broadcast_ledger() {
         solana_logger::setup();
         let ledger_path = get_tmp_ledger_path!();

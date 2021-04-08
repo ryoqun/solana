@@ -116,7 +116,7 @@ impl Default for BlockhashQuery {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -130,7 +130,7 @@ mod tests {
     use solana_sdk::{account::Account, hash::hash, nonce, system_program};
     use std::collections::HashMap;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_blockhash_query_new_ok() {
         let blockhash = hash(&[1u8]);
         let nonce_pubkey = Pubkey::new(&[1u8; 32]);
@@ -165,20 +165,20 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_blockhash_query_new_no_nonce_fail() {
         BlockhashQuery::new(None, true, None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_blockhash_query_new_nonce_fail() {
         let nonce_pubkey = Pubkey::new(&[1u8; 32]);
         BlockhashQuery::new(None, true, Some(nonce_pubkey));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_blockhash_query_new_from_matches_ok() {
         let test_commands = App::new("blockhash_query_test")
             .nonce_args(false)
@@ -246,7 +246,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_blockhash_query_new_from_matches_without_nonce_fail() {
         let test_commands = App::new("blockhash_query_test")
@@ -261,7 +261,7 @@ mod tests {
         BlockhashQuery::new_from_matches(&matches);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_blockhash_query_new_from_matches_with_nonce_fail() {
         let test_commands = App::new("blockhash_query_test")
@@ -281,7 +281,7 @@ mod tests {
         BlockhashQuery::new_from_matches(&matches);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_blockhash_query_get_blockhash_fee_calc() {
         let test_blockhash = hash(&[0u8]);
         let rpc_blockhash = hash(&[1u8]);

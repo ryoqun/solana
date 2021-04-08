@@ -80,7 +80,7 @@ pub fn new_vote_transaction(
     vote_tx
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use solana_sdk::hash::hash;
@@ -115,7 +115,7 @@ mod test {
         assert!(parse_vote_transaction(&vote_tx).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_vote_transaction() {
         run_test_parse_vote_transaction(None);
         run_test_parse_vote_transaction(Some(hash(&[42u8])));

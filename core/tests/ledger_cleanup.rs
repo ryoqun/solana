@@ -1,7 +1,7 @@
 #![allow(clippy::integer_arithmetic)]
 // Long-running ledger_cleanup tests
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use log::*;
     use solana_core::ledger_cleanup_service::LedgerCleanupService;
@@ -207,7 +207,7 @@ mod tests {
         *storage_previous = storage_now;
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ledger_cleanup_compaction() {
         solana_logger::setup();
         let blockstore_path = get_tmp_ledger_path!();
@@ -483,7 +483,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_compaction() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Arc::new(Blockstore::open(&blockstore_path).unwrap());

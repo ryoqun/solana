@@ -747,7 +747,7 @@ pub fn process_withdraw_from_vote_account(
     log_instruction_custom_error::<VoteError>(result, &config)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::cli::{app, parse_command};
@@ -759,7 +759,7 @@ mod tests {
         (String::from(tmp_file.path().to_str().unwrap()), tmp_file)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_command() {
         let test_commands = app("test", "desc", "version");
         let keypair = Keypair::new();

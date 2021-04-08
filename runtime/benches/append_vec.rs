@@ -15,7 +15,7 @@ use std::{
 };
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 fn append_vec_append(bencher: &mut Bencher) {
     let path = get_append_vec_path("bench_append");
     let vec = AppendVec::new(&path.path, true, 64 * 1024);
@@ -40,7 +40,7 @@ fn add_test_accounts(vec: &AppendVec, size: usize) -> Vec<(usize, usize)> {
         .collect()
 }
 
-#[bench]
+#[cfg(testkun)]
 fn append_vec_sequential_read(bencher: &mut Bencher) {
     let path = get_append_vec_path("seq_read");
     let vec = AppendVec::new(&path.path, true, 64 * 1024);
@@ -55,7 +55,7 @@ fn append_vec_sequential_read(bencher: &mut Bencher) {
         indexes.push((sample, pos));
     });
 }
-#[bench]
+#[cfg(testkun)]
 fn append_vec_random_read(bencher: &mut Bencher) {
     let path = get_append_vec_path("random_read");
     let vec = AppendVec::new(&path.path, true, 64 * 1024);
@@ -70,7 +70,7 @@ fn append_vec_random_read(bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 fn append_vec_concurrent_append_read(bencher: &mut Bencher) {
     let path = get_append_vec_path("concurrent_read");
     let vec = Arc::new(AppendVec::new(&path.path, true, 1024 * 1024));
@@ -99,7 +99,7 @@ fn append_vec_concurrent_append_read(bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 fn append_vec_concurrent_read_append(bencher: &mut Bencher) {
     let path = get_append_vec_path("concurrent_read");
     let vec = Arc::new(AppendVec::new(&path.path, true, 1024 * 1024));

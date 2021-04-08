@@ -427,7 +427,7 @@ pub fn get_nonce_pubkey_from_instruction<'a>(
     })
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -445,7 +445,7 @@ mod tests {
         instruction.program_id(&message.account_keys)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_refs() {
         let key = Keypair::new();
         let key1 = solana_sdk::pubkey::new_rand();
@@ -486,7 +486,7 @@ mod tests {
         assert_eq!(*get_program_id(&tx, 0), prog1);
         assert_eq!(*get_program_id(&tx, 1), prog2);
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_refs_invalid_program_id() {
         let key = Keypair::new();
         let instructions = vec![CompiledInstruction::new(1, &(), vec![])];
@@ -499,7 +499,7 @@ mod tests {
         );
         assert_eq!(tx.sanitize(), Err(SanitizeError::IndexOutOfBounds));
     }
-    #[test]
+    #[cfg(testkun)]
     fn test_refs_invalid_account() {
         let key = Keypair::new();
         let instructions = vec![CompiledInstruction::new(1, &(), vec![2])];
@@ -514,7 +514,7 @@ mod tests {
         assert_eq!(tx.sanitize(), Err(SanitizeError::IndexOutOfBounds));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_sanitize_txs() {
         let key = Keypair::new();
         let id0 = Pubkey::default();
@@ -602,7 +602,7 @@ mod tests {
         Transaction::new(&[&keypair], message, Hash::default())
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_transaction_serialize() {
         let tx = create_sample_transaction();
         let ser = serialize(&tx).unwrap();
@@ -611,7 +611,7 @@ mod tests {
     }
 
     /// Detect changes to the serialized size of payment transactions, which affects TPS.
-    #[test]
+    #[cfg(testkun)]
     fn test_transaction_minimum_serialized_size() {
         let alice_keypair = Keypair::new();
         let alice_pubkey = alice_keypair.pubkey();
@@ -662,7 +662,7 @@ mod tests {
 
     /// Detect binary changes in the serialized transaction data, which could have a downstream
     /// affect on SDKs and applications
-    #[test]
+    #[cfg(testkun)]
     fn test_sdk_serialize() {
         assert_eq!(
             serialize(&create_sample_transaction()).unwrap(),
@@ -681,7 +681,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_transaction_missing_key() {
         let keypair = Keypair::new();
@@ -689,7 +689,7 @@ mod tests {
         Transaction::new_unsigned(message).sign(&[&keypair], Hash::default());
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_partial_sign_mismatched_key() {
         let keypair = Keypair::new();
@@ -703,7 +703,7 @@ mod tests {
         Transaction::new_unsigned(message).partial_sign(&[&keypair], Hash::default());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_partial_sign() {
         let keypair0 = Keypair::new();
         let keypair1 = Keypair::new();
@@ -732,7 +732,7 @@ mod tests {
         assert!(tx.is_signed());
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_transaction_missing_keypair() {
         let program_id = Pubkey::default();
@@ -743,7 +743,7 @@ mod tests {
         Transaction::new_unsigned(message).sign(&Vec::<&Keypair>::new(), Hash::default());
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_transaction_wrong_key() {
         let program_id = Pubkey::default();
@@ -755,7 +755,7 @@ mod tests {
         Transaction::new_unsigned(message).sign(&[&keypair0], Hash::default());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_transaction_correct_key() {
         let program_id = Pubkey::default();
         let keypair0 = Keypair::new();
@@ -771,7 +771,7 @@ mod tests {
         assert!(tx.is_signed());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_transaction_instruction_with_duplicate_keys() {
         let program_id = Pubkey::default();
         let keypair0 = Keypair::new();
@@ -797,7 +797,7 @@ mod tests {
         assert!(tx.is_signed());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_try_sign_dyn_keypairs() {
         let program_id = Pubkey::default();
         let keypair = Keypair::new();
@@ -861,25 +861,25 @@ mod tests {
         (from_pubkey, nonce_pubkey, tx)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn tx_uses_nonce_ok() {
         let (_, _, tx) = nonced_transfer_tx();
         assert!(uses_durable_nonce(&tx).is_some());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn tx_uses_nonce_empty_ix_fail() {
         assert!(uses_durable_nonce(&Transaction::default()).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn tx_uses_nonce_bad_prog_id_idx_fail() {
         let (_, _, mut tx) = nonced_transfer_tx();
         tx.message.instructions.get_mut(0).unwrap().program_id_index = 255u8;
         assert!(uses_durable_nonce(&tx).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn tx_uses_nonce_first_prog_id_not_nonce_fail() {
         let from_keypair = Keypair::new();
         let from_pubkey = from_keypair.pubkey();
@@ -894,7 +894,7 @@ mod tests {
         assert!(uses_durable_nonce(&tx).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn tx_uses_nonce_wrong_first_nonce_ix_fail() {
         let from_keypair = Keypair::new();
         let from_pubkey = from_keypair.pubkey();
@@ -914,7 +914,7 @@ mod tests {
         assert!(uses_durable_nonce(&tx).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn get_nonce_pub_from_ix_ok() {
         let (_, nonce_pubkey, tx) = nonced_transfer_tx();
         let nonce_ix = uses_durable_nonce(&tx).unwrap();
@@ -924,7 +924,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn get_nonce_pub_from_ix_no_accounts_fail() {
         let (_, _, tx) = nonced_transfer_tx();
         let nonce_ix = uses_durable_nonce(&tx).unwrap();
@@ -933,7 +933,7 @@ mod tests {
         assert_eq!(get_nonce_pubkey_from_instruction(&nonce_ix, &tx), None,);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn get_nonce_pub_from_ix_bad_acc_idx_fail() {
         let (_, _, tx) = nonced_transfer_tx();
         let nonce_ix = uses_durable_nonce(&tx).unwrap();

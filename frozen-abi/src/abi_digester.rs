@@ -526,7 +526,7 @@ impl SerializeStructVariant for AbiDigester {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use std::collections::HashMap;
     use std::sync::atomic::AtomicIsize;

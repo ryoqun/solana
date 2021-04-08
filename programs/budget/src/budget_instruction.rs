@@ -160,12 +160,12 @@ pub fn apply_account_data(witness_pubkey: &Pubkey, contract: &Pubkey, to: &Pubke
     Instruction::new_with_bincode(id(), &BudgetInstruction::ApplyAccountData, account_metas)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::budget_expr::BudgetExpr;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_budget_instruction_verify() {
         let alice_pubkey = solana_sdk::pubkey::new_rand();
         let bob_pubkey = solana_sdk::pubkey::new_rand();
@@ -173,7 +173,7 @@ mod tests {
         payment(&alice_pubkey, &bob_pubkey, &budget_pubkey, 1); // No panic! indicates success.
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_budget_instruction_overspend() {
         let alice_pubkey = solana_sdk::pubkey::new_rand();
@@ -183,7 +183,7 @@ mod tests {
         create_account(&alice_pubkey, &budget_pubkey, 1, expr);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[should_panic]
     fn test_budget_instruction_underspend() {
         let alice_pubkey = solana_sdk::pubkey::new_rand();

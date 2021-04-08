@@ -569,7 +569,7 @@ impl WindowService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
@@ -599,7 +599,7 @@ mod test {
         shredder.entries_to_shreds(&entries, true, 0).0
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_shred() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Arc::new(Blockstore::open(&blockstore_path).unwrap());
@@ -617,7 +617,7 @@ mod test {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_should_retransmit_and_persist() {
         let me_id = solana_sdk::pubkey::new_rand();
         let leader_keypair = Arc::new(Keypair::new());
@@ -689,7 +689,7 @@ mod test {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_run_check_duplicate() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Arc::new(Blockstore::open(&blockstore_path).unwrap());

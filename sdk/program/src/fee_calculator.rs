@@ -193,12 +193,12 @@ impl FeeRateGovernor {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{pubkey::Pubkey, system_instruction};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_fee_rate_governor_burn() {
         let mut fee_rate_governor = FeeRateGovernor::default();
         assert_eq!(fee_rate_governor.burn(2), (1, 1));
@@ -210,7 +210,7 @@ mod tests {
         assert_eq!(fee_rate_governor.burn(2), (0, 2));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_fee_calculator_calculate_fee() {
         // Default: no fee.
         let message = Message::default();
@@ -233,7 +233,7 @@ mod tests {
         assert_eq!(FeeCalculator::new(2).calculate_fee(&message), 4);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_fee_calculator_calculate_fee_secp256k1() {
         use crate::instruction::Instruction;
         let pubkey0 = Pubkey::new(&[0; 32]);
@@ -275,7 +275,7 @@ mod tests {
         assert_eq!(FeeCalculator::new(1).calculate_fee(&message), 11);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_fee_rate_governor_derived_default() {
         solana_logger::setup();
 
@@ -305,7 +305,7 @@ mod tests {
         ); // min
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_fee_rate_governor_derived_adjust() {
         solana_logger::setup();
 

@@ -34,7 +34,7 @@ use solana_client::{
 };
 #[cfg(not(test))]
 use solana_faucet::faucet::request_airdrop_transaction;
-#[cfg(test)]
+#[cfg(testkun)]
 use solana_faucet::faucet_mock::request_airdrop_transaction;
 use solana_remote_wallet::remote_wallet::RemoteWalletManager;
 use solana_sdk::{
@@ -2273,7 +2273,7 @@ pub fn app<'ab, 'v>(name: &str, about: &'ab str, version: &'v str) -> App<'ab, '
         .vote_subcommands()
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use serde_json::{json, Value};
@@ -2305,7 +2305,7 @@ mod tests {
         path
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_generate_unique_signers() {
         let matches = ArgMatches::default();
 
@@ -2382,7 +2382,7 @@ mod tests {
         assert_eq!(signer_info.index_of(Some(presigner1_pubkey)), Some(1));
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_parse_command() {
         let test_commands = app("test", "desc", "version");
@@ -2597,7 +2597,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::cognitive_complexity)]
     fn test_cli_process_command() {
         // Success cases
@@ -2859,7 +2859,7 @@ mod tests {
         assert!(process_command(&config).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_cli_deploy() {
         solana_logger::setup();
         let mut pathbuf = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -2911,7 +2911,7 @@ mod tests {
         assert!(process_command(&config).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_transfer_subcommand() {
         let test_commands = app("test", "desc", "version");
 

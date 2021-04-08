@@ -70,7 +70,7 @@ fn load_bpf_program(
 const ARMSTRONG_LIMIT: u64 = 500;
 const ARMSTRONG_EXPECTED: u64 = 5;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_program_create_executable(bencher: &mut Bencher) {
     let elf = load_elf("bench_alu").unwrap();
 
@@ -81,7 +81,7 @@ fn bench_program_create_executable(bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_program_alu(bencher: &mut Bencher) {
     let ns_per_s = 1000000000;
     let one_million = 1000000;
@@ -156,7 +156,7 @@ fn bench_program_alu(bencher: &mut Bencher) {
     println!("{{ \"type\": \"bench\", \"name\": \"bench_program_alu_jit_to_native_mips\", \"median\": {:?}, \"deviation\": 0 }}", mips);
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_program_execute_noop(bencher: &mut Bencher) {
     let GenesisConfigInfo {
         genesis_config,
@@ -191,7 +191,7 @@ fn bench_program_execute_noop(bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_instruction_count_tuner(_bencher: &mut Bencher) {
     const BUDGET: u64 = 200_000;
     let loader_id = bpf_loader::id();

@@ -18,7 +18,7 @@ use std::sync::mpsc::channel;
 use std::time::{Duration, Instant};
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_sigverify_stage(bencher: &mut Bencher) {
     solana_logger::setup();
     let (packet_s, packet_r) = channel();

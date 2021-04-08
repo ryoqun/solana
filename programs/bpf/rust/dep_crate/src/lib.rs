@@ -17,11 +17,11 @@ pub extern "C" fn entrypoint(_input: *mut u8) -> u64 {
     SUCCESS
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_entrypoint() {
         assert_eq!(SUCCESS, entrypoint(std::ptr::null_mut()));
     }

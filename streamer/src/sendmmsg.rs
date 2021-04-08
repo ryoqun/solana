@@ -148,7 +148,7 @@ pub fn multicast(sock: &UdpSocket, packet: &[u8], dests: &[&SocketAddr]) -> io::
     Ok(npkts)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use crate::packet::Packet;
     use crate::recvmmsg::recv_mmsg;
@@ -156,7 +156,7 @@ mod tests {
     use solana_sdk::packet::PACKET_DATA_SIZE;
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, UdpSocket};
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_send_mmsg_one_dest() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();
@@ -173,7 +173,7 @@ mod tests {
         assert_eq!(32, recv);
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_send_mmsg_multi_dest() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();
@@ -202,7 +202,7 @@ mod tests {
         assert_eq!(16, recv);
     }
 
-    #[test]
+    #[cfg(testkun)]
     pub fn test_multicast_msg() {
         let reader = UdpSocket::bind("127.0.0.1:0").expect("bind");
         let addr = reader.local_addr().unwrap();
@@ -245,7 +245,7 @@ mod tests {
         assert_eq!(1, recv);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_message_header_from_packet() {
         let packets: Vec<_> = (0..2).map(|_| vec![0u8; PACKET_DATA_SIZE]).collect();
         let ip4 = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);

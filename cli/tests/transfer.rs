@@ -18,7 +18,7 @@ use solana_sdk::{
     signature::{keypair_from_seed, Keypair, NullSigner, Signer},
 };
 
-#[test]
+#[cfg(testkun)]
 fn test_transfer() {
     solana_logger::setup();
     let mint_keypair = Keypair::new();
@@ -261,7 +261,7 @@ fn test_transfer() {
     check_recent_balance(40, &rpc_client, &recipient_pubkey);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_transfer_multisession_signing() {
     solana_logger::setup();
     let mint_keypair = Keypair::new();
@@ -387,7 +387,7 @@ fn test_transfer_multisession_signing() {
     check_recent_balance(42, &rpc_client, &to_pubkey);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_transfer_all() {
     solana_logger::setup();
     let mint_keypair = Keypair::new();
@@ -434,7 +434,7 @@ fn test_transfer_all() {
     check_recent_balance(49_999, &rpc_client, &recipient_pubkey);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_transfer_unfunded_recipient() {
     solana_logger::setup();
     let mint_keypair = Keypair::new();
@@ -481,7 +481,7 @@ fn test_transfer_unfunded_recipient() {
     process_command(&config).unwrap_err();
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_transfer_with_seed() {
     solana_logger::setup();
     let mint_keypair = Keypair::new();

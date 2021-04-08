@@ -107,11 +107,11 @@ impl Inflation {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::float_cmp)]
     fn test_inflation_basic() {
         let inflation = Inflation::default();
@@ -131,7 +131,7 @@ mod tests {
         assert_eq!(last, inflation.terminal);
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::float_cmp)]
     fn test_inflation_fixed() {
         let inflation = Inflation::new_fixed(0.001);

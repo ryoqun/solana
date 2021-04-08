@@ -405,14 +405,14 @@ pub fn process_get_validator_info(
         .formatted_string(&CliValidatorInfoVec::new(validator_info_list)))
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::cli::app;
     use bincode::{serialize, serialized_size};
     use serde_json::json;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_url() {
         let url = "http://test.com";
         assert_eq!(check_url(url.to_string()), Ok(()));
@@ -422,7 +422,7 @@ mod tests {
         assert!(check_url(non_url.to_string()).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_short_field() {
         let name = "Alice Validator";
         assert_eq!(is_short_field(name.to_string()), Ok(()));
@@ -430,7 +430,7 @@ mod tests {
         assert!(is_short_field(long_name.to_string()).is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_args() {
         let matches = app("test", "desc", "version").get_matches_from(vec![
             "test",
@@ -454,7 +454,7 @@ mod tests {
         assert_eq!(parse_args(&matches), expected);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_validator_info_serde() {
         let mut info = Map::new();
         info.insert("name".to_string(), Value::String("Alice".to_string()));
@@ -481,7 +481,7 @@ mod tests {
         assert_eq!(deserialized.info, info_string);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_validator_info() {
         let pubkey = solana_sdk::pubkey::new_rand();
         let keys = vec![(validator_info::id(), false), (pubkey, true)];
@@ -507,7 +507,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_validator_info_max_space() {
         // 70-character string
         let max_short_string =

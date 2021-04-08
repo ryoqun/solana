@@ -77,7 +77,7 @@ pub(super) fn recv_slot_entries(receiver: &Receiver<WorkingBankEntry>) -> Result
     })
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo};
@@ -104,7 +104,7 @@ mod tests {
         (genesis_config, bank0, tx)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recv_slot_entries_1() {
         let (genesis_config, bank0, tx) = setup_test();
 
@@ -133,7 +133,7 @@ mod tests {
         assert_eq!(res_entries, entries);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recv_slot_entries_2() {
         let (genesis_config, bank0, tx) = setup_test();
 

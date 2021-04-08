@@ -55,7 +55,7 @@ where
     create_account_with_data_and_fields(recent_blockhash_iter, DUMMY_INHERITABLE_ACCOUNT_FIELDS)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::account::from_account;
@@ -66,14 +66,14 @@ mod tests {
         sysvar::recent_blockhashes::Entry,
     };
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_empty() {
         let account = create_account_with_data_for_test(vec![].into_iter());
         let recent_blockhashes = from_account::<RecentBlockhashes, _>(&account).unwrap();
         assert_eq!(recent_blockhashes, RecentBlockhashes::default());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_full() {
         let def_hash = Hash::default();
         let def_fees = FeeCalculator::default();
@@ -84,7 +84,7 @@ mod tests {
         assert_eq!(recent_blockhashes.len(), MAX_ENTRIES);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_truncate() {
         let def_hash = Hash::default();
         let def_fees = FeeCalculator::default();
@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(recent_blockhashes.len(), MAX_ENTRIES);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account_unsorted() {
         let def_fees = FeeCalculator::default();
         let mut unsorted_blocks: Vec<_> = (0..MAX_ENTRIES)

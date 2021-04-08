@@ -174,11 +174,11 @@ impl ReadOnlyAccountsCache {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
     use solana_sdk::account::{accounts_equal, Account};
-    #[test]
+    #[cfg(testkun)]
     fn test_read_only_accounts_cache() {
         solana_logger::setup();
         let max = 100;

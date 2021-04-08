@@ -18,7 +18,7 @@ use std::{
 
 type IndexShredsMap = BTreeMap<u32, Vec<Shred>>;
 
-#[test]
+#[cfg(testkun)]
 fn test_multi_fec_block_coding() {
     let keypair = Arc::new(Keypair::new());
     let slot = 0x1234_5678_9abc_def0;
@@ -110,7 +110,7 @@ fn test_multi_fec_block_coding() {
     assert_eq!(serialized_entries[..], result[..serialized_entries.len()]);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_multi_fec_block_different_size_coding() {
     let slot = 0x1234_5678_9abc_def0;
     let parent_slot = slot - 5;

@@ -583,11 +583,11 @@ fn process_instruction(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn create_program_address_is_defined() {
         assert_eq!(
             Pubkey::create_program_address(&[b"You pass butter"], &Pubkey::default()).unwrap_err(),

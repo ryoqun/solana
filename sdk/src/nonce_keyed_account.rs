@@ -255,7 +255,7 @@ where
     f(&keyed_account)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::{
@@ -269,12 +269,12 @@ mod test {
     };
     use solana_program::hash::Hash;
 
-    #[test]
+    #[cfg(testkun)]
     fn default_is_uninitialized() {
         assert_eq!(State::default(), State::Uninitialized)
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn keyed_account_expected_behavior() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -381,7 +381,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn nonce_inx_initialized_account_not_signer_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -421,7 +421,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn nonce_inx_with_empty_recent_blockhashes_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -451,7 +451,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn nonce_inx_too_early_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -480,7 +480,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn nonce_inx_uninitialized_account_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -500,7 +500,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn nonce_inx_independent_nonce_authority_ok() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -534,7 +534,7 @@ mod test {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn nonce_inx_no_nonce_authority_sig_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -565,7 +565,7 @@ mod test {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_unintialized_acc_ok() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -609,7 +609,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_unintialized_acc_unsigned_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -638,7 +638,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_unintialized_acc_insuff_funds_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -668,7 +668,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_uninitialized_acc_two_withdraws_ok() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -724,7 +724,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_initialized_acc_two_withdraws_ok() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -804,7 +804,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_initialized_acc_nonce_too_early_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -839,7 +839,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_initialized_acc_insuff_funds_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -875,7 +875,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_initialized_acc_insuff_rent_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -911,7 +911,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn withdraw_inx_overflow() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -947,7 +947,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn initialize_inx_ok() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -982,7 +982,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn initialize_inx_empty_recent_blockhashes_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -1004,7 +1004,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn initialize_inx_initialized_account_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -1033,7 +1033,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn initialize_inx_uninitialized_acc_insuff_funds_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -1053,7 +1053,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn authorize_inx_ok() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -1092,7 +1092,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn authorize_inx_uninitialized_state_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -1111,7 +1111,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn authorize_inx_bad_authority_fail() {
         let rent = Rent {
             lamports_per_byte_year: 42,
@@ -1140,7 +1140,7 @@ mod test {
         })
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn verify_nonce_ok() {
         with_test_keyed_account(42, true, |nonce_account| {
             let mut signers = HashSet::new();
@@ -1165,7 +1165,7 @@ mod test {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn verify_nonce_bad_acc_state_fail() {
         with_test_keyed_account(42, true, |nonce_account| {
             assert!(!verify_nonce_account(
@@ -1175,7 +1175,7 @@ mod test {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn verify_nonce_bad_query_hash_fail() {
         with_test_keyed_account(42, true, |nonce_account| {
             let mut signers = HashSet::new();

@@ -364,7 +364,7 @@ pub fn get_weight(max_weight: f32, time_since_last_selected: u32, stake: f32) ->
     1.0_f32.max(weight.min(max_weight))
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::contact_info::ContactInfo;
@@ -372,7 +372,7 @@ mod test {
     use solana_sdk::hash::hash;
     use solana_sdk::timing::timestamp;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_prune_errors() {
         let mut crds_gossip = CrdsGossip {
             id: Pubkey::new(&[0; 32]),

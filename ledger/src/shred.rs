@@ -455,7 +455,7 @@ impl Shred {
         }
     }
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub fn unset_data_complete(&mut self) {
         if self.is_data() {
             self.data_header.flags &= !DATA_COMPLETE_SHRED;
@@ -1131,7 +1131,7 @@ pub fn verify_test_data_shred(
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
     use bincode::serialized_size;
@@ -1139,7 +1139,7 @@ pub mod tests {
     use solana_sdk::{hash::hash, shred_version, system_transaction};
     use std::{collections::HashSet, convert::TryInto};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_shred_constants() {
         assert_eq!(
             SIZE_OF_COMMON_SHRED_HEADER,
@@ -1281,12 +1281,12 @@ pub mod tests {
         assert_eq!(entries, deshred_entries);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_data_shredder() {
         run_test_data_shredder(0x1234_5678_9abc_def0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deserialize_shred_payload() {
         let keypair = Arc::new(Keypair::new());
         let slot = 1;
@@ -1312,7 +1312,7 @@ pub mod tests {
         assert_eq!(deserialized_shred, *data_shreds.last().unwrap());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_shred_reference_tick() {
         let keypair = Arc::new(Keypair::new());
         let slot = 1;
@@ -1342,7 +1342,7 @@ pub mod tests {
         assert_eq!(deserialized_shred.reference_tick(), 5);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_shred_reference_tick_overflow() {
         let keypair = Arc::new(Keypair::new());
         let slot = 1;
@@ -1423,7 +1423,7 @@ pub mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_data_and_code_shredder() {
         run_test_data_and_code_shredder(0x1234_5678_9abc_def0);
     }
@@ -1680,12 +1680,12 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recovery_and_reassembly() {
         run_test_recovery_and_reassembly(0x1234_5678_9abc_def0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_shred_version() {
         let keypair = Arc::new(Keypair::new());
         let hash = hash(Hash::default().as_ref());
@@ -1712,7 +1712,7 @@ pub mod tests {
             .any(|s| s.version() != version));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_version_from_hash() {
         let hash = [
             0xa5u8, 0xa5, 0x5a, 0x5a, 0xa5, 0xa5, 0x5a, 0x5a, 0xa5, 0xa5, 0x5a, 0x5a, 0xa5, 0xa5,
@@ -1735,7 +1735,7 @@ pub mod tests {
         assert_eq!(version, 0x5a5b);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_shred_fec_set_index() {
         let keypair = Arc::new(Keypair::new());
         let hash = hash(Hash::default().as_ref());
@@ -1773,7 +1773,7 @@ pub mod tests {
         });
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_max_coding_shreds() {
         let keypair = Arc::new(Keypair::new());
         let hash = hash(Hash::default().as_ref());
@@ -1828,7 +1828,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_invalid_parent_offset() {
         let shred = Shred::new_from_data(10, 0, 1000, Some(&[1, 2, 3]), false, false, 0, 1, 0);
         let mut packet = Packet::default();
@@ -1843,7 +1843,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_shred_offsets() {
         solana_logger::setup();
         let mut packet = Packet::default();

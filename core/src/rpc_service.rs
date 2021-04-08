@@ -42,7 +42,7 @@ const LARGEST_ACCOUNTS_CACHE_DURATION: u64 = 60 * 60 * 2;
 pub struct JsonRpcService {
     thread_hdl: JoinHandle<()>,
 
-    #[cfg(test)]
+    #[cfg(testkun)]
     pub request_processor: JsonRpcRequestProcessor, // Used only by test_rpc_new()...
 
     close_handle: Option<CloseHandle>,
@@ -371,7 +371,7 @@ impl JsonRpcService {
             send_transaction_leader_forward_count,
         ));
 
-        #[cfg(test)]
+        #[cfg(testkun)]
         let test_request_processor = request_processor.clone();
 
         let ledger_path = ledger_path.to_path_buf();
@@ -449,7 +449,7 @@ impl JsonRpcService {
             .register_exit(Box::new(move || close_handle_.close()));
         Self {
             thread_hdl,
-            #[cfg(test)]
+            #[cfg(testkun)]
             request_processor: test_request_processor,
             close_handle: Some(close_handle),
         }
@@ -466,7 +466,7 @@ impl JsonRpcService {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -482,7 +482,7 @@ mod tests {
     use std::io::Write;
     use std::net::{IpAddr, Ipv4Addr};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rpc_new() {
         let GenesisConfigInfo {
             genesis_config,
@@ -548,7 +548,7 @@ mod tests {
         Arc::new(RwLock::new(BankForks::new(bank)))
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_rest_api() {
         let bank_forks = create_bank_forks();
 
@@ -559,7 +559,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_file_get_path() {
         let bank_forks = create_bank_forks();
         let rrm = RpcRequestMiddleware::new(
@@ -611,7 +611,7 @@ mod tests {
         assert!(!rrm.is_file_get_path("🎣"));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_process_file_get() {
         let mut runtime = tokio_02::runtime::Runtime::new().unwrap();
 
@@ -672,7 +672,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_health_check_with_no_trusted_validators() {
         let rm = RpcRequestMiddleware::new(
             PathBuf::from("/"),
@@ -683,7 +683,7 @@ mod tests {
         assert_eq!(rm.health_check(), "ok");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_health_check_with_trusted_validators() {
         let cluster_info = Arc::new(ClusterInfo::default());
         let health_check_slot_distance = 123;

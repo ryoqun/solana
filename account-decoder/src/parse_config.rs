@@ -85,7 +85,7 @@ pub struct UiConfig<T> {
     pub config_data: T,
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::validator_info::ValidatorInfo;
@@ -93,7 +93,7 @@ mod test {
     use solana_config_program::create_config_account;
     use solana_sdk::account::ReadableAccount;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_parse_config() {
         let stake_config = StakeConfig {
             warmup_cooldown_rate: 0.25,

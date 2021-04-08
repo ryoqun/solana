@@ -7,7 +7,7 @@ use solana_sdk::{
     transaction::Transaction,
 };
 
-#[test]
+#[cfg(testkun)]
 fn test_local_faucet() {
     let keypair = Keypair::new();
     let to = solana_sdk::pubkey::new_rand();

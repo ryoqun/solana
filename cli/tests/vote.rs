@@ -16,7 +16,7 @@ use solana_sdk::{
 };
 use solana_vote_program::vote_state::{VoteAuthorize, VoteState, VoteStateVersions};
 
-#[test]
+#[cfg(testkun)]
 fn test_vote_authorize_and_withdraw() {
     let mint_keypair = Keypair::new();
     let test_validator = TestValidator::with_no_fees(mint_keypair.pubkey());

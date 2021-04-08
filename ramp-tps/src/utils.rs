@@ -147,11 +147,11 @@ pub fn download_genesis(rpc_addr: &SocketAddr, download_path: &Path) -> Result<(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_slots_to_secs() {
         let mut genesis_config = GenesisConfig::default();
         genesis_config.poh_config.target_tick_duration = Duration::from_millis(500);

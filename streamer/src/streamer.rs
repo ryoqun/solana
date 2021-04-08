@@ -167,7 +167,7 @@ pub fn responder(name: &'static str, sock: Arc<UdpSocket>, r: PacketReceiver) ->
         .unwrap()
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use crate::packet::{Packet, Packets, PACKET_DATA_SIZE};
@@ -196,12 +196,12 @@ mod test {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn streamer_debug() {
         write!(io::sink(), "{:?}", Packet::default()).unwrap();
         write!(io::sink(), "{:?}", Packets::default()).unwrap();
     }
-    #[test]
+    #[cfg(testkun)]
     fn streamer_send_test() {
         let read = UdpSocket::bind("127.0.0.1:0").expect("bind");
         read.set_read_timeout(Some(Duration::new(1, 0))).unwrap();

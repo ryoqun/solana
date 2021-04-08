@@ -140,19 +140,19 @@ pub fn create_test_recent_blockhashes(start: usize) -> RecentBlockhashes {
     bhq.into_iter().collect()
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::clock::MAX_PROCESSING_AGE;
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::assertions_on_constants)]
     fn test_sysvar_can_hold_all_active_blockhashes() {
         // Ensure we can still hold all of the active entries in `BlockhashQueue`
         assert!(MAX_PROCESSING_AGE <= MAX_ENTRIES);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_size_of() {
         let entry = Entry::new(&Hash::default(), &FeeCalculator::default());
         assert_eq!(

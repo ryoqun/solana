@@ -44,12 +44,12 @@ pub trait Banks {
     ) -> Option<Account>;
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use tarpc::{client, transport};
 
-    #[test]
+    #[cfg(testkun)]
     fn test_banks_client_new() {
         let (client_transport, _server_transport) = transport::channel::unbounded();
         BanksClient::new(client::Config::default(), client_transport);

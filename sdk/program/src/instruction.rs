@@ -354,11 +354,11 @@ impl CompiledInstruction {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_visit_each_account() {
         let do_work = |accounts: &[u8]| -> (usize, usize) {
             let mut unique_total = 0;

@@ -47,12 +47,12 @@ impl VoteStakeTracker {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use solana_runtime::commitment::VOTE_THRESHOLD_SIZE;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_add_vote_pubkey() {
         let total_epoch_stake = 10;
         let mut vote_stake_tracker = VoteStakeTracker::default();

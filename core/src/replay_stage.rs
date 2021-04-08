@@ -2328,7 +2328,7 @@ impl ReplayStage {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub(crate) mod tests {
     use super::*;
     use crate::{
@@ -2379,7 +2379,7 @@ pub(crate) mod tests {
     };
     use trees::tr;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_is_partition_detected() {
         let (bank_forks, _) = setup_forks();
         let ancestors = bank_forks.read().unwrap().ancestors();
@@ -2468,7 +2468,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_child_slots_of_same_parent() {
         let ReplayBlockstoreComponents {
             blockstore,
@@ -2570,7 +2570,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_handle_new_root() {
         let genesis_config = create_genesis_config(10_000).genesis_config;
         let bank0 = Bank::new(&genesis_config);
@@ -2619,7 +2619,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_handle_new_root_ahead_of_highest_confirmed_root() {
         let genesis_config = create_genesis_config(10_000).genesis_config;
         let bank0 = Bank::new(&genesis_config);
@@ -2673,7 +2673,7 @@ pub(crate) mod tests {
         assert!(progress.get(&fork).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_transaction_error() {
         let keypair1 = Keypair::new();
         let keypair2 = Keypair::new();
@@ -2708,7 +2708,7 @@ pub(crate) mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_entry_verification_failure() {
         let keypair2 = Keypair::new();
         let res = check_dead_fork(|genesis_keypair, bank| {
@@ -2737,7 +2737,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_invalid_tick_hash_count() {
         let res = check_dead_fork(|_keypair, bank| {
             let blockhash = bank.last_blockhash();
@@ -2762,7 +2762,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_invalid_slot_tick_count() {
         solana_logger::setup();
         // Too many ticks per slot
@@ -2806,7 +2806,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_invalid_last_tick() {
         let res = check_dead_fork(|_keypair, bank| {
             let blockhash = bank.last_blockhash();
@@ -2828,7 +2828,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_trailing_entry() {
         let keypair = Keypair::new();
         let res = check_dead_fork(|genesis_keypair, bank| {
@@ -2852,7 +2852,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_dead_fork_entry_deserialize_failure() {
         // Insert entry that causes deserialization failure
         let res = check_dead_fork(|_, _| {
@@ -2956,7 +2956,7 @@ pub(crate) mod tests {
         res
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_replay_commitment_cache() {
         fn leader_vote(vote_slot: Slot, bank: &Arc<Bank>, pubkey: &Pubkey) {
             let mut leader_vote_account = bank.get_account(&pubkey).unwrap();
@@ -3136,7 +3136,7 @@ pub(crate) mod tests {
         vec![success_signature, ix_error_signature]
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_write_persist_transaction_status() {
         let GenesisConfigInfo {
             genesis_config,
@@ -3195,7 +3195,7 @@ pub(crate) mod tests {
         Blockstore::destroy(&ledger_path).unwrap();
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_compute_bank_stats_confirmed() {
         let vote_keypairs = ValidatorVoteKeypairs::new_rand();
         let node_pubkey = vote_keypairs.node_keypair.pubkey();
@@ -3330,7 +3330,7 @@ pub(crate) mod tests {
         assert!(newly_computed.is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_same_weight_select_lower_slot() {
         // Init state
         let mut vote_simulator = VoteSimulator::new(1);
@@ -3380,7 +3380,7 @@ pub(crate) mod tests {
         assert_eq!(heaviest_bank.slot(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_child_bank_heavier() {
         // Init state
         let mut vote_simulator = VoteSimulator::new(1);
@@ -3450,7 +3450,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_should_retransmit() {
         let poh_slot = 4;
         let mut last_retransmit_slot = 4;
@@ -3487,7 +3487,7 @@ pub(crate) mod tests {
         assert_eq!(last_retransmit_slot, poh_slot);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_update_slot_propagated_threshold_from_votes() {
         let keypairs: HashMap<_, _> = iter::repeat_with(|| {
             let vote_keypairs = ValidatorVoteKeypairs::new_rand();
@@ -3595,7 +3595,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_update_slot_propagated_threshold_from_votes2() {
         let mut empty: Vec<Pubkey> = vec![];
         let genesis_config = create_genesis_config(100_000_000).genesis_config;
@@ -3646,7 +3646,7 @@ pub(crate) mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_update_propagation_status() {
         // Create genesis stakers
         let vote_keypairs = ValidatorVoteKeypairs::new_rand();
@@ -3732,7 +3732,7 @@ pub(crate) mod tests {
         assert_eq!(propagated_stats.propagated_validators_stake, stake);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_chain_update_propagation_status() {
         let keypairs: HashMap<_, _> = iter::repeat_with(|| {
             let vote_keypairs = ValidatorVoteKeypairs::new_rand();
@@ -3812,7 +3812,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_chain_update_propagation_status2() {
         let num_validators = 6;
         let keypairs: HashMap<_, _> = iter::repeat_with(|| {
@@ -3897,7 +3897,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_propagation_for_start_leader() {
         let mut progress_map = ProgressMap::default();
         let poh_slot = 5;
@@ -4012,7 +4012,7 @@ pub(crate) mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_check_propagation_skip_propagation_check() {
         let mut progress_map = ProgressMap::default();
         let poh_slot = 4;
@@ -4098,7 +4098,7 @@ pub(crate) mod tests {
         ));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_unconfirmed_duplicate_slot() {
         let (bank_forks, mut progress) = setup_forks();
         let mut descendants = bank_forks.read().unwrap().descendants().clone();
@@ -4158,7 +4158,7 @@ pub(crate) mod tests {
         assert!(progress.get(&0).is_some());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_ancestors_descendants() {
         let (bank_forks, _) = setup_forks();
 
@@ -4210,7 +4210,7 @@ pub(crate) mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_leader_snapshot_restart_propagation() {
         let ReplayBlockstoreComponents {
             validator_voting_keys,
@@ -4272,7 +4272,7 @@ pub(crate) mod tests {
         assert!(progress.is_propagated(root_bank.slot()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_unconfirmed_duplicate_slots_and_lockouts() {
         /*
             Build fork structure:

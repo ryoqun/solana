@@ -1703,7 +1703,7 @@ fn do_create_account(
     stake_account
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::id;
@@ -1723,7 +1723,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorized_authorize() {
         let staker = solana_sdk::pubkey::new_rand();
         let mut authorized = Authorized::auto(&staker);
@@ -1739,7 +1739,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorized_authorize_with_custodian() {
         let staker = solana_sdk::pubkey::new_rand();
         let custodian = solana_sdk::pubkey::new_rand();
@@ -1861,7 +1861,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_state_stake_from_fail() {
         let mut stake_account = AccountSharedData::new(0, std::mem::size_of::<StakeState>(), &id());
 
@@ -1872,7 +1872,7 @@ mod tests {
         assert_eq!(StakeState::stake_from(&stake_account), None);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_is_bootstrap() {
         assert_eq!(
             Delegation {
@@ -1892,7 +1892,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_delegate() {
         let mut clock = Clock {
             epoch: 1,
@@ -2084,7 +2084,7 @@ mod tests {
         stake_history
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_activating_and_deactivating() {
         let stake = Delegation {
             stake: 1_000,
@@ -2271,7 +2271,7 @@ mod tests {
             );
         }
 
-        #[test]
+        #[cfg(testkun)]
         fn test_old_behavior_slow() {
             do_test(
                 OldDeactivationBehavior::Slow,
@@ -2288,7 +2288,7 @@ mod tests {
             );
         }
 
-        #[test]
+        #[cfg(testkun)]
         fn test_old_behavior_stuck() {
             do_test(
                 OldDeactivationBehavior::Stuck,
@@ -2305,7 +2305,7 @@ mod tests {
             );
         }
 
-        #[test]
+        #[cfg(testkun)]
         fn test_new_behavior_previously_slow() {
             // any stake accounts activated and deactivated at the same epoch
             // shouldn't been activated (then deactivated) at all!
@@ -2325,7 +2325,7 @@ mod tests {
             );
         }
 
-        #[test]
+        #[cfg(testkun)]
         fn test_new_behavior_previously_stuck() {
             // any stake accounts activated and deactivated at the same epoch
             // shouldn't been activated (then deactivated) at all!
@@ -2346,7 +2346,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_inflation_and_slashing_with_activating_and_deactivating_stake() {
         // some really boring delegation and stake_history setup
         let (delegated_stake, mut stake, stake_history) = {
@@ -2499,7 +2499,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stop_activating_after_deactivation() {
         solana_logger::setup();
         let stake = Delegation {
@@ -2564,7 +2564,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_warmup_cooldown_sub_integer_moves() {
         let delegations = [Delegation {
             stake: 2,
@@ -2594,7 +2594,7 @@ mod tests {
         assert_eq!(min_stake, 0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_warmup_cooldown() {
         let delegations = [
             Delegation {
@@ -2676,7 +2676,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_initialize() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -2740,7 +2740,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_initialize_incorrect_account_sizes() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -2783,7 +2783,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_deactivate() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -2849,7 +2849,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_set_lockup() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -2946,7 +2946,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_optional_lockup() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -3060,7 +3060,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_withdraw_stake() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -3290,7 +3290,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_withdraw_stake_before_warmup() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let total_lamports = 100;
@@ -3361,7 +3361,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_withdraw_stake_invalid_state() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let total_lamports = 100;
@@ -3390,7 +3390,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_withdraw_lockup() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let custodian = solana_sdk::pubkey::new_rand();
@@ -3466,7 +3466,7 @@ mod tests {
         assert_eq!(stake_keyed_account.state(), Ok(StakeState::Uninitialized));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_withdraw_identical_authorities() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let custodian = stake_pubkey;
@@ -3524,7 +3524,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_state_redeem_rewards() {
         let mut vote_state = VoteState::default();
         // assume stake.stake() is right
@@ -3579,7 +3579,7 @@ mod tests {
         assert_eq!(stake.credits_observed, 2);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_state_calculate_points_with_typical_values() {
         let mut vote_state = VoteState::default();
 
@@ -3622,7 +3622,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_state_calculate_rewards() {
         let mut vote_state = VoteState::default();
         // assume stake.stake() is right
@@ -3820,7 +3820,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorize_uninit() {
         let new_authority = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -3847,7 +3847,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorize_lockup() {
         let stake_authority = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -3982,7 +3982,7 @@ mod tests {
         assert_eq!(stake_keyed_account.state(), Ok(StakeState::Uninitialized));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorize_with_seed() {
         let base_pubkey = solana_sdk::pubkey::new_rand();
         let seed = "42";
@@ -4079,7 +4079,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorize_override() {
         let withdrawer_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -4166,7 +4166,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_source_uninitialized() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -4213,7 +4213,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_split_not_uninitialized() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -4255,7 +4255,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_more_than_staked() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -4289,7 +4289,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_with_rent() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let split_stake_pubkey = solana_sdk::pubkey::new_rand();
@@ -4390,7 +4390,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -4482,7 +4482,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_fake_stake_dest() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -4516,7 +4516,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_to_account_with_rent_exempt_reserve() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let rent = Rent::default();
@@ -4619,7 +4619,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_to_smaller_account_with_rent_exempt_reserve() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let rent = Rent::default();
@@ -4739,7 +4739,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_to_larger_account() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let rent = Rent::default();
@@ -4806,7 +4806,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_100_percent_of_source() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let rent = Rent::default();
@@ -4892,7 +4892,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_100_percent_of_source_to_account_with_lamports() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let rent = Rent::default();
@@ -4969,7 +4969,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_split_rent_exemptness() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let rent = Rent::default();
@@ -5098,7 +5098,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let source_stake_pubkey = solana_sdk::pubkey::new_rand();
@@ -5212,7 +5212,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_self_fails() {
         let invoke_context = MockInvokeContext::default();
         let stake_address = Pubkey::new_unique();
@@ -5256,7 +5256,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_incorrect_authorized_staker() {
         let invoke_context = MockInvokeContext::default();
         let stake_pubkey = solana_sdk::pubkey::new_rand();
@@ -5326,7 +5326,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_invalid_account_data() {
         let invoke_context = MockInvokeContext::default();
         let stake_pubkey = solana_sdk::pubkey::new_rand();
@@ -5378,7 +5378,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_fake_stake_source() {
         let invoke_context = MockInvokeContext::default();
         let stake_pubkey = solana_sdk::pubkey::new_rand();
@@ -5425,7 +5425,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_active_stake() {
         let invoke_context = MockInvokeContext::default();
         let base_lamports = 4242424242;
@@ -5690,7 +5690,7 @@ mod tests {
         .is_ok(),);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_lockup_is_expired() {
         let custodian = solana_sdk::pubkey::new_rand();
         let lockup = Lockup {
@@ -5760,7 +5760,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[ignore]
     #[should_panic]
     fn test_dbg_stake_minimum_balance() {
@@ -5772,7 +5772,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_authorize_delegated_stake() {
         let stake_pubkey = solana_sdk::pubkey::new_rand();
         let stake_lamports = 42;
@@ -5875,7 +5875,7 @@ mod tests {
         assert_eq!(stake_keyed_account.deactivate(&clock, &new_signers), Ok(()));
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_redelegate_consider_balance_changes() {
         let initial_lamports = 4242424242;
         let rent = Rent::default();
@@ -5979,7 +5979,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_meta_rewrite_rent_exempt_reserve() {
         let right_data_len = std::mem::size_of::<StakeState>() as u64;
         let rent = Rent::default();
@@ -6014,7 +6014,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_stake_rewrite_stake() {
         let right_data_len = std::mem::size_of::<StakeState>() as u64;
         let rent = Rent::default();
@@ -6043,7 +6043,7 @@ mod tests {
         Rewritten,
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rewrite_stakes_initialized() {
         let right_data_len = std::mem::size_of::<StakeState>();
         let rent = Rent::default();
@@ -6070,7 +6070,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_rewrite_stakes_stake() {
         let right_data_len = std::mem::size_of::<StakeState>();
         let rent = Rent::default();
@@ -6106,7 +6106,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_calculate_lamports_per_byte_year() {
         let rent = Rent::default();
         let data_len = 200u64;
@@ -6143,7 +6143,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_things_can_merge() {
         let invoke_context = MockInvokeContext::default();
         let good_stake = Stake {
@@ -6313,7 +6313,7 @@ mod tests {
         .is_err());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_kind_get_if_mergeable() {
         let invoke_context = MockInvokeContext::default();
         let authority_pubkey = Pubkey::new_unique();
@@ -6546,7 +6546,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_merge_kind_merge() {
         let invoke_context = MockInvokeContext::default();
         let lamports = 424242;

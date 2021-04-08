@@ -341,7 +341,7 @@ impl Blockstore {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
     use crate::{
@@ -447,7 +447,7 @@ pub mod tests {
         assert!(condition_met);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_slots() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -475,7 +475,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_huge() {
         let blockstore_path = get_tmp_ledger_path!();
         let blockstore = Blockstore::open(&blockstore_path).unwrap();
@@ -490,7 +490,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_front_of_ledger() {
         let blockstore_path = get_tmp_ledger_path!();
         {
@@ -540,7 +540,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::cognitive_complexity)]
     fn test_purge_transaction_status() {
         let blockstore_path = get_tmp_ledger_path!();
@@ -809,7 +809,7 @@ pub mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     #[allow(clippy::cognitive_complexity)]
     fn test_purge_transaction_status_exact() {
         let blockstore_path = get_tmp_ledger_path!();
@@ -1154,7 +1154,7 @@ pub mod tests {
         Blockstore::destroy(&blockstore_path).expect("Expected successful database destruction");
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_purge_special_columns_exact_no_sigs() {
         let blockstore_path = get_tmp_ledger_path!();
         {

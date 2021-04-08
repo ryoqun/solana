@@ -49,7 +49,7 @@ fn post_rpc(request: Value, rpc_url: &str) -> Value {
     serde_json::from_str(&response.text().unwrap()).unwrap()
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_rpc_send_tx() {
     solana_logger::setup();
 
@@ -109,7 +109,7 @@ fn test_rpc_send_tx() {
     info!("{:?}", json["result"]["value"]);
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_rpc_invalid_requests() {
     solana_logger::setup();
 
@@ -141,7 +141,7 @@ fn test_rpc_invalid_requests() {
     assert!(the_value.is_null());
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_rpc_slot_updates() {
     solana_logger::setup();
 
@@ -205,7 +205,7 @@ fn test_rpc_slot_updates() {
     }
 }
 
-#[test]
+#[cfg(testkun)]
 fn test_rpc_subscriptions() {
     solana_logger::setup();
 

@@ -355,7 +355,7 @@ pub fn process_slots(rpc_client: &RpcClient, accounts_info: &mut AccountsInfo, b
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod test {
     use super::*;
     use serial_test::serial;
@@ -373,7 +373,7 @@ mod test {
     };
     use solana_stake_program::{stake_instruction, stake_state::Authorized};
 
-    #[test]
+    #[cfg(testkun)]
     #[serial]
     fn test_record() {
         solana_logger::setup();

@@ -245,7 +245,7 @@ impl PingCache {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use std::collections::HashSet;
@@ -254,7 +254,7 @@ mod tests {
 
     type Token = [u8; 32];
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ping_pong() {
         let mut rng = rand::thread_rng();
         let keypair = Keypair::new();
@@ -268,7 +268,7 @@ mod tests {
         assert_eq!(hash::hash(&ping.token), pong.hash);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_ping_cache() {
         let now = Instant::now();
         let mut rng = rand::thread_rng();

@@ -372,7 +372,7 @@ impl<T: Default + Reset> RecyclerX<T> {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::packet::PacketsRecycler;
@@ -387,7 +387,7 @@ mod tests {
         fn unset_recycler(&mut self) {}
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recycler() {
         let recycler = Recycler::new_without_limit("");
         let mut y: u64 = recycler.allocate().unwrap();
@@ -401,7 +401,7 @@ mod tests {
         assert_eq!(recycler.recycler.gc.lock().unwrap().len(), 0);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recycler_limit() {
         let limit = 10;
         assert!(limit <= DEFAULT_MINIMUM_OBJECT_COUNT);
@@ -430,7 +430,7 @@ mod tests {
         assert_eq!(recycler.recycler.gc.lock().unwrap().len(), limit as usize);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_recycler_shrink() {
         let limit = DEFAULT_MINIMUM_OBJECT_COUNT * 2;
         let max_above_shrink_pct_count = 2;

@@ -16,12 +16,12 @@ impl Sysvar for StakeHistory {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::stake_history::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_size_of() {
         let mut stake_history = StakeHistory::default();
         for i in 0..MAX_ENTRIES as u64 {
@@ -40,7 +40,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_create_account() {
         let mut stake_history = StakeHistory::default();
         for i in 0..MAX_ENTRIES as u64 + 1 {

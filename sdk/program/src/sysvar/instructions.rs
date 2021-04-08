@@ -25,11 +25,11 @@ pub fn load_instruction_at(index: usize, data: &[u8]) -> Result<Instruction, San
     crate::message::Message::deserialize_instruction(index, data)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_load_store_instruction() {
         let mut data = [4u8; 10];
         store_current_index(&mut data, 3);

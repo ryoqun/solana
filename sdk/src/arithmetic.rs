@@ -23,11 +23,11 @@ impl SaturatingArithmetic<u32> for Duration {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 pub mod tests {
     use super::*;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_duration() {
         let empty_duration = Duration::new(0, 0);
         let max_duration = Duration::new(u64::MAX, 1_000_000_000 - 1);

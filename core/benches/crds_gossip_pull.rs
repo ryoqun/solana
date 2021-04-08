@@ -11,7 +11,7 @@ use solana_core::crds_value::CrdsValue;
 use solana_sdk::hash;
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_hash_as_u64(bencher: &mut Bencher) {
     let mut rng = thread_rng();
     let hashes: Vec<_> = std::iter::repeat_with(|| hash::new_rand(&mut rng))
@@ -25,7 +25,7 @@ fn bench_hash_as_u64(bencher: &mut Bencher) {
     });
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_build_crds_filters(bencher: &mut Bencher) {
     let thread_pool = ThreadPoolBuilder::new().build().unwrap();
     let mut rng = thread_rng();

@@ -313,7 +313,7 @@ impl BankForks {
     }
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use crate::{
@@ -331,7 +331,7 @@ mod tests {
     };
     use solana_vote_program::vote_state::BlockTimestamp;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_new() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -343,7 +343,7 @@ mod tests {
         assert_eq!(bank_forks.working_bank().tick_height(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_new_from_banks() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Arc::new(Bank::new(&genesis_config));
@@ -358,7 +358,7 @@ mod tests {
         assert_eq!(bank_forks.working_bank().slot(), 1);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_descendants() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -375,7 +375,7 @@ mod tests {
         assert!(descendants[&2].is_empty());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_ancestors() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -393,7 +393,7 @@ mod tests {
         assert_eq!(parents, vec![0]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_frozen_banks() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -404,7 +404,7 @@ mod tests {
         assert!(bank_forks.frozen_banks().get(&1).is_none());
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_active_banks() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -414,7 +414,7 @@ mod tests {
         assert_eq!(bank_forks.active_banks(), vec![1]);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_different_set_root() {
         solana_logger::setup();
         let leader_keypair = Keypair::new();
@@ -482,7 +482,7 @@ mod tests {
             .collect()
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_with_set_root() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let mut banks = vec![Arc::new(Bank::new(&genesis_config))];
@@ -541,7 +541,7 @@ mod tests {
         );
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bank_forks_with_highest_confirmed_root() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
         let mut banks = vec![Arc::new(Bank::new(&genesis_config))];

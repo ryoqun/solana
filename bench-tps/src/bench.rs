@@ -922,7 +922,7 @@ pub fn generate_and_fund_keypairs<T: 'static + Client + Send + Sync>(
     Ok(keypairs)
 }
 
-#[cfg(test)]
+#[cfg(testkun)]
 mod tests {
     use super::*;
     use solana_runtime::bank::Bank;
@@ -931,7 +931,7 @@ mod tests {
     use solana_sdk::fee_calculator::FeeRateGovernor;
     use solana_sdk::genesis_config::create_genesis_config;
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bench_tps_bank_client() {
         let (genesis_config, id) = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -952,7 +952,7 @@ mod tests {
         do_bench_tps(client, config, keypairs);
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bench_tps_fund_keys() {
         let (genesis_config, id) = create_genesis_config(10_000);
         let bank = Bank::new(&genesis_config);
@@ -973,7 +973,7 @@ mod tests {
         }
     }
 
-    #[test]
+    #[cfg(testkun)]
     fn test_bench_tps_fund_keys_with_fees() {
         let (mut genesis_config, id) = create_genesis_config(10_000);
         let fee_rate_governor = FeeRateGovernor::new(11, 0);

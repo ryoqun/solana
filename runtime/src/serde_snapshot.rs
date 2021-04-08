@@ -51,7 +51,7 @@ use future::Context as TypeContextFuture;
 use utils::{serialize_iter_as_map, serialize_iter_as_seq, serialize_iter_as_tuple};
 
 // a number of test cases in accounts_db use this
-#[cfg(test)]
+#[cfg(testkun)]
 pub(crate) use self::tests::reconstruct_accounts_db_via_serialization;
 
 pub(crate) use crate::accounts_db::{SnapshotStorage, SnapshotStorages};

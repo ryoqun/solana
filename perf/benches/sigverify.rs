@@ -8,7 +8,7 @@ use solana_perf::sigverify;
 use solana_perf::test_tx::test_tx;
 use test::Bencher;
 
-#[bench]
+#[cfg(testkun)]
 fn bench_sigverify(bencher: &mut Bencher) {
     let tx = test_tx();
 
@@ -23,7 +23,7 @@ fn bench_sigverify(bencher: &mut Bencher) {
     })
 }
 
-#[bench]
+#[cfg(testkun)]
 fn bench_get_offsets(bencher: &mut Bencher) {
     let tx = test_tx();
 
