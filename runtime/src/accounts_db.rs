@@ -188,6 +188,22 @@ impl Versioned for (u64, AccountInfo) {
     }
 }
 
+pub enum LoadSafety {
+    // Caller guarantee that an assumption that it's loading transactions 
+    // for a block which is descended from the current root, and at the 
+    // tip of its fork.
+    // Thereby, further this assumes AccountIndex::max_root will not increase 
+    // during this load, meaning there should be no squash
+    // Overall, this establishes the determinism of account loading and resultant
+    // transaction execution.
+    FixedMaxRoot,
+    // Caller can't guarantee the above safety assumption, and load can fail
+    // not-deterministically under very rare circumstances due to AccountsDb's
+    // compromise for faster replaying/banking processing.
+    // Generally RPC codepath falls into this inferior safety category.
+    Unspecified,
+}
+
 #[derive(Debug)]
 pub enum LoadedAccountAccessor<'a> {
     // StoredAccountMeta can't be held directly here due to its lifetime dependency to
@@ -2290,12 +2306,9 @@ impl AccountsDb {
         &self,
         ancestors: &Ancestors,
         pubkey: &Pubkey,
-        // Load transactions for a block which is descended from the current root,
-        // and at the tip of its fork
-        // true if the root will not move during this load
-        is_root_fixed: bool,
+        load_safety: LoadSafety,
     ) -> Option<(AccountSharedData, Slot)> {
-        self.do_load(ancestors, pubkey, None, is_root_fixed)
+        self.do_load(ancestors, pubkey, None, load_safety)
     }
 
     pub fn load_without_fixed_root(
@@ -2344,7 +2357,7 @@ impl AccountsDb {
         ancestors: &'a Ancestors,
         pubkey: &'a Pubkey,
         max_root: Option<Slot>,
-        is_root_fixed: bool,
+        load_safety: LoadSafety,
     ) -> Option<(LoadedAccountAccessor<'a>, Slot)> {
         // Happy drawing time! :)
         //
@@ -2465,54 +2478,64 @@ impl AccountsDb {
                     // so retry. This works because in accounts cache flush, an account is written to
                     // storage *before* it is removed from the cache
                     num_acceptable_failed_iterations += 1;
-                    if is_root_fixed {
-                        // it's impossible for this to fail for transaction loads from replay/banking
-                        // more than once.
-                        // This is because:
-                        // 1) For a slot `X` that's being replayed, there is only one
-                        // latest ancestor containing the latest update for the account, and this
-                        // ancestor can only be flushed once.
-                        // 2) The root cannot move while replaying, so the index cannot continually
-                        // find more up to date entries than the current `slot`
-                        assert!(num_acceptable_failed_iterations <= 1);
+                    match load_safety {
+                        LoadSafety::FixedMaxRoot => {
+                            // it's impossible for this to fail for transaction loads from replay/banking
+                            // more than once.
+                            // This is because:
+                            // 1) For a slot `X` that's being replayed, there is only one
+                            // latest ancestor containing the latest update for the account, and this
+                            // ancestor can only be flushed once.
+                            // 2) The root cannot move while replaying, so the index cannot continually
+                            // find more up to date entries than the current `slot`
+                            assert!(num_acceptable_failed_iterations <= 1);
+                        },
+                        LoadSafety::Unspecified {
+                            // Because newer root can be added to the index (= not fixed),
+                            // multiple flush race conditions can be observed under very rare
+                            // condition, at least theoretically
+                        },
                     }
                 }
                 LoadedAccountAccessor::Stored(None) => {
-                    if is_root_fixed {
-                        // When running replay on the validator, or banking stage on the leader,
-                        // it should be very rare that the storage entry doesn't exist if the
-                        // entry in the accounts index is the latest version of this account.
-                        //
-                        // There are only a few places where the storage entry may not exist
-                        // after reading the index:
-                        // 1) Shrink has removed the old storage entry and rewritten to
-                        // a newer storage entry
-                        // 2) The `pubkey` asked for in this function is a zero-lamport account,
-                        // and the storage entry holding this account qualified for zero-lamport clean.
-                        //
-                        // In both these cases, it should be safe to retry and recheck the accounts
-                        // index indefinitely, without incrementing num_acceptable_failed_iterations.
-                        // That's because if the root is fixed, there should be a bounded number
-                        // of pending cleans/shrinks (depends how far behind the AccountsBackgroundService
-                        // is), termination to the desired condition is guaranteed.
-                        //
-                        // Also note that in both cases, if we do find the storage entry,
-                        // we can guarantee that the storage entry is safe to read from because
-                        // we grabbed a reference to the storage entry while it was still in the
-                        // storage map. This means even if the storage entry is removed from the storage
-                        // map after we grabbed the storage entry, the recycler should not reset the
-                        // storage entry until we drop the reference to the storage entry.
-                        //
-                        // eh, no code in this branch? yes!
-                    } else {
-                        // RPC get_account() may have fetched an old root from the index that was
-                        // either:
-                        // 1) Cleaned up by clean_accounts(), so the accounts index has been updated
-                        // and the storage entries have been removed.
-                        // 2) Dropped by purge_slots() because the slot was on a minor fork, which
-                        // removes the slots' storage entries but doesn't purge from the accounts index
-                        // (account index cleanup is left to clean for stored slots).
-                        num_acceptable_failed_iterations += 1;
+                    match load_safety {
+                        LoadSafety::FixedMaxRoot => {
+                            // When running replay on the validator, or banking stage on the leader,
+                            // it should be very rare that the storage entry doesn't exist if the
+                            // entry in the accounts index is the latest version of this account.
+                            //
+                            // There are only a few places where the storage entry may not exist
+                            // after reading the index:
+                            // 1) Shrink has removed the old storage entry and rewritten to
+                            // a newer storage entry
+                            // 2) The `pubkey` asked for in this function is a zero-lamport account,
+                            // and the storage entry holding this account qualified for zero-lamport clean.
+                            //
+                            // In both these cases, it should be safe to retry and recheck the accounts
+                            // index indefinitely, without incrementing num_acceptable_failed_iterations.
+                            // That's because if the root is fixed, there should be a bounded number
+                            // of pending cleans/shrinks (depends how far behind the AccountsBackgroundService
+                            // is), termination to the desired condition is guaranteed.
+                            //
+                            // Also note that in both cases, if we do find the storage entry,
+                            // we can guarantee that the storage entry is safe to read from because
+                            // we grabbed a reference to the storage entry while it was still in the
+                            // storage map. This means even if the storage entry is removed from the storage
+                            // map after we grabbed the storage entry, the recycler should not reset the
+                            // storage entry until we drop the reference to the storage entry.
+                            //
+                            // eh, no code in this branch? yes!
+                        },
+                        LoadSafety::Unspecified {
+                            // RPC get_account() may have fetched an old root from the index that was
+                            // either:
+                            // 1) Cleaned up by clean_accounts(), so the accounts index has been updated
+                            // and the storage entries have been removed.
+                            // 2) Dropped by purge_slots() because the slot was on a minor fork, which
+                            // removes the slots' storage entries but doesn't purge from the accounts index
+                            // (account index cleanup is left to clean for stored slots).
+                            num_acceptable_failed_iterations += 1;
+                        },
                     }
                 }
             }
@@ -2522,8 +2545,8 @@ impl AccountsDb {
                 // accounts/purge_slots
                 let message = format!(
                     "do_load() failed to get key: {} from storage, latest attempt was for \
-                     slot: {}, storage_entry: {} offset: {}, is_root_fixed: {}",
-                    pubkey, slot, store_id, offset, is_root_fixed,
+                     slot: {}, storage_entry: {} offset: {}, load_safety: {}",
+                    pubkey, slot, store_id, offset, load_safety,
                 );
                 datapoint_warn!("accounts_db-do_load_warn", ("warn", message, String));
                 return None;
@@ -2546,9 +2569,6 @@ impl AccountsDb {
                 // If this is not a cache entry, then this was a minor fork slot
                 // that had its storage entries cleaned up by purge_slots() but hasn't been
                 // cleaned yet. That means this must be rpc access and not replay/banking.
-                // But we can't guarantee `is_root_fixed' must be false, because
-                // the dangling bank at the tip of minor fork might not be started to freeze
-                // (!freeze_started =~> is_root_fixed)
 
                 // Everything being assert!()-ed, let's panic!() here as it's an error condition
                 // after all....
@@ -2560,7 +2580,7 @@ impl AccountsDb {
                 // which is referring back here.
                 panic!(
                     "Bad index entry detected ({}, {}, {}, {}, {})",
-                    pubkey, slot, store_id, offset, is_root_fixed
+                    pubkey, slot, store_id, offset, load_safety
                 );
             }
 
@@ -2575,7 +2595,7 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
         max_root: Option<Slot>,
-        is_root_fixed: bool,
+        load_safety: LoadSafety,
     ) -> Option<(AccountSharedData, Slot)> {
         #[cfg(not(test))]
         assert!(max_root.is_none());
@@ -2596,7 +2616,7 @@ impl AccountsDb {
             ancestors,
             pubkey,
             max_root,
-            is_root_fixed,
+            load_safety,
         )?;
         let loaded_account = account_accessor.check_and_get_loaded_account();
         let is_cached = loaded_account.is_cached();
@@ -2625,7 +2645,7 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
         max_root: Option<Slot>,
-        is_root_fixed: bool,
+        load_safety: LoadSafety,
     ) -> Option<Hash> {
         let (slot, store_id, offset) = self.read_index_for_accessor(ancestors, pubkey, max_root)?;
         let (mut account_accessor, _) = self.retry_to_get_account_accessor(
@@ -2635,7 +2655,7 @@ impl AccountsDb {
             ancestors,
             pubkey,
             max_root,
-            is_root_fixed,
+            load_safety,
         )?;
         let loaded_account = account_accessor.check_and_get_loaded_account();
         Some(loaded_account.loaded_hash(self.expected_cluster_type()))
@@ -9123,13 +9143,13 @@ pub mod tests {
         let max_root = None;
         // Fine to simulate a transaction load since we are not doing any out of band
         // removals, only using clean_accounts
-        let is_root_fixed = true;
+        let load_safety = LoadSafety::FixedMaxRoot;
         assert_eq!(
             db.do_load(
                 &Ancestors::default(),
                 &zero_lamport_account_key,
                 max_root,
-                is_root_fixed
+                load_safety
             )
             .unwrap()
             .0
@@ -9938,7 +9958,7 @@ pub mod tests {
 
     fn start_load_thread(
         no_account_with_retry: Option<bool>, // silly tribool!
-        is_root_fixed: bool,
+        load_safety: LoadSafety
         ancestors: Ancestors,
         db: Arc<AccountsDb>,
         exit: Arc<AtomicBool>,
@@ -9956,7 +9976,7 @@ pub mod tests {
                     let loaded_account = if let Some(no_account_with_retry) = no_account_with_retry
                     {
                         // simulate replaying/banking loading
-                        match db.do_load(&ancestors, &pubkey, None, is_root_fixed) {
+                        match db.do_load(&ancestors, &pubkey, None, load_safety) {
                             Some(account) => account,
                             None => {
                                 if no_account_with_retry {
@@ -10040,11 +10060,11 @@ pub mod tests {
                 .unwrap()
         };
 
-        let is_root_fixed = true;
+        let load_safety = LoadSafety::FixedMaxRoot;
         let no_account_with_retry = if with_retry { Some(false) } else { None };
         let t_do_load = start_load_thread(
             no_account_with_retry,
-            is_root_fixed,
+            load_safety,
             Ancestors::default(),
             db,
             exit.clone(),
@@ -10121,11 +10141,11 @@ pub mod tests {
                 .unwrap()
         };
 
-        let is_root_fixed = true;
+        let load_safety = LoadSafety::FixedMaxRoot;
         let no_account_with_retry = if with_retry { Some(false) } else { None };
         let t_do_load = start_load_thread(
             no_account_with_retry,
-            is_root_fixed,
+            load_safety,
             Ancestors::default(),
             db,
             exit.clone(),
@@ -10192,12 +10212,12 @@ pub mod tests {
         };
 
         let ancestors: Ancestors = vec![(slot, 0)].into_iter().collect();
-        // purge race usually is expected to occur under is_root_fixed == false condition
-        let is_root_fixed = false;
+        // purge race usually is expected to occur under load_safety == Unspecified condition
+        let load_safety = LoadSafety::Unspecified;
         let no_account_with_retry = Some(true);
         let t_do_load = start_load_thread(
             no_account_with_retry,
-            is_root_fixed,
+            load_safety,
             ancestors,
             db,
             exit.clone(),
