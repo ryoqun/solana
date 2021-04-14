@@ -72,24 +72,6 @@ impl<T: Default + Clone + Sized> Reset for PinnedVec<T> {
     }
 }
 
-impl<T: Clone + Default + Sized> From<PinnedVec<T>> for Vec<T> {
-    fn from(mut pinned_vec: PinnedVec<T>) -> Self {
-        if pinned_vec.pinned {
-            // If the vector is pinned and has a recycler, just return a clone
-            // so that the next allocation of a PinnedVec will recycle an
-            // already pinned one.
-            if pinned_vec.recycler.strong_count() != 0 {
-                return pinned_vec.x.clone();
-            }
-            unpin(pinned_vec.x.as_mut_ptr());
-            pinned_vec.pinned = false;
-        }
-        pinned_vec.pinnable = false;
-        pinned_vec.recycler = Weak::default();
-        std::mem::take(&mut pinned_vec.x)
-    }
-}
-
 impl<'a, T: Clone + Default + Sized> IntoIterator for &'a PinnedVec<T> {
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
