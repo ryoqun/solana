@@ -9,7 +9,6 @@ use solana_runtime::bank_forks::BankForks;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 
-#[derive(Clone)]
 pub struct ShredSigVerifier {
     bank_forks: Arc<RwLock<BankForks>>,
     leader_schedule_cache: Arc<LeaderScheduleCache>,

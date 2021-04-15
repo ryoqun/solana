@@ -10,7 +10,7 @@ pub const NUM_PACKETS: usize = 1024 * 8;
 pub const PACKETS_PER_BATCH: usize = 128;
 pub const NUM_RCVMMSGS: usize = 128;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct Packets {
     pub packets: PinnedVec<Packet>,
 }
@@ -28,7 +28,7 @@ impl Packets {
         Packets { packets }
     }
 
-    pub fn new_with_recycler(recycler: PacketsRecycler, size: usize, name: &'static str) -> Self {
+    pub fn new_with_recycler(recycler: &PacketsRecycler, size: usize, name: &'static str) -> Self {
         let mut packets = recycler.allocate(name);
         packets.reserve_and_pin(size);
         Packets { packets }
@@ -38,7 +38,7 @@ impl Packets {
         name: &'static str,
         mut packets: Vec<Packet>,
     ) -> Self {
-        let mut vec = Self::new_with_recycler(recycler.clone(), packets.len(), name);
+        let mut vec = Self::new_with_recycler(recycler, packets.len(), name);
         vec.packets.append(&mut packets);
         vec
     }
@@ -73,7 +73,7 @@ pub fn to_packets<T: Serialize>(xs: &[T]) -> Vec<Packets> {
 }
 
 pub fn to_packets_with_destination<T: Serialize>(
-    recycler: PacketsRecycler,
+    recycler: &PacketsRecycler,
     dests_and_data: &[(SocketAddr, T)],
 ) -> Packets {
     let mut out = Packets::new_with_recycler(

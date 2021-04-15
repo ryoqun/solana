@@ -1791,7 +1791,7 @@ impl ClusterInfo {
             require_stake_for_gossip,
         );
         if !reqs.is_empty() {
-            let packets = to_packets_with_destination(recycler.clone(), &reqs);
+            let packets = to_packets_with_destination(recycler, &reqs);
             self.stats
                 .packets_sent_gossip_requests_count
                 .add_relaxed(packets.packets.len() as u64);
@@ -2189,7 +2189,7 @@ impl ClusterInfo {
             .process_pull_requests(callers.cloned(), timestamp());
         let output_size_limit =
             self.update_data_budget(stakes.len()) / PULL_RESPONSE_MIN_SERIALIZED_SIZE;
-        let mut packets = Packets::new_with_recycler(recycler.clone(), 64, "handle_pull_requests");
+        let mut packets = Packets::new_with_recycler(recycler, 64, "handle_pull_requests");
         let (caller_and_filters, addrs): (Vec<_>, Vec<_>) = {
             let mut rng = rand::thread_rng();
             let check_pull_request =
@@ -2610,7 +2610,7 @@ impl ClusterInfo {
         if prune_messages.is_empty() {
             return;
         }
-        let mut packets = to_packets_with_destination(recycler.clone(), &prune_messages);
+        let mut packets = to_packets_with_destination(recycler, &prune_messages);
         let num_prune_packets = packets.packets.len();
         self.stats
             .push_response_count

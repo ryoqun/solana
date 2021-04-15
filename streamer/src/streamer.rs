@@ -42,7 +42,7 @@ fn recv_loop(
     let mut now = Instant::now();
     let mut num_max_received = 0; // Number of times maximum packets were received
     loop {
-        let mut msgs = Packets::new_with_recycler(recycler.clone(), PACKETS_PER_BATCH, name);
+        let mut msgs = Packets::new_with_recycler(recycler, PACKETS_PER_BATCH, name);
         loop {
             // Check for exit signal, even if socket is busy
             // (for instance the leader transaction socket)
@@ -93,14 +93,7 @@ pub fn receiver(
     Builder::new()
         .name("solana-receiver".to_string())
         .spawn(move || {
-            let _ = recv_loop(
-                &sock,
-                exit,
-                &packet_sender,
-                &recycler.clone(),
-                name,
-                coalesce_ms,
-            );
+            let _ = recv_loop(&sock, exit, &packet_sender, &recycler, name, coalesce_ms);
         })
         .unwrap()
 }

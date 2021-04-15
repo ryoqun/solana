@@ -4,7 +4,6 @@ use crate::banking_stage::HOLD_TRANSACTIONS_SLOT_OFFSET;
 use crate::poh_recorder::PohRecorder;
 use crate::result::{Error, Result};
 use solana_metrics::{inc_new_counter_debug, inc_new_counter_info};
-use solana_perf::packet::PacketsRecycler;
 use solana_perf::recycler::Recycler;
 use solana_sdk::clock::DEFAULT_TICKS_PER_SLOT;
 use solana_streamer::streamer::{self, PacketReceiver, PacketSender};
@@ -103,14 +102,12 @@ impl FetchStage {
         poh_recorder: &Arc<Mutex<PohRecorder>>,
         coalesce_ms: u64,
     ) -> Self {
-        let recycler: PacketsRecycler = Recycler::warmed(1000, 1024);
-
         let tpu_threads = sockets.into_iter().map(|socket| {
             streamer::receiver(
                 socket,
                 &exit,
                 sender.clone(),
-                recycler.clone(),
+                Recycler::warmed(1000, 1024),
                 "fetch_stage",
                 coalesce_ms,
             )
@@ -122,7 +119,7 @@ impl FetchStage {
                 socket,
                 &exit,
                 forward_sender.clone(),
-                recycler.clone(),
+                Recycler::warmed(1000, 1024),
                 "fetch_forward_stage",
                 coalesce_ms,
             )

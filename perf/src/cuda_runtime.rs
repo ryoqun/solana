@@ -250,30 +250,6 @@ impl<T: Clone + Default + Sized> PinnedVec<T> {
     }
 }
 
-impl<T: Clone + Default + Sized> Clone for PinnedVec<T> {
-    fn clone(&self) -> Self {
-        let mut x = self.x.clone();
-        let pinned = if self.pinned {
-            pin(&mut x);
-            true
-        } else {
-            false
-        };
-        debug!(
-            "clone PinnedVec: size: {} pinned?: {} pinnable?: {}",
-            self.x.capacity(),
-            self.pinned,
-            self.pinnable
-        );
-        Self {
-            x,
-            pinned,
-            pinnable: self.pinnable,
-            recycler: self.recycler.clone(),
-        }
-    }
-}
-
 impl<T: Sized + Default + Clone> Drop for PinnedVec<T> {
     fn drop(&mut self) {
         if let Some(recycler) = self.recycler.upgrade() {

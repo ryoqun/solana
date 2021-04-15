@@ -547,7 +547,7 @@ impl ServeRepair {
         max_responses: usize,
         nonce: Nonce,
     ) -> Option<Packets> {
-        let mut res = Packets::new_with_recycler(recycler.clone(), 64, "run_orphan");
+        let mut res = Packets::new_with_recycler(recycler, 64, "run_orphan");
         if let Some(blockstore) = blockstore {
             // Try to find the next "n" parent slots of the input slot
             while let Ok(Some(meta)) = blockstore.meta(slot) {

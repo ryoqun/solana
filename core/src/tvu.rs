@@ -154,11 +154,9 @@ impl Tvu {
         );
 
         let (verified_sender, verified_receiver) = unbounded();
-        let sigverify_stage = SigVerifyStage::new(
-            fetch_receiver,
-            verified_sender,
-            ShredSigVerifier::new(bank_forks.clone(), leader_schedule_cache.clone()),
-        );
+        let sigverify_stage = SigVerifyStage::new(fetch_receiver, verified_sender, || {
+            ShredSigVerifier::new(bank_forks.clone(), leader_schedule_cache.clone())
+        });
 
         let cluster_slots = Arc::new(ClusterSlots::default());
         let (duplicate_slots_reset_sender, duplicate_slots_reset_receiver) = unbounded();

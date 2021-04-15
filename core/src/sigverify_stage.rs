@@ -52,12 +52,12 @@ impl SigVerifier for DisabledSigVerifier {
 
 impl SigVerifyStage {
     #[allow(clippy::new_ret_no_self)]
-    pub fn new<T: SigVerifier + 'static + Send + Clone>(
+    pub fn new<T: SigVerifier + 'static + Send>(
         packet_receiver: Receiver<Packets>,
         verified_sender: CrossbeamSender<Vec<Packets>>,
-        verifier: T,
+        builder: impl Fn() -> T,
     ) -> Self {
-        let thread_hdls = Self::verifier_services(packet_receiver, verified_sender, verifier);
+        let thread_hdls = Self::verifier_services(packet_receiver, verified_sender, builder);
         Self { thread_hdls }
     }
 
@@ -114,13 +114,12 @@ impl SigVerifyStage {
         Ok(())
     }
 
-    fn verifier_service<T: SigVerifier + 'static + Send + Clone>(
+    fn verifier_service<T: SigVerifier + 'static + Send>(
         packet_receiver: Arc<Mutex<PacketReceiver>>,
         verified_sender: CrossbeamSender<Vec<Packets>>,
         id: usize,
-        verifier: &T,
+        verifier: T,
     ) -> JoinHandle<()> {
-        let verifier = verifier.clone();
         Builder::new()
             .name(format!("solana-verifier-{}", id))
             .spawn(move || loop {
@@ -142,15 +141,20 @@ impl SigVerifyStage {
             .unwrap()
     }
 
-    fn verifier_services<T: SigVerifier + 'static + Send + Clone>(
+    fn verifier_services<T: SigVerifier + 'static + Send>(
         packet_receiver: PacketReceiver,
         verified_sender: CrossbeamSender<Vec<Packets>>,
-        verifier: T,
+        verifier_builder: impl Fn() -> T,
     ) -> Vec<JoinHandle<()>> {
         let receiver = Arc::new(Mutex::new(packet_receiver));
         (0..4)
             .map(|id| {
-                Self::verifier_service(receiver.clone(), verified_sender.clone(), id, &verifier)
+                Self::verifier_service(
+                    receiver.clone(),
+                    verified_sender.clone(),
+                    id,
+                    verifier_builder(),
+                )
             })
             .collect()
     }

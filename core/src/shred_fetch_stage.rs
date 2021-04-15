@@ -3,8 +3,7 @@
 use crate::packet_hasher::PacketHasher;
 use lru::LruCache;
 use solana_ledger::shred::{get_shred_slot_index_type, ShredFetchStats};
-use solana_perf::cuda_runtime::PinnedVec;
-use solana_perf::packet::{Packet, PacketsRecycler};
+use solana_perf::packet::Packet;
 use solana_perf::recycler::Recycler;
 use solana_runtime::bank_forks::BankForks;
 use solana_sdk::clock::{Slot, DEFAULT_MS_PER_SLOT};
@@ -131,7 +130,6 @@ impl ShredFetchStage {
         sockets: Vec<Arc<UdpSocket>>,
         exit: &Arc<AtomicBool>,
         sender: PacketSender,
-        recycler: Recycler<PinnedVec<Packet>>,
         bank_forks: Option<Arc<RwLock<BankForks>>>,
         name: &'static str,
         modify: F,
@@ -147,7 +145,7 @@ impl ShredFetchStage {
                     s,
                     &exit,
                     packet_sender.clone(),
-                    recycler.clone(),
+                    Recycler::warmed(100, 1024),
                     "packet_modifier",
                     1,
                 )
@@ -169,13 +167,10 @@ impl ShredFetchStage {
         bank_forks: Option<Arc<RwLock<BankForks>>>,
         exit: &Arc<AtomicBool>,
     ) -> Self {
-        let recycler: PacketsRecycler = Recycler::warmed(100, 1024);
-
         let (mut tvu_threads, tvu_filter) = Self::packet_modifier(
             sockets,
             &exit,
             sender.clone(),
-            recycler.clone(),
             bank_forks.clone(),
             "shred_fetch",
             |_| {},
@@ -185,7 +180,6 @@ impl ShredFetchStage {
             forward_sockets,
             &exit,
             sender.clone(),
-            recycler.clone(),
             bank_forks.clone(),
             "shred_fetch_tvu_forwards",
             |p| p.meta.forward = true,
@@ -195,7 +189,6 @@ impl ShredFetchStage {
             vec![repair_socket],
             &exit,
             sender.clone(),
-            recycler,
             bank_forks,
             "shred_fetch_repair",
             |p| p.meta.repair = true,

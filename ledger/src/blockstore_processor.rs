@@ -719,7 +719,7 @@ pub fn confirm_slot(
     let last_entry_hash = entries.last().map(|e| e.hash);
     let verifier = if !skip_verification {
         datapoint_debug!("verify-batch-size", ("size", num_entries as i64, i64));
-        let entry_state = entries.start_verify(&progress.last_entry, recyclers.clone());
+        let entry_state = entries.start_verify(&progress.last_entry, recyclers);
         if entry_state.status() == EntryVerificationStatus::Failure {
             warn!("Ledger proof of history failed at slot: {}", slot);
             return Err(BlockError::InvalidEntryHash.into());

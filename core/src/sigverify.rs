@@ -13,7 +13,6 @@ pub use solana_perf::sigverify::{
     batch_size, ed25519_verify_cpu, ed25519_verify_disabled, init, TxOffset,
 };
 
-#[derive(Clone)]
 pub struct TransactionSigVerifier {
     recycler: Recycler<TxOffset>,
     recycler_out: Recycler<PinnedVec<u8>>,

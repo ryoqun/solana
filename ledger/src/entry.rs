@@ -258,7 +258,7 @@ pub struct EntryVerificationState {
     device_verification_data: DeviceVerificationData,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct VerifyRecyclers {
     hash_recycler: Recycler<PinnedVec<Hash>>,
     tick_count_recycler: Recycler<PinnedVec<u64>>,
@@ -347,8 +347,11 @@ pub trait EntrySlice {
     fn verify_cpu(&self, start_hash: &Hash) -> EntryVerificationState;
     fn verify_cpu_generic(&self, start_hash: &Hash) -> EntryVerificationState;
     fn verify_cpu_x86_simd(&self, start_hash: &Hash, simd_len: usize) -> EntryVerificationState;
-    fn start_verify(&self, start_hash: &Hash, recyclers: VerifyRecyclers)
-        -> EntryVerificationState;
+    fn start_verify(
+        &self,
+        start_hash: &Hash,
+        recyclers: &VerifyRecyclers,
+    ) -> EntryVerificationState;
     fn verify(&self, start_hash: &Hash) -> bool;
     /// Checks that each entry tick has the correct number of hashes. Entry slices do not
     /// necessarily end in a tick, so `tick_hash_count` is used to carry over the hash count
@@ -365,7 +368,7 @@ pub trait EntrySlice {
 
 impl EntrySlice for [Entry] {
     fn verify(&self, start_hash: &Hash) -> bool {
-        self.start_verify(start_hash, VerifyRecyclers::default())
+        self.start_verify(start_hash, &VerifyRecyclers::default())
             .finish_verify()
     }
 
@@ -558,7 +561,7 @@ impl EntrySlice for [Entry] {
     fn start_verify(
         &self,
         start_hash: &Hash,
-        recyclers: VerifyRecyclers,
+        recyclers: &VerifyRecyclers,
     ) -> EntryVerificationState {
         let start = Instant::now();
         let api = perf_libs::api();
