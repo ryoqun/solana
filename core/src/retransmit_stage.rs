@@ -4,9 +4,10 @@
 use crate::{
     cluster_info_vote_listener::VerifiedVoteReceiver,
     cluster_slots::ClusterSlots,
-    cluster_slots_service::{ClusterSlotsService, ClusterSlotsUpdateReceiver},
+    cluster_slots_service::ClusterSlotsService,
     completed_data_sets_service::CompletedDataSetsSender,
-    repair_service::{DuplicateSlotsResetSender, RepairInfo},
+    repair_service::DuplicateSlotsResetSender,
+    repair_service::RepairInfo,
     result::{Error, Result},
     window_service::{should_retransmit_and_persist, WindowService},
 };
@@ -591,8 +592,7 @@ impl RetransmitStage {
         repair_socket: Arc<UdpSocket>,
         verified_receiver: Receiver<Vec<Packets>>,
         exit: &Arc<AtomicBool>,
-        rpc_completed_slots_receiver: CompletedSlotsReceiver,
-        cluster_slots_update_receiver: ClusterSlotsUpdateReceiver,
+        completed_slots_receivers: [CompletedSlotsReceiver; 2],
         epoch_schedule: EpochSchedule,
         cfg: Option<Arc<AtomicBool>>,
         shred_version: u16,
@@ -618,6 +618,8 @@ impl RetransmitStage {
             rpc_subscriptions.clone(),
         );
 
+        let [rpc_completed_slots_receiver, cluster_completed_slots_receiver] =
+            completed_slots_receivers;
         let rpc_completed_slots_hdl =
             RpcCompletedSlotsService::spawn(rpc_completed_slots_receiver, rpc_subscriptions);
         let cluster_slots_service = ClusterSlotsService::new(
@@ -625,7 +627,7 @@ impl RetransmitStage {
             cluster_slots.clone(),
             bank_forks.clone(),
             cluster_info.clone(),
-            cluster_slots_update_receiver,
+            cluster_completed_slots_receiver,
             exit.clone(),
         );
 

@@ -85,8 +85,7 @@ pub const MAX_TURBINE_DELAY_IN_TICKS: u64 = MAX_TURBINE_PROPAGATION_IN_MS / MS_P
 // (32K shreds per slot * 4 TX per shred * 2.5 slots per sec)
 pub const MAX_DATA_SHREDS_PER_SLOT: usize = 32_768;
 
-pub type CompletedSlotsSender = SyncSender<Vec<Slot>>;
-pub type CompletedSlotsReceiver = Receiver<Vec<Slot>>;
+pub type CompletedSlotsReceiver = Receiver<Vec<u64>>;
 type CompletedRanges = Vec<(u32, u32)>;
 
 #[derive(Clone, Copy)]
@@ -119,7 +118,7 @@ pub struct CompletedDataSetInfo {
 pub struct BlockstoreSignals {
     pub blockstore: Blockstore,
     pub ledger_signal_receiver: Receiver<bool>,
-    pub completed_slots_receiver: CompletedSlotsReceiver,
+    pub completed_slots_receivers: [CompletedSlotsReceiver; 2],
 }
 
 // ledger window
@@ -145,7 +144,7 @@ pub struct Blockstore {
     last_root: Arc<RwLock<Slot>>,
     insert_shreds_lock: Arc<Mutex<()>>,
     pub new_shreds_signals: Vec<SyncSender<bool>>,
-    pub completed_slots_senders: Vec<CompletedSlotsSender>,
+    pub completed_slots_senders: Vec<SyncSender<Vec<Slot>>>,
     pub lowest_cleanup_slot: Arc<RwLock<Slot>>,
     no_compaction: bool,
 }
@@ -386,16 +385,18 @@ impl Blockstore {
             enforce_ulimit_nofile,
         )?;
         let (ledger_signal_sender, ledger_signal_receiver) = sync_channel(1);
-        let (completed_slots_sender, completed_slots_receiver) =
+        let (completed_slots_sender1, completed_slots_receiver1) =
+            sync_channel(MAX_COMPLETED_SLOTS_IN_CHANNEL);
+        let (completed_slots_sender2, completed_slots_receiver2) =
             sync_channel(MAX_COMPLETED_SLOTS_IN_CHANNEL);
 
         blockstore.new_shreds_signals = vec![ledger_signal_sender];
-        blockstore.completed_slots_senders = vec![completed_slots_sender];
+        blockstore.completed_slots_senders = vec![completed_slots_sender1, completed_slots_sender2];
 
         Ok(BlockstoreSignals {
             blockstore,
             ledger_signal_receiver,
-            completed_slots_receiver,
+            completed_slots_receivers: [completed_slots_receiver1, completed_slots_receiver2],
         })
     }
 
@@ -4567,7 +4568,7 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals {
             blockstore: ledger,
-            completed_slots_receiver: recvr,
+            completed_slots_receivers: [recvr, _],
             ..
         } = Blockstore::open_with_signal(&ledger_path, None, true).unwrap();
         let ledger = Arc::new(ledger);
@@ -4593,7 +4594,7 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals {
             blockstore: ledger,
-            completed_slots_receiver: recvr,
+            completed_slots_receivers: [recvr, _],
             ..
         } = Blockstore::open_with_signal(&ledger_path, None, true).unwrap();
         let ledger = Arc::new(ledger);
@@ -4637,7 +4638,7 @@ pub mod tests {
         let ledger_path = get_tmp_ledger_path!();
         let BlockstoreSignals {
             blockstore: ledger,
-            completed_slots_receiver: recvr,
+            completed_slots_receivers: [recvr, _],
             ..
         } = Blockstore::open_with_signal(&ledger_path, None, true).unwrap();
         let ledger = Arc::new(ledger);

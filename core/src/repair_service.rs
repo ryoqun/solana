@@ -5,7 +5,6 @@ use crate::{
     cluster_slots::ClusterSlots,
     outstanding_requests::OutstandingRequests,
     repair_weight::RepairWeight,
-    replay_stage::DUPLICATE_THRESHOLD,
     result::Result,
     serve_repair::{RepairType, ServeRepair},
 };
@@ -16,7 +15,9 @@ use solana_ledger::{
     shred::Nonce,
 };
 use solana_measure::measure::Measure;
-use solana_runtime::{bank::Bank, bank_forks::BankForks, contains::Contains};
+use solana_runtime::{
+    bank::Bank, bank_forks::BankForks, commitment::VOTE_THRESHOLD_SIZE, contains::Contains,
+};
 use solana_sdk::{clock::Slot, epoch_schedule::EpochSchedule, pubkey::Pubkey, timing::timestamp};
 use std::{
     collections::{HashMap, HashSet},
@@ -32,8 +33,6 @@ use std::{
 
 pub type DuplicateSlotsResetSender = CrossbeamSender<Slot>;
 pub type DuplicateSlotsResetReceiver = CrossbeamReceiver<Slot>;
-pub type ConfirmedSlotsSender = CrossbeamSender<Vec<Slot>>;
-pub type ConfirmedSlotsReceiver = CrossbeamReceiver<Vec<Slot>>;
 
 pub type OutstandingRepairs = OutstandingRequests<RepairType>;
 
@@ -570,7 +569,7 @@ impl RepairService {
     ) {
         for slot in new_duplicate_slots {
             warn!(
-                "Cluster confirmed slot: {}, dumping our current version and repairing",
+                "Cluster completed slot: {}, dumping our current version and repairing",
                 slot
             );
             // Clear the slot signatures from status cache for this slot
@@ -642,7 +641,7 @@ impl RepairService {
                                 })
                                 .sum();
                             if total_completed_slot_stake as f64 / total_stake as f64
-                                > DUPLICATE_THRESHOLD
+                                > VOTE_THRESHOLD_SIZE
                             {
                                 Some(dead_slot)
                             } else {
@@ -1060,7 +1059,7 @@ mod test {
         let serve_repair = ServeRepair::new(cluster_info.clone());
         let valid_repair_peer = Node::new_localhost().info;
 
-        // Signal that this peer has confirmed the dead slot, and is thus
+        // Signal that this peer has completed the dead slot, and is thus
         // a valid target for repair
         let dead_slot = 9;
         let cluster_slots = ClusterSlots::default();

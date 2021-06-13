@@ -111,7 +111,7 @@ impl Tvu {
         tower: Tower,
         leader_schedule_cache: &Arc<LeaderScheduleCache>,
         exit: &Arc<AtomicBool>,
-        completed_slots_receiver: CompletedSlotsReceiver,
+        completed_slots_receivers: [CompletedSlotsReceiver; 2],
         block_commitment_cache: Arc<RwLock<BlockCommitmentCache>>,
         cfg: Option<Arc<AtomicBool>>,
         transaction_status_sender: Option<TransactionStatusSender>,
@@ -165,7 +165,6 @@ impl Tvu {
         let compaction_interval = tvu_config.rocksdb_compaction_interval;
         let max_compaction_jitter = tvu_config.rocksdb_max_compaction_jitter;
         let (duplicate_slots_sender, duplicate_slots_receiver) = unbounded();
-        let (cluster_slots_update_sender, cluster_slots_update_receiver) = unbounded();
         let retransmit_stage = RetransmitStage::new(
             bank_forks.clone(),
             leader_schedule_cache,
@@ -175,8 +174,7 @@ impl Tvu {
             repair_socket,
             verified_receiver,
             &exit,
-            completed_slots_receiver,
-            cluster_slots_update_receiver,
+            completed_slots_receivers,
             *bank_forks.read().unwrap().working_bank().epoch_schedule(),
             cfg,
             tvu_config.shred_version,
@@ -290,7 +288,6 @@ impl Tvu {
             replay_vote_sender,
             gossip_confirmed_slots_receiver,
             gossip_verified_vote_hash_receiver,
-            cluster_slots_update_sender,
         );
 
         let ledger_cleanup_service = tvu_config.max_ledger_shreds.map(|max_ledger_shreds| {
@@ -376,7 +373,7 @@ pub mod tests {
         let BlockstoreSignals {
             blockstore,
             ledger_signal_receiver,
-            completed_slots_receiver,
+            completed_slots_receivers,
             ..
         } = Blockstore::open_with_signal(&blockstore_path, None, true)
             .expect("Expected to successfully open ledger");
@@ -420,7 +417,7 @@ pub mod tests {
             tower,
             &leader_schedule_cache,
             &exit,
-            completed_slots_receiver,
+            completed_slots_receivers,
             block_commitment_cache,
             None,
             None,
