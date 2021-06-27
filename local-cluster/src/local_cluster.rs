@@ -203,8 +203,9 @@ impl LocalCluster {
             &genesis_config.hash(),
             Some(&solana_sdk::hard_forks::HardForks::default()),
         );
+        error!("shred_version: {}", shred_version);
         for validator_config in &mut config.validator_configs {
-            validator_config.expected_shred_version = Some(shred_version);
+            //validator_config.expected_shred_version = Some(shred_version);
         }
 
         let (leader_ledger_path, _blockhash) = create_new_tmp_ledger!(&genesis_config);
