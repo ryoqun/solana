@@ -199,6 +199,13 @@ impl LocalCluster {
                 },
             ),
         );
+        let shred_version = solana_sdk::shred_version::compute_shred_version(
+            genesis_config.hash(),
+            Some(&solana_sdk::hard_forks::HardForks::default()),
+        );
+        for validator_config in config.validator_configs {
+            validator_config.shred_version = shred_version;
+        }
 
         let (leader_ledger_path, _blockhash) = create_new_tmp_ledger!(&genesis_config);
         let leader_contact_info = leader_node.info.clone();
