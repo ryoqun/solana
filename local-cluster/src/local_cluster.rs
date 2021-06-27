@@ -203,7 +203,7 @@ impl LocalCluster {
             &genesis_config.hash(),
             Some(&solana_sdk::hard_forks::HardForks::default()),
         );
-        for validator_config in config.validator_configs {
+        for validator_config in &mut config.validator_configs {
             validator_config.expected_shred_version = Some(shred_version);
         }
 
