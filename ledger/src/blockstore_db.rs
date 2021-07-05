@@ -8,7 +8,7 @@ use rocksdb::{
     self,
     compaction_filter::CompactionFilter,
     compaction_filter_factory::{CompactionFilterContext, CompactionFilterFactory},
-    ColumnFamily, ColumnFamilyDescriptor, CompactionDecision, DBIterator, DBRawIterator,
+    ColumnFamilyRef, ColumnFamilyDescriptor, CompactionDecision, DBIterator, DBRawIterator,
     DBRecoveryMode, IteratorMode as RocksIteratorMode, Options, WriteBatch as RWriteBatch, DB,
 };
 
@@ -458,7 +458,7 @@ impl Rocks {
                 // edge of the key space. This causes a long and heavy disk IOs and possible write
                 // stall and ultimately, the deadly Replay/Banking stage stall at higher layers.
                 db.0.set_options_cf(
-                    db.cf_handle(cf_name),
+                    &db.cf_handle(cf_name),
                     &[(
                         "periodic_compaction_seconds",
                         &format!("{}", PERIODIC_COMPACTION_SECONDS),
@@ -505,28 +505,32 @@ impl Rocks {
         Ok(())
     }
 
-    fn cf_handle(&self, cf: &str) -> &ColumnFamily {
+    fn cf_handle(&self, cf: &str) -> ColumnFamilyRef {
         self.0
             .cf_handle(cf)
             .expect("should never get an unknown column")
     }
 
-    fn get_cf(&self, cf: &ColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>> {
-        let opt = self.0.get_cf(cf, key)?;
+    fn get_cf(&self, cf: ColumnFamilyRef, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        let opt = self.0.get_cf(&cf, key)?;
         Ok(opt)
     }
 
-    fn put_cf(&self, cf: &ColumnFamily, key: &[u8], value: &[u8]) -> Result<()> {
-        self.0.put_cf(cf, key, value)?;
+    fn put_cf(&self, cf: ColumnFamilyRef, key: &[u8], value: &[u8]) -> Result<()> {
+        self.0.put_cf(&cf, key, value)?;
         Ok(())
     }
 
-    fn delete_cf(&self, cf: &ColumnFamily, key: &[u8]) -> Result<()> {
-        self.0.delete_cf(cf, key)?;
+    fn delete_cf(&self, cf: ColumnFamilyRef, key: &[u8]) -> Result<()> {
+        self.0.delete_cf(&cf, key)?;
         Ok(())
     }
 
-    fn iterator_cf<C>(&self, cf: &ColumnFamily, iterator_mode: IteratorMode<C::Index>) -> DBIterator
+    fn iterator_cf<C>(
+        &self,
+        cf: ColumnFamilyRef,
+        iterator_mode: IteratorMode<C::Index>,
+    ) -> DBIterator
     where
         C: Column,
     {
@@ -539,11 +543,11 @@ impl Rocks {
             IteratorMode::Start => RocksIteratorMode::Start,
             IteratorMode::End => RocksIteratorMode::End,
         };
-        self.0.iterator_cf(cf, iterator_mode)
+        self.0.iterator_cf(&cf, iterator_mode)
     }
 
-    fn raw_iterator_cf(&self, cf: &ColumnFamily) -> DBRawIterator {
-        self.0.raw_iterator_cf(cf)
+    fn raw_iterator_cf(&self, cf: ColumnFamilyRef) -> DBRawIterator {
+        self.0.raw_iterator_cf(&cf)
     }
 
     fn batch(&self) -> RWriteBatch {
@@ -953,7 +957,7 @@ where
 
 pub struct WriteBatch<'a> {
     write_batch: RWriteBatch,
-    map: HashMap<&'static str, &'a ColumnFamily>,
+    map: HashMap<&'static str, ColumnFamilyRef<'a>>,
 }
 
 impl Database {
@@ -1002,7 +1006,7 @@ impl Database {
     }
 
     #[inline]
-    pub fn cf_handle<C: ColumnName>(&self) -> &ColumnFamily
+    pub fn cf_handle<C: ColumnName>(&self) -> ColumnFamilyRef
     where
         C: Column + ColumnName,
     {
@@ -1020,7 +1024,7 @@ impl Database {
     }
 
     #[inline]
-    pub fn raw_iterator_cf(&self, cf: &ColumnFamily) -> Result<DBRawIterator> {
+    pub fn raw_iterator_cf(&self, cf: ColumnFamilyRef) -> Result<DBRawIterator> {
         Ok(self.backend.raw_iterator_cf(cf))
     }
 
@@ -1122,12 +1126,12 @@ where
         let cf = self.handle();
         let from = Some(C::key(C::as_index(from)));
         let to = Some(C::key(C::as_index(to)));
-        self.backend.0.compact_range_cf(cf, from, to);
+        self.backend.0.compact_range_cf(&cf, from, to);
         Ok(true)
     }
 
     #[inline]
-    pub fn handle(&self) -> &ColumnFamily {
+    pub fn handle(&self) -> ColumnFamilyRef {
         self.backend.cf_handle(C::NAME)
     }
 
@@ -1206,12 +1210,12 @@ where
 impl<'a> WriteBatch<'a> {
     pub fn put_bytes<C: Column + ColumnName>(&mut self, key: C::Index, bytes: &[u8]) -> Result<()> {
         self.write_batch
-            .put_cf(self.get_cf::<C>(), &C::key(key), bytes);
+            .put_cf(&self.get_cf::<C>(), &C::key(key), bytes);
         Ok(())
     }
 
     pub fn delete<C: Column + ColumnName>(&mut self, key: C::Index) -> Result<()> {
-        self.write_batch.delete_cf(self.get_cf::<C>(), &C::key(key));
+        self.write_batch.delete_cf(&self.get_cf::<C>(), &C::key(key));
         Ok(())
     }
 
@@ -1222,23 +1226,23 @@ impl<'a> WriteBatch<'a> {
     ) -> Result<()> {
         let serialized_value = serialize(&value)?;
         self.write_batch
-            .put_cf(self.get_cf::<C>(), &C::key(key), &serialized_value);
+            .put_cf(&self.get_cf::<C>(), &C::key(key), &serialized_value);
         Ok(())
     }
 
     #[inline]
-    fn get_cf<C: Column + ColumnName>(&self) -> &'a ColumnFamily {
-        self.map[C::NAME]
+    fn get_cf<C: Column + ColumnName>(&self) -> ColumnFamilyRef<'a> {
+        self.map[C::NAME].clone()
     }
 
     pub fn delete_range_cf<C: Column>(
         &mut self,
-        cf: &ColumnFamily,
+        cf: ColumnFamilyRef,
         from: C::Index,
         to: C::Index,
     ) -> Result<()> {
         self.write_batch
-            .delete_range_cf(cf, C::key(from), C::key(to));
+            .delete_range_cf(&cf, C::key(from), C::key(to));
         Ok(())
     }
 }
