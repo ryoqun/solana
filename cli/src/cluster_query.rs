@@ -1178,6 +1178,10 @@ pub fn process_show_block_production(
     let slot_history: SlotHistory = from_account(&slot_history_account).ok_or_else(|| {
         CliError::RpcRequestError("Failed to deserialize slot history".to_string())
     })?;
+    for slot in slot_history.oldest()..=slot_history.newest() {
+       println!("{}: {}", slot, if slot_history.check(slot) == slot_history::Check::Found { "rooted" } else { "skipped"});
+    }
+    panic!("done");
 
     let (confirmed_blocks, start_slot) =
         if start_slot >= slot_history.oldest() && end_slot <= slot_history.newest() {
