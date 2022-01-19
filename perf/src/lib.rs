@@ -1,3 +1,4 @@
+pub mod bloom;
 pub mod cuda_runtime;
 pub mod data_budget;
 pub mod packet;

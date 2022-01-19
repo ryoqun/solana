@@ -19,4 +19,3 @@ fn bench_dedup(bencher: &mut Bencher) {
         let _ans = sigverify::dedup_packets(&mut batches);
     })
 }
-

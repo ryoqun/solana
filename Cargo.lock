@@ -5383,10 +5383,12 @@ name = "solana-perf"
 version = "1.10.0"
 dependencies = [
  "bincode",
+ "bv",
  "caps",
  "curve25519-dalek 3.2.0",
  "dlopen",
  "dlopen_derive",
+ "fnv",
  "lazy_static",
  "libc",
  "log 0.4.14",

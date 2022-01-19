@@ -8,11 +8,13 @@
 use solana_sdk::transaction::Transaction;
 use {
     crate::{
+        bloom::{AtomicBloom, Bloom},
         cuda_runtime::PinnedVec,
         packet::{Packet, PacketBatch, PacketFlags},
         perf_libs,
         recycler::Recycler,
     },
+    rand::thread_rng,
     rayon::ThreadPool,
     solana_metrics::inc_new_counter_debug,
     solana_rayon_threadlimit::get_thread_count,
@@ -24,6 +26,7 @@ use {
         signature::Signature,
     },
     std::{convert::TryFrom, mem::size_of},
+	rand::Rng,
 };
 
 // Representing key tKeYE4wtowRb8yRroZShTipE18YVnqwXjsSAoNsFU6g
@@ -417,11 +420,9 @@ pub fn generate_offsets(
         v_sig_lens,
     )
 }
-
-fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<u64>, offset: usize) {
-    let packet_offsets = get_packet_offsets(packet, 0, reject_non_vote);
-    let mut sig_start = packet_offsets.sig_start as usize;
-    let mut pubkey_start = packet_offsets.pubkey_start as usize;
+fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<&[u8]>, offset: usize) {
+    let packet_offsets = get_packet_offsets(packet, 0, false);
+    let sig_start = packet_offsets.sig_start as usize;
     let msg_start = packet_offsets.msg_start as usize;
 
     // If this packet was already marked as discard, drop it
@@ -441,25 +442,25 @@ fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<u64>, offset: usize) {
 
     let sig_end = sig_start.saturating_add(size_of::<Signature>());
 
-    assert!(sig_start + offset < sig_end - 8)
+    assert!(sig_start + offset < sig_end - 8);
 
     if sig_end > packet.data.len() {
         packet.meta.set_discard(true);
         return;
     }
 
-    let sig_u64 = u64::from_le_bytes(packet.data[sig_start + offset..sig_end]);
-    if bloom.contains(sig_u64) {
+    let slice = &packet.data[sig_start + offset..sig_end];
+    if bloom.contains(&slice) {
         packet.meta.set_discard(true);
         return;
     }
-    bloom.add(signature);
+    bloom.add(&slice);
 }
 
 pub fn dedup_packets(batches: &mut [PacketBatch]) {
     use rayon::prelude::*;
     let packet_count = count_packets_in_batches(batches);
-    let bloom: AtomicBloom<64> = Bloom::random(packet_count, 0.0001, 4096).into();
+    let bloom: AtomicBloom<&[u8]> = Bloom::random(packet_count, 0.0001, 4096).into();
     // machine specific random offset to read the u64 from the packet signature
     let offset = thread_rng().gen_range(0, 64 - 8);
     PAR_THREAD_POOL.install(|| {
