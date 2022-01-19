@@ -14,7 +14,6 @@ use {
         perf_libs,
         recycler::Recycler,
     },
-    rand::thread_rng,
     rayon::ThreadPool,
     solana_metrics::inc_new_counter_debug,
     solana_rayon_threadlimit::get_thread_count,
@@ -26,7 +25,6 @@ use {
         signature::Signature,
     },
     std::{convert::TryFrom, mem::size_of},
-	rand::Rng,
 };
 
 // Representing key tKeYE4wtowRb8yRroZShTipE18YVnqwXjsSAoNsFU6g
@@ -420,7 +418,8 @@ pub fn generate_offsets(
         v_sig_lens,
     )
 }
-fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<&[u8]>, offset: usize) {
+
+fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<&[u8]>) {
     let packet_offsets = get_packet_offsets(packet, 0, false);
     let sig_start = packet_offsets.sig_start as usize;
     let msg_start = packet_offsets.msg_start as usize;
@@ -442,14 +441,12 @@ fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<&[u8]>, offset: usize) 
 
     let sig_end = sig_start.saturating_add(size_of::<Signature>());
 
-    assert!(sig_start + offset < sig_end - 8);
-
     if sig_end > packet.data.len() {
         packet.meta.set_discard(true);
         return;
     }
 
-    let slice = &packet.data[sig_start + offset..sig_end];
+    let slice = &packet.data[sig_start..sig_end];
     if bloom.contains(&slice) {
         packet.meta.set_discard(true);
         return;
@@ -462,16 +459,15 @@ pub fn dedup_packets(batches: &mut [PacketBatch]) {
     let packet_count = count_packets_in_batches(batches);
     let bloom: AtomicBloom<&[u8]> = Bloom::random(packet_count, 0.0001, 4096).into();
     // machine specific random offset to read the u64 from the packet signature
-    let offset = thread_rng().gen_range(0, 64 - 8);
     PAR_THREAD_POOL.install(|| {
         batches.into_par_iter().for_each(|batch| {
             batch
                 .packets
                 .par_iter_mut()
-                .for_each(|p| dedup_packet(p, &bloom, offset))
+                .for_each(|p| dedup_packet(p, &bloom))
         })
     });
-    inc_new_counter_debug!("dedup_packets", packet_count);
+    inc_new_counter_debug!("dedup_packets_total", packet_count);
 }
 
 pub fn ed25519_verify_cpu(batches: &mut [PacketBatch], reject_non_vote: bool) {
