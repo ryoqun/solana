@@ -439,9 +439,14 @@ fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<u64>, offset: usize) {
         return;
     }
 
-    let msg_end = packet.meta.size;
-    let pubkey_end = pubkey_start.saturating_add(size_of::<Pubkey>());
     let sig_end = sig_start.saturating_add(size_of::<Signature>());
+
+    assert!(sig_start + offset < sig_end - 8)
+
+    if sig_end > packet.data.len() {
+        packet.meta.set_discard(true);
+        return;
+    }
 
     let sig_u64 = u64::from_le_bytes(packet.data[sig_start + offset..sig_end]);
     if bloom.contains(sig_u64) {
@@ -454,7 +459,8 @@ fn dedup_packet(packet: &mut Packet, bloom: &AtomicBloom<u64>, offset: usize) {
 pub fn dedup_packets(batches: &mut [PacketBatch]) {
     use rayon::prelude::*;
     let packet_count = count_packets_in_batches(batches);
-    let bloom: AtomicBloom<_> = Bloom::random(packet_count, 0.0001, 4096).into();
+    let bloom: AtomicBloom<64> = Bloom::random(packet_count, 0.0001, 4096).into();
+    // machine specific random offset to read the u64 from the packet signature
     let offset = thread_rng().gen_range(0, 64 - 8);
     PAR_THREAD_POOL.install(|| {
         batches.into_par_iter().for_each(|batch| {
