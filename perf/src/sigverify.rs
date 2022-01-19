@@ -6,6 +6,7 @@
 
 #[cfg(test)]
 use solana_sdk::transaction::Transaction;
+use solana_bloom::bloom::{AtomicBloom, Bloom},
 use {
     crate::{
         bloom::{AtomicBloom, Bloom},
