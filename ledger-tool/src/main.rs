@@ -1402,9 +1402,13 @@ impl EpochInflation {
     }
 
     fn credits_observed_increasing(&self) {
-        self.run_record_verify_simple("credits incresing", |record|
+        self.run_record_verify_simple("credits changing", |record|
             match (record.old_credits_observed(), record.new_credits_observed()) {
-                (Some(old), Some(new)) => old <= new,
+                (Some(old), Some(new)) if old != new => true, // for old > new case, add point=0 exception case?
+                (Some(old), Some(new)) if old == new => {
+                    warn!("odd credit update with identical value!?: {:?}", (&record.account, old, new));
+                    true
+                },
                 (None, None) | (Some(_), None) => true,
                 a => { warn!("odd: {:?}", a); false },
             }
@@ -1472,6 +1476,8 @@ impl EpochInflation {
                                 true
                             } else if new == old {
                                 record.base_rewards().unwrap() == 0
+                            } else if new < old {
+                                true // rewinded; add no point check?
                             } else {
                                 panic!("aaa");
                             }
@@ -1836,7 +1842,9 @@ impl EpochInflation {
                             stakes.insert(record.account.clone());
                             let e = increases.entry(record.delegation.clone()).or_default();
                             //dbg!(&(record, *e));
-                            *e += record.vote_rewards().unwrap();
+                            if record.new_balance != record.old_balance || record.commission().unwrap() == 100 {
+                                *e += record.vote_rewards().unwrap();
+                            }
                         }
                     } else {
                         let e = votes.entry(record.account.clone()).or_default();
@@ -1848,9 +1856,14 @@ impl EpochInflation {
                     //warn!("{}, {}", old_capitalization + sum, new_capitalization);
                     //old_capitalization + sum == new_capitalization
                     //dbg!(&increases);
-                    votes.iter().all(|(address, increase)| {
+                    votes.iter().all(|(vote_address, increase)| {
                         //dbg!(increases.get(address).copied().unwrap_or_default(),  *increase);
-                        increases.get(address).copied().unwrap_or_default() == *increase
+                        if increases.get(vote_address).copied().unwrap_or_default() == *increase {
+                            true
+                        } else {
+                            dbg!("{}", (vote_address, increase, increases.get(vote_address).copied().unwrap_or_default()));
+                            false
+                        }
                     })
                 }
             }
