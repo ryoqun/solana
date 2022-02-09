@@ -1741,6 +1741,19 @@ impl EpochInflation {
         })
     }
 
+    fn minimum_stake_delegation(&self) {
+        self.run_record_verify_simple("minimum stake delegation", |record| {
+            if record.is_stake() {
+                let ret = record.old_balance >= record.rent_exempt_reserve().unwrap() + 1;
+                if !ret {
+                    dbg!(&record);
+                }
+                ret
+            } else {
+                true
+            }
+        })
+    }
     fn deactivated_without_activated(&self) {
         self.run_record_verify_simple("deactivated_without_activated", |record| {
             if record.is_stake() {
@@ -2007,6 +2020,7 @@ impl EpochInflation {
 
 
     fn verify(&self) {
+        self.minimum_stake_delegation();
         self.consistent_interast_rate_grouped_by_voter();
         self.sum_of_epoch_points_equal_to_base_rewards();
         self.points_equal_stake_times_credits();
