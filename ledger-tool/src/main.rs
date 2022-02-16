@@ -2335,7 +2335,7 @@ fn main() {
                                 Pubkey::from_str(&spl_token_v2_0::id().to_string()).unwrap()
                             }
                             let data_len = account.data().len();
-                            if account.owner() == spl_token_id_v2_0() {
+                            if *account.owner() == spl_token_id_v2_0() {
                                 if data_len == spl_token_v2_0::state::Account::get_packed_len() {
                                     if let Ok(spl_account) = spl_token_v2_0::state::Account::unpack(&account.data()) {
                                         let mut new = supplies_by_mint.get(&spl_account.mint).copied().unwrap_or_default();
