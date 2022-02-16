@@ -2334,10 +2334,10 @@ fn main() {
                             pub fn spl_token_id_v2_0() -> Pubkey {
                                 Pubkey::from_str(&spl_token_v2_0::id().to_string()).unwrap()
                             }
-                            let data_len = account.data.len();
+                            let data_len = account.data().len();
                             if account.owner == spl_token_id_v2_0() {
                                 if data_len == spl_token_v2_0::state::Account::get_packed_len() {
-                                    if let Ok(spl_account) = spl_token_v2_0::state::Account::unpack(&account.data) {
+                                    if let Ok(spl_account) = spl_token_v2_0::state::Account::unpack(&account.data()) {
                                         let mut new = supplies_by_mint.get(&spl_account.mint).copied().unwrap_or_default();
                                         new.0 += 1 as u64;
                                         new.1 += spl_account.amount;
@@ -2347,7 +2347,7 @@ fn main() {
                                         supplies_by_mint.insert(spl_account.mint, new);
                                     }
                                 } else if data_len == spl_token_v2_0::state::Mint::get_packed_len() {
-                                    if let Ok(spl_mint) = spl_token_v2_0::state::Mint::unpack(&account.data) {
+                                    if let Ok(spl_mint) = spl_token_v2_0::state::Mint::unpack(&account.data()) {
                                         mints.insert(pubkey, spl_mint);
                                     }
                                 }

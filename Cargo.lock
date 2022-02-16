@@ -5094,6 +5094,7 @@ dependencies = [
  "solana-transaction-status",
  "solana-version",
  "solana-vote-program",
+ "spl-token",
  "tempfile",
  "tokio",
 ]
