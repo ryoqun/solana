@@ -614,6 +614,9 @@ impl<'a> StakeAccount for KeyedAccount<'a> {
         if split.data_len()? != std::mem::size_of::<StakeState>() {
             return Err(InstructionError::InvalidAccountData);
         }
+        if std::env::var("RESTORE_OLD").is_ok() && lamports > self.lamports()? {
+            return Err(InstructionError::InsufficientFunds);
+        }
 
         if let StakeState::Uninitialized = split.state()? {
             match self.state()? {
@@ -7009,6 +7012,28 @@ mod tests {
                 &signers,
             )
             .is_ok());
+    }
+
+    #[test]
+    fn test_multiple_splits_from_uninitialized() {
+        solana_logger::setup();
+        let source_pubkey = Pubkey::new_unique();
+        let split_amount = 3;
+        let source_account = AccountSharedData::new_ref_data_with_space(
+            split_amount - 1,
+            &StakeState::Uninitialized,
+            std::mem::size_of::<StakeState>(),
+            &id(),
+        )
+        .unwrap();
+        let source_keyed_account = KeyedAccount::new(&source_pubkey, true, &source_account);
+
+        let result = source_keyed_account.split(
+            split_amount,
+            &source_keyed_account,
+            &HashSet::from([source_pubkey]),
+        );
+        assert_eq!(result, Ok(()));
     }
 
     prop_compose! {
