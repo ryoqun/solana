@@ -50,12 +50,3 @@ impl State {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn default_is_uninitialized() {
-        assert_eq!(State::default(), State::Uninitialized)
-    }
-}

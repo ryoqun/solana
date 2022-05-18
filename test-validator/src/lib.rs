@@ -875,28 +875,3 @@ impl Drop for TestValidator {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn get_health() {
-        let (test_validator, _payer) = TestValidatorGenesis::default().start();
-        let rpc_client = test_validator.get_rpc_client();
-        rpc_client.get_health().expect("health");
-    }
-
-    #[tokio::test]
-    async fn nonblocking_get_health() {
-        let (test_validator, _payer) = TestValidatorGenesis::default().start_async().await;
-        let rpc_client = test_validator.get_async_rpc_client();
-        rpc_client.get_health().await.expect("health");
-    }
-
-    #[tokio::test]
-    #[should_panic]
-    async fn document_tokio_panic() {
-        // `start()` blows up when run within tokio
-        let (_test_validator, _payer) = TestValidatorGenesis::default().start();
-    }
-}
