@@ -40,21 +40,3 @@ pub fn lamports_per_signature_of(account: &AccountSharedData) -> Option<u64> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::pubkey::Pubkey};
-
-    #[test]
-    fn test_verify_bad_account_owner_fails() {
-        let program_id = Pubkey::new_unique();
-        assert_ne!(program_id, crate::system_program::id());
-        let account = AccountSharedData::new_data_with_space(
-            42,
-            &Versions::new_current(State::Uninitialized),
-            State::size(),
-            &program_id,
-        )
-        .expect("nonce_account");
-        assert!(!verify_nonce_account(&account, &Hash::default()));
-    }
-}

@@ -704,34 +704,6 @@ impl CompiledInstruction {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_visit_each_account() {
-        let do_work = |accounts: &[u8]| -> (usize, usize) {
-            let mut unique_total = 0;
-            let mut account_total = 0;
-            let mut work = |unique_index: usize, account_index: usize| {
-                unique_total += unique_index;
-                account_total += account_index;
-                Ok(())
-            };
-            let instruction = CompiledInstruction::new(0, &[0], accounts.to_vec());
-            instruction.visit_each_account(&mut work).unwrap();
-
-            (unique_total, account_total)
-        };
-
-        assert_eq!((6, 6), do_work(&[0, 1, 2, 3]));
-        assert_eq!((6, 6), do_work(&[0, 1, 1, 2, 3]));
-        assert_eq!((6, 6), do_work(&[0, 1, 2, 3, 3]));
-        assert_eq!((6, 6), do_work(&[0, 0, 1, 1, 2, 2, 3, 3]));
-        assert_eq!((0, 2), do_work(&[2, 2]));
-    }
-}
-
 /// Use to query and convey information about the sibling instruction components
 /// when calling the `sol_get_processed_sibling_instruction` syscall.
 #[repr(C)]
@@ -825,43 +797,4 @@ pub fn get_stack_height() -> usize {
     {
         crate::program_stubs::sol_get_stack_height() as usize
     }
-}
-
-#[test]
-fn test_account_meta_layout() {
-    #[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
-    struct AccountMetaRust {
-        pub pubkey: Pubkey,
-        pub is_signer: bool,
-        pub is_writable: bool,
-    }
-
-    let account_meta_rust = AccountMetaRust::default();
-    let base_rust_addr = &account_meta_rust as *const _ as u64;
-    let pubkey_rust_addr = &account_meta_rust.pubkey as *const _ as u64;
-    let is_signer_rust_addr = &account_meta_rust.is_signer as *const _ as u64;
-    let is_writable_rust_addr = &account_meta_rust.is_writable as *const _ as u64;
-
-    let account_meta_c = AccountMeta::default();
-    let base_c_addr = &account_meta_c as *const _ as u64;
-    let pubkey_c_addr = &account_meta_c.pubkey as *const _ as u64;
-    let is_signer_c_addr = &account_meta_c.is_signer as *const _ as u64;
-    let is_writable_c_addr = &account_meta_c.is_writable as *const _ as u64;
-
-    assert_eq!(
-        std::mem::size_of::<AccountMetaRust>(),
-        std::mem::size_of::<AccountMeta>()
-    );
-    assert_eq!(
-        pubkey_rust_addr - base_rust_addr,
-        pubkey_c_addr - base_c_addr
-    );
-    assert_eq!(
-        is_signer_rust_addr - base_rust_addr,
-        is_signer_c_addr - base_c_addr
-    );
-    assert_eq!(
-        is_writable_rust_addr - base_rust_addr,
-        is_writable_c_addr - base_c_addr
-    );
 }

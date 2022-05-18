@@ -613,7 +613,3 @@ impl PubsubClient {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    // see core/tests/client.rs#test_slot_subscription()
-}

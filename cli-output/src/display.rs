@@ -425,30 +425,3 @@ pub fn unix_timestamp_to_string(unix_timestamp: UnixTimestamp) -> String {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use {super::*, solana_sdk::pubkey::Pubkey};
-
-    #[test]
-    fn test_format_labeled_address() {
-        let pubkey = Pubkey::default().to_string();
-        let mut address_labels = HashMap::new();
-
-        assert_eq!(format_labeled_address(&pubkey, &address_labels), pubkey);
-
-        address_labels.insert(pubkey.to_string(), "Default Address".to_string());
-        assert_eq!(
-            &format_labeled_address(&pubkey, &address_labels),
-            "Default Address (1111..1111)"
-        );
-
-        address_labels.insert(
-            pubkey.to_string(),
-            "abcdefghijklmnopqrstuvwxyz1234567890".to_string(),
-        );
-        assert_eq!(
-            &format_labeled_address(&pubkey, &address_labels),
-            "abcdefghijklmnopqrstuvwxyz12345 (1111..1111)"
-        );
-    }
-}
