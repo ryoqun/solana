@@ -16,7 +16,8 @@ use {
         account::{AccountSharedData, ReadableAccount},
         bpf_loader_upgradeable::{self, UpgradeableLoaderState},
         feature_set::{
-            cap_accounts_data_len, record_instruction_in_transaction_context_push, FeatureSet,
+            cap_accounts_data_len, enable_early_verification_of_account_modifications,
+            record_instruction_in_transaction_context_push, FeatureSet,
         },
         hash::Hash,
         instruction::{AccountMeta, Instruction, InstructionError},
@@ -344,29 +345,34 @@ impl<'a> InvokeContext<'a> {
         {
             self.current_compute_budget = self.compute_budget;
 
-            self.pre_accounts = Vec::with_capacity(instruction_accounts.len());
-
-            for (instruction_account_index, instruction_account) in
-                instruction_accounts.iter().enumerate()
+            if !self
+                .feature_set
+                .is_active(&enable_early_verification_of_account_modifications::id())
             {
-                if instruction_account_index != instruction_account.index_in_callee {
-                    continue; // Skip duplicate account
-                }
-                if instruction_account.index_in_transaction
-                    >= self.transaction_context.get_number_of_accounts()
+                self.pre_accounts = Vec::with_capacity(instruction_accounts.len());
+                for (instruction_account_index, instruction_account) in
+                    instruction_accounts.iter().enumerate()
                 {
-                    return Err(InstructionError::MissingAccount);
+                    if instruction_account_index != instruction_account.index_in_callee {
+                        continue; // Skip duplicate account
+                    }
+                    if instruction_account.index_in_transaction
+                        >= self.transaction_context.get_number_of_accounts()
+                    {
+                        return Err(InstructionError::MissingAccount);
+                    }
+                    let account = self
+                        .transaction_context
+                        .get_account_at_index(instruction_account.index_in_transaction)?
+                        .borrow()
+                        .clone();
+                    self.pre_accounts.push(PreAccount::new(
+                        self.transaction_context.get_key_of_account_at_index(
+                            instruction_account.index_in_transaction,
+                        )?,
+                        account,
+                    ));
                 }
-                let account = self
-                    .transaction_context
-                    .get_account_at_index(instruction_account.index_in_transaction)?
-                    .borrow()
-                    .clone();
-                self.pre_accounts.push(PreAccount::new(
-                    self.transaction_context
-                        .get_key_of_account_at_index(instruction_account.index_in_transaction)?,
-                    account,
-                ));
             }
         } else {
             let contains = (0..self
@@ -831,26 +837,35 @@ impl<'a> InvokeContext<'a> {
             .get_instruction_context_stack_height();
         let is_top_level_instruction = nesting_level == 0;
         if !is_top_level_instruction {
-            // Verify the calling program hasn't misbehaved
-            let mut verify_caller_time = Measure::start("verify_caller_time");
-            let verify_caller_result = self.verify_and_update(instruction_accounts, true);
-            verify_caller_time.stop();
-            saturating_add_assign!(
-                timings
-                    .execute_accessories
-                    .process_instructions
-                    .verify_caller_us,
-                verify_caller_time.as_us()
-            );
-            verify_caller_result?;
+            if !self
+                .feature_set
+                .is_active(&enable_early_verification_of_account_modifications::id())
+            {
+                // Verify the calling program hasn't misbehaved
+                let mut verify_caller_time = Measure::start("verify_caller_time");
+                let verify_caller_result = self.verify_and_update(instruction_accounts, true);
+                verify_caller_time.stop();
+                saturating_add_assign!(
+                    timings
+                        .execute_accessories
+                        .process_instructions
+                        .verify_caller_us,
+                    verify_caller_time.as_us()
+                );
+                verify_caller_result?;
+            }
 
             if !self
                 .feature_set
                 .is_active(&record_instruction_in_transaction_context_push::id())
             {
+                let instruction_accounts_lamport_sum = self
+                    .transaction_context
+                    .instruction_accounts_lamport_sum(instruction_accounts)?;
                 self.transaction_context
                     .record_instruction(InstructionContext::new(
                         nesting_level,
+                        instruction_accounts_lamport_sum,
                         program_indices,
                         instruction_accounts,
                         instruction_data,
@@ -861,22 +876,29 @@ impl<'a> InvokeContext<'a> {
         self.push(instruction_accounts, program_indices, instruction_data)?;
         self.process_executable_chain(compute_units_consumed, timings)
             .and_then(|_| {
-                // Verify the called program has not misbehaved
-                let mut verify_callee_time = Measure::start("verify_callee_time");
-                let result = if is_top_level_instruction {
-                    self.verify(instruction_accounts, program_indices)
+                if self
+                    .feature_set
+                    .is_active(&enable_early_verification_of_account_modifications::id())
+                {
+                    Ok(())
                 } else {
-                    self.verify_and_update(instruction_accounts, false)
-                };
-                verify_callee_time.stop();
-                saturating_add_assign!(
-                    timings
-                        .execute_accessories
-                        .process_instructions
-                        .verify_callee_us,
-                    verify_callee_time.as_us()
-                );
-                result
+                    // Verify the called program has not misbehaved
+                    let mut verify_callee_time = Measure::start("verify_callee_time");
+                    let result = if is_top_level_instruction {
+                        self.verify(instruction_accounts, program_indices)
+                    } else {
+                        self.verify_and_update(instruction_accounts, false)
+                    };
+                    verify_callee_time.stop();
+                    saturating_add_assign!(
+                        timings
+                            .execute_accessories
+                            .process_instructions
+                            .verify_callee_us,
+                        verify_callee_time.as_us()
+                    );
+                    result
+                }
             })
             // MUST pop if and only if `push` succeeded, independent of `result`.
             // Thus, the `.and()` instead of an `.and_then()`.
@@ -1138,6 +1160,7 @@ pub fn with_mock_invoke_context<R, F: FnMut(&mut InvokeContext) -> R>(
         prepare_mock_invoke_context(transaction_accounts, instruction_accounts, &program_indices);
     let mut transaction_context = TransactionContext::new(
         preparation.transaction_accounts,
+        Some(Rent::default()),
         ComputeBudget::default().max_invoke_depth.saturating_add(1),
         1,
     );
@@ -1168,6 +1191,7 @@ pub fn mock_process_instruction(
         .push((*loader_id, processor_account));
     let mut transaction_context = TransactionContext::new(
         preparation.transaction_accounts,
+        Some(Rent::default()),
         ComputeBudget::default().max_invoke_depth.saturating_add(1),
         1,
     );
@@ -1184,10 +1208,9 @@ pub fn mock_process_instruction(
             &program_indices,
             instruction_data,
         )
-        .and_then(|_| process_instruction(1, &mut invoke_context))
-        .and_then(|_| invoke_context.verify(&preparation.instruction_accounts, &program_indices));
-    invoke_context.pop().unwrap();
-    assert_eq!(result, expected_result);
+        .and_then(|_| process_instruction(1, &mut invoke_context));
+    let pop_result = invoke_context.pop();
+    assert_eq!(result.and(pop_result), expected_result);
     let mut transaction_accounts = transaction_context.deconstruct_without_keys().unwrap();
     transaction_accounts.pop();
     transaction_accounts
