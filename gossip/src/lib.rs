@@ -24,9 +24,6 @@ pub mod weighted_shuffle;
 #[macro_use]
 extern crate log;
 
-#[cfg(test)]
-#[macro_use]
-extern crate matches;
 
 #[macro_use]
 extern crate serde_derive;

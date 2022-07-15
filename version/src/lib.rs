@@ -112,15 +112,3 @@ macro_rules! version {
     };
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_compute_commit() {
-        assert_eq!(compute_commit(None), None);
-        assert_eq!(compute_commit(Some("1234567890")), Some(0x1234_5678));
-        assert_eq!(compute_commit(Some("HEAD")), None);
-        assert_eq!(compute_commit(Some("garbagein")), None);
-    }
-}

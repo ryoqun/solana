@@ -57,21 +57,3 @@ impl LargestAccountsCache {
         );
     }
 }
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-
-    #[test]
-    fn test_old_entries_expire() {
-        let mut cache = LargestAccountsCache::new(1);
-
-        let filter = Some(RpcLargestAccountsFilter::Circulating);
-
-        let accounts: Vec<RpcAccountBalance> = Vec::new();
-
-        cache.set_largest_accounts(&filter, 1000, &accounts);
-        std::thread::sleep(Duration::from_secs(1));
-        assert_eq!(cache.get_largest_accounts(&filter), None);
-    }
-}

@@ -15,9 +15,6 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-#[cfg(test)]
-#[macro_use]
-extern crate matches;
 
 #[macro_use]
 extern crate solana_metrics;

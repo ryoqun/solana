@@ -100,22 +100,3 @@ impl std::fmt::Debug for dyn Signer {
 pub fn unique_signers(signers: Vec<&dyn Signer>) -> Vec<&dyn Signer> {
     signers.into_iter().unique_by(|s| s.pubkey()).collect()
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::signer::keypair::Keypair};
-
-    fn pubkeys(signers: &[&dyn Signer]) -> Vec<Pubkey> {
-        signers.iter().map(|x| x.pubkey()).collect()
-    }
-
-    #[test]
-    fn test_unique_signers() {
-        let alice = Keypair::new();
-        let bob = Keypair::new();
-        assert_eq!(
-            pubkeys(&unique_signers(vec![&alice, &bob, &alice])),
-            pubkeys(&[&alice, &bob])
-        );
-    }
-}

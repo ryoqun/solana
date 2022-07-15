@@ -160,25 +160,3 @@ pub fn create_test_recent_blockhashes(start: usize) -> RecentBlockhashes {
         .map(|(i, hash, lamports_per_signature)| IterItem(*i, hash, *lamports_per_signature))
         .collect()
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::clock::MAX_PROCESSING_AGE};
-
-    #[test]
-    #[allow(clippy::assertions_on_constants)]
-    fn test_sysvar_can_hold_all_active_blockhashes() {
-        // Ensure we can still hold all of the active entries in `BlockhashQueue`
-        assert!(MAX_PROCESSING_AGE <= MAX_ENTRIES);
-    }
-
-    #[test]
-    fn test_size_of() {
-        let entry = Entry::new(&Hash::default(), 0);
-        assert_eq!(
-            bincode::serialized_size(&RecentBlockhashes(vec![entry; MAX_ENTRIES])).unwrap()
-                as usize,
-            RecentBlockhashes::size_of()
-        );
-    }
-}

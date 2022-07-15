@@ -209,19 +209,3 @@ where
     // they do not overlap.
     diff >= count
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_is_nonoverlapping() {
-        assert!(is_nonoverlapping(10, 7, 3));
-        assert!(!is_nonoverlapping(10, 8, 3));
-        assert!(!is_nonoverlapping(10, 9, 3));
-        assert!(!is_nonoverlapping(10, 10, 3));
-        assert!(!is_nonoverlapping(10, 11, 3));
-        assert!(!is_nonoverlapping(10, 12, 3));
-        assert!(is_nonoverlapping(10, 13, 3));
-    }
-}

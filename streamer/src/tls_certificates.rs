@@ -68,25 +68,3 @@ pub fn get_pubkey_from_tls_certificate(certificates: &[rustls::Certificate]) -> 
             })
     })
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, solana_sdk::signer::Signer, std::net::Ipv4Addr};
-
-    #[test]
-    fn test_generate_tls_certificate() {
-        let keypair = Keypair::new();
-
-        if let Ok((certs, _)) =
-            new_self_signed_tls_certificate_chain(&keypair, IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)))
-        {
-            if let Some(pubkey) = get_pubkey_from_tls_certificate(&certs) {
-                assert_eq!(pubkey, keypair.pubkey());
-            } else {
-                panic!("Failed to get certificate pubkey");
-            }
-        } else {
-            panic!("Failed to generate certificates");
-        }
-    }
-}

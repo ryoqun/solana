@@ -416,39 +416,3 @@ impl SystemMonitorService {
         self.thread_hdl.join()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_udp_stats() {
-        let mut mock_snmp =
-b"Ip: Forwarding DefaultTTL InReceives InHdrErrors InAddrErrors ForwDatagrams InUnknownProtos InDiscards InDelivers OutRequests OutDiscards OutNoRoutes ReasmTimeout ReasmReqds ReasmOKs ReasmFails FragOKs FragFails FragCreates
-Ip: 1 64 357 0 2 0 0 0 355 315 0 6 0 0 0 0 0 0 0
-Icmp: InMsgs InErrors InCsumErrors InDestUnreachs InTimeExcds InParmProbs InSrcQuenchs InRedirects InEchos InEchoReps InTimestamps InTimestampReps InAddrMasks InAddrMaskReps OutMsgs OutErrors OutDestUnreachs OutTimeExcds OutParmProbs OutSrcQuenchs OutRedirects OutEchos OutEchoReps OutTimestamps OutTimestampReps OutAddrMasks OutAddrMaskReps
-Icmp: 3 0 0 3 0 0 0 0 0 0 0 0 0 0 7 0 7 0 0 0 0 0 0 0 0 0 0
-IcmpMsg: InType3 OutType3
-IcmpMsg: 3 7
-Tcp: RtoAlgorithm RtoMin RtoMax MaxConn ActiveOpens PassiveOpens AttemptFails EstabResets CurrEstab InSegs OutSegs RetransSegs InErrs OutRsts InCsumErrors
-Tcp: 1 200 120000 -1 29 1 0 0 5 318 279 0 0 4 0
-Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti
-Udp: 27 7 0 30 0 0 0 0
-UdpLite: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors InCsumErrors IgnoredMulti
-UdpLite: 0 0 0 0 0 0 0 0" as &[u8];
-        let stats = parse_udp_stats(&mut mock_snmp).unwrap();
-        assert_eq!(stats.out_datagrams, 30);
-        assert_eq!(stats.no_ports, 7);
-
-        let mut mock_snmp = b"unexpected data" as &[u8];
-        let stats = parse_udp_stats(&mut mock_snmp);
-        assert!(stats.is_err());
-    }
-
-    #[test]
-    fn test_calc_percent() {
-        assert!(SystemMonitorService::calc_percent(99, 100) < 100.0);
-        let one_tb_as_kb = (1u64 << 40) >> 10;
-        assert!(SystemMonitorService::calc_percent(one_tb_as_kb - 1, one_tb_as_kb) < 100.0);
-    }
-}
