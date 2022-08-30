@@ -1366,10 +1366,16 @@ impl EpochInflation {
                     true
                 } else {
                     // don't care about very small stakes at the activation of full inflation
-                    if record.cluster_type == "MainnetBeta" && record.epoch_stake().unwrap() < 10_000_000 {
-                        warn!("full inflation enabled?: {}", record.account);
+                    if (record.cluster_type == "MainnetBeta" || record.cluster_type == "Testnet") && record.epoch_stake().unwrap() < 10_000_000 {
+                        // pretty stale warning... now that inflation is activated long ago..
+                        //warn!("full inflation enabled?: {}", record.account)
+                        return true;
+                    } else if record.cluster_type == "Testnet" && (record.vote_rewards().unwrap() == 0 || record.stake_rewards().unwrap() == 0) && (record.commission().unwrap() != 0  && record.commission().unwrap() != 100) {
+                        // ignore TooEarlyUnfairSplit
                         return true;
                     }
+
+                    warn!("no multiple earned epoch: {:?}", (record.earned_epochs(), &record));
 
                     false
                 }
@@ -1406,8 +1412,13 @@ impl EpochInflation {
             match (record.old_credits_observed(), record.new_credits_observed()) {
                 (Some(old), Some(new)) if old != new => true, // for old > new case, add point=0 exception case?
                 (Some(old), Some(new)) if old == new => {
-                    warn!("odd credit update with identical value!?: {:?}", (&record.account, old, new));
-                    true
+                    if record.activation_epoch().is_some() && record.rewarded_epoch == record.activation_epoch().unwrap()  {
+                        // JustActivated
+                        true
+                    } else {
+                        warn!("odd credit update with identical value!?: {:?}", (&record.account, old, new, &record));
+                        false
+                    }
                 },
                 (None, None) | (Some(_), None) => true,
                 a => { warn!("odd: {:?}", a); false },
@@ -1428,11 +1439,17 @@ impl EpochInflation {
             match (record.old_credits_observed(), record.new_credits_observed()) {
                 (Some(old), Some(new)) => {
                     // the next epoch of activation epoch usually earns some additional credits
-                    // (upto twice)
-                    if (record.activation_epoch().unwrap() + 1 == record.rewarded_epoch && (new - old) <= 432000 * 2)|| (new - old) <= 432000 {
+                    // (upto twice). otherwise, it must be within 432000
+                    if (record.activation_epoch().unwrap() + 1 == record.rewarded_epoch && (new - old) <= 432000 * 2) || (new - old) <= 432000 {
+                        true
+                    } else if new < old && record.base_rewards().unwrap() == 0 {
+                        // auto rewind
+                        true
+                    } else if record.earned_epochs().unwrap() >= 2 {
+                        // multiple epoch rewards finally got paid
                         true
                     } else if (record.vote_rewards().unwrap() < 3_000 || record.vote_rewards().unwrap() < 3_000) && record.base_rewards().unwrap() < 300_000 {
-                        warn!("full inflation enabled?: {}", record.account);
+                        warn!("credits_observed_capped_to_max_epoch_slots: full inflation enabled?: {:?}", record);
                         true
                     } else {
                         dbg!(new - old, record);
@@ -1446,19 +1463,23 @@ impl EpochInflation {
     }
 
     fn credits_observed_must_be_updated_with_no_inflation(&self) {
-        let mut warned = false;
+        let mut inflation_assumed = false;
         self.run_record_verify_simple("credits observed must be updated", |record| {
             if !record.cluster_rewards().is_none() && !record.cluster_points().is_none() {
-                if !warned {
-                    warned = true;
-                    warn!("inflation enabled??");
+                if !inflation_assumed {
+                    inflation_assumed = true;
+                    if record.cluster_type == "Testnet" && record.rewarded_epoch >= 300 {
+                        // be silent...
+                    } else {
+                        warn!("inflation enabled??");
+                    }
                 }
             };
 
             if record.is_stake() {
                 match (record.old_credits_observed(), record.new_credits_observed()) {
                     (Some(old), Some(new)) => {
-                        if !warned { 
+                        if !inflation_assumed { 
                             if new > old {
                                 true
                             } else {
@@ -1603,7 +1624,12 @@ impl EpochInflation {
     fn vote_owner_should_vote11111(&self) {
         self.run_record_verify_simple("vote owner should vote11111", |record| {
             if record.is_vote() {
-                record.owner == "Vote111111111111111111111111111111111111111"
+                if record.owner == "Vote111111111111111111111111111111111111111" {
+                    true
+                } else {
+                    dbg!("vote owner should be vote1111", &record);
+                    false
+                }
             } else {
                 true
             }
@@ -1696,7 +1722,13 @@ impl EpochInflation {
                         if record.base_rewards().unwrap() == 0 {
                             true
                         } else {
-                            if record.vote_rewards().unwrap() < 800 || record.vote_rewards().unwrap() < 800 {
+                            if record.epoch().unwrap() < record.rewarded_epoch - 10 {
+                                // the above - 10 is just quick and dirty magic number
+                                // ignore stuck reward which is earned long time ago in terms of
+                                // epoch like this:
+                                // ledger-testnet-after-rewind-with-rewind.log:gYF4yWzqJDTaQw6TZZoYyk2a3p2cmJfwd4H9kvgZGLq (Stake11111111111111111111111111111111111111): ◎0.002282930 => ◎0.002282930 (+◎0.000000000 0.000000000%) Some(CalculationDetail { epochs: 1, voter: 9Km5rBc2szq46HQLRkcUYMQhnvNhHMdNyHny1c37UQgm, voter_owner: Vote111111111111111111111111111111111111111, current_effective_stake: 0, total_stake: 50, rent_exempt_reserve: 2282880, points: [PointDetail { epoch: 323, points: 9199800, stake: 50, credits: 183996 }], base_rewards: 1, commission: 35, vote_rewards: 0, stake_rewards: 0, activation_epoch: 322, deactivation_epoch: Some(323), point_value: Some(PointValue { rewards: 1025805843932228, points: 8301062718992990653655 }), old_credits_observed: Some(57266054), new_credits_observed: None, skipped_reasons: "TooEarlyUnfairSplit" })
+                                true
+                            } else if record.vote_rewards().unwrap() < 800 || record.vote_rewards().unwrap() < 800 {
                                 warn!("full inflation enabled?: {}", record.account);
                                 true
                             } else {
@@ -1744,9 +1776,19 @@ impl EpochInflation {
     fn minimum_stake_delegation(&self) {
         self.run_record_verify_simple("minimum stake delegation", |record| {
             if record.is_stake() {
-                let ret = record.old_balance >= record.rent_exempt_reserve().unwrap() + 1;
+                let mut ret = record.old_balance >= record.rent_exempt_reserve().unwrap() + 1;
                 if !ret {
-                    dbg!(&record);
+                    if record.cluster_type == "Testnet" && record.deactivation_epoch().is_some() {
+                        // seems once deactivated, you can withdraw all but the rent exempt
+                        // reserve?
+                        // so suppress warning
+                        ret = true;
+                    } else if record.cluster_type == "Testnet" && record.data_size == 4008 && record.effective_stake().unwrap() == 0 && record.deactivation_epoch().is_none() {
+                        // seems there's garbage data only in testnet...
+                        ret = true;
+                    } else {
+                        dbg!("minimum stake delegation", &record);
+                    }
                 }
                 ret
             } else {
