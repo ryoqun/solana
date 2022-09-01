@@ -43,5 +43,3 @@ fn main() {
     }
 }
 
-#[cfg(test)]
-pub mod test {}

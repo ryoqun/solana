@@ -22,8 +22,6 @@ pub struct RpcHealth {
     known_validators: Option<HashSet<Pubkey>>,
     health_check_slot_distance: u64,
     override_health_check: Arc<AtomicBool>,
-    #[cfg(test)]
-    stub_health_status: std::sync::RwLock<Option<RpcHealthStatus>>,
 }
 
 impl RpcHealth {
@@ -38,19 +36,10 @@ impl RpcHealth {
             known_validators,
             health_check_slot_distance,
             override_health_check,
-            #[cfg(test)]
-            stub_health_status: std::sync::RwLock::new(None),
         }
     }
 
     pub fn check(&self) -> RpcHealthStatus {
-        #[cfg(test)]
-        {
-            if let Some(stub_health_status) = *self.stub_health_status.read().unwrap() {
-                return stub_health_status;
-            }
-        }
-
         if self.override_health_check.load(Ordering::Relaxed) {
             RpcHealthStatus::Ok
         } else if let Some(known_validators) = &self.known_validators {
@@ -117,28 +106,5 @@ impl RpcHealth {
             // because it's running
             RpcHealthStatus::Ok
         }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn stub() -> Arc<Self> {
-        use {
-            solana_gossip::contact_info::ContactInfo, solana_sdk::signer::keypair::Keypair,
-            solana_streamer::socket::SocketAddrSpace,
-        };
-        Arc::new(Self::new(
-            Arc::new(ClusterInfo::new(
-                ContactInfo::default(),
-                Arc::new(Keypair::new()),
-                SocketAddrSpace::Unspecified,
-            )),
-            None,
-            42,
-            Arc::new(AtomicBool::new(false)),
-        ))
-    }
-
-    #[cfg(test)]
-    pub(crate) fn stub_set_health_status(&self, stub_health_status: Option<RpcHealthStatus>) {
-        *self.stub_health_status.write().unwrap() = stub_health_status;
     }
 }
