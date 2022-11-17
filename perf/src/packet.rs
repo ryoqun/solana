@@ -195,11 +195,6 @@ pub fn to_packet_batches<T: Serialize>(xs: &[T], chunks: usize) -> Vec<PacketBat
         .collect()
 }
 
-#[cfg(test)]
-pub fn to_packet_batches_for_tests<T: Serialize>(xs: &[T]) -> Vec<PacketBatch> {
-    to_packet_batches(xs, NUM_PACKETS)
-}
-
 pub fn to_packet_batch_with_destination<T: Serialize>(
     recycler: PacketBatchRecycler,
     dests_and_data: &[(SocketAddr, T)],
@@ -223,46 +218,4 @@ pub fn to_packet_batch_with_destination<T: Serialize>(
         }
     }
     out
-}
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        solana_sdk::{
-            hash::Hash,
-            signature::{Keypair, Signer},
-            system_transaction,
-        },
-    };
-
-    #[test]
-    fn test_to_packet_batches() {
-        let keypair = Keypair::new();
-        let hash = Hash::new(&[1; 32]);
-        let tx = system_transaction::transfer(&keypair, &keypair.pubkey(), 1, hash);
-        let rv = to_packet_batches_for_tests(&[tx.clone(); 1]);
-        assert_eq!(rv.len(), 1);
-        assert_eq!(rv[0].len(), 1);
-
-        #[allow(clippy::useless_vec)]
-        let rv = to_packet_batches_for_tests(&vec![tx.clone(); NUM_PACKETS]);
-        assert_eq!(rv.len(), 1);
-        assert_eq!(rv[0].len(), NUM_PACKETS);
-
-        #[allow(clippy::useless_vec)]
-        let rv = to_packet_batches_for_tests(&vec![tx; NUM_PACKETS + 1]);
-        assert_eq!(rv.len(), 2);
-        assert_eq!(rv[0].len(), NUM_PACKETS);
-        assert_eq!(rv[1].len(), 1);
-    }
-
-    #[test]
-    fn test_to_packets_pinning() {
-        let recycler = PacketBatchRecycler::default();
-        for i in 0..2 {
-            let _first_packets =
-                PacketBatch::new_with_recycler(recycler.clone(), i + 1, "first one");
-        }
-    }
 }

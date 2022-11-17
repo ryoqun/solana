@@ -59,31 +59,3 @@ pub fn activate_with_lamports(
         system_instruction::assign(feature_id, &id()),
     ]
 }
-
-#[cfg(test)]
-mod test {
-    use {super::*, solana_program::clock::Slot};
-
-    #[test]
-    fn feature_sizeof() {
-        assert!(
-            Feature::size_of() >= bincode::serialized_size(&Feature::default()).unwrap() as usize
-        );
-        assert_eq!(Feature::default(), Feature { activated_at: None });
-
-        let features = [
-            Feature {
-                activated_at: Some(0),
-            },
-            Feature {
-                activated_at: Some(Slot::MAX),
-            },
-        ];
-        for feature in &features {
-            assert_eq!(
-                Feature::size_of(),
-                bincode::serialized_size(feature).unwrap() as usize
-            );
-        }
-    }
-}
