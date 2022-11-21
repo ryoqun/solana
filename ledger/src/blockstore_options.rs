@@ -256,15 +256,3 @@ impl BlockstoreCompressionType {
         }
     }
 }
-
-#[test]
-fn test_rocksdb_directory() {
-    assert_eq!(
-        ShredStorageType::RocksLevel.blockstore_directory(),
-        BLOCKSTORE_DIRECTORY_ROCKS_LEVEL
-    );
-    assert_eq!(
-        ShredStorageType::RocksFifo(BlockstoreRocksFifoOptions::default()).blockstore_directory(),
-        BLOCKSTORE_DIRECTORY_ROCKS_FIFO
-    );
-}
