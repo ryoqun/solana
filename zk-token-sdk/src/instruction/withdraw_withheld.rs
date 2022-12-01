@@ -187,28 +187,3 @@ impl WithdrawWithheldTokensProof {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_close_account_correctness() {
-        let withdraw_withheld_authority_keypair = ElGamalKeypair::new_rand();
-        let dest_keypair = ElGamalKeypair::new_rand();
-
-        let amount: u64 = 55;
-        let withdraw_withheld_authority_ciphertext =
-            withdraw_withheld_authority_keypair.public.encrypt(amount);
-
-        let withdraw_withheld_tokens_data = WithdrawWithheldTokensData::new(
-            &withdraw_withheld_authority_keypair,
-            &dest_keypair.public,
-            &withdraw_withheld_authority_ciphertext,
-            amount,
-        )
-        .unwrap();
-
-        assert!(withdraw_withheld_tokens_data.verify().is_ok());
-    }
-}

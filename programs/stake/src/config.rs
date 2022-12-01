@@ -35,14 +35,3 @@ pub fn add_genesis_account(genesis_config: &mut GenesisConfig) -> u64 {
 
     lamports
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, std::cell::RefCell};
-
-    #[test]
-    fn test() {
-        let account = RefCell::new(create_account(0, &Config::default()));
-        assert_eq!(from(&account.borrow()), Some(Config::default()));
-    }
-}
