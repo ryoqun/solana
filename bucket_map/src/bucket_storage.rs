@@ -378,39 +378,3 @@ impl BucketStorage {
         1 << self.capacity_pow2
     }
 }
-
-#[cfg(test)]
-mod test {
-    use {super::*, tempfile::tempdir};
-
-    #[test]
-    fn test_bucket_storage() {
-        let tmpdir = tempdir().unwrap();
-        let paths: Vec<PathBuf> = vec![tmpdir.path().to_path_buf()];
-        assert!(!paths.is_empty());
-
-        let mut storage =
-            BucketStorage::new(Arc::new(paths), 1, 1, 1, Arc::default(), Arc::default());
-        let ix = 0;
-        let uid = Uid::MAX;
-        assert!(storage.is_free(ix));
-        assert!(storage.allocate(ix, uid, false).is_ok());
-        assert!(storage.allocate(ix, uid, false).is_err());
-        assert!(!storage.is_free(ix));
-        assert_eq!(storage.uid(ix), Some(uid));
-        assert_eq!(storage.uid_unchecked(ix), uid);
-        storage.free(ix, uid);
-        assert!(storage.is_free(ix));
-        assert_eq!(storage.uid(ix), None);
-        let uid = 1;
-        assert!(storage.is_free(ix));
-        assert!(storage.allocate(ix, uid, false).is_ok());
-        assert!(storage.allocate(ix, uid, false).is_err());
-        assert!(!storage.is_free(ix));
-        assert_eq!(storage.uid(ix), Some(uid));
-        assert_eq!(storage.uid_unchecked(ix), uid);
-        storage.free(ix, uid);
-        assert!(storage.is_free(ix));
-        assert_eq!(storage.uid(ix), None);
-    }
-}

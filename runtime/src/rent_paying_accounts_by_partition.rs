@@ -57,22 +57,3 @@ impl RentPayingAccountsByPartition {
         self.partition_count != 0
     }
 }
-
-#[cfg(test)]
-pub(crate) mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add() {
-        let mut test = RentPayingAccountsByPartition::new(&EpochSchedule::custom(32, 0, false));
-        let pk = Pubkey::new(&[1; 32]);
-        test.add_account(&pk);
-        // make sure duplicate adds only result in a single item
-        test.add_account(&pk);
-        assert_eq!(test.get_pubkeys_in_partition_index(0).len(), 1);
-        assert!(test.get_pubkeys_in_partition_index(1).is_empty());
-        assert!(test.is_initialized());
-        let test = RentPayingAccountsByPartition::default();
-        assert!(!test.is_initialized());
-    }
-}

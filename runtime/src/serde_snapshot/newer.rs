@@ -221,28 +221,6 @@ impl<'a> TypeContext<'a> for Context {
             .serialize(serializer)
     }
 
-    #[cfg(test)]
-    fn serialize_bank_and_storage_without_extra_fields<S: serde::ser::Serializer>(
-        serializer: S,
-        serializable_bank: &SerializableBankAndStorageNoExtra<'a, Self>,
-    ) -> std::result::Result<S::Ok, S::Error>
-    where
-        Self: std::marker::Sized,
-    {
-        let ancestors = HashMap::from(&serializable_bank.bank.ancestors);
-        let fields = serializable_bank.bank.get_fields_to_serialize(&ancestors);
-        (
-            SerializableVersionedBank::from(fields),
-            SerializableAccountsDb::<'a, Self> {
-                accounts_db: &serializable_bank.bank.rc.accounts.accounts_db,
-                slot: serializable_bank.bank.rc.slot,
-                account_storage_entries: serializable_bank.snapshot_storages,
-                phantom: std::marker::PhantomData::default(),
-            },
-        )
-            .serialize(serializer)
-    }
-
     fn serialize_accounts_db_fields<S: serde::ser::Serializer>(
         serializer: S,
         serializable_db: &SerializableAccountsDb<'a, Self>,
