@@ -263,23 +263,3 @@ pub fn add_genesis_accounts(genesis_config: &mut GenesisConfig, mut issued_lampo
         None,
     );
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add_genesis_accounts() {
-        let mut genesis_config = GenesisConfig::default();
-
-        add_genesis_accounts(&mut genesis_config, 0);
-
-        let lamports = genesis_config
-            .accounts
-            .values()
-            .map(|account| account.lamports)
-            .sum::<u64>();
-
-        assert_eq!(500_000_000 * LAMPORTS_PER_SOL, lamports);
-    }
-}

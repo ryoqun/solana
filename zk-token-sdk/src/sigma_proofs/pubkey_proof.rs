@@ -133,21 +133,3 @@ impl PubkeySigmaProof {
         Ok(PubkeySigmaProof { Y, z })
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_pubkey_proof_correctness() {
-        let keypair = ElGamalKeypair::new_rand();
-
-        let mut prover_transcript = Transcript::new(b"test");
-        let mut verifier_transcript = Transcript::new(b"test");
-
-        let proof = PubkeySigmaProof::new(&keypair, &mut prover_transcript);
-        assert!(proof
-            .verify(&keypair.public, &mut verifier_transcript)
-            .is_ok());
-    }
-}

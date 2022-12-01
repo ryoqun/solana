@@ -635,39 +635,3 @@ impl AccountsBackgroundService {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use {
-        super::*,
-        crate::genesis_utils::create_genesis_config,
-        crossbeam_channel::unbounded,
-        solana_sdk::{account::AccountSharedData, pubkey::Pubkey},
-    };
-
-    #[test]
-    fn test_accounts_background_service_remove_dead_slots() {
-        let genesis = create_genesis_config(10);
-        let bank0 = Arc::new(Bank::new_for_tests(&genesis.genesis_config));
-        let (pruned_banks_sender, pruned_banks_receiver) = unbounded();
-        let request_handler = AbsRequestHandler {
-            snapshot_request_handler: None,
-            pruned_banks_receiver,
-        };
-
-        // Store an account in slot 0
-        let account_key = Pubkey::new_unique();
-        bank0.store_account(
-            &account_key,
-            &AccountSharedData::new(264, 0, &Pubkey::default()),
-        );
-        assert!(bank0.get_account(&account_key).is_some());
-        pruned_banks_sender.send((0, 0)).unwrap();
-
-        assert!(!bank0.rc.accounts.scan_slot(0, |_| Some(())).is_empty());
-
-        AccountsBackgroundService::remove_dead_slots(&bank0, &request_handler, &mut 0, &mut 0);
-
-        assert!(bank0.rc.accounts.scan_slot(0, |_| Some(())).is_empty());
-    }
-}
