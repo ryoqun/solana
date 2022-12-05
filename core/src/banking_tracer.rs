@@ -25,6 +25,7 @@ impl BankingTracer {
     }
 }
 
+#[derive(Clone)]
 pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
     mirrored_sender_to_trace: Option<RealBankingPacketSender>,
