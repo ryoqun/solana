@@ -28,7 +28,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[repr(C)]
 pub struct Meta {
     pub size: usize,
