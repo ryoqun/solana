@@ -38,7 +38,7 @@ impl TracedBankingPacketSender {
         }
     }
 
-    pub fn send(&self, a: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<RealBankingPacketSender>> {
+    pub fn send(&self, a: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
         self.sender_to_banking.send(a)
     }
 }
