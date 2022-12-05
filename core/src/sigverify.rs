@@ -55,7 +55,6 @@ impl SigverifyTracerPacketStats {
     }
 }
 
-#[derive(Clone)]
 pub struct TransactionSigVerifier {
     packet_sender: BankingPacketSender,
     tracer_packet_stats: SigverifyTracerPacketStats,
