@@ -69,7 +69,7 @@ pub struct Tpu {
     find_packet_sender_stake_stage: FindPacketSenderStakeStage,
     vote_find_packet_sender_stake_stage: FindPacketSenderStakeStage,
     staked_nodes_updater_service: StakedNodesUpdaterService,
-    banking_tracer: BankingTracer,
+    banking_tracer: Arc<BankingTracer>,
 }
 
 impl Tpu {
@@ -156,7 +156,7 @@ impl Tpu {
             "Vote",
         );
 
-        let banking_tracer = BankingTracer::new(blockstore.ledger_path().join("banking-tracer"), true, exit.clone()).unwrap();
+        let banking_tracer = Arc::new(BankingTracer::new(blockstore.ledger_path().join("banking-tracer"), true, exit.clone()).unwrap());
         let (verified_sender, verified_receiver) = banking_tracer.create_channel("non-vote");
 
         let stats = Arc::new(StreamStats::default());
