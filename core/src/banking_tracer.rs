@@ -33,7 +33,7 @@ enum TracedEvent {
 
 impl BankingTracer {
     pub fn new(path: impl AsRef<Path>, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
-        let path: String = path.into();
+        let path: String = path.try_into();
 
         let trace_output = if enable_tracing {
             let a = unbounded();
