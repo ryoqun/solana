@@ -193,7 +193,9 @@ impl Tpu {
             SigVerifyStage::new(find_packet_sender_stake_receiver, verifier, "tpu-verifier")
         };
 
-        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = unbounded();
+        let banking_tracer = BankingTracer::default();
+
+        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel();
 
         let vote_sigverify_stage = {
             let verifier =
@@ -222,8 +224,6 @@ impl Tpu {
             bank_notification_sender,
             cluster_confirmed_slot_sender,
         );
-
-        let banking_tracer = BankingTracer::default();
 
         let banking_stage = BankingStage::new(
             cluster_info,
