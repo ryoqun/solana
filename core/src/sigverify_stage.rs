@@ -402,7 +402,7 @@ impl SigVerifyStage {
         Ok(())
     }
 
-    fn verifier_service<T: SigVerifier + 'static + Send + Clone>(
+    fn verifier_service<T: SigVerifier + 'static + Send>(
         packet_receiver: find_packet_sender_stake_stage::FindPacketSenderStakeReceiver,
         mut verifier: T,
         name: &'static str,
