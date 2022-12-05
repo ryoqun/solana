@@ -39,5 +39,6 @@ impl TracedBankingPacketSender {
     }
 
     pub fn send(&self, bool) -> u8 {
+        panic!();
     }
 }
