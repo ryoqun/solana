@@ -3,7 +3,7 @@ use {
         sigverify::SigverifyTracerPacketStats,
     },
     crossbeam_channel::{
-        Receiver as CrossbeamReceiver, RecvTimeoutError, Sender as CrossbeamSender,
+        Receiver as CrossbeamReceiver, RecvTimeoutError, Sender as CrossbeamSender, unbounded,
     },
 };
 use solana_perf::packet::PacketBatch;
@@ -18,5 +18,6 @@ pub struct BankingTracer {
 
 impl BankingTracer {
     pub fn create_channel(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        unbounded()
     }
 }
