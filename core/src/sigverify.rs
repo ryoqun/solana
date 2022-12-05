@@ -65,7 +65,7 @@ pub struct TransactionSigVerifier {
 }
 
 impl TransactionSigVerifier {
-    pub fn new_reject_non_vote(packet_sender: Sender<<Self as SigVerifier>::SendType>) -> Self {
+    pub fn new_reject_non_vote(packet_sender: BankingPacketSender) -> Self {
         let mut new_self = Self::new(packet_sender);
         new_self.reject_non_vote = true;
         new_self
