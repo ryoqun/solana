@@ -20,7 +20,7 @@ pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 pub struct BankingTracer {
    trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>)>,
    exit: Arc<AtomicBool>,
-   thread_handle: Option<usize>,
+   thread_handle: Option<std::thread::JoinHandle<()>>,
 }
 
 #[derive(Serialize)]
