@@ -64,6 +64,7 @@ pub struct PinnedVec<T: Default + Clone + Sized> {
     x: Vec<T>,
     pinned: bool,
     pinnable: bool,
+    #[serde(skip)]
     recycler: Weak<RecyclerX<PinnedVec<T>>>,
 }
 
