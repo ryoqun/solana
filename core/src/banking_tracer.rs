@@ -19,7 +19,7 @@ pub struct BankingTracer {
 
 impl BankingTracer {
     pub fn new(enable_tracing: bool) -> Self {
-        let trace_output = enable_tracing.then(|| {});
+        let trace_output = enable_tracing.then(|| rolling_file::RollingFileAppender::new("aaa", rolling_file::RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10));
         Self {
             trace_output,
         }
