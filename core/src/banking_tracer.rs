@@ -24,9 +24,9 @@ impl BankingTracer {
         } else {
             None
         };
-        Self {
+        Ok(Self {
             trace_output,
-        }
+        })
     }
 
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
