@@ -21,7 +21,7 @@ impl BankingTracer {
     pub fn new(enable_tracing: bool) -> Self {
         let trace_output = enable_tracing.then(|| {});
         Self {
-            trace_output: None,
+            trace_output,
         }
     }
 
