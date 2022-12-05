@@ -21,7 +21,7 @@ pub struct BankingTracer {
 impl BankingTracer {
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         let a = unbounded();
-        (TracedBankingPacketSender::new(a.0, self.tracing_enabled), a.1)
+        (TracedBankingPacketSender::new(a.0), a.1)
     }
 }
 
