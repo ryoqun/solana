@@ -7,6 +7,7 @@ use {
     },
 };
 use solana_perf::packet::PacketBatch;
+use rolling_file::{RollingFileAppender, RollingConditionBasic};
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
 pub type BankingPacketSender = TracedBankingPacketSender;
@@ -14,13 +15,13 @@ type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
-   trace_output: Option<rolling_file::RollingFileAppender<rolling_file::RollingConditionBasic>>,
+   trace_output: Option<RollingFileAppender<RollingConditionBasic>>,
 }
 
 impl BankingTracer {
     pub fn new(enable_tracing: bool) -> Result<Self, std::io::Error> {
         let trace_output = if enable_tracing {
-            Some(rolling_file::RollingFileAppender::new("aaa", rolling_file::RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?)
+            Some(RollingFileAppender::new("aaa", RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?)
         } else {
             None
         };
