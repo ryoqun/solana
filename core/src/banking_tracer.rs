@@ -9,6 +9,7 @@ use {
 use std::path::Path;
 use solana_perf::packet::PacketBatch;
 use rolling_file::{RollingFileAppender, RollingConditionBasic};
+use bincode::serialize_into;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
 pub type BankingPacketSender = TracedBankingPacketSender;
