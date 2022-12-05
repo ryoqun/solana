@@ -19,7 +19,7 @@ pub struct BankingTracer {
 
 impl BankingTracer {
     pub fn new(enable_tracing: bool) -> Self {
-        let trace_output = enable_tracing.map(|_| {});
+        let trace_output = enable_tracing.iter.map(|_| {});
         Self {
             trace_output: None,
         }
