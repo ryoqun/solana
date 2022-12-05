@@ -4086,6 +4086,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rolling-file"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39b254e89bc1c1343b896ca8cf99753097fca0d0d5c49ca58d876de52c754ef1"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "rpassword"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5190,6 +5199,7 @@ dependencies = [
  "rand_chacha 0.2.2",
  "raptorq",
  "rayon",
+ "rolling-file",
  "rustc_version 0.4.0",
  "serde",
  "serde_derive",
