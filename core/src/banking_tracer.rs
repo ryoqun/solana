@@ -9,7 +9,7 @@ use {
 use solana_perf::packet::PacketBatch;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
-pub type BankingPacketSender = TracedSender;
+pub type BankingPacketSender = TracedBankingPacketSender;
 pub type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
@@ -21,16 +21,16 @@ pub struct BankingTracer {
 impl BankingTracer {
     pub fn create_channel(&self) -> (BankingPacketSender, BankingPacketReceiver) {
         let a = unbounded();
-        (TracedSender::new(a.0), a.1)
+        (TracedBankingPacketSender::new(a.0), a.1)
     }
 }
 
-pub struct TracedSender {
+pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
     mirrored_sender_to_trace: Option<RealBankingPacketSender>,
 }
 
-impl TracedSender<RealBankingPacketSender> {
+impl TracedBankingPacketSender {
     fn new(sender_to_banking: RealBankingPacketSender) -> Self {
         Self {
             sender_to_banking,
