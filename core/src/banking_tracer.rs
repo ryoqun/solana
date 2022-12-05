@@ -37,4 +37,7 @@ impl TracedBankingPacketSender {
             mirrored_sender_to_trace: None,
         }
     }
+
+    fn send(&self, bool) -> u8 {
+    }
 }
