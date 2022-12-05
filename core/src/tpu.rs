@@ -156,7 +156,7 @@ impl Tpu {
         );
 
         let banking_tracer = BankingTracer::default();
-        let (verified_sender, verified_receiver) = banking_tracer.create_channel();
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel("non-vote");
 
         let stats = Arc::new(StreamStats::default());
         let tpu_quic_t = spawn_server(
