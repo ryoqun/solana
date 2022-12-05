@@ -2,7 +2,7 @@ use {
     crate::{
         sigverify::SigverifyTracerPacketStats,
     }
-}
+};
 use solana_perf::packet::PacketBatch;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
