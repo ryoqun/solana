@@ -208,7 +208,7 @@ impl Tpu {
         };
 
         let (verified_gossip_vote_packets_sender, verified_gossip_vote_packets_receiver) =
-            unbounded();
+            banking_tracer.create_channel();
         let cluster_info_vote_listener = ClusterInfoVoteListener::new(
             exit.clone(),
             cluster_info.clone(),
