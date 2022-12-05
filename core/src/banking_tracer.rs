@@ -66,7 +66,7 @@ impl BankingTracer {
     }
 
     pub fn join(self) -> std::thread::Result<()> {
-        self.thread_handle.map(|t| t.join()).transpose()
+        self.thread_handle.map(|t| t.join()).transpose().ok()
     }
 }
 
