@@ -38,6 +38,6 @@ impl TracedBankingPacketSender {
         }
     }
 
-    fn send(&self, bool) -> u8 {
+    pub fn send(&self, bool) -> u8 {
     }
 }
