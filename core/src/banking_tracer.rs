@@ -11,8 +11,8 @@ use solana_perf::packet::PacketBatch;
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
 type RealBankingPacketBatch = std::sync::Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedBankingPacketSender;
-type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
-pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
+type RealBankingPacketSender = CrossbeamSender<RealBankingPacketBatch>;
+pub type BankingPacketReceiver = CrossbeamReceiver<RealBankingPacketBatch>;
 
 #[derive(Default)]
 pub struct BankingTracer {
