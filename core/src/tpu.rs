@@ -195,7 +195,7 @@ impl Tpu {
         };
 
 
-        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel();
+        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel("tpu-vote");
 
         let vote_sigverify_stage = {
             let verifier =
@@ -208,7 +208,7 @@ impl Tpu {
         };
 
         let (verified_gossip_vote_packets_sender, verified_gossip_vote_packets_receiver) =
-            banking_tracer.create_channel();
+            banking_tracer.create_channel("gossip-vote");
         let cluster_info_vote_listener = ClusterInfoVoteListener::new(
             exit.clone(),
             cluster_info.clone(),
