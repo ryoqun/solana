@@ -18,7 +18,7 @@ type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
-   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>, std::thread::JoinHandle<()>)>,
+   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), std::thread::JoinHandle<()>)>,
    exit: Arc<AtomicBool>,
 }
 
@@ -35,15 +35,15 @@ impl BankingTracer {
     pub fn new(path: impl AsRef<Path>, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         let trace_output = if enable_tracing {
             let a = unbounded();
-            let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
             let aa = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
+                let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
                 while let Ok(mm) = aa.recv() {
                     serialize_into(&mut output, &mm).unwrap();
                 }
             }).unwrap();
 
-            Some((a, output, join_handle))
+            Some((a, join_handle))
         } else {
             None
         };
