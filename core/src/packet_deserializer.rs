@@ -2,6 +2,7 @@
 
 use {
     crate::{
+        banking_tracer::BankingPacketReceiver,
         immutable_deserialized_packet::ImmutableDeserializedPacket,
         sigverify::SigverifyTracerPacketStats,
     },
