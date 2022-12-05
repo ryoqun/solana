@@ -30,7 +30,7 @@ impl BankingTracer {
             let a = unbounded();
             let output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
 
-            Some(a, output)
+            Some((a, output))
         } else {
             None
         };
