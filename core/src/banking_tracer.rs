@@ -25,6 +25,7 @@ impl BankingTracer {
         } else {
             None
         };
+
         Ok(Self {
             trace_output,
         })
