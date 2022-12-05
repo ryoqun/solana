@@ -21,20 +21,22 @@ pub struct BankingTracer {
 impl BankingTracer {
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         let a = unbounded();
-        (TracedBankingPacketSender::new(a.0), a.1)
+        (TracedBankingPacketSender::new(a.0, name), a.1)
     }
 }
 
 pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
     mirrored_sender_to_trace: Option<RealBankingPacketSender>,
+    name: &'static str,
 }
 
 impl TracedBankingPacketSender {
-    fn new(sender_to_banking: RealBankingPacketSender) -> Self {
+    fn new(sender_to_banking: RealBankingPacketSender, name: &'static str) -> Self {
         Self {
             sender_to_banking,
             mirrored_sender_to_trace: None,
+            name,
         }
     }
 
