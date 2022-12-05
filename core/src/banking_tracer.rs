@@ -9,7 +9,7 @@ use {
 use solana_perf::packet::PacketBatch;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
-pub type BankingPacketSender = TracedSender<CrossbeamSender<BankingPacketBatch>>;
+pub type BankingPacketSender = TracedSender;
 pub type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
