@@ -18,9 +18,8 @@ type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
-   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>)>,
+   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>, std::thread::JoinHandle<()>)>,
    exit: Arc<AtomicBool>,
-   thread_handle: Option<std::thread::JoinHandle<()>>,
 }
 
 #[derive(Serialize)]
@@ -37,21 +36,17 @@ impl BankingTracer {
         let trace_output = if enable_tracing {
             let a = unbounded();
             let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
-            while let Ok(mm) = a.1.recv() {
-                serialize_into(&mut output, &mm).unwrap();
-            }
+            let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
+                while let Ok(mm) = a.1.recv() {
+                    serialize_into(&mut output, &mm).unwrap();
+                }
+            }).unwrap();
 
-            Some((a, output))
+            Some((a, output, join_handle))
         } else {
             None
         };
 
-        /*
-        if let Some(trace_output) = trace_output {
-        }
-        */
-        let thread_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
-        }).unwrap();
 
         Ok(Self {
             trace_output,
