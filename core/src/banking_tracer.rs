@@ -60,6 +60,10 @@ impl BankingTracer {
         let channel = unbounded();
         (TracedBankingPacketSender::new(channel.0, None, name), channel.1)
     }
+
+    pub fn join(self) -> thread::Result<()> {
+        self.thread_handle.join()
+    }
 }
 
 pub struct TracedBankingPacketSender {
