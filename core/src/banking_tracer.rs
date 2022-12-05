@@ -38,7 +38,7 @@ impl TracedBankingPacketSender {
         }
     }
 
-    pub fn send(&self, a: BakingPacketBatch) -> u8 {
+    pub fn send(&self, a: BankingPacketBatch) -> u8 {
         panic!();
     }
 }
