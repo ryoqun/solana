@@ -19,12 +19,18 @@ pub struct BankingTracer {
    trace_output: Option<RollingFileAppender<RollingConditionBasic>>,
 }
 
+enum TraceEvent {
+    BankStart,
+    PacketBatch(BankingPacketBatch),
+}
+
 impl BankingTracer {
     pub fn new(path: impl AsRef<Path>, enable_tracing: bool) -> Result<Self, std::io::Error> {
         let trace_output = if enable_tracing {
+            let a = unbounded();
             let output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
 
-            Some(output)
+            Some(a, output)
         } else {
             None
         };
