@@ -36,8 +36,9 @@ impl BankingTracer {
         let trace_output = if enable_tracing {
             let a = unbounded();
             let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
+            let aa = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
-                while let Ok(mm) = a.1.recv() {
+                while let Ok(mm) = aa.recv() {
                     serialize_into(&mut output, &mm).unwrap();
                 }
             }).unwrap();
