@@ -7,7 +7,7 @@ use {
     },
 };
 use std::path::Path;
-use std::sync::{Arc, AtomicBool};
+use std::sync::{Arc, atomic::AtomicBool};
 use solana_perf::packet::PacketBatch;
 use rolling_file::{RollingFileAppender, RollingConditionBasic};
 use bincode::serialize_into;
