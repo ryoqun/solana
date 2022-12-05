@@ -71,7 +71,7 @@ impl TransactionSigVerifier {
         new_self
     }
 
-    pub fn new(packet_sender: Sender<<Self as SigVerifier>::SendType>) -> Self {
+    pub fn new(packet_sender: BankingPacketSender) -> Self {
         init();
         Self {
             packet_sender,
