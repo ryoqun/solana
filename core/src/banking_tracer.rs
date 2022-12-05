@@ -32,7 +32,7 @@ pub struct TracedSender<T> {
 impl<T> TracedSender<T> {
     fn new(sender_to_banking: T) -> Self {
         Self {
-            sender_to_banking: T,
+            sender_to_banking,
             mirrored_sender_to_trace: None,
         }
     }
