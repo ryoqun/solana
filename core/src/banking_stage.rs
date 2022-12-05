@@ -24,9 +24,6 @@ use {
         },
     },
     core::iter::repeat,
-    crossbeam_channel::{
-        Receiver as CrossbeamReceiver, RecvTimeoutError, Sender as CrossbeamSender,
-    },
     histogram::Histogram,
     itertools::Itertools,
     solana_client::{connection_cache::ConnectionCache, tpu_connection::TpuConnection},
