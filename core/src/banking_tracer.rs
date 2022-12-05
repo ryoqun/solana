@@ -14,6 +14,7 @@ pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 #[derive(Default)]
 pub struct BankingTracer {
+    tracing_enabled: bool,
 }
 
 impl BankingTracer {
