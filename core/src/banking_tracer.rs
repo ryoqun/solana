@@ -16,10 +16,12 @@ type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
-   trace_output: Option<((crossbeam_channel::Sender<TraceEvent>, crossbeam_channel::Receiver<TraceEvent>), RollingFileAppender<RollingConditionBasic>)>,
+   trace_output: Option<((crossbeam_channel::Sender<TraceEvent>, crossbeam_channel::Receiver<Timed TracedEvent>), RollingFileAppender<RollingConditionBasic>)>,
 }
 
-enum TraceEvent {
+struct TimedTracedEvent = (u64, TracedEvent);
+
+enum TracedEvent {
     BankStart,
     PacketBatch(BankingPacketBatch),
 }
