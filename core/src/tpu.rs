@@ -277,6 +277,7 @@ impl Tpu {
             self.staked_nodes_updater_service.join(),
             self.tpu_quic_t.join(),
             self.tpu_forwards_quic_t.join(),
+            self.banking_tracer.join(),
         ];
         let broadcast_result = self.broadcast_stage.join();
         for result in results {
