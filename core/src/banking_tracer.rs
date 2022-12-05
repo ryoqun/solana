@@ -51,7 +51,6 @@ impl BankingTracer {
         Ok(Self {
             trace_output,
             exit,
-            thread_handle: Some(thread_handle),
         })
     }
 
