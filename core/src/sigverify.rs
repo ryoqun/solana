@@ -57,7 +57,7 @@ impl SigverifyTracerPacketStats {
 
 #[derive(Clone)]
 pub struct TransactionSigVerifier {
-    packet_sender: Sender<<Self as SigVerifier>::SendType>,
+    packet_sender: BankingPacketSender,
     tracer_packet_stats: SigverifyTracerPacketStats,
     recycler: Recycler<TxOffset>,
     recycler_out: Recycler<PinnedVec<u8>>,
