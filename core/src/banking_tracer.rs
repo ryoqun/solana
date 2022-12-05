@@ -14,6 +14,6 @@ pub struct BankingTracer {
 }
 
 impl BankingTracer {
-    fn create_channel() -> (BankingPacketSender, BankingPacketReceiver) {
+    fn create_channel(&self) -> (BankingPacketSender, BankingPacketReceiver) {
     }
 }
