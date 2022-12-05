@@ -19,7 +19,11 @@ pub struct BankingTracer {
 
 impl BankingTracer {
     pub fn new(enable_tracing: bool) -> Result<Self, std::io::Error> {
-        let trace_output = enable_tracing.then(|| rolling_file::RollingFileAppender::new("aaa", rolling_file::RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)).transpose();
+        let trace_output = if enable_tracing {
+            Some(rolling_file::RollingFileAppender::new("aaa", rolling_file::RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?)
+        } else {
+            None
+        };
         Self {
             trace_output,
         }
