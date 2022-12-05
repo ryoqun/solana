@@ -67,7 +67,7 @@ impl BankingTracer {
 
     pub fn join(self) -> std::thread::Result<()> {
         if let Some(thread_handle) = self.thread_handle {
-            t.join()
+            thread_handle.join()
         } else {
             Ok(())
         }
