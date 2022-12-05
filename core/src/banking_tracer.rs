@@ -20,8 +20,10 @@ pub struct BankingTracer {
    trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>)>,
 }
 
+#[derive(Serialize)]
 struct TimedTracedEvent(u64, TracedEvent);
 
+#[derive(Serialize)]
 enum TracedEvent {
     BankStart,
     PacketBatch(BankingPacketBatch),
