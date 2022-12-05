@@ -9,10 +9,9 @@ use {
 use solana_perf::packet::PacketBatch;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
-type RealBankingPacketBatch = std::sync::Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedBankingPacketSender;
-type RealBankingPacketSender = CrossbeamSender<RealBankingPacketBatch>;
-pub type BankingPacketReceiver = CrossbeamReceiver<RealBankingPacketBatch>;
+type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
+pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 #[derive(Default)]
 pub struct BankingTracer {
@@ -40,7 +39,6 @@ impl TracedBankingPacketSender {
     }
 
     pub fn send(&self, a: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
-        let a = std::sync::Arc::new(a);
         self.sender_to_banking.send(a.clone()).and_then(|r| {
             if let Some(c) = &self.mirrored_sender_to_trace {
                 c.send(a);
