@@ -33,8 +33,8 @@ impl BankingTracer {
     }
 
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
-        let a = unbounded();
-        (TracedBankingPacketSender::new(a.0, None, name), a.1)
+        let channel = unbounded();
+        (TracedBankingPacketSender::new(channel.0, None, name), channel.1)
     }
 }
 
@@ -53,10 +53,10 @@ impl TracedBankingPacketSender {
         }
     }
 
-    pub fn send(&self, a: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
-        self.sender_to_banking.send(a.clone()).and_then(|r| {
-            if let Some(c) = &self.mirrored_sender_to_trace {
-                c.send(a)
+    pub fn send(&self, batch: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
+        self.sender_to_banking.send(batch.clone()).and_then(|r| {
+            if let Some(mirror) = &self.mirrored_sender_to_trace {
+                mirror.send(batch)
             } else {
                 Ok(())
             }
