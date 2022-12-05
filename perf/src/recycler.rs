@@ -30,12 +30,12 @@ struct RecyclerStats {
     max_gc: AtomicUsize,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize)]
 pub struct Recycler<T> {
     recycler: Arc<RecyclerX<T>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct RecyclerX<T> {
     gc: Mutex<Vec<T>>,
     stats: RecyclerStats,
