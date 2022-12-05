@@ -65,7 +65,7 @@ impl BankingTracer {
         (TracedBankingPacketSender::new(channel.0, None, name), channel.1)
     }
 
-    pub fn join(self) -> thread::Result<()> {
+    pub fn join(self) -> std::thread::Result<()> {
         self.thread_handle.map(|t| t.join()).transpose()
     }
 }
