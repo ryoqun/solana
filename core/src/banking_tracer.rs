@@ -14,7 +14,7 @@ type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
-   trace_output: Option<rolling_file::RollingFileAppender<RollingConditionBasic>>,
+   trace_output: Option<rolling_file::RollingFileAppender<rolling_file::RollingConditionBasic>>,
 }
 
 impl BankingTracer {
