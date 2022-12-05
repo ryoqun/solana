@@ -29,7 +29,7 @@ pub struct TracedSender<T> {
     mirrored_sender_to_trace: Option<T>,
 }
 
-impl<T> TracedSender {
+impl<T> TracedSender<T> {
     fn new(T) -> Self {
         Self {
             sender_to_banking: T,
