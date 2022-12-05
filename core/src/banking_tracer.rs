@@ -43,7 +43,7 @@ impl TracedBankingPacketSender {
             if let Some(c) = self.mirrored_sender_to_trace {
                 c.send(a.clone());
             };
-            r
+            Ok(())
         } )
     }
 }
