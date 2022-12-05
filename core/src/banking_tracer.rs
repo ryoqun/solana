@@ -37,7 +37,7 @@ impl BankingTracer {
             let a = unbounded();
             let aa = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
-                let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
+                let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10).unwrap();
                 while let Ok(mm) = aa.recv() {
                     serialize_into(&mut output, &mm).unwrap();
                 }
