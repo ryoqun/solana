@@ -19,6 +19,7 @@ pub const PACKET_DATA_SIZE: usize = 1280 - 40 - 8;
 
 bitflags! {
     #[repr(C)]
+    #[derive(Serialize)]
     pub struct PacketFlags: u8 {
         const DISCARD        = 0b0000_0001;
         const FORWARDED      = 0b0000_0010;
