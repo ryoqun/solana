@@ -52,6 +52,7 @@ impl BankingTracer {
 
         Ok(Self {
             trace_output,
+            exit,
         })
     }
 
