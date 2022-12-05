@@ -10,9 +10,6 @@ use {
     std::time::{Duration, Instant},
 };
 
-pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
-pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
-
 /// Results from deserializing packet batches.
 pub struct ReceivePacketResults {
     /// Deserialized packets from all received packet batches
