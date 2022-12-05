@@ -13,12 +13,17 @@ pub type BankingPacketSender = TracedBankingPacketSender;
 type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
-#[derive(Default)]
 pub struct BankingTracer {
    trace_output: Option<rolling_file::RollingFileAppender>,
 }
 
 impl BankingTracer {
+    pub fn new() -> Self {
+        Self {
+            trace_output: None,
+        }
+    }
+
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         let a = unbounded();
         (TracedBankingPacketSender::new(a.0, None, name), a.1)
