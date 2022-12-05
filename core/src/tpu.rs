@@ -263,6 +263,7 @@ impl Tpu {
             find_packet_sender_stake_stage,
             vote_find_packet_sender_stake_stage,
             staked_nodes_updater_service,
+            banking_tracer,
         }
     }
 
