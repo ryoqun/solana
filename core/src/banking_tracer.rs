@@ -19,7 +19,7 @@ pub struct BankingTracer {
    trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>)>,
 }
 
-struct TimedTracedEvent = (u64, TracedEvent);
+struct TimedTracedEvent(u64, TracedEvent);
 
 enum TracedEvent {
     BankStart,
