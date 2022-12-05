@@ -1,6 +1,6 @@
 use {
     crate::{
-        banking_stage::BankingPacketSender,
+        banking_tracer::BankingPacketSender,
         optimistic_confirmation_verifier::OptimisticConfirmationVerifier,
         replay_stage::DUPLICATE_THRESHOLD,
         result::{Error, Result},
