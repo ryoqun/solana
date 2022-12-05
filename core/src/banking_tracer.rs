@@ -71,10 +71,9 @@ impl TracedBankingPacketSender {
     pub fn send(&self, batch: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
         self.sender_to_banking.send(batch.clone()).and_then(|r| {
             if let Some(mirror) = &self.mirrored_sender_to_trace {
-                mirror.send(TimedTracedEvent(0, TracedEvent::PacketBatch(batch)))
-            } else {
-                Ok(())
+                mirror.send(TimedTracedEvent(0, TracedEvent::PacketBatch(batch))).unwrap();
             }
+            Ok(())
         } )
     }
 }
