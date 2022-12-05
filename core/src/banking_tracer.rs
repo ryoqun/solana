@@ -49,10 +49,13 @@ impl BankingTracer {
         if let Some(trace_output) = trace_output {
         }
         */
+        let thread_handle = std::thread::Builder::new().name("solBanknTrcr").spawn(move || {
+        }).unwrap();
 
         Ok(Self {
             trace_output,
             exit,
+            thread_handle: Some(thread_handle),
         })
     }
 
@@ -62,7 +65,7 @@ impl BankingTracer {
     }
 
     pub fn join(self) -> thread::Result<()> {
-        self.thread_handle.join()
+        self.thread_handle.map(|t| t.join()).transpose()
     }
 }
 
