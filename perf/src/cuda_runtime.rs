@@ -58,7 +58,7 @@ fn unpin<T>(_mem: *mut T) {
 // A vector wrapper where the underlying memory can be
 // page-pinned. Controlled by flags in case user only wants
 // to pin in certain circumstances.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 pub struct PinnedVec<T: Default + Clone + Sized> {
     x: Vec<T>,
     pinned: bool,
