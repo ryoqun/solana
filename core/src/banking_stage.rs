@@ -24,6 +24,7 @@ use {
         },
     },
     core::iter::repeat,
+    crossbeam_channel::RecvTimeoutError,
     histogram::Histogram,
     itertools::Itertools,
     solana_client::{connection_cache::ConnectionCache, tpu_connection::TpuConnection},
