@@ -38,7 +38,7 @@ pub struct Meta {
     pub sender_stake: u64,
 }
 
-#[derive(Clone, Eq)]
+#[derive(Clone, Eq, Serialize)]
 #[repr(C)]
 pub struct Packet {
     // Bytes past Packet.meta.size are not valid to read from.
