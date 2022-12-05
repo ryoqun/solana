@@ -23,7 +23,7 @@ impl BankingTracer {
     }
 }
 
-pub struct<T> TracedSender<T> {
+pub struct TracedSender<T> {
     sender_to_banking: T,
     mirrored_sender_to_trace: Option<T>,
 }
