@@ -9,7 +9,7 @@ pub use solana_perf::sigverify::{
 };
 use {
     crate::{
-        banking_tracer::BankingPacketBatch,
+        banking_tracer::{BankingPacketBatch, BankingPacketSender},
         sigverify_stage::{SigVerifier, SigVerifyServiceError},
     },
     crossbeam_channel::Sender,
