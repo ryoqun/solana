@@ -6,7 +6,7 @@ pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 pub struct BankingTracer {
 }
 
-impl {
+impl BankingTracer {
     fn create_channel() -> (BankingPacketSender, BankingPacketReceiver) {
     }
 }
