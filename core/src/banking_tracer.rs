@@ -7,6 +7,7 @@ use {
     },
 };
 use std::path::Path;
+use std::sync::{Arc, AtomicBool};
 use solana_perf::packet::PacketBatch;
 use rolling_file::{RollingFileAppender, RollingConditionBasic};
 use bincode::serialize_into;
@@ -18,6 +19,7 @@ pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
    trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), RollingFileAppender<RollingConditionBasic>)>,
+   exit: Arc<AtomicBool>,
 }
 
 #[derive(Serialize)]
@@ -30,7 +32,7 @@ enum TracedEvent {
 }
 
 impl BankingTracer {
-    pub fn new(path: impl AsRef<Path>, enable_tracing: bool) -> Result<Self, std::io::Error> {
+    pub fn new(path: impl AsRef<Path>, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         let trace_output = if enable_tracing {
             let a = unbounded();
             let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
