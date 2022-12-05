@@ -60,7 +60,7 @@ pub struct TracedBankingPacketSender {
 }
 
 impl TracedBankingPacketSender {
-    fn new(sender_to_banking: RealBankingPacketSender, mirrored_sender_to_trace: Option<TimedTracedEvent>, name: &'static str) -> Self {
+    fn new(sender_to_banking: RealBankingPacketSender, mirrored_sender_to_trace: Option<CrossbeamSender<TimedTracedEvent>>, name: &'static str) -> Self {
         Self {
             sender_to_banking,
             mirrored_sender_to_trace,
