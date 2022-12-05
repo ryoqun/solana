@@ -33,7 +33,7 @@ impl BankingTracer {
     pub fn new(path: impl AsRef<Path>, enable_tracing: bool) -> Result<Self, std::io::Error> {
         let trace_output = if enable_tracing {
             let a = unbounded();
-            let output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
+            let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
             while let Ok(mm) = a.1.recv() {
                 serialize_into(&mut output, &mm).unwrap();
             }
