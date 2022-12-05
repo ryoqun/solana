@@ -49,7 +49,7 @@ impl BankingTracer {
         if let Some(trace_output) = trace_output {
         }
         */
-        let thread_handle = std::thread::Builder::new().name("solBanknTrcr").spawn(move || {
+        let thread_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
         }).unwrap();
 
         Ok(Self {
