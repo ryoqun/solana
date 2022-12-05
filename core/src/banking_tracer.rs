@@ -19,7 +19,7 @@ pub struct BankingTracer {
 }
 
 impl BankingTracer {
-    pub fn new(enable_tracing: bool) -> Result<Self, std::io::Error> {
+    pub fn new(path: impl AsRef<Path>, enable_tracing: bool) -> Result<Self, std::io::Error> {
         let trace_output = if enable_tracing {
             Some(RollingFileAppender::new("aaa", RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?)
         } else {
