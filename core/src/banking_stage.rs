@@ -4,6 +4,7 @@
 
 use {
     crate::{
+        banking_tracer::BankingTracer,
         forward_packet_batches_by_accounts::ForwardPacketBatchesByAccounts,
         immutable_deserialized_packet::ImmutableDeserializedPacket,
         latest_unprocessed_votes::{LatestUnprocessedVotes, VoteSource},
@@ -391,6 +392,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
+        banking_tracer: BankingTracer,
     ) -> Self {
         Self::new_num_threads(
             cluster_info,
@@ -404,6 +406,7 @@ impl BankingStage {
             log_messages_bytes_limit,
             connection_cache,
             bank_forks,
+            banking_tracer,
         )
     }
 
@@ -420,6 +423,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
+        banking_tracer: BankingTracer,
     ) -> Self {
         assert!(num_threads >= MIN_TOTAL_THREADS);
         // Single thread to generate entries from many banks.

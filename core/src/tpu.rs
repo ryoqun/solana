@@ -4,6 +4,7 @@
 use {
     crate::{
         banking_stage::BankingStage,
+        banking_tracer::BankingTracer,
         broadcast_stage::{BroadcastStage, BroadcastStageType, RetransmitSlotsReceiver},
         cluster_info_vote_listener::{
             ClusterInfoVoteListener, GossipDuplicateConfirmedSlotsSender,
@@ -222,6 +223,8 @@ impl Tpu {
             cluster_confirmed_slot_sender,
         );
 
+        let banking_tracer = BankingTracer::default();
+
         let banking_stage = BankingStage::new(
             cluster_info,
             poh_recorder,
@@ -233,6 +236,7 @@ impl Tpu {
             log_messages_bytes_limit,
             connection_cache.clone(),
             bank_forks.clone(),
+            banking_tracer,
         );
 
         let broadcast_stage = broadcast_type.new_broadcast_stage(
