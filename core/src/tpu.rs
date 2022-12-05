@@ -155,7 +155,8 @@ impl Tpu {
             "Vote",
         );
 
-        let (verified_sender, verified_receiver) = unbounded();
+        let banking_tracer = BankingTracer::default();
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel();
 
         let stats = Arc::new(StreamStats::default());
         let tpu_quic_t = spawn_server(
@@ -193,7 +194,6 @@ impl Tpu {
             SigVerifyStage::new(find_packet_sender_stake_receiver, verifier, "tpu-verifier")
         };
 
-        let banking_tracer = BankingTracer::default();
 
         let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel();
 
