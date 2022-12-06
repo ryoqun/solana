@@ -67,9 +67,9 @@ impl BankingTraceRunner {
             }
             for (name, batch) in packet_batches_by_time.values() {
                 match name {
-                    "non-vote" => self.non_vote_channel.0.send(batch).unwrap(),
-                    "gossip" => self.gossip_vote_channel.0.send(batch).unwrap(),
-                    "tpu" => self.tpu_vote_channel.0.send(batch).unwrap(),
+                    "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
+                    "gossip" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
+                    "tpu" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
                 }
             }
         }
