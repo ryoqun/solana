@@ -88,9 +88,9 @@ impl BankingTracer {
         (self.trace_output.as_mut().map(|a| a.1.take()).flatten(), Arc::new(self))
     }
 
-    pub fn new_bank_start(&self, slot: Slot) {
+    pub fn new_bank_start(&self, id: i32, slot: Slot) {
         if let Some(trace_output) = &self.trace_output {
-            trace_output.0.0.send(TimedTracedEvent(SystemTime::now(), TracedEvent::NewBankStart(slot))).unwrap();
+            trace_output.0.0.send(TimedTracedEvent(SystemTime::now(), TracedEvent::NewBankStart(id, slot))).unwrap();
         }
     }
 }
