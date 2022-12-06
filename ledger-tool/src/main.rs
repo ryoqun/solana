@@ -3364,7 +3364,187 @@ fn main() {
                 let runner = BankingTraceRunner::new(PathBuf::new().join("/dev/stdin"));
                 //runner.seek(bank); => Ok or Err("no BankStart")
                 runner.start();
-                
+
+                let mut accounts_index_config = AccountsIndexConfig::default();
+                if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
+                    accounts_index_config.bins = Some(bins);
+                }
+
+                accounts_index_config.index_limit_mb = if let Some(limit) =
+                    value_t!(arg_matches, "accounts_index_memory_limit_mb", usize).ok()
+                {
+                    IndexLimitMb::Limit(limit)
+                } else if arg_matches.is_present("disable_accounts_disk_index") {
+                    IndexLimitMb::InMemOnly
+                } else {
+                    IndexLimitMb::Unspecified
+                };
+
+                {
+                    let mut accounts_index_paths: Vec<PathBuf> =
+                        if arg_matches.is_present("accounts_index_path") {
+                            values_t_or_exit!(arg_matches, "accounts_index_path", String)
+                                .into_iter()
+                                .map(PathBuf::from)
+                                .collect()
+                        } else {
+                            vec![]
+                        };
+                    if accounts_index_paths.is_empty() {
+                        accounts_index_paths = vec![ledger_path.join("accounts_index")];
+                    }
+                    accounts_index_config.drives = Some(accounts_index_paths);
+                }
+
+                let filler_accounts_config = FillerAccountsConfig {
+                    count: value_t_or_exit!(arg_matches, "accounts_filler_count", usize),
+                    size: value_t_or_exit!(arg_matches, "accounts_filler_size", usize),
+                };
+
+                let accounts_db_config = Some(AccountsDbConfig {
+                    index: Some(accounts_index_config),
+                    accounts_hash_cache_path: Some(ledger_path.clone()),
+                    filler_accounts_config,
+                    skip_rewrites: arg_matches.is_present("accounts_db_skip_rewrites"),
+                    ancient_append_vec_offset: value_t!(
+                        matches,
+                        "accounts_db_ancient_append_vecs",
+                        u64
+                    )
+                    .ok(),
+                    exhaustively_verify_refcounts: arg_matches
+                        .is_present("accounts_db_verify_refcounts"),
+                    skip_initial_hash_calc: arg_matches
+                        .is_present("accounts_db_skip_initial_hash_calculation"),
+                    ..AccountsDbConfig::default()
+                });
+
+                let debug_keys = pubkeys_of(arg_matches, "debug_key")
+                    .map(|pubkeys| Arc::new(pubkeys.into_iter().collect::<HashSet<_>>()));
+
+                let process_options = ProcessOptions {
+                    new_hard_forks: hardforks_of(arg_matches, "hard_forks"),
+                    poh_verify: !arg_matches.is_present("skip_poh_verify"),
+                    on_halt_store_hash_raw_data_for_debug: arg_matches
+                        .is_present("halt_at_slot_store_hash_raw_data"),
+                    // ledger tool verify always runs the accounts hash calc at the end of processing the blockstore
+                    run_final_accounts_hash_calc: true,
+                    halt_at_slot: value_t!(arg_matches, "halt_at_slot", Slot).ok(),
+                    debug_keys,
+                    accounts_db_caching_enabled: true,
+                    limit_load_slot_count_from_snapshot: value_t!(
+                        arg_matches,
+                        "limit_load_slot_count_from_snapshot",
+                        usize
+                    )
+                    .ok(),
+                    accounts_db_config,
+                    verify_index: arg_matches.is_present("verify_accounts_index"),
+                    allow_dead_slots: arg_matches.is_present("allow_dead_slots"),
+                    accounts_db_test_hash_calculation: arg_matches
+                        .is_present("accounts_db_test_hash_calculation"),
+                    accounts_db_skip_shrink: arg_matches.is_present("accounts_db_skip_shrink"),
+                    runtime_config: RuntimeConfig {
+                        bpf_jit: !arg_matches.is_present("no_bpf_jit"),
+                        ..RuntimeConfig::default()
+                    },
+                    ..ProcessOptions::default()
+                };
+                let print_accounts_stats = arg_matches.is_present("print_accounts_stats");
+                println!(
+                    "genesis hash: {}",
+                    open_genesis_config_by(&ledger_path, arg_matches).hash()
+                );
+
+                let blockstore = open_blockstore(
+                    &ledger_path,
+                    AccessType::Secondary,
+                    wal_recovery_mode,
+                    &shred_storage_type,
+                    force_update_to_open,
+                );
+                let (bank_forks, ..) = load_bank_forks(
+                    arg_matches,
+                    &open_genesis_config_by(&ledger_path, arg_matches),
+                    &blockstore,
+                    process_options,
+                    snapshot_archive_path,
+                    incremental_snapshot_archive_path,
+                )
+                .unwrap_or_else(|err| {
+                    eprintln!("Ledger verification failed: {:?}", err);
+                    exit(1);
+                });
+
+                let bank = bank_forks.read().unwrap().working_bank();
+                let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
+                let (exit, poh_recorder, poh_service, signal_receiver) =
+                    create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
+
+                let no_os_memory_stats_reporting =
+                    arg_matches.is_present("no_os_memory_stats_reporting");
+                let system_monitor_service = SystemMonitorService::new(
+                    Arc::clone(&exit),
+                    !no_os_memory_stats_reporting,
+                    false,
+                    false,
+                    false,
+                );
+
+                let banking_tracer =
+                    BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
+                let cluster_info = ClusterInfo::new(
+                    Node::new_localhost().info,
+                    Arc::new(Keypair::new()),
+                    SocketAddrSpace::Unspecified,
+                );
+                let cluster_info = Arc::new(cluster_info);
+                let tpu_use_quic = matches.is_present("tpu_use_quic");
+                let connection_cache = match tpu_use_quic {
+                    true => ConnectionCache::new(DEFAULT_TPU_CONNECTION_POOL_SIZE),
+                    false => ConnectionCache::with_udp(DEFAULT_TPU_CONNECTION_POOL_SIZE),
+                };
+                let banking_stage = BankingStage::new_num_threads(
+                    &cluster_info,
+                    &poh_recorder,
+                    verified_receiver,
+                    tpu_vote_receiver,
+                    vote_receiver,
+                    num_banking_threads,
+                    None,
+                    replay_vote_sender,
+                    None,
+                    Arc::new(connection_cache),
+                    bank_forks.clone(),
+                    banking_tracer,
+                );
+                poh_recorder.write().unwrap().set_bank(&bank, false);
+                loop {
+                    if poh_recorder.read().unwrap().bank().is_none() {
+                        poh_recorder
+                            .write()
+                            .unwrap()
+                            .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
+                        let new_bank = Bank::new_from_parent(&bank, &collector, bank.slot() + 1);
+                        bank_forks.write().unwrap().insert(new_bank);
+                        bank = bank_forks.read().unwrap().working_bank();
+                    }
+                    // set cost tracker limits to MAX so it will not filter out TXs
+                    bank.write_cost_tracker().unwrap().set_limits(
+                        std::u64::MAX,
+                        std::u64::MAX,
+                        std::u64::MAX,
+                    );
+
+                    poh_recorder.write().unwrap().set_bank(&bank, false);
+                    info("sleeping...");
+                    sleep(Duration::from_millis(100));
+                }
+                exit.store(true, Ordering::Relaxed);
+                banking_stage.join().unwrap();
+                poh_service.join().unwrap();
+
+                println!("Ok");
             },
             ("accounts", Some(arg_matches)) => {
                 let halt_at_slot = value_t!(arg_matches, "halt_at_slot", Slot).ok();

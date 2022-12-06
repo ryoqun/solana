@@ -29,11 +29,23 @@ pub struct BankingTracer {
 
 pub struct BankingTraceRunner {
     path: PathBuf,
+    non_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
+    tpu_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
+    gossip_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
 }
 
 impl BankingTraceRunner {
     pub fn new(path: PathBuf) -> Self {
-        Self { path }
+        Self {
+            path,
+            non_vote_channel: unbounded(),
+            tpu_vote_channel: unbounded(),
+            gossip_vote_channel: unbounded(),
+        }
+    }
+
+    pub fn prepare_receivers(&self) -> (Receiver<BankingPacketBatch>,Receiver<BankingPacketBatch>,  Receiver<BankingPacketBatch>) {
+        (self.non_vote_channel.1.clone(),self.tpu_vote_channel.1.clone(),  self.gossip_vote_channel.1.clone())
     }
 
     pub fn start(&self) {
@@ -52,6 +64,13 @@ impl BankingTraceRunner {
             match event.1 {
                 TracedEvent::NewBankStart(_, slot) => { bank_starts_by_slot.insert(slot, s); },
                 TracedEvent::PacketBatch(name, batch) => { packet_batches_by_time.insert(s, (name, batch)); },
+            }
+            for (name, batch) in packet_batches_by_time.values() {
+                match name {
+                    "non-vote" => self.non_vote_channel.0.send(batch).unwrap(),
+                    "gossip" => self.gossip_vote_channel.0.send(batch).unwrap(),
+                    "tpu" => self.tpu_vote_channel.0.send(batch).unwrap(),
+                }
             }
         }
     }
