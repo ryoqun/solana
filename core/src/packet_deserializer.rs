@@ -94,7 +94,7 @@ impl PacketDeserializer {
             trace!("got more packet batches in packet deserializer");
             let (packets_received, packet_count_overflowed) = num_packets_received
                 .overflowing_add(packet_batch.iter().map(|batch| batch.len()).sum());
-            packet_batches.extend(packet_batch);
+            packet_batches.extend_from_slice(packet_batch);
 
             if let Some(tracer_packet_stats) = &tracer_packet_stats_option {
                 if let Some(aggregated_tracer_packet_stats) =
