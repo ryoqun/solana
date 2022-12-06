@@ -36,7 +36,7 @@ use {
     solana_metrics::inc_new_counter_info,
     solana_perf::{
         data_budget::DataBudget,
-        packet::{Packet, PacketBatch, PACKETS_PER_BATCH},
+        packet::{Packet, PACKETS_PER_BATCH},
     },
     solana_poh::poh_recorder::{BankStart, PohRecorder, PohRecorderError, TransactionRecorder},
     solana_program_runtime::timings::ExecuteTimings,
