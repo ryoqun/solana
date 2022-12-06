@@ -99,7 +99,7 @@ impl TracedBankingPacketSender {
             if let Some(mirror) = &self.mirrored_sender_to_trace {
                 mirror.send(TimedTracedEvent(SystemTime::now(), TracedEvent::PacketBatch(self.name.into(), batch.0))).unwrap();
             }
-            Ok(())
+            r
         } )
     }
 }
