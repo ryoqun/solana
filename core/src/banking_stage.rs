@@ -2150,9 +2150,6 @@ mod tests {
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let bank = Arc::new(bank_forks.read().unwrap().get(0).unwrap());
         let start_hash = bank.last_blockhash();
-        let (verified_sender, verified_receiver) = unbounded();
-        let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
-        let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = unbounded();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
             let blockstore = Arc::new(
@@ -2167,6 +2164,10 @@ mod tests {
             };
             let (exit, poh_recorder, poh_service, entry_receiver) =
                 create_test_recorder(&bank, &blockstore, Some(poh_config), None);
+            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+            let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+            let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);
             let (gossip_vote_sender, _gossip_vote_receiver) = unbounded();
@@ -2182,6 +2183,7 @@ mod tests {
                 None,
                 Arc::new(ConnectionCache::default()),
                 bank_forks,
+                banking_tracer,
             );
 
             // fund another account so we can send 2 good transactions in a single batch.
