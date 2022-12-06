@@ -4,7 +4,7 @@ use {
     crate::{cuda_runtime::PinnedVec, recycler::Recycler},
     bincode::config::Options,
     rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator},
-    serde::{de::DeserializeOwned, Serialize},
+    serde::{de::DeserializeOwned, Serialize, Deserialize},
     std::{
         io::Read,
         net::SocketAddr,
