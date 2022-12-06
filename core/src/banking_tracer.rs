@@ -39,6 +39,7 @@ struct RollingConditionGrouped {
 }
 
 use chrono::DateTime;
+use chrono::Local;
 
 struct GroupedWrite {
     now: DateTime<Local>,
