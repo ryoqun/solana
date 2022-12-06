@@ -3746,7 +3746,7 @@ mod tests {
                 &BankingStageStats::default(),
                 &recorder,
                 &QosService::new(1),
-                &mut LeaderSlotMetricsTracker::new(0),
+                &mut LeaderSlotMetricsTracker::new_for_test(),
                 None,
             );
             assert!(buffered_packet_batches.is_empty());
@@ -3808,7 +3808,7 @@ mod tests {
                         &BankingStageStats::default(),
                         &recorder,
                         &QosService::new(1),
-                        &mut LeaderSlotMetricsTracker::new(0),
+                        &mut LeaderSlotMetricsTracker::new_for_test(),
                         None,
                     );
 
@@ -3904,7 +3904,7 @@ mod tests {
                     &socket,
                     true,
                     &data_budget,
-                    &mut LeaderSlotMetricsTracker::new(0),
+                    &mut LeaderSlotMetricsTracker::new_for_test(),
                     &stats,
                     &connection_cache,
                     &mut TracerPacketStats::new(0),
@@ -4004,7 +4004,7 @@ mod tests {
                     &socket,
                     hold,
                     &DataBudget::default(),
-                    &mut LeaderSlotMetricsTracker::new(0),
+                    &mut LeaderSlotMetricsTracker::new_for_test(),
                     &stats,
                     &connection_cache,
                     &mut TracerPacketStats::new(0),
