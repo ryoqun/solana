@@ -148,7 +148,7 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
     solana_logger::setup();
     trace!("start");
     let (packet_s, packet_r) = unbounded();
-    let (verified_s, verified_r) = unbounded();
+    let (verified_s, verified_r) = solana_core::banking_tracer::BankingTracer::channel_for_test();
     let verifier = TransactionSigVerifier::new(verified_s);
     let stage = SigVerifyStage::new(packet_r, verifier, "bench");
 

@@ -158,6 +158,7 @@ impl BankingTracer {
     }
 }
 
+// remove Clone derive
 #[derive(Clone)]
 pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
