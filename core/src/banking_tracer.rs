@@ -39,6 +39,10 @@ struct GroupedWrite {
 }
 
 impl RollingCondition for GroupedWrite {
+    fn should_rollover(&mut self, _: &DateTime<Local>, _: u64) -> bool { todo!() }
+}
+
+impl Write for GroupedWrite {
 }
 
 impl BankingTracer {
