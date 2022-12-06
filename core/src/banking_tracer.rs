@@ -132,7 +132,8 @@ impl BankingTracer {
         }
     }
 
-    pub fn channel_for_test() -> {
+    pub fn channel_for_test() -> usize {
+        Self::channel(None)
     }
 
     pub fn channel(maybe_mirrored_channel: usize) -> usize {
