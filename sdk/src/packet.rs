@@ -44,7 +44,7 @@ pub struct Meta {
 pub struct Packet {
     // Bytes past Packet.meta.size are not valid to read from.
     // Use Packet.data(index) to read from the buffer.
-    #[serde(with = "serde_arrays")]
+    #[serde(with = "serde_bytes")]
     buffer: [u8; PACKET_DATA_SIZE],
     pub meta: Meta,
 }
