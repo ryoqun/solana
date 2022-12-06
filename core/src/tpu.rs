@@ -156,7 +156,7 @@ impl Tpu {
         );
 
         let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
-        let (verified_sender, verified_receiver) = banking_tracer.create_channel("non-vote");
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote()
 
         let stats = Arc::new(StreamStats::default());
         let tpu_quic_t = spawn_server(
@@ -195,7 +195,7 @@ impl Tpu {
         };
 
 
-        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel("tpu-vote");
+        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel_tpu_vote();
 
         let vote_sigverify_stage = {
             let verifier =
@@ -208,7 +208,7 @@ impl Tpu {
         };
 
         let (verified_gossip_vote_packets_sender, verified_gossip_vote_packets_receiver) =
-            banking_tracer.create_channel("gossip-vote");
+            banking_tracer.create_channel_gossip_vote();
         let cluster_info_vote_listener = ClusterInfoVoteListener::new(
             exit.clone(),
             cluster_info.clone(),

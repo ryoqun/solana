@@ -122,6 +122,18 @@ impl BankingTracer {
         Self::channel(self.trace_output.as_ref().map(|a| a.0.0.clone()), name)
     }
 
+    pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel("non-vote")
+    }
+
+    pub fn create_channel_tpu_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel("tpu-vote")
+    }
+
+    pub fn create_channel_gossip_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel("gossip-vote")
+    }
+
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (self.trace_output.as_mut().map(|a| a.1.take()).flatten(), Arc::new(self))
     }
