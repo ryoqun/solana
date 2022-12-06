@@ -6,7 +6,7 @@ use {
         immutable_deserialized_packet::ImmutableDeserializedPacket,
         sigverify::SigverifyTracerPacketStats,
     },
-    crossbeam_channel::{Receiver as CrossbeamReceiver, RecvTimeoutError},
+    crossbeam_channel::RecvTimeoutError,
     solana_perf::packet::PacketBatch,
     std::time::{Duration, Instant},
 };
