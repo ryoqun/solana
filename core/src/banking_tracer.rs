@@ -71,7 +71,7 @@ impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
         if self.now.is_none() {
             self.now = now.clone();
-            basic.should_rollover(now, current_filesize)
+            self.basic.should_rollover(now, current_filesize)
         } else {
             false
         }
