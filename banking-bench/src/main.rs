@@ -7,6 +7,7 @@ use {
     rayon::prelude::*,
     solana_client::connection_cache::ConnectionCache,
     solana_core::banking_stage::BankingStage,
+    solana_core::banking_tracer::BankingTracer,
     solana_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,
