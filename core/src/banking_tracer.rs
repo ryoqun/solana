@@ -38,8 +38,19 @@ impl BankingTraceRunner {
 
     pub fn start(&self) {
         let mut stream = BufReader::new(File::open(&self.path).unwrap());
-        while let Ok(event) = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream) {
+        let mut bank_starts_by_slot = std::collections::BTreeMap::new();
+        let mut packet_batches_by_time = std::collections::BTreeMap::new();
+
+        loop {
+            let Ok(event) = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream) {
+            } else {
+                break
+            };
             dbg!(event);
+            match event.1 {
+                NewBankStart(_, slot) => bank_starts.insert(slot, s),
+                PacketBatch(name, batch) => packet_batches_by_time.insert(s, (name, batch)),
+            }
         }
     }
 }
