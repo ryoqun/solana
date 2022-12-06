@@ -48,6 +48,9 @@ impl RollingConditionGrouped {
             now: Option::default(),
         }
     }
+
+    fn reset(&self) {
+    }
 }
 
 use chrono::DateTime;
@@ -98,7 +101,7 @@ impl BankingTracer {
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
                         let mut gw = GroupedWrite::new(&mut output);
-                        // rolling_condition_grouped.reset();
+                        grouped.reset();
                         serialize_into(&mut gw, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
