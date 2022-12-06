@@ -38,7 +38,7 @@ enum TracedEvent {
 
 struct RollingConditionGrouped {
     basic: RollingConditionBasic,
-    now: Option<DateTime<Local>>
+    is_reset: AtomicBool,
 }
 
 impl RollingConditionGrouped {
