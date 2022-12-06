@@ -371,6 +371,10 @@ impl LeaderSlotMetricsTracker {
         }
     }
 
+    pub fn new_for_test() -> Self {
+        Self::new(0, Arc::new(BankingTracer::new_for_test()))
+    }
+
     fn create_new_slot_metrics(&self, bank_start: &BankStart) -> Option<LeaderSlotMetrics> {
         let slot = bank_start.working_bank.slot();
 

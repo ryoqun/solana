@@ -118,6 +118,10 @@ impl BankingTracer {
         })
     }
 
+    pub fn new_for_test() -> Self {
+        Self::new("dummy", false, AtomicBool::default())
+    }
+
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         Self::channel(self.trace_output.as_ref().map(|a| a.0.0.clone()), name)
     }
