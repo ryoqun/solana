@@ -19,7 +19,6 @@ pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
    trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), Option<std::thread::JoinHandle<()>>)>,
-   exit: Arc<AtomicBool>,
 }
 
 #[derive(Serialize)]
@@ -42,8 +41,11 @@ impl BankingTracer {
                 // change to timed loop!
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
-                while let Ok(mm) = aa.recv() {
-                    serialize_into(&mut output, &mm).unwrap();
+                while exit.load(Ordering::Relaxed) {
+                    if let Ok(mm) = aa.try_recv() {
+                        serialize_into(&mut output, &mm).unwrap();
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(100));
                 }
             }).unwrap();
 
@@ -55,7 +57,6 @@ impl BankingTracer {
 
         Ok(Self {
             trace_output,
-            exit,
         })
     }
 
@@ -66,14 +67,6 @@ impl BankingTracer {
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (self.trace_output.as_mut().map(|a| a.1.take()).flatten(), Arc::new(self))
-    }
-
-    pub fn join(&self) -> std::thread::Result<()> {
-        //if let Some(thread_handle) = self.thread_handle {
-        //    thread_handle.join()
-        //} else {
-            Ok(())
-        //}
     }
 }
 
