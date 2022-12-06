@@ -159,7 +159,7 @@ impl BankingTracer {
         }
     }
 
-    pub fn channel_for_test() -> (TracedBankingPacketSender, crossbeam_channel::Receiver<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>) {
+    pub fn channel_for_test() -> (TracedBankingPacketSender, crossbeam_channel::Receiver<BankingPacketBatch>) {
         Self::channel(None, "_dummy_name_for_test")
     }
 
