@@ -45,6 +45,7 @@ impl RollingConditionGrouped {
     fn new(basic: RollingConditionBasic) -> Self {
         Self {
             basic,
+            now: RefCell::default(),
         }
     }
 }
