@@ -2322,7 +2322,7 @@ mod tests {
             .map(|batch| (batch, vec![1u8]))
             .collect();
         let packet_batches = convert_from_old_verified(packet_batches);
-        verified_sender.send((packet_batches, None)).unwrap();
+        verified_sender.send(Arc::new((packet_batches, None))).unwrap();
 
                 let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
                 let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
