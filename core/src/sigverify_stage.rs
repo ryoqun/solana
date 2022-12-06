@@ -604,7 +604,7 @@ mod tests {
                     );
                 }
                 assert_eq!(tracer_packet_stats.total_excess_tracer_packets, 0);
-                for v in verifieds.iter() {
+                for v in verifieds.into_iter().reverse() {
                     received += v.len();
                     batches.push(v);
                 }
