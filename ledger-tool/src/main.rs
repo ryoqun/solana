@@ -3474,7 +3474,7 @@ fn main() {
 
                 let runner = BankingTraceReplayer::new(PathBuf::new().join("/dev/stdin"));
                 //runner.seek(bank); => Ok or Err("no BankStart")
-                runner.replay(bank_forks, blockstore);
+                runner.replay(bank_forks, Arc::new(blockstore));
 
 
                 println!("Ok");
