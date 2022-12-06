@@ -42,7 +42,9 @@ impl BankingTraceRunner {
         let mut packet_batches_by_time = std::collections::BTreeMap::new();
 
         loop {
-            let Ok(event) = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream) else {
+            let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
+            let Ok(event) = d else {
+                dbg!(&d);
                 break;
             };
             dbg!(&event);
