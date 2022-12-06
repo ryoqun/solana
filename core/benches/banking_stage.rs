@@ -101,7 +101,7 @@ fn bench_consume_buffered(bencher: &mut Bencher) {
                 &BankingStageStats::default(),
                 &recorder,
                 &QosService::new(1),
-                &mut LeaderSlotMetricsTracker::new(0),
+                &mut LeaderSlotMetricsTracker::new_for_test(),
                 None,
             );
         });
@@ -196,9 +196,6 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
     // during the benchmark
     genesis_config.ticks_per_slot = 10_000;
 
-    let (verified_sender, verified_receiver) = unbounded();
-    let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
-    let (vote_sender, vote_receiver) = unbounded();
     let mut bank = Bank::new_for_benches(&genesis_config);
     // Allow arbitrary transaction processing time for the purposes of this bench
     bank.ns_per_slot = u128::MAX;
@@ -268,6 +265,10 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
         );
         let (exit, poh_recorder, poh_service, signal_receiver) =
             create_test_recorder(&bank, &blockstore, None, None);
+        let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+        let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let cluster_info = ClusterInfo::new(
             Node::new_localhost().info,
             Arc::new(Keypair::new()),
