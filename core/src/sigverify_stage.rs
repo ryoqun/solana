@@ -558,7 +558,7 @@ mod tests {
                     .iter_mut()
                     .for_each(|packet| packet.meta.flags |= PacketFlags::TRACER_PACKET);
                 assert_eq!(batch.len(), packets_per_batch);
-                packet_s.send(vec![batch]).unwrap();
+                packet_s.send(Ovec![batch], None)).unwrap();
             }
         }
         let mut received = 0;
