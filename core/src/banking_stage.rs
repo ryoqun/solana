@@ -2029,9 +2029,9 @@ mod tests {
             let (exit, poh_recorder, poh_service, _entry_receiever) =
                 create_test_recorder(&bank, &blockstore, None, None);
             let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
-            let (verified_sender, verified_receiver) = banking_tracer.create_channel();
-            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel();
-            let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel();
+            let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+            let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
 
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);
