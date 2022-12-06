@@ -16,7 +16,6 @@ use {
         },
         packet_deserializer::{PacketDeserializer, ReceivePacketResults},
         qos_service::QosService,
-        sigverify::SigverifyTracerPacketStats,
         tracer_packet_stats::TracerPacketStats,
         unprocessed_packet_batches::*,
         unprocessed_transaction_storage::{
