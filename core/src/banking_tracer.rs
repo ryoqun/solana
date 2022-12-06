@@ -34,10 +34,14 @@ enum TracedEvent {
 impl BankingTracer {
     pub fn new(path: impl AsRef<Path>, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
+
         let trace_output = if enable_tracing {
             let a = unbounded();
             let aa = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
+                // change to timed loop!
+                // temporary custom Write impl to avoid repeatd current time inqueries
+                // custom RollingCondition to memoize the first rolling decision
                 while let Ok(mm) = aa.recv() {
                     serialize_into(&mut output, &mm).unwrap();
                 }
@@ -85,6 +89,7 @@ impl TracedBankingPacketSender {
     }
 
     pub fn send(&self, batch: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
+        // remove .clone() by using Arc<PacketBatch>
         self.sender_to_banking.send(batch.clone()).and_then(|r| {
             if let Some(mirror) = &self.mirrored_sender_to_trace {
                 mirror.send(TimedTracedEvent(0, TracedEvent::PacketBatch(batch.0))).unwrap();

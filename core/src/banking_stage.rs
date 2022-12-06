@@ -347,6 +347,7 @@ pub struct BatchedTransactionErrorDetails {
 /// Stores the stage's thread handle and output receiver.
 pub struct BankingStage {
     bank_thread_hdls: Vec<JoinHandle<()>>,
+    tracer_thread_hdl: JoinHandle<()>,
 }
 
 #[derive(Debug, Clone)]
@@ -387,7 +388,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
-        banking_tracer: &Arc<BankingTracer>,
+        banking_tracer: BankingTracer,
     ) -> Self {
         Self::new_num_threads(
             cluster_info,
@@ -418,7 +419,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
-        banking_tracer: &Arc<BankingTracer>,
+        banking_tracer: BankingTracer,
     ) -> Self {
         assert!(num_threads >= MIN_TOTAL_THREADS);
         // Single thread to generate entries from many banks.
