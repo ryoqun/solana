@@ -19,7 +19,7 @@ use {
         sync::Weak,
     },
 };
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 const CUDA_SUCCESS: c_int = 0;
 
