@@ -9,6 +9,7 @@ use {
 use std::path::Path;
 use std::sync::{Arc, atomic::AtomicBool};
 use std::time::SystemTime;
+use std::io::Write;
 use solana_perf::packet::PacketBatch;
 use rolling_file::{RollingFileAppender, RollingConditionBasic};
 use bincode::serialize_into;
@@ -35,6 +36,7 @@ enum TracedEvent {
 
 impl BankingTracer {
     pub fn new(path: impl AsRef<Path>, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
+        fs::create_dir_all(path)?;
         let mut output = RollingFileAppender::new(path, RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
 
         let trace_output = if enable_tracing {
