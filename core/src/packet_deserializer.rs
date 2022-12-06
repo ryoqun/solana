@@ -102,7 +102,7 @@ impl PacketDeserializer {
                 {
                     aggregated_tracer_packet_stats.aggregate(tracer_packet_stats);
                 } else {
-                    aggregated_tracer_packet_stats_option = tracer_packet_stats_option;
+                    aggregated_tracer_packet_stats_option = tracer_packet_stats_option.clone();
                 }
             }
 
