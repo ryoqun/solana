@@ -3,7 +3,7 @@ use {
         sigverify::SigverifyTracerPacketStats,
     },
     crossbeam_channel::{
-        Receiver, RecvTimeoutError, Sender, unbounded,
+        Receiver, RecvTimeoutError, Sender, unbounded, SendError,
     },
 };
 use std::path::Path;
@@ -21,7 +21,7 @@ pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
 #[derive(Debug)]
 pub struct BankingTracer {
-   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), Option<std::thread::JoinHandle<()>>)>,
+   trace_output: Option<((Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>), Option<std::thread::JoinHandle<()>>)>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -93,7 +93,7 @@ impl TracedBankingPacketSender {
         }
     }
 
-    pub fn send(&self, batch: BankingPacketBatch) -> std::result::Result<(), crossbeam_channel::SendError<BankingPacketBatch>> {
+    pub fn send(&self, batch: BankingPacketBatch) -> std::result::Result<(), SendError<BankingPacketBatch>> {
         // remove .clone() by using Arc<PacketBatch>
         self.sender_to_banking.send(batch.clone()).and_then(|r| {
             if let Some(mirror) = &self.mirrored_sender_to_trace {
