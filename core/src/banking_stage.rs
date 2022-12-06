@@ -2097,7 +2097,7 @@ mod tests {
                 &poh_recorder,
                 verified_receiver,
                 tpu_vote_receiver,
-                verified_gossip_vote_receiver,
+                gossip_verified_vote_receiver,
                 None,
                 gossip_vote_sender,
                 None,
