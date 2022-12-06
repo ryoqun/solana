@@ -53,9 +53,6 @@ S: Serializer,
 serde_bytes::serialize(bytes, serializer)
 }
 
-/// This takes the result of
-[`serde_bytes::deserialize`] from
-`[u8]` to `[u8; N]`.
 pub(crate) fn deserialize<'de, D,
 const N: usize>(deserializer: D) ->
 Result<[u8; N], D::Error>
