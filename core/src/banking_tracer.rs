@@ -129,13 +129,14 @@ use {
                 let cluster_info = Arc::new(cluster_info);
                 let connection_cache = 
                     ConnectionCache::new(DEFAULT_TPU_CONNECTION_POOL_SIZE);
+                let (replay_vote_sender, _replay_vote_receiver) = unbounded();
                 let banking_stage = BankingStage::new_num_threads(
                     &cluster_info,
                     &poh_recorder,
                     verified_receiver,
                     tpu_vote_receiver,
                     vote_receiver,
-                    num_banking_threads,
+                    1,
                     None,
                     replay_vote_sender,
                     None,
