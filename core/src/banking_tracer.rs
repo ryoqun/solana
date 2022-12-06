@@ -100,8 +100,7 @@ impl BankingTracer {
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
                         output.condition_mut().reset();
-                        let mut gw = GroupedWrite::new(&mut output);
-                        serialize_into(&mut gw, &mm).unwrap();
+                        serialize_into(&mut GroupedWrite::new(&mut output), &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
                 }
