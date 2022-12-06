@@ -163,7 +163,7 @@ impl BankingTracer {
         Self::channel(None, "_dummy_name_for_test")
     }
 
-    pub fn channel(maybe_mirrored_channel: std::option::Option<crossbeam_channel::Sender<TimedTracedEvent>>, name: &'static str) -> (TracedBankingPacketSender, crossbeam_channel::Receiver<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>) {
+    pub fn channel(maybe_mirrored_channel: std::option::Option<crossbeam_channel::Sender<TimedTracedEvent>>, name: &'static str) -> (TracedBankingPacketSender, crossbeam_channel::Receiver<BankingPacketBatch>) {
         let channel = unbounded();
         (TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name), channel.1)
     }
