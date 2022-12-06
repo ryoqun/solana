@@ -12,6 +12,7 @@ use {
     },
     rand::{seq::SliceRandom, Rng},
     rayon::prelude::*,
+    serde::{Deserialize, Serialize},
     std::{
         ops::{Index, IndexMut},
         os::raw::c_int,
@@ -19,7 +20,6 @@ use {
         sync::Weak,
     },
 };
-use serde::{Serialize, Deserialize};
 
 const CUDA_SUCCESS: c_int = 0;
 

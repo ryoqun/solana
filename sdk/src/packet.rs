@@ -1,7 +1,7 @@
 use {
     bincode::{Options, Result},
     bitflags::bitflags,
-    serde::{Serialize, Deserialize},
+    serde::{Deserialize, Serialize},
     std::{
         fmt, io,
         net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -40,46 +40,29 @@ pub struct Meta {
 }
 
 mod serde_bytes_array {
-use core::convert::TryInto;
+    use {
+        core::convert::TryInto,
+        serde::{de::Error, Deserializer, Serializer},
+    };
 
-use serde::de::Error;
-use serde::{Deserializer, Serializer};
+    pub(crate) fn serialize<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serde_bytes::serialize(bytes, serializer)
+    }
 
-pub(crate) fn serialize<S>(bytes: &[u8], serializer: S) ->
-Result<S::Ok, S::Error>
-where
-S: Serializer,
-{
-serde_bytes::serialize(bytes, serializer)
-}
-
-pub(crate) fn deserialize<'de, D,
-const N: usize>(deserializer: D) ->
-Result<[u8; N], D::Error>
-where
-D: Deserializer<'de>,
-{
-let slice:
-&[u8] =
-serde_bytes::deserialize(deserializer)?;
-let
-array:
-[u8;
-N]
-=
-slice.try_into().map_err(|_|
-{
-let
-expected
-=
-format!("[u8;
-{}]",
-N);
-D::Error::invalid_length(slice.len(),
-&expected.as_str())
-})?;
-Ok(array)
-}
+    pub(crate) fn deserialize<'de, D, const N: usize>(deserializer: D) -> Result<[u8; N], D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let slice: &[u8] = serde_bytes::deserialize(deserializer)?;
+        let array: [u8; N] = slice.try_into().map_err(|_| {
+            let expected = format!("[u8; {}]", N);
+            D::Error::invalid_length(slice.len(), &expected.as_str())
+        })?;
+        Ok(array)
+    }
 }
 
 #[derive(Clone, Eq, Serialize, Deserialize)]

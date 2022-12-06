@@ -155,7 +155,8 @@ impl Tpu {
             "Vote",
         );
 
-        let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+        let banking_tracer =
+            BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
         let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
 
         let stats = Arc::new(StreamStats::default());
@@ -194,8 +195,8 @@ impl Tpu {
             SigVerifyStage::new(find_packet_sender_stake_receiver, verifier, "tpu-verifier")
         };
 
-
-        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) = banking_tracer.create_channel_tpu_vote();
+        let (verified_tpu_vote_packets_sender, verified_tpu_vote_packets_receiver) =
+            banking_tracer.create_channel_tpu_vote();
 
         let vote_sigverify_stage = {
             let verifier =

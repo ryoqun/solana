@@ -512,7 +512,10 @@ impl BankingStage {
                     .unwrap()
             })
             .collect();
-        Self { bank_thread_hdls, tracer_thread_hdl }
+        Self {
+            bank_thread_hdls,
+            tracer_thread_hdl,
+        }
     }
 
     /// Forwards all valid, unprocessed packets in the buffer, up to a rate limit. Returns
@@ -2028,9 +2031,11 @@ mod tests {
             );
             let (exit, poh_recorder, poh_service, _entry_receiever) =
                 create_test_recorder(&bank, &blockstore, None, None);
-            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+            let banking_tracer =
+                BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
             let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+                banking_tracer.create_channel_gossip_vote();
             let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
 
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
@@ -2084,9 +2089,11 @@ mod tests {
             };
             let (exit, poh_recorder, poh_service, entry_receiver) =
                 create_test_recorder(&bank, &blockstore, Some(poh_config), None);
-            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+            let banking_tracer =
+                BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
             let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+                banking_tracer.create_channel_gossip_vote();
             let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);
@@ -2164,9 +2171,11 @@ mod tests {
             };
             let (exit, poh_recorder, poh_service, entry_receiver) =
                 create_test_recorder(&bank, &blockstore, Some(poh_config), None);
-            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+            let banking_tracer =
+                BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
             let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+                banking_tracer.create_channel_gossip_vote();
             let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);
@@ -2299,32 +2308,47 @@ mod tests {
                 };
                 let (exit, poh_recorder, poh_service, entry_receiver) =
                     create_test_recorder(&bank, &blockstore, Some(poh_config), None);
-                let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+                let banking_tracer =
+                    BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone())
+                        .unwrap();
                 let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-        // Process a batch that includes a transaction that receives two lamports.
-        let tx =
-            system_transaction::transfer(&mint_keypair, &alice.pubkey(), 2, genesis_config.hash());
+                // Process a batch that includes a transaction that receives two lamports.
+                let tx = system_transaction::transfer(
+                    &mint_keypair,
+                    &alice.pubkey(),
+                    2,
+                    genesis_config.hash(),
+                );
 
-        let packet_batches = to_packet_batches(&[tx], 1);
-        let packet_batches = packet_batches
-            .into_iter()
-            .map(|batch| (batch, vec![1u8]))
-            .collect();
-        let packet_batches = convert_from_old_verified(packet_batches);
-        verified_sender.send(Arc::new((packet_batches, None))).unwrap();
+                let packet_batches = to_packet_batches(&[tx], 1);
+                let packet_batches = packet_batches
+                    .into_iter()
+                    .map(|batch| (batch, vec![1u8]))
+                    .collect();
+                let packet_batches = convert_from_old_verified(packet_batches);
+                verified_sender
+                    .send(Arc::new((packet_batches, None)))
+                    .unwrap();
 
-        // Process a second batch that uses the same from account, so conflicts with above TX
-        let tx =
-            system_transaction::transfer(&mint_keypair, &alice.pubkey(), 1, genesis_config.hash());
-        let packet_batches = to_packet_batches(&[tx], 1);
-        let packet_batches = packet_batches
-            .into_iter()
-            .map(|batch| (batch, vec![1u8]))
-            .collect();
-        let packet_batches = convert_from_old_verified(packet_batches);
-        verified_sender.send(Arc::new((packet_batches, None))).unwrap();
+                // Process a second batch that uses the same from account, so conflicts with above TX
+                let tx = system_transaction::transfer(
+                    &mint_keypair,
+                    &alice.pubkey(),
+                    1,
+                    genesis_config.hash(),
+                );
+                let packet_batches = to_packet_batches(&[tx], 1);
+                let packet_batches = packet_batches
+                    .into_iter()
+                    .map(|batch| (batch, vec![1u8]))
+                    .collect();
+                let packet_batches = convert_from_old_verified(packet_batches);
+                verified_sender
+                    .send(Arc::new((packet_batches, None)))
+                    .unwrap();
 
-                let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+                let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+                    banking_tracer.create_channel_gossip_vote();
                 let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
 
                 let cluster_info = new_test_cluster_info(Node::new_localhost().info);
@@ -2350,7 +2374,14 @@ mod tests {
                 }
                 exit.store(true, Ordering::Relaxed);
                 poh_service.join().unwrap();
-                (entry_receiver, (verified_sender, gossip_verified_vote_sender, tpu_vote_sender))
+                (
+                    entry_receiver,
+                    (
+                        verified_sender,
+                        gossip_verified_vote_sender,
+                        tpu_vote_sender,
+                    ),
+                )
             };
             drop(senders);
 
@@ -4101,9 +4132,11 @@ mod tests {
             };
             let (exit, poh_recorder, poh_service, _entry_receiver) =
                 create_test_recorder(&bank, &blockstore, Some(poh_config), None);
-            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+            let banking_tracer =
+                BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
             let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+            let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+                banking_tracer.create_channel_gossip_vote();
             let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);

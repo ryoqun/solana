@@ -1,13 +1,12 @@
 use {
     crate::{
-        banking_tracer::BankingTracer,
-        leader_slot_banking_stage_timing_metrics::*,
+        banking_tracer::BankingTracer, leader_slot_banking_stage_timing_metrics::*,
         unprocessed_transaction_storage::InsertPacketBatchSummary,
     },
     solana_poh::poh_recorder::BankStart,
     solana_runtime::transaction_error_metrics::*,
     solana_sdk::{clock::Slot, saturating_add_assign},
-    std::{time::Instant, sync::Arc},
+    std::{sync::Arc, time::Instant},
 };
 
 /// A summary of what happened to transactions passed to the execution pipeline.
@@ -408,7 +407,9 @@ impl LeaderSlotMetricsTracker {
                 if leader_slot_metrics.slot != bank_start.working_bank.slot() {
                     // Last slot has ended, new slot has began
                     leader_slot_metrics.mark_slot_end_detected();
-                    MetricsTrackerAction::ReportAndNewTracker(self.create_new_slot_metrics(bank_start))
+                    MetricsTrackerAction::ReportAndNewTracker(
+                        self.create_new_slot_metrics(bank_start),
+                    )
                 } else {
                     MetricsTrackerAction::Noop
                 }

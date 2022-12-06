@@ -82,14 +82,12 @@ impl PacketDeserializer {
         packet_count_upperbound: usize,
     ) -> Result<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
-        let a =
-            self.packet_batch_receiver.recv_timeout(recv_timeout)?;
-        let (mut packet_batches, mut aggregated_tracer_packet_stats_option) = (a.0.clone(), a.1.clone());
+        let a = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
+        let (mut packet_batches, mut aggregated_tracer_packet_stats_option) =
+            (a.0.clone(), a.1.clone());
 
         let mut num_packets_received: usize = packet_batches.iter().map(|batch| batch.len()).sum();
-        while let Ok(a) =
-            self.packet_batch_receiver.try_recv()
-        {
+        while let Ok(a) = self.packet_batch_receiver.try_recv() {
             let (packet_batch, tracer_packet_stats_option) = (&a.0, &a.1);
             trace!("got more packet batches in packet deserializer");
             let (packets_received, packet_count_overflowed) = num_packets_received

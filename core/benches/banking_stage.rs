@@ -266,7 +266,8 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
         );
         let (exit, poh_recorder, poh_service, signal_receiver) =
             create_test_recorder(&bank, &blockstore, None, None);
-        let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+        let banking_tracer =
+            BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
         let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
         let (vote_sender, vote_receiver) = banking_tracer.create_channel_gossip_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
@@ -305,10 +306,16 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
             let mut sent = 0;
             if let Some(vote_packets) = &vote_packets {
                 tpu_vote_sender
-                    .send(Arc::new((vote_packets[start..start + chunk_len].to_vec(), None)))
+                    .send(Arc::new((
+                        vote_packets[start..start + chunk_len].to_vec(),
+                        None,
+                    )))
                     .unwrap();
                 vote_sender
-                    .send(Arc::new((vote_packets[start..start + chunk_len].to_vec(), None)))
+                    .send(Arc::new((
+                        vote_packets[start..start + chunk_len].to_vec(),
+                        None,
+                    )))
                     .unwrap();
             }
             for v in verified[start..start + chunk_len].chunks(chunk_len / num_threads) {
