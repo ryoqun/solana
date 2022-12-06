@@ -410,6 +410,10 @@ fn main() {
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let (exit, poh_recorder, poh_service, signal_receiver) =
             create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
+        let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+        let (vote_sender, vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let cluster_info = ClusterInfo::new(
             Node::new_localhost().info,
             Arc::new(Keypair::new()),
