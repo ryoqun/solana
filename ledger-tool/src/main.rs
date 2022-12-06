@@ -26,7 +26,7 @@ use {
     solana_cli_output::{CliAccount, CliAccountNewConfig, OutputFormat},
     solana_core::{
         system_monitor_service::SystemMonitorService, validator::move_and_async_delete_path,
-        banking_trace::BankingTraceRunner,
+        banking_tracer::BankingTraceRunner,
     },
     solana_entry::entry::Entry,
     solana_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
