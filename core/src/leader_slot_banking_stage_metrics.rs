@@ -1,5 +1,6 @@
 use {
     crate::{
+        banking_tracer::BankingTracer,
         leader_slot_banking_stage_timing_metrics::*,
         unprocessed_transaction_storage::InsertPacketBatchSummary,
     },
