@@ -7,7 +7,7 @@ use {
     solana_sdk::slot_history::Slot,
     std::{
         fs::create_dir_all,
-        io::Write,
+        io::{BufReader, Write},
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
         time::SystemTime,
