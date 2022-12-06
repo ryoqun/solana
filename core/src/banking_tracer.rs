@@ -27,14 +27,14 @@ pub struct BankingTracer {
     )>,
 }
 
-pub struct BankingTraceRunner {
+pub struct BankingTraceReplayer {
     path: PathBuf,
     non_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
     tpu_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
     gossip_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
 }
 
-impl BankingTraceRunner {
+impl BankingTraceReplayer {
     pub fn new(path: PathBuf) -> Self {
         Self {
             path,
@@ -48,7 +48,7 @@ impl BankingTraceRunner {
         (self.non_vote_channel.1.clone(),self.tpu_vote_channel.1.clone(),  self.gossip_vote_channel.1.clone())
     }
 
-    pub fn start(&self, bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>, blockstore: Arc<solana_ledger::blockstore::Blockstore>) {
+    pub fn replay(&self, bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>, blockstore: Arc<solana_ledger::blockstore::Blockstore>) {
 use {
     crossbeam_channel::{unbounded, Receiver},
     log::*,

@@ -26,7 +26,7 @@ use {
     solana_cli_output::{CliAccount, CliAccountNewConfig, OutputFormat},
     solana_core::{
         system_monitor_service::SystemMonitorService, validator::move_and_async_delete_path,
-        banking_tracer::BankingTraceRunner,
+        banking_tracer::BankingTraceReplayer,
     },
     solana_entry::entry::Entry,
     solana_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
@@ -3472,9 +3472,9 @@ fn main() {
                     exit(1);
                 });
 
-                let runner = BankingTraceRunner::new(PathBuf::new().join("/dev/stdin"));
+                let runner = BankingTraceReplayer::new(PathBuf::new().join("/dev/stdin"));
                 //runner.seek(bank); => Ok or Err("no BankStart")
-                runner.start(bank_forks);
+                runner.replay(bank_forks, blockstore);
 
 
                 println!("Ok");
