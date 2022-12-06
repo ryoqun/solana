@@ -38,14 +38,14 @@ enum TracedEvent {
 
 struct RollingConditionGrouped {
     basic: RollingConditionBasic,
-    is_reset: AtomicBool,
+    is_checked: bool,
 }
 
 impl RollingConditionGrouped {
     fn new(basic: RollingConditionBasic) -> Self {
         Self {
             basic,
-            is_reset: AtomicBool::default(),
+            is_checked: bool,
         }
     }
 
@@ -72,8 +72,8 @@ impl<'a> GroupedWrite<'a>  {
 
 impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
-        if !self.is_reset.load(Ordering::Relaxed) {
-            self.is_reset.store(true, Ordering::Relaxed);
+        if !self.is_checked {
+            self.is_checked = true;
             self.basic.should_rollover(now, current_filesize)
         } else {
             false
