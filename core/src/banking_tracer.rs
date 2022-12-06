@@ -86,6 +86,15 @@ impl<'a> Write for GroupedWrite<'a> {
     fn flush(&mut self) -> std::result::Result<(), std::io::Error> { self.underlying.flush() }
 }
 
+pub fn sender_overhead_minimized_loop(exit: Arc<AtomicBool>, receiver: usize, mm: impl Fn(usize) -> ()) {
+    while !exit.load(std::sync::atomic::Ordering::Relaxed) {
+        while let Ok(mm) = receiver.try_recv() {
+            on_recv(mm);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+}
+
 impl BankingTracer {
     pub fn _new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>, max_size: u64) -> Result<Self, std::io::Error> {
         create_dir_all(&path)?;
