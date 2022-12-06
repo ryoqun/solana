@@ -46,7 +46,7 @@ impl BankingTracer {
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
-                while exit.load(std::sync::atomic::Ordering::Relaxed) {
+                while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
                         serialize_into(&mut output, &mm).unwrap();
                     }
