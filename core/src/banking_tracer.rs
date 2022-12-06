@@ -70,7 +70,7 @@ impl<'a> GroupedWrite<'a>  {
 impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
         if self.now.is_none() {
-            self.now = now.clone();
+            self.now = Some(now.clone());
             self.basic.should_rollover(now, current_filesize)
         } else {
             false
