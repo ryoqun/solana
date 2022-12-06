@@ -6,7 +6,7 @@ use {
     solana_perf::packet::PacketBatch,
     solana_sdk::slot_history::Slot,
     std::{
-        fs::{File, create_dir_all},
+        fs::{create_dir_all, File},
         io::{BufReader, Write},
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
@@ -44,47 +44,61 @@ impl BankingTraceReplayer {
         }
     }
 
-    pub fn prepare_receivers(&self) -> (Receiver<BankingPacketBatch>,Receiver<BankingPacketBatch>,  Receiver<BankingPacketBatch>) {
-        (self.non_vote_channel.1.clone(),self.tpu_vote_channel.1.clone(),  self.gossip_vote_channel.1.clone())
+    pub fn prepare_receivers(
+        &self,
+    ) -> (
+        Receiver<BankingPacketBatch>,
+        Receiver<BankingPacketBatch>,
+        Receiver<BankingPacketBatch>,
+    ) {
+        (
+            self.non_vote_channel.1.clone(),
+            self.tpu_vote_channel.1.clone(),
+            self.gossip_vote_channel.1.clone(),
+        )
     }
 
-    pub fn replay(&self, bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>, blockstore: Arc<solana_ledger::blockstore::Blockstore>) {
-use {
-    crossbeam_channel::{unbounded, Receiver},
-    log::*,
-    rand::{thread_rng, Rng},
-    rayon::prelude::*,
-    solana_client::connection_cache::ConnectionCache,
-    crate::{banking_stage::BankingStage, banking_tracer::BankingTracer},
-    solana_gossip::cluster_info::{ClusterInfo, Node},
-    solana_ledger::{
-        blockstore::Blockstore,
-        genesis_utils::{create_genesis_config, GenesisConfigInfo},
-        get_tmp_ledger_path,
-        leader_schedule_cache::LeaderScheduleCache,
-    },
-    solana_measure::measure::Measure,
-    solana_perf::packet::{to_packet_batches, PacketBatch},
-    solana_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry},
-    solana_runtime::{bank::Bank, bank_forks::BankForks},
-    solana_sdk::{
-        compute_budget::ComputeBudgetInstruction,
-        hash::Hash,
-        message::Message,
-        pubkey::{self, Pubkey},
-        signature::{Keypair, Signature, Signer},
-        system_instruction, system_transaction,
-        timing::{duration_as_us, timestamp},
-        transaction::Transaction,
-    },
-    solana_streamer::socket::SocketAddrSpace,
-    solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
-    std::{
-        sync::{atomic::Ordering, Arc, RwLock},
-        thread::sleep,
-        time::{Duration, Instant},
-    },
-};
+    pub fn replay(
+        &self,
+        bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
+        blockstore: Arc<solana_ledger::blockstore::Blockstore>,
+    ) {
+        use {
+            crate::{banking_stage::BankingStage, banking_tracer::BankingTracer},
+            crossbeam_channel::{unbounded, Receiver},
+            log::*,
+            rand::{thread_rng, Rng},
+            rayon::prelude::*,
+            solana_client::connection_cache::ConnectionCache,
+            solana_gossip::cluster_info::{ClusterInfo, Node},
+            solana_ledger::{
+                blockstore::Blockstore,
+                genesis_utils::{create_genesis_config, GenesisConfigInfo},
+                get_tmp_ledger_path,
+                leader_schedule_cache::LeaderScheduleCache,
+            },
+            solana_measure::measure::Measure,
+            solana_perf::packet::{to_packet_batches, PacketBatch},
+            solana_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry},
+            solana_runtime::{bank::Bank, bank_forks::BankForks},
+            solana_sdk::{
+                compute_budget::ComputeBudgetInstruction,
+                hash::Hash,
+                message::Message,
+                pubkey::{self, Pubkey},
+                signature::{Keypair, Signature, Signer},
+                system_instruction, system_transaction,
+                timing::{duration_as_us, timestamp},
+                transaction::Transaction,
+            },
+            solana_streamer::socket::SocketAddrSpace,
+            solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
+            std::{
+                sync::{atomic::Ordering, Arc, RwLock},
+                thread::sleep,
+                time::{Duration, Instant},
+            },
+        };
 
         let mut bank = bank_forks.read().unwrap().working_bank();
         let mut stream = BufReader::new(File::open(&self.path).unwrap());
@@ -100,8 +114,12 @@ use {
             dbg!(&event);
             let s = event.0;
             match event.1 {
-                TracedEvent::NewBankStart(_, slot) => { bank_starts_by_slot.insert(slot, s); },
-                TracedEvent::PacketBatch(name, batch) => { packet_batches_by_time.insert(s, (name, batch)); },
+                TracedEvent::NewBankStart(_, slot) => {
+                    bank_starts_by_slot.insert(slot, s);
+                }
+                TracedEvent::PacketBatch(name, batch) => {
+                    packet_batches_by_time.insert(s, (name, batch));
+                }
             }
         }
 
@@ -116,61 +134,60 @@ use {
 
         let (verified_receiver, tpu_vote_receiver, gossip_vote_receiver) = self.prepare_receivers();
 
-                let collector = solana_sdk::pubkey::new_rand();
-                let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-                let (exit, poh_recorder, poh_service, signal_receiver) =
-                    create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
+        let collector = solana_sdk::pubkey::new_rand();
+        let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
+        let (exit, poh_recorder, poh_service, signal_receiver) =
+            create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
 
-                let banking_tracer =
-                    BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
-                let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
-                    Node::new_localhost().info,
-                    Arc::new(Keypair::new()),
-                    SocketAddrSpace::Unspecified,
-                );
-                let cluster_info = Arc::new(cluster_info);
-                let connection_cache = 
-                    ConnectionCache::new(DEFAULT_TPU_CONNECTION_POOL_SIZE);
-                let (replay_vote_sender, _replay_vote_receiver) = unbounded();
-                let banking_stage = BankingStage::new_num_threads(
-                    &cluster_info,
-                    &poh_recorder,
-                    verified_receiver,
-                    tpu_vote_receiver,
-                    gossip_vote_receiver,
-                    1,
-                    None,
-                    replay_vote_sender,
-                    None,
-                    Arc::new(connection_cache),
-                    bank_forks.clone(),
-                    banking_tracer,
-                );
-                poh_recorder.write().unwrap().set_bank(&bank, false);
-                loop {
-                    if poh_recorder.read().unwrap().bank().is_none() {
-                        poh_recorder
-                            .write()
-                            .unwrap()
-                            .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
-                        let new_bank = Bank::new_from_parent(&bank, &collector, bank.slot() + 1);
-                        bank_forks.write().unwrap().insert(new_bank);
-                        bank = bank_forks.read().unwrap().working_bank();
-                    }
-                    // set cost tracker limits to MAX so it will not filter out TXs
-                    bank.write_cost_tracker().unwrap().set_limits(
-                        std::u64::MAX,
-                        std::u64::MAX,
-                        std::u64::MAX,
-                    );
+        let banking_tracer =
+            BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
+        let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
+            Node::new_localhost().info,
+            Arc::new(Keypair::new()),
+            SocketAddrSpace::Unspecified,
+        );
+        let cluster_info = Arc::new(cluster_info);
+        let connection_cache = ConnectionCache::new(DEFAULT_TPU_CONNECTION_POOL_SIZE);
+        let (replay_vote_sender, _replay_vote_receiver) = unbounded();
+        let banking_stage = BankingStage::new_num_threads(
+            &cluster_info,
+            &poh_recorder,
+            verified_receiver,
+            tpu_vote_receiver,
+            gossip_vote_receiver,
+            1,
+            None,
+            replay_vote_sender,
+            None,
+            Arc::new(connection_cache),
+            bank_forks.clone(),
+            banking_tracer,
+        );
+        poh_recorder.write().unwrap().set_bank(&bank, false);
+        loop {
+            if poh_recorder.read().unwrap().bank().is_none() {
+                poh_recorder
+                    .write()
+                    .unwrap()
+                    .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
+                let new_bank = Bank::new_from_parent(&bank, &collector, bank.slot() + 1);
+                bank_forks.write().unwrap().insert(new_bank);
+                bank = bank_forks.read().unwrap().working_bank();
+            }
+            // set cost tracker limits to MAX so it will not filter out TXs
+            bank.write_cost_tracker().unwrap().set_limits(
+                std::u64::MAX,
+                std::u64::MAX,
+                std::u64::MAX,
+            );
 
-                    poh_recorder.write().unwrap().set_bank(&bank, false);
-                    info!("sleeping...");
-                    sleep(std::time::Duration::from_millis(100));
-                }
-                exit.store(true, Ordering::Relaxed);
-                banking_stage.join().unwrap();
-                poh_service.join().unwrap();
+            poh_recorder.write().unwrap().set_bank(&bank, false);
+            info!("sleeping...");
+            sleep(std::time::Duration::from_millis(100));
+        }
+        exit.store(true, Ordering::Relaxed);
+        banking_stage.join().unwrap();
+        poh_service.join().unwrap();
     }
 }
 
@@ -389,7 +406,7 @@ impl TracedBankingPacketSender {
             mirror
                 .send(TimedTracedEvent(
                     SystemTime::now(),
-                    TracedEvent::PacketBatch(self.name.into(), batch.clone()/*a*/),
+                    TracedEvent::PacketBatch(self.name.into(), batch.clone() /*a*/),
                 ))
                 .unwrap();
         }

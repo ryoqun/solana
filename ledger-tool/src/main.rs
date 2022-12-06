@@ -25,8 +25,8 @@ use {
     },
     solana_cli_output::{CliAccount, CliAccountNewConfig, OutputFormat},
     solana_core::{
-        system_monitor_service::SystemMonitorService, validator::move_and_async_delete_path,
-        banking_tracer::BankingTraceReplayer,
+        banking_tracer::BankingTraceReplayer, system_monitor_service::SystemMonitorService,
+        validator::move_and_async_delete_path,
     },
     solana_entry::entry::Entry,
     solana_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
@@ -3359,7 +3359,7 @@ fn main() {
                         exit(1);
                     }
                 }
-            },
+            }
             ("recreate-blocks", Some(arg_matches)) => {
                 let mut accounts_index_config = AccountsIndexConfig::default();
                 if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
@@ -3476,9 +3476,8 @@ fn main() {
                 //runner.seek(bank); => Ok or Err("no BankStart")
                 runner.replay(bank_forks, Arc::new(blockstore));
 
-
                 println!("Ok");
-            },
+            }
             ("accounts", Some(arg_matches)) => {
                 let halt_at_slot = value_t!(arg_matches, "halt_at_slot", Slot).ok();
                 let process_options = ProcessOptions {
