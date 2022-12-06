@@ -10,6 +10,7 @@ use std::sync::{Arc, atomic::AtomicBool};
 use std::time::SystemTime;
 use std::io::Write;
 use std::path::PathBuf;
+use std::cell::RefCell;
 use std::fs::create_dir_all;
 use solana_perf::packet::PacketBatch;
 use rolling_file::{RollingFileAppender, RollingConditionBasic, RollingCondition};
