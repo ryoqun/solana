@@ -118,14 +118,6 @@ use {
                 let (exit, poh_recorder, poh_service, signal_receiver) =
                     create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
 
-                let system_monitor_service = SystemMonitorService::new(
-                    Arc::clone(&exit),
-                    false,
-                    false,
-                    false,
-                    false,
-                );
-
                 let banking_tracer =
                     BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
                 let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
