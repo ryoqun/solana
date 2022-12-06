@@ -438,6 +438,7 @@ impl BankingStage {
                     .is_active(&allow_votes_to_directly_update_vote_state::id())
             })
             .unwrap_or(false);
+        let (tracer_handle, banking_tracer) = banking_tracer.finalize_under_arc();
         // Many banks that process transactions in parallel.
         let bank_thread_hdls: Vec<JoinHandle<()>> = (0..num_threads)
             .map(|i| {
