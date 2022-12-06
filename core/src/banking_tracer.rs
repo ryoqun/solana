@@ -3,7 +3,7 @@ use {
         sigverify::SigverifyTracerPacketStats,
     },
     crossbeam_channel::{
-        Receiver, RecvTimeoutError, Sender, unbounded, SendError,
+        Receiver, Sender, unbounded, SendError,
     },
 };
 use std::path::Path;
