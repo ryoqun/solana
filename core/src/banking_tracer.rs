@@ -12,7 +12,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::fs::create_dir_all;
 use solana_perf::packet::PacketBatch;
-use rolling_file::{RollingFileAppender, RollingConditionBasic};
+use rolling_file::{RollingFileAppender, RollingConditionBasic, RollingCondition};
 use bincode::serialize_into;
 use solana_sdk::slot_history::Slot;
 
