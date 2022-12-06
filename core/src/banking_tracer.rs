@@ -96,7 +96,7 @@ impl BankingTracer {
             let receiver = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTracer".into()).spawn(move || {
                 let grouped = RollingConditionGrouped::new(basic);
-                let mut output = RollingFileAppender::new(path.join("events"), &grouped, 10)?;
+                let mut output = RollingFileAppender::new(path.join("events"), &grouped, 10).unwrap();
 
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
