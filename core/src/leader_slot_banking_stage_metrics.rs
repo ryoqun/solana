@@ -7,7 +7,7 @@ use {
     solana_poh::poh_recorder::BankStart,
     solana_runtime::transaction_error_metrics::*,
     solana_sdk::{clock::Slot, saturating_add_assign},
-    std::time::Instant,
+    std::{time::Instant, sync::Arc},
 };
 
 /// A summary of what happened to transactions passed to the execution pipeline.
