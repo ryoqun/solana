@@ -64,7 +64,7 @@ impl BankingTracer {
         (TracedBankingPacketSender::new(channel.0, None, name), channel.1)
     }
 
-    pub fn finalize_under_arc(self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
+    pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (self.trace_output.as_mut().map(|a| a.1).flatten().take(), Arc::new(self))
     }
 
