@@ -2311,7 +2311,7 @@ mod tests {
             .map(|batch| (batch, vec![1u8]))
             .collect();
         let packet_batches = convert_from_old_verified(packet_batches);
-        verified_sender.send((packet_batches, None)).unwrap();
+        verified_sender.send(Arc::new((packet_batches, None))).unwrap();
 
         // Process a second batch that uses the same from account, so conflicts with above TX
         let tx =
