@@ -56,7 +56,7 @@ use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
     solana_client::connection_cache::ConnectionCache,
-    solana_core::{banking_stage::BankingStage, banking_tracer::BankingTracer},
+    crate::{banking_stage::BankingStage, banking_tracer::BankingTracer},
     solana_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,
@@ -126,8 +126,6 @@ use {
                     false,
                     false,
                 );
-
-                use solana_streamer::socket::SocketAddrSpace;
 
                 let banking_tracer =
                     BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
