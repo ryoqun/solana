@@ -48,7 +48,7 @@ impl RollingConditionGrouped {
         }
     }
 
-    fn reset(&self) {
+    fn reset(&mut self) {
         self.is_checked = false;
     }
 }
