@@ -45,7 +45,7 @@ impl BankingTraceRunner {
             let Ok(event) = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream) else {
                 break;
             };
-            dbg!(event);
+            dbg!(&event);
             let s = event.0;
             match event.1 {
                 TracedEvent::NewBankStart(_, slot) => { bank_starts_by_slot.insert(slot, s); },
