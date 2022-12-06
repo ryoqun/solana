@@ -490,6 +490,7 @@ impl BankingStage {
                 let data_budget = data_budget.clone();
                 let connection_cache = connection_cache.clone();
                 let bank_forks = bank_forks.clone();
+                let banking_tracer = banking_tracer.clone();
                 Builder::new()
                     .name(format!("solBanknStgTx{:02}", i))
                     .spawn(move || {
@@ -506,6 +507,7 @@ impl BankingStage {
                             connection_cache,
                             &bank_forks,
                             unprocessed_transaction_storage,
+                            banking_tracer,
                         );
                     })
                     .unwrap()
@@ -1028,6 +1030,7 @@ impl BankingStage {
         connection_cache: Arc<ConnectionCache>,
         bank_forks: &Arc<RwLock<BankForks>>,
         mut unprocessed_transaction_storage: UnprocessedTransactionStorage,
+        banking_tracer: Arc<BankingTracer>,
     ) {
         let recorder = poh_recorder.read().unwrap().recorder();
         let socket = UdpSocket::bind("0.0.0.0:0").unwrap();
@@ -1035,7 +1038,7 @@ impl BankingStage {
         let mut tracer_packet_stats = TracerPacketStats::new(id);
         let qos_service = QosService::new(id);
 
-        let mut slot_metrics_tracker = LeaderSlotMetricsTracker::new(id);
+        let mut slot_metrics_tracker = LeaderSlotMetricsTracker::new(id, banking_tracer);
         let mut last_metrics_update = Instant::now();
 
         loop {
