@@ -3392,15 +3392,7 @@ fn main() {
                     accounts_index_config.drives = Some(accounts_index_paths);
                 }
 
-                let filler_accounts_config = FillerAccountsConfig {
-                    count: value_t_or_exit!(arg_matches, "accounts_filler_count", usize),
-                    size: value_t_or_exit!(arg_matches, "accounts_filler_size", usize),
-                };
-
                 let accounts_db_config = Some(AccountsDbConfig {
-                    index: Some(accounts_index_config),
-                    accounts_hash_cache_path: Some(ledger_path.clone()),
-                    filler_accounts_config,
                     skip_rewrites: arg_matches.is_present("accounts_db_skip_rewrites"),
                     ancient_append_vec_offset: value_t!(
                         matches,
@@ -3408,8 +3400,6 @@ fn main() {
                         u64
                     )
                     .ok(),
-                    exhaustively_verify_refcounts: arg_matches
-                        .is_present("accounts_db_verify_refcounts"),
                     skip_initial_hash_calc: arg_matches
                         .is_present("accounts_db_skip_initial_hash_calculation"),
                     ..AccountsDbConfig::default()
@@ -3419,31 +3409,9 @@ fn main() {
                     .map(|pubkeys| Arc::new(pubkeys.into_iter().collect::<HashSet<_>>()));
 
                 let process_options = ProcessOptions {
-                    new_hard_forks: hardforks_of(arg_matches, "hard_forks"),
-                    poh_verify: !arg_matches.is_present("skip_poh_verify"),
-                    on_halt_store_hash_raw_data_for_debug: arg_matches
-                        .is_present("halt_at_slot_store_hash_raw_data"),
-                    // ledger tool verify always runs the accounts hash calc at the end of processing the blockstore
-                    run_final_accounts_hash_calc: true,
+                    poh_verify: false
                     halt_at_slot: value_t!(arg_matches, "halt_at_slot", Slot).ok(),
-                    debug_keys,
-                    accounts_db_caching_enabled: true,
-                    limit_load_slot_count_from_snapshot: value_t!(
-                        arg_matches,
-                        "limit_load_slot_count_from_snapshot",
-                        usize
-                    )
-                    .ok(),
                     accounts_db_config,
-                    verify_index: arg_matches.is_present("verify_accounts_index"),
-                    allow_dead_slots: arg_matches.is_present("allow_dead_slots"),
-                    accounts_db_test_hash_calculation: arg_matches
-                        .is_present("accounts_db_test_hash_calculation"),
-                    accounts_db_skip_shrink: arg_matches.is_present("accounts_db_skip_shrink"),
-                    runtime_config: RuntimeConfig {
-                        bpf_jit: !arg_matches.is_present("no_bpf_jit"),
-                        ..RuntimeConfig::default()
-                    },
                     ..ProcessOptions::default()
                 };
                 let print_accounts_stats = arg_matches.is_present("print_accounts_stats");
