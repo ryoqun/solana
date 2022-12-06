@@ -49,6 +49,7 @@ impl RollingConditionGrouped {
     }
 
     fn reset(&self) {
+        self.is_checked = false;
     }
 }
 
@@ -86,7 +87,7 @@ impl<'a> Write for GroupedWrite<'a> {
 }
 
 impl BankingTracer {
-    pub fn _new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>, max_size: usize) -> Result<Self, std::io::Error> {
+    pub fn _new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>, max_size: u64) -> Result<Self, std::io::Error> {
         create_dir_all(&path)?;
         let basic = RollingConditionBasic::new().daily().max_size(max_size);
         let grouped = RollingConditionGrouped::new(basic);
