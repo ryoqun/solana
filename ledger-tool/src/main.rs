@@ -2022,6 +2022,9 @@ fn main() {
                     .conflicts_with("no_snapshot")
             )
         ).subcommand(
+            SubCommand::with_name("recreate-block")
+            .about("Recreate a block with banking trace as if a leader")
+        ).subcommand(
             SubCommand::with_name("accounts")
             .about("Print account stats and contents after processing the ledger")
             .arg(&no_snapshot_arg)

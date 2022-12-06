@@ -119,8 +119,7 @@ impl BankingTracer {
     }
 
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
-        let channel = unbounded();
-        (TracedBankingPacketSender::new(channel.0, self.trace_output.as_ref().map(|a| a.0.0.clone()), name), channel.1)
+        Self::channel(self.trace_output.as_ref().map(|a| a.0.0.clone()))
     }
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
@@ -131,6 +130,14 @@ impl BankingTracer {
         if let Some(trace_output) = &self.trace_output {
             trace_output.0.0.send(TimedTracedEvent(SystemTime::now(), TracedEvent::NewBankStart(id, slot))).unwrap();
         }
+    }
+
+    pub fn channel_for_test() -> {
+    }
+
+    pub fn channel(maybe_mirrored_channel: usize) -> usize {
+        let channel = unbounded();
+        (TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name), channel.1)
     }
 }
 
