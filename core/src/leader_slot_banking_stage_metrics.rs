@@ -358,6 +358,7 @@ pub struct LeaderSlotMetricsTracker {
     // otherwise `None`
     leader_slot_metrics: Option<LeaderSlotMetrics>,
     id: u32,
+    banking_tracer: Arc<BankingTracer>,
 }
 
 impl LeaderSlotMetricsTracker {
