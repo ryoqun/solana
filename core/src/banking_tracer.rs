@@ -76,7 +76,9 @@ impl<'a> Write for GroupedWrite<'a> {
 impl BankingTracer {
     pub fn new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         create_dir_all(&path)?;
-        let mut output = RollingFileAppender::new(path.join("events"), RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
+        let basic = RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024);
+        let grouped = RollingConditionGrouped::new(basic);
+        let mut output = RollingFileAppender::new(path.join("events"), basic, 10)?;
 
         let trace_output = if enable_tracing {
             let a = unbounded();
