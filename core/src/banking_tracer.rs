@@ -49,6 +49,44 @@ impl BankingTraceRunner {
     }
 
     pub fn start(&self, bank_forks: Arc<Bank>) {
+use {
+    clap::{crate_description, crate_name, Arg, ArgEnum, Command},
+    crossbeam_channel::{unbounded, Receiver},
+    log::*,
+    rand::{thread_rng, Rng},
+    rayon::prelude::*,
+    solana_client::connection_cache::ConnectionCache,
+    solana_core::{banking_stage::BankingStage, banking_tracer::BankingTracer},
+    solana_gossip::cluster_info::{ClusterInfo, Node},
+    solana_ledger::{
+        blockstore::Blockstore,
+        genesis_utils::{create_genesis_config, GenesisConfigInfo},
+        get_tmp_ledger_path,
+        leader_schedule_cache::LeaderScheduleCache,
+    },
+    solana_measure::measure::Measure,
+    solana_perf::packet::{to_packet_batches, PacketBatch},
+    solana_poh::poh_recorder::{create_test_recorder, PohRecorder, WorkingBankEntry},
+    solana_runtime::{bank::Bank, bank_forks::BankForks},
+    solana_sdk::{
+        compute_budget::ComputeBudgetInstruction,
+        hash::Hash,
+        message::Message,
+        pubkey::{self, Pubkey},
+        signature::{Keypair, Signature, Signer},
+        system_instruction, system_transaction,
+        timing::{duration_as_us, timestamp},
+        transaction::Transaction,
+    },
+    solana_streamer::socket::SocketAddrSpace,
+    solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
+    std::{
+        sync::{atomic::Ordering, Arc, RwLock},
+        thread::sleep,
+        time::{Duration, Instant},
+    },
+};
+
         let bank = bank_forks.read().unwrap().working_bank();
         let mut stream = BufReader::new(File::open(&self.path).unwrap());
         let mut bank_starts_by_slot = std::collections::BTreeMap::new();
