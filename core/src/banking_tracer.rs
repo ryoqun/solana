@@ -71,7 +71,7 @@ impl BankingTracer {
     }
 
     pub fn new_bank_start(&self, slot: Slot) {
-        if let Some(trace_output) = self.trace_output {
+        if let Some(trace_output) = &self.trace_output {
             trace_output.0.0.send(TimedTracedEvent(0, TracedEvent::NewBankStart(slot))).unwrap();
         }
     }
