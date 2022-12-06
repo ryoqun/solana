@@ -132,11 +132,11 @@ impl BankingTracer {
         }
     }
 
-    pub fn channel_for_test() -> usize {
+    pub fn channel_for_test() -> (TracedBankingPacketSender, crossbeam_channel::Receiver<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>) {
         Self::channel(None)
     }
 
-    pub fn channel(maybe_mirrored_channel: usize) -> usize {
+    pub fn channel(maybe_mirrored_channel: usize) -> (TracedBankingPacketSender, crossbeam_channel::Receiver<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>) {
         let channel = unbounded();
         (TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name), channel.1)
     }
