@@ -58,11 +58,11 @@ use chrono::Local;
 
 struct GroupedWrite<'a> {
     now: DateTime<Local>,
-    underlying: &'a mut RollingFileAppender<&'a RollingConditionGrouped>,
+    underlying: &'a mut RollingFileAppender<RollingConditionGrouped>,
 }
 
 impl<'a> GroupedWrite<'a>  {
-    fn new(underlying: &'a mut RollingFileAppender<&'a RollingConditionGrouped>) -> Self {
+    fn new(underlying: &'a mut RollingFileAppender<RollingConditionGrouped>) -> Self {
         Self {
             now: Local::now(),
             underlying,
@@ -70,7 +70,7 @@ impl<'a> GroupedWrite<'a>  {
     }
 }
 
-impl RollingCondition for &RollingConditionGrouped {
+impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
         if self.now.is_none() {
             self.now = Some(now.clone());
@@ -90,14 +90,13 @@ impl BankingTracer {
     pub fn new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         create_dir_all(&path)?;
         let basic = RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024);
+        let grouped = RollingConditionGrouped::new(basic);
+        let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
 
         let trace_output = if enable_tracing {
             let a = unbounded();
             let receiver = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTracer".into()).spawn(move || {
-                let grouped = RollingConditionGrouped::new(basic);
-                let mut output = RollingFileAppender::new(path.join("events"), &grouped, 10).unwrap();
-
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
