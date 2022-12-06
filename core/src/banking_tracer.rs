@@ -39,6 +39,17 @@ struct RollingConditionGrouped {
 }
 
 struct GroupedWrite {
+    now: DateTime<Local>,
+    underlying: usize,
+}
+
+impl GroupedWrite {
+    fn new(underlying: usize) -> Self {
+        Self {
+            now: Local::now(),
+            underlying,
+        }
+    }
 }
 
 impl RollingCondition for RollingConditionGrouped {
@@ -64,6 +75,7 @@ impl BankingTracer {
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
+                        let gw = GroupedWrite::new(output);
                         // grouped_write.begin();
                         serialize_into(&mut output, &mm).unwrap();
                     }
