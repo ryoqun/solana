@@ -88,7 +88,7 @@ impl TracedBankingPacketSender {
         // remove .clone() by using Arc<PacketBatch>
         self.sender_to_banking.send(batch.clone()).and_then(|r| {
             if let Some(mirror) = &self.mirrored_sender_to_trace {
-                mirror.send(TimedTracedEvent(0, TracedEvent::PacketBatch(name.into(), batch.0))).unwrap();
+                mirror.send(TimedTracedEvent(0, TracedEvent::PacketBatch(self.name.into(), batch.0))).unwrap();
             }
             Ok(())
         } )
