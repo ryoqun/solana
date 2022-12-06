@@ -45,7 +45,7 @@ impl RollingConditionGrouped {
     fn new(basic: RollingConditionBasic) -> Self {
         Self {
             basic,
-            is_checked: bool,
+            is_checked: bool::default(),
         }
     }
 
