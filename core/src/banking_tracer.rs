@@ -78,7 +78,7 @@ impl BankingTracer {
         create_dir_all(&path)?;
         let basic = RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024);
         let grouped = RollingConditionGrouped::new(basic);
-        let mut output = RollingFileAppender::new(path.join("events"), basic, 10)?;
+        let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
 
         let trace_output = if enable_tracing {
             let a = unbounded();
