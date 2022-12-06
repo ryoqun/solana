@@ -32,11 +32,11 @@ pub struct BankingTraceRunner {
 }
 
 impl BankingTraceRunner {
-    fn new(path: PathBuf) -> Self {
+    pub fn new(path: PathBuf) -> Self {
         Self { path }
     }
 
-    fn start(&self) {
+    pub fn start(&self) {
         let mut stream = BufReader::new(File::open(&self.path).unwrap());
         let event: TimedTracedEvent = bincode::deserialize_from(&mut stream).unwrap();
         dbg!(event);
