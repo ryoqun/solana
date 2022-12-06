@@ -69,7 +69,7 @@ impl BankingTracer {
         (self.trace_output.as_mut().map(|a| a.1.take()).flatten(), Arc::new(self))
     }
 
-    pub fn new_bank_start(slot: Slot) {
+    pub fn new_bank_start(&self, slot: Slot) {
     }
 }
 
