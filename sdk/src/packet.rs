@@ -65,6 +65,8 @@ mod serde_bytes_array {
     }
 }
 
+use serde_with::serde_as;
+
 #[serde_as]
 #[derive(Clone, Eq, Serialize, Deserialize)]
 #[repr(C)]
