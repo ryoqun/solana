@@ -136,7 +136,7 @@ impl BankingTraceRunner {
                     );
 
                     poh_recorder.write().unwrap().set_bank(&bank, false);
-                    info("sleeping...");
+                    info!("sleeping...");
                     sleep(Duration::from_millis(100));
                 }
                 exit.store(true, Ordering::Relaxed);
