@@ -2103,6 +2103,7 @@ mod tests {
                 None,
                 Arc::new(ConnectionCache::default()),
                 bank_forks,
+                banking_tracer,
             );
             trace!("sending bank");
             drop(verified_sender);
