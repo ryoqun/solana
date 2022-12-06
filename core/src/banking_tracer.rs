@@ -36,6 +36,15 @@ enum TracedEvent {
 }
 
 struct RollingConditionGrouped {
+    basic: usize,
+}
+
+impl RollingConditionGrouped {
+    fn new(basic: usize) -> Self {
+        Self {
+            basic,
+        }
+    }
 }
 
 use chrono::DateTime;
