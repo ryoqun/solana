@@ -6,7 +6,6 @@ use {
         Receiver, Sender, unbounded, SendError,
     },
 };
-use std::path::Path;
 use std::sync::{Arc, atomic::AtomicBool};
 use std::time::SystemTime;
 use std::io::Write;
