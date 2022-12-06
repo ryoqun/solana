@@ -37,6 +37,7 @@ enum TracedEvent {
 
 struct RollingConditionGrouped {
     basic: RollingConditionBasic,
+    now: RefCell<Option<DateTime<Local>>>
 }
 
 impl RollingConditionGrouped {
