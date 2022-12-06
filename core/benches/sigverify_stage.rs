@@ -173,7 +173,7 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
         trace!("sent: {}", sent_len);
         loop {
             if let Ok((verifieds, _)) = verified_r.recv_timeout(Duration::from_millis(10)) {
-                while let Some(v) in verifieds.iter() {
+                for v in verifieds.iter() {
                     received += v.len();
                     batches.push(v);
                 }
