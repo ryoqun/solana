@@ -3361,10 +3361,6 @@ fn main() {
                 }
             },
             ("recreate-blocks", Some(arg_matches)) => {
-                let runner = BankingTraceRunner::new(PathBuf::new().join("/dev/stdin"));
-                //runner.seek(bank); => Ok or Err("no BankStart")
-                runner.start();
-
                 let mut accounts_index_config = AccountsIndexConfig::default();
                 if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
                     accounts_index_config.bins = Some(bins);
@@ -3477,72 +3473,10 @@ fn main() {
                 });
 
                 let bank = bank_forks.read().unwrap().working_bank();
-                let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-                let (exit, poh_recorder, poh_service, signal_receiver) =
-                    create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
+                let runner = BankingTraceRunner::new(PathBuf::new().join("/dev/stdin"));
+                //runner.seek(bank); => Ok or Err("no BankStart")
+                runner.start(bank);
 
-                let no_os_memory_stats_reporting =
-                    arg_matches.is_present("no_os_memory_stats_reporting");
-                let system_monitor_service = SystemMonitorService::new(
-                    Arc::clone(&exit),
-                    !no_os_memory_stats_reporting,
-                    false,
-                    false,
-                    false,
-                );
-
-                let banking_tracer =
-                    BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
-                let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
-                    Node::new_localhost().info,
-                    Arc::new(Keypair::new()),
-                    SocketAddrSpace::Unspecified,
-                );
-                let cluster_info = Arc::new(cluster_info);
-                let tpu_use_quic = matches.is_present("tpu_use_quic");
-                let connection_cache = match tpu_use_quic {
-                    true => ConnectionCache::new(DEFAULT_TPU_CONNECTION_POOL_SIZE),
-                    false => ConnectionCache::with_udp(DEFAULT_TPU_CONNECTION_POOL_SIZE),
-                };
-                let banking_stage = BankingStage::new_num_threads(
-                    &cluster_info,
-                    &poh_recorder,
-                    verified_receiver,
-                    tpu_vote_receiver,
-                    vote_receiver,
-                    num_banking_threads,
-                    None,
-                    replay_vote_sender,
-                    None,
-                    Arc::new(connection_cache),
-                    bank_forks.clone(),
-                    banking_tracer,
-                );
-                poh_recorder.write().unwrap().set_bank(&bank, false);
-                loop {
-                    if poh_recorder.read().unwrap().bank().is_none() {
-                        poh_recorder
-                            .write()
-                            .unwrap()
-                            .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
-                        let new_bank = Bank::new_from_parent(&bank, &collector, bank.slot() + 1);
-                        bank_forks.write().unwrap().insert(new_bank);
-                        bank = bank_forks.read().unwrap().working_bank();
-                    }
-                    // set cost tracker limits to MAX so it will not filter out TXs
-                    bank.write_cost_tracker().unwrap().set_limits(
-                        std::u64::MAX,
-                        std::u64::MAX,
-                        std::u64::MAX,
-                    );
-
-                    poh_recorder.write().unwrap().set_bank(&bank, false);
-                    info("sleeping...");
-                    sleep(Duration::from_millis(100));
-                }
-                exit.store(true, Ordering::Relaxed);
-                banking_stage.join().unwrap();
-                poh_service.join().unwrap();
 
                 println!("Ok");
             },
