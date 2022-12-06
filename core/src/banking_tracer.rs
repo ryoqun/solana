@@ -110,7 +110,7 @@ impl BankingTracer {
                 sender_overhead_minimized_loop(receiver, |mm| {
                     output.condition_mut().reset();
                     serialize_into(&mut GroupedWrite::new(&mut output), &mm).unwrap();
-                }}
+                });
                 output.flush().unwrap();
             }).unwrap();
 
