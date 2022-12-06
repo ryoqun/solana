@@ -86,7 +86,7 @@ impl<'a> Write for GroupedWrite<'a> {
     fn flush(&mut self) -> std::result::Result<(), std::io::Error> { self.underlying.flush() }
 }
 
-pub fn sender_overhead_minimized_loop<T>(exit: Arc<AtomicBool>, receiver: crossbeam_channel::Receiver<T>, mm: impl FnMut(usize) -> ()) {
+pub fn sender_overhead_minimized_loop<T>(exit: Arc<AtomicBool>, receiver: crossbeam_channel::Receiver<T>, on_recv: impl FnMut(usize) -> ()) {
     while !exit.load(std::sync::atomic::Ordering::Relaxed) {
         while let Ok(mm) = receiver.try_recv() {
             on_recv(mm);
