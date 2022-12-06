@@ -70,7 +70,7 @@ impl<'a> GroupedWrite<'a>  {
     }
 }
 
-impl RollingCondition for RollingConditionGrouped {
+impl RollingCondition for &RollingConditionGrouped {
     fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
         if self.now.is_none() {
             self.now = Some(now.clone());
@@ -91,7 +91,7 @@ impl BankingTracer {
         create_dir_all(&path)?;
         let basic = RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024);
         let grouped = RollingConditionGrouped::new(basic);
-        let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
+        let mut output = RollingFileAppender::new(path.join("events"), &grouped, 10)?;
 
         let trace_output = if enable_tracing {
             let a = unbounded();
