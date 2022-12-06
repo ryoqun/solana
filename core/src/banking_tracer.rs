@@ -38,14 +38,14 @@ enum TracedEvent {
 
 struct RollingConditionGrouped {
     basic: RollingConditionBasic,
-    now: RefCell<Option<DateTime<Local>>>
+    now: Option<DateTime<Local>>
 }
 
 impl RollingConditionGrouped {
     fn new(basic: RollingConditionBasic) -> Self {
         Self {
             basic,
-            now: RefCell::default(),
+            now: Option::default(),
         }
     }
 }
@@ -68,7 +68,14 @@ impl<'a> GroupedWrite<'a>  {
 }
 
 impl RollingCondition for RollingConditionGrouped {
-    fn should_rollover(&mut self, _: &chrono::DateTime<chrono::Local>, _: u64) -> bool { todo!() }
+    fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
+        if self.now.is_none() {
+            self.now = now.clone();
+            basic.should_rollover(now, current_filesize)
+        } else {
+            false
+        }
+    }
 }
 
 impl<'a> Write for GroupedWrite<'a> {
