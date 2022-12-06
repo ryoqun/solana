@@ -32,7 +32,7 @@ pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 #[derive(Serialize, Deserialize)]
 enum TracedEvent {
     NewBankStart(u32, Slot),
-    PacketBatch(String, Vec<PacketBatch>),
+    PacketBatch(String, BankingPacketBatch),
 }
 
 struct RollingConditionGrouped {
@@ -189,7 +189,7 @@ impl TracedBankingPacketSender {
     pub fn send(&self, batch: BankingPacketBatch) -> std::result::Result<(), SendError<BankingPacketBatch>> {
         if let Some(mirror) = &self.mirrored_sender_to_trace {
             // remove .clone() by using Arc<PacketBatch>
-            mirror.send(TimedTracedEvent(SystemTime::now(), TracedEvent::PacketBatch(self.name.into(), batch.clone().0))).unwrap();
+            mirror.send(TimedTracedEvent(SystemTime::now(), TracedEvent::PacketBatch(self.name.into(), batch.clone()))).unwrap();
         }
         self.sender_to_banking.send(batch)
     }
