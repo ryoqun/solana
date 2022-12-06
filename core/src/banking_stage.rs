@@ -2333,7 +2333,7 @@ mod tests {
                     &poh_recorder,
                     verified_receiver,
                     tpu_vote_receiver,
-                    vote_receiver,
+                    gossip_verified_vote_receiver,
                     3,
                     None,
                     gossip_vote_sender,
