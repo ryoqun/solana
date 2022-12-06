@@ -347,7 +347,7 @@ pub struct BatchedTransactionErrorDetails {
 /// Stores the stage's thread handle and output receiver.
 pub struct BankingStage {
     bank_thread_hdls: Vec<JoinHandle<()>>,
-    tracer_thread_hdl: JoinHandle<()>,
+    tracer_thread_hdl: Option<JoinHandle<()>>,
 }
 
 #[derive(Debug, Clone)]
