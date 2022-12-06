@@ -31,7 +31,7 @@ struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
 #[derive(Serialize, Deserialize)]
 enum TracedEvent {
-    NewBankStart(Slot),
+    NewBankStart(i32, Slot),
     PacketBatch(String, Vec<PacketBatch>),
 }
 
