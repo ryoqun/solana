@@ -1685,7 +1685,7 @@ mod tests {
         let current_leader_bank = Arc::new(Bank::new_for_tests(&genesis_config));
         let mut bank_vote_sender_state_option: Option<BankVoteSenderState> = None;
         let verified_vote_packets = VerifiedVotePackets::default();
-        let (verified_packets_sender, _verified_packets_receiver) = unbounded();
+        let (verified_packets_sender, _verified_packets_receiver) = crate::banking_trace::BankingTracer::channel_for_test();
 
         // 1) If we hand over a `current_leader_bank`, vote sender state should be updated
         ClusterInfoVoteListener::check_for_leader_bank_and_send_votes(
