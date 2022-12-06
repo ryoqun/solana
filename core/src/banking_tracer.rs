@@ -38,12 +38,12 @@ impl BankingTracer {
 
         let trace_output = if enable_tracing {
             let a = unbounded();
-            let aa = a.1.clone();
+            let receiver = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
                 while exit.load(std::sync::atomic::Ordering::Relaxed) {
-                    while let Ok(mm) = aa.try_recv() {
+                    while let Ok(mm) = receiver.try_recv() {
                         serialize_into(&mut output, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
@@ -71,6 +71,9 @@ impl BankingTracer {
     }
 
     pub fn new_bank_start(&self, slot: Slot) {
+        if let Some(trace_output) = self.trace_output {
+            trace_output.0.0.send(3).unwrap();
+        }
     }
 }
 
