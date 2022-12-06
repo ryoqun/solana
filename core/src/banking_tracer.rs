@@ -61,7 +61,7 @@ impl RollingCondition for RollingConditionGrouped {
 
 impl<'a> Write for GroupedWrite<'a> {
     fn write(&mut self, _: &[u8]) -> std::result::Result<usize, std::io::Error> { todo!() }
-    fn flush(&mut self) -> std::result::Result<(), std::io::Error> { todo!() }
+    fn flush(&mut self) -> std::result::Result<(), std::io::Error> { self.underlying.flush() }
 }
 
 impl BankingTracer {
