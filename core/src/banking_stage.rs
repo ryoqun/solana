@@ -4194,7 +4194,7 @@ mod tests {
             .into_iter()
             .map(|(packet_batches, sender)| {
                 Builder::new()
-                    .spawn(move || sender.send((packet_batches, None)).unwrap())
+                    .spawn(move || sender.send(Arc::new((packet_batches, None))).unwrap())
                     .unwrap()
             })
             .for_each(|handle| handle.join().unwrap());
