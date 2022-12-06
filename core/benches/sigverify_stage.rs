@@ -225,8 +225,8 @@ fn prepare_batches(discard_factor: i32) -> (Vec<PacketBatch>, usize) {
 
 fn bench_shrink_sigverify_stage_core(bencher: &mut Bencher, discard_factor: i32) {
     let (batches0, num_valid_packets) = prepare_batches(discard_factor);
-    let (_verified_s, _verified_r) = unbounded();
-    let verifier = TransactionSigVerifier::new(_verified_s);
+    let (verified_s, verified_r) = solana_core::banking_tracer::BankingTracer::channel_for_test();
+    let verifier = TransactionSigVerifier::new(verified_s);
 
     let mut c = 0;
     let mut total_shrink_time = 0;
