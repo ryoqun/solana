@@ -28,7 +28,7 @@ struct TimedTracedEvent(u64, TracedEvent);
 
 #[derive(Serialize)]
 enum TracedEvent {
-    BankStart,
+    NewBankStart(Slot),
     PacketBatch(String, Vec<PacketBatch>),
 }
 
