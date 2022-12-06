@@ -42,7 +42,7 @@ impl BankingTracer {
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
                 while exit.load(std::sync::atomic::Ordering::Relaxed) {
-                    if let Ok(mm) = aa.try_recv() {
+                    while let Ok(mm) = aa.try_recv() {
                         serialize_into(&mut output, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
