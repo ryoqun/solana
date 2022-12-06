@@ -73,7 +73,7 @@ impl BankingTracer {
 
     pub fn new_bank_start(&self, slot: Slot) {
         if let Some(trace_output) = &self.trace_output {
-            trace_output.0.0.send(TimedTracedEvent(SystemTime.now(), TracedEvent::NewBankStart(slot))).unwrap();
+            trace_output.0.0.send(TimedTracedEvent(SystemTime::now(), TracedEvent::NewBankStart(slot))).unwrap();
         }
     }
 }
@@ -97,7 +97,7 @@ impl TracedBankingPacketSender {
         // remove .clone() by using Arc<PacketBatch>
         self.sender_to_banking.send(batch.clone()).and_then(|r| {
             if let Some(mirror) = &self.mirrored_sender_to_trace {
-                mirror.send(TimedTracedEvent(SystemTime.now(), TracedEvent::PacketBatch(self.name.into(), batch.0))).unwrap();
+                mirror.send(TimedTracedEvent(SystemTime::now(), TracedEvent::PacketBatch(self.name.into(), batch.0))).unwrap();
             }
             Ok(())
         } )
