@@ -24,7 +24,7 @@ pub struct BankingTracer {
 }
 
 #[derive(Serialize)]
-struct TimedTracedEvent(u64, TracedEvent);
+struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
 #[derive(Serialize)]
 enum TracedEvent {
