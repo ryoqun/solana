@@ -2022,7 +2022,7 @@ fn main() {
                     .conflicts_with("no_snapshot")
             )
         ).subcommand(
-            SubCommand::with_name("recreate-block")
+            SubCommand::with_name("recreate-blocks")
             .about("Recreate a block with banking trace as if a leader")
         ).subcommand(
             SubCommand::with_name("accounts")
@@ -3358,7 +3358,13 @@ fn main() {
                         exit(1);
                     }
                 }
-            }
+            },
+            ("recreate-blocks", Some(arg_matches)) => {
+                let runner = BankingTraceRunner::new();
+                //runner.seek(bank); => Ok or Err("no BankStart")
+                runner.start();
+                
+            },
             ("accounts", Some(arg_matches)) => {
                 let halt_at_slot = value_t!(arg_matches, "halt_at_slot", Slot).ok();
                 let process_options = ProcessOptions {

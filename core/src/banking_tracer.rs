@@ -27,6 +27,19 @@ pub struct BankingTracer {
     )>,
 }
 
+pub struct BankingTraceRunner {
+    path: PathBuf,
+}
+
+impl BankingTraceRunner {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    fn start() {
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
