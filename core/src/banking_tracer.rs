@@ -18,7 +18,7 @@ type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
 pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
 
 pub struct BankingTracer {
-   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), std::thread::JoinHandle<()>)>,
+   trace_output: Option<((crossbeam_channel::Sender<TimedTracedEvent>, crossbeam_channel::Receiver<TimedTracedEvent>), Option<std::thread::JoinHandle<()>>)>,
    exit: Arc<AtomicBool>,
 }
 
@@ -47,7 +47,7 @@ impl BankingTracer {
                 }
             }).unwrap();
 
-            Some((a, join_handle))
+            Some((a, Some(join_handle)))
         } else {
             None
         };
@@ -62,6 +62,10 @@ impl BankingTracer {
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         let channel = unbounded();
         (TracedBankingPacketSender::new(channel.0, None, name), channel.1)
+    }
+
+    pub fn finalize_under_arc(self) -> (Option<JoinHandle<()>>, Arc<Self>) {
+        (self.trace_output.as_mut().map(|a| a.1).take(), Arc::new(self))
     }
 
     pub fn join(&self) -> std::thread::Result<()> {
