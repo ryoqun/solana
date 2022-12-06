@@ -68,7 +68,7 @@ impl BankingTracer {
 
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         let channel = unbounded();
-        (TracedBankingPacketSender::new(channel.0, self.trace_output.map(|a| a.0.0.clone()), name), channel.1)
+        (TracedBankingPacketSender::new(channel.0, self.trace_output.as_ref().map(|a| a.0.0.clone()), name), channel.1)
     }
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
