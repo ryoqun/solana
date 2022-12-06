@@ -565,7 +565,8 @@ mod tests {
         let mut total_tracer_packets_received_in_sigverify_stage = 0;
         trace!("sent: {}", sent_len);
         loop {
-            if let Ok((mut verifieds, tracer_packet_stats_option)) = verified_r.recv() {
+            if let Ok(aa) = verified_r.recv() {
+                let (verifieds, tracer_packet_stats_option) = (&aa.0, &aa.1);
                 let tracer_packet_stats = tracer_packet_stats_option.unwrap();
                 total_tracer_packets_received_in_sigverify_stage +=
                     tracer_packet_stats.total_tracer_packets_received_in_sigverify_stage;
@@ -603,7 +604,7 @@ mod tests {
                     );
                 }
                 assert_eq!(tracer_packet_stats.total_excess_tracer_packets, 0);
-                while let Some(v) = verifieds.pop() {
+                for v in verifieds.iter() {
                     received += v.len();
                     batches.push(v);
                 }
