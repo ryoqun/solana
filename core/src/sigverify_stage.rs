@@ -604,9 +604,9 @@ mod tests {
                     );
                 }
                 assert_eq!(tracer_packet_stats.total_excess_tracer_packets, 0);
-                for v in verifieds.into_iter() {
+                for v in verifieds.into_iter().rev() {
                     received += v.len();
-                    batches.push(v);
+                    batches.push(v.clone());
                 }
             }
 
