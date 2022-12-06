@@ -2304,6 +2304,8 @@ mod tests {
 
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
+            let (gossip_vote_sender, _gossip_vote_receiver) = unbounded();
+
             let (entry_receiver, senders) = {
                 // start a banking_stage to eat verified receiver
                 let bank = Bank::new_no_wallclock_throttle_for_tests(&genesis_config);
