@@ -374,7 +374,7 @@ impl LeaderSlotMetricsTracker {
     fn create_new_slot_metrics(&self, bank_start: &BankStart) -> Option<LeaderSlotMetrics> {
         let slot = bank_start.working_bank.slot();
 
-        self.banking_tracer.new_bank_start(self.id, salot);
+        self.banking_tracer.new_bank_start(self.id, slot);
         Some(LeaderSlotMetrics::new(
             self.id,
             slot,
