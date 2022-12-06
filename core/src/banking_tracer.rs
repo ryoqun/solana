@@ -43,10 +43,10 @@ impl BankingTraceRunner {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 enum TracedEvent {
     NewBankStart(u32, Slot),
     PacketBatch(String, BankingPacketBatch),
