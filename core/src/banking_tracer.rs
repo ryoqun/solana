@@ -43,7 +43,7 @@ impl BankingTracer {
         let trace_output = if enable_tracing {
             let a = unbounded();
             let receiver = a.1.clone();
-            let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
+            let join_handle = std::thread::Builder::new().name("solBanknTracer".into()).spawn(move || {
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
@@ -68,7 +68,7 @@ impl BankingTracer {
 
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         let channel = unbounded();
-        (TracedBankingPacketSender::new(channel.0, None, name), channel.1)
+        (TracedBankingPacketSender::new(channel.0, self.trace_output.0.0.clone(), name), channel.1)
     }
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
