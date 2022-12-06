@@ -363,10 +363,11 @@ pub struct LeaderSlotMetricsTracker {
 }
 
 impl LeaderSlotMetricsTracker {
-    pub fn new(id: u32) -> Self {
+    pub fn new(id: u32, banking_tracer: Arc<BankingTracer>) -> Self {
         Self {
             leader_slot_metrics: None,
             id,
+            banking_tracer,
         }
     }
 
