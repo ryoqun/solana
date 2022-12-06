@@ -36,7 +36,9 @@ impl BankingTraceRunner {
         Self { path }
     }
 
-    fn start() {
+    fn start(&self) {
+        let stream = BufReader::new(File::open(self.path));
+        dbg!(bincode::deserialize_from(&mut stream));
     }
 }
 
