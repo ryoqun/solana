@@ -2217,7 +2217,7 @@ mod tests {
                 .collect();
             let packet_batches = convert_from_old_verified(packet_batches);
             verified_sender // no_ver, anf, tx
-                .send((packet_batches, None))
+                .send(Arc::new((packet_batches, None)))
                 .unwrap();
 
             drop(verified_sender);
