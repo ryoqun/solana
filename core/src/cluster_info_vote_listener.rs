@@ -472,7 +472,7 @@ impl ClusterInfoVoteListener {
         for single_validator_votes in gossip_votes_iterator {
             bank_send_votes_stats.num_votes_sent += single_validator_votes.len();
             bank_send_votes_stats.num_batches_sent += 1;
-            verified_packets_sender.send((single_validator_votes, None))?;
+            verified_packets_sender.send(Arc::new((single_validator_votes, None)))?;
         }
         filter_gossip_votes_timing.stop();
         bank_send_votes_stats.total_elapsed += filter_gossip_votes_timing.as_us();
