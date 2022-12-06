@@ -45,7 +45,7 @@ impl RollingConditionGrouped {
     fn new(basic: RollingConditionBasic) -> Self {
         Self {
             basic,
-            now: Option::default(),
+            is_reset: AtomicBool::default(),
         }
     }
 
