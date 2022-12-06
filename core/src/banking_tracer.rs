@@ -27,7 +27,7 @@ pub struct BankingTracer {
 #[derive(Serialize, Deserialize)]
 struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 enum TracedEvent {
     NewBankStart(Slot),
     PacketBatch(String, Vec<PacketBatch>),
