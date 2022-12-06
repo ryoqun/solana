@@ -3361,7 +3361,7 @@ fn main() {
                 }
             },
             ("recreate-blocks", Some(arg_matches)) => {
-                let runner = BankingTraceRunner::new();
+                let runner = BankingTraceRunner::new(PathBuf::new().join("/dev/stdin"));
                 //runner.seek(bank); => Ok or Err("no BankStart")
                 runner.start();
                 
