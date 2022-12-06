@@ -35,7 +35,7 @@ enum TracedEvent {
 }
 
 impl BankingTracer {
-    pub fn new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
+    pub fn new(path: std::path::PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         std::fs::create_dir_all(&path)?;
         let mut output = RollingFileAppender::new(path.join("events"), RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024), 10)?;
 
