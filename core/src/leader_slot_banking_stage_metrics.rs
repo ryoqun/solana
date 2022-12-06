@@ -887,8 +887,7 @@ mod tests {
             bank_creation_time: Arc::new(Instant::now()),
         };
 
-        let banking_stage_thread_id = 0;
-        let leader_slot_metrics_tracker = LeaderSlotMetricsTracker::new(banking_stage_thread_id);
+        let leader_slot_metrics_tracker = LeaderSlotMetricsTracker::new_for_test();
 
         TestSlotBoundaryComponents {
             first_bank,
