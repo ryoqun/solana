@@ -119,7 +119,7 @@ impl BankingTracer {
     }
 
     pub fn new_for_test() -> Self {
-        Self::new("dummy", false, AtomicBool::default())
+        Self::new(PathBuf::new("dummy"), false, AtomicBool::default())
     }
 
     pub fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
