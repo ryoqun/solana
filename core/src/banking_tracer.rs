@@ -68,6 +68,9 @@ impl BankingTracer {
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (self.trace_output.as_mut().map(|a| a.1.take()).flatten(), Arc::new(self))
     }
+
+    pub fn new_bank_start(slot: Slot) {
+    }
 }
 
 pub struct TracedBankingPacketSender {
