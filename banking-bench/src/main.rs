@@ -465,7 +465,7 @@ fn main() {
                     timestamp(),
                 );
                 verified_sender
-                    .send((vec![packet_batch.clone()], None))
+                    .send(Arc::new((vec![packet_batch.clone()], None)))
                     .unwrap();
             }
 
