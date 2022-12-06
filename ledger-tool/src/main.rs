@@ -3472,10 +3472,9 @@ fn main() {
                     exit(1);
                 });
 
-                let bank = bank_forks.read().unwrap().working_bank();
                 let runner = BankingTraceRunner::new(PathBuf::new().join("/dev/stdin"));
                 //runner.seek(bank); => Ok or Err("no BankStart")
-                runner.start(bank);
+                runner.start(bank_forks);
 
 
                 println!("Ok");

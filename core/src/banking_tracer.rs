@@ -48,7 +48,8 @@ impl BankingTraceRunner {
         (self.non_vote_channel.1.clone(),self.tpu_vote_channel.1.clone(),  self.gossip_vote_channel.1.clone())
     }
 
-    pub fn start(&self, bank: Arc<Bank>) {
+    pub fn start(&self, bank_forks: Arc<Bank>) {
+        let bank = bank_forks.read().unwrap().working_bank();
         let mut stream = BufReader::new(File::open(&self.path).unwrap());
         let mut bank_starts_by_slot = std::collections::BTreeMap::new();
         let mut packet_batches_by_time = std::collections::BTreeMap::new();
