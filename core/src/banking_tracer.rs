@@ -70,6 +70,7 @@ impl BankingTraceRunner {
                     "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
                     "gossip" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
                     "tpu" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
+                    &_ => panic!(),
                 }
             }
         }
