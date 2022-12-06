@@ -49,7 +49,7 @@ impl BankingTracer {
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
                 }
-                output.flush.unwrap();
+                output.flush().unwrap();
             }).unwrap();
 
             Some((a, Some(join_handle)))
