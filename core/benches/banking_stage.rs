@@ -305,10 +305,10 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
             let mut sent = 0;
             if let Some(vote_packets) = &vote_packets {
                 tpu_vote_sender
-                    .send((vote_packets[start..start + chunk_len].to_vec(), None))
+                    .send(Arc::new((vote_packets[start..start + chunk_len].to_vec(), None)))
                     .unwrap();
                 vote_sender
-                    .send((vote_packets[start..start + chunk_len].to_vec(), None))
+                    .send(Arc::new((vote_packets[start..start + chunk_len].to_vec(), None)))
                     .unwrap();
             }
             for v in verified[start..start + chunk_len].chunks(chunk_len / num_threads) {
