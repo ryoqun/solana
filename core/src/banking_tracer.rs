@@ -66,7 +66,7 @@ impl BankingTraceRunner {
                 TracedEvent::PacketBatch(name, batch) => { packet_batches_by_time.insert(s, (name, batch)); },
             }
             for (name, batch) in packet_batches_by_time.values() {
-                match &name {
+                match name.to_str() {
                     "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
                     "gossip" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
                     "tpu" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
