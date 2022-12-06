@@ -114,6 +114,8 @@ use {
             }
         }
 
+        let (verified_receiver, tpu_vote_receiver, gossip_vote_receiver) = self.prepare_receivers();
+
                 let collector = solana_sdk::pubkey::new_rand();
                 let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
                 let (exit, poh_recorder, poh_service, signal_receiver) =
@@ -135,7 +137,7 @@ use {
                     &poh_recorder,
                     verified_receiver,
                     tpu_vote_receiver,
-                    vote_receiver,
+                    gossip_vote_receiver,
                     1,
                     None,
                     replay_vote_sender,
