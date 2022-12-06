@@ -59,7 +59,7 @@ impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, _: &chrono::DateTime<chrono::Local>, _: u64) -> bool { todo!() }
 }
 
-impl Write for GroupedWrite {
+impl<'a> Write for GroupedWrite<'a> {
     fn write(&mut self, _: &[u8]) -> std::result::Result<usize, std::io::Error> { todo!() }
     fn flush(&mut self) -> std::result::Result<(), std::io::Error> { todo!() }
 }
