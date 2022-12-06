@@ -48,7 +48,7 @@ impl BankingTraceRunner {
             dbg!(event);
             let s = event.0;
             match event.1 {
-                TracedEvent::NewBankStart(_, slot) => bank_starts.insert(slot, s),
+                TracedEvent::NewBankStart(_, slot) => bank_starts_by_slot.insert(slot, s),
                 TracedEvent::PacketBatch(name, batch) => packet_batches_by_time.insert(s, (name, batch)),
             }
         }
