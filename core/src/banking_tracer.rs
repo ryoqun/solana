@@ -11,6 +11,7 @@ use std::sync::{Arc, atomic::AtomicBool};
 use solana_perf::packet::PacketBatch;
 use rolling_file::{RollingFileAppender, RollingConditionBasic};
 use bincode::serialize_into;
+use solana_sdk::slot_history::Slot;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
 pub type BankingPacketSender = TracedBankingPacketSender;
