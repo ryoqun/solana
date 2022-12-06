@@ -6,7 +6,7 @@ use {
     solana_perf::packet::PacketBatch,
     solana_sdk::slot_history::Slot,
     std::{
-        fs::create_dir_all,
+        fs::{File, create_dir_all},
         io::{BufReader, Write},
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
