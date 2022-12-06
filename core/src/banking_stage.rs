@@ -2302,13 +2302,9 @@ mod tests {
         let packet_batches = convert_from_old_verified(packet_batches);
         verified_sender.send((packet_batches, None)).unwrap();
 
-        let (vote_sender, vote_receiver) = unbounded();
-        let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
-            let (gossip_vote_sender, _gossip_vote_receiver) = unbounded();
-
-            let entry_receiver = {
+            let (entry_receiver, senders) = {
                 // start a banking_stage to eat verified receiver
                 let bank = Bank::new_no_wallclock_throttle_for_tests(&genesis_config);
                 let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
@@ -2325,6 +2321,11 @@ mod tests {
                 };
                 let (exit, poh_recorder, poh_service, entry_receiver) =
                     create_test_recorder(&bank, &blockstore, Some(poh_config), None);
+                let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+                let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+                let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+                let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
+
                 let cluster_info = new_test_cluster_info(Node::new_localhost().info);
                 let cluster_info = Arc::new(cluster_info);
                 let _banking_stage = BankingStage::new_num_threads(
@@ -2339,6 +2340,7 @@ mod tests {
                     None,
                     Arc::new(ConnectionCache::default()),
                     bank_forks,
+                    banking_tracer,
                 );
 
                 // wait for banking_stage to eat the packets
@@ -2347,11 +2349,9 @@ mod tests {
                 }
                 exit.store(true, Ordering::Relaxed);
                 poh_service.join().unwrap();
-                entry_receiver
+                (entry_receiver, (verified_sender, gossip_verified_vote_sender, tpu_vote_sender))
             };
-            drop(verified_sender);
-            drop(vote_sender);
-            drop(tpu_vote_sender);
+            drop(senders);
 
             // consume the entire entry_receiver, feed it into a new bank
             // check that the balance is what we expect.
