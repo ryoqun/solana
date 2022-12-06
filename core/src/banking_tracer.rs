@@ -100,8 +100,8 @@ impl BankingTracer {
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
+                        output.condition_mut().reset();
                         let mut gw = GroupedWrite::new(&mut output);
-                        gw.underlying.condition_mut().reset();
                         serialize_into(&mut gw, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
