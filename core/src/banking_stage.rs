@@ -4123,6 +4123,7 @@ mod tests {
                 None,
                 Arc::new(ConnectionCache::default()),
                 bank_forks,
+                banking_tracer,
             );
 
             let keypairs = (0..100).map(|_| Keypair::new()).collect_vec();
