@@ -38,7 +38,6 @@ impl BankingTracer {
             let a = unbounded();
             let aa = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTrcr".into()).spawn(move || {
-                // change to timed loop!
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
                 while exit.load(std::sync::atomic::Ordering::Relaxed) {
