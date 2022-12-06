@@ -37,7 +37,7 @@ impl BankingTraceRunner {
     }
 
     fn start(&self) {
-        let stream = BufReader::new(File::open(&self.path).unwrap());
+        let mut stream = BufReader::new(File::open(&self.path).unwrap());
         let event: TimedTracedEvent = bincode::deserialize_from(&mut stream).unwrap();
         dbg!(event);
     }
