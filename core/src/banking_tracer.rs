@@ -41,13 +41,13 @@ struct RollingConditionGrouped {
 use chrono::DateTime;
 use chrono::Local;
 
-struct GroupedWrite {
+struct GroupedWrite<'a> {
     now: DateTime<Local>,
-    underlying: RollingFileAppender<RollingConditionBasic>,
+    underlying: &'a RollingFileAppender<RollingConditionBasic>,
 }
 
-impl GroupedWrite {
-    fn new(underlying: RollingFileAppender<RollingConditionBasic>) -> Self {
+impl<'a> GroupedWrite<'a>  {
+    fn new(underlying: &'a RollingFileAppender<RollingConditionBasic>) -> Self {
         Self {
             now: Local::now(),
             underlying,
