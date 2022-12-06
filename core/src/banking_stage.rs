@@ -2020,9 +2020,10 @@ mod tests {
         let bank = Bank::new_no_wallclock_throttle_for_tests(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let bank = Arc::new(bank_forks.read().unwrap().get(0).unwrap());
-        let (verified_sender, verified_receiver) = unbounded();
-        let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = unbounded();
-        let (tpu_vote_sender, tpu_vote_receiver) = unbounded();
+        let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel();
+        let (gossip_verified_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel();
+        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
             let blockstore = Arc::new(
@@ -2034,7 +2035,6 @@ mod tests {
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);
             let (gossip_vote_sender, _gossip_vote_receiver) = unbounded();
-            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
 
             let banking_stage = BankingStage::new(
                 &cluster_info,
