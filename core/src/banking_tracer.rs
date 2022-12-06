@@ -90,6 +90,8 @@ impl BankingTraceRunner {
                     false,
                 );
 
+                use solana_streamer::socket::SocketAddrSpace;
+
                 let banking_tracer =
                     BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
                 let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
