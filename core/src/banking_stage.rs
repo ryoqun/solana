@@ -2034,6 +2034,7 @@ mod tests {
             let cluster_info = new_test_cluster_info(Node::new_localhost().info);
             let cluster_info = Arc::new(cluster_info);
             let (gossip_vote_sender, _gossip_vote_receiver) = unbounded();
+            let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
 
             let banking_stage = BankingStage::new(
                 &cluster_info,
@@ -2046,6 +2047,7 @@ mod tests {
                 None,
                 Arc::new(ConnectionCache::default()),
                 bank_forks,
+                banking_tracer,
             );
             drop(verified_sender);
             drop(gossip_verified_vote_sender);
