@@ -86,7 +86,7 @@ impl<'a> Write for GroupedWrite<'a> {
     fn flush(&mut self) -> std::result::Result<(), std::io::Error> { self.underlying.flush() }
 }
 
-pub fn sender_overhead_minimized_loop(exit: Arc<AtomicBool>, receiver: usize, mm: impl Fn(usize) -> ()) {
+pub fn sender_overhead_minimized_loop(exit: Arc<AtomicBool>, receiver: usize, mm: impl FnMut(usize) -> ()) {
     while !exit.load(std::sync::atomic::Ordering::Relaxed) {
         while let Ok(mm) = receiver.try_recv() {
             on_recv(mm);
@@ -107,13 +107,10 @@ impl BankingTracer {
             let receiver = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTracer".into()).spawn(move || {
                 // custom RollingCondition to memoize the first rolling decision
-                while !exit.load(std::sync::atomic::Ordering::Relaxed) {
-                    while let Ok(mm) = receiver.try_recv() {
-                        output.condition_mut().reset();
-                        serialize_into(&mut GroupedWrite::new(&mut output), &mm).unwrap();
-                    }
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-                }
+                sender_overhead_minimized_loop(receiver, |mm| {
+                    output.condition_mut().reset();
+                    serialize_into(&mut GroupedWrite::new(&mut output), &mm).unwrap();
+                }}
                 output.flush().unwrap();
             }).unwrap();
 
