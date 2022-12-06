@@ -60,7 +60,7 @@ impl RollingCondition for RollingConditionGrouped {
 }
 
 impl<'a> Write for GroupedWrite<'a> {
-    fn write(&mut self, buf: &[u8]) -> std::result::Result<usize, std::io::Error> { self.write_with_datetime(buf, &self.now) }
+    fn write(&mut self, buf: &[u8]) -> std::result::Result<usize, std::io::Error> { self.underlying.write_with_datetime(buf, &self.now) }
     fn flush(&mut self) -> std::result::Result<(), std::io::Error> { self.underlying.flush() }
 }
 
