@@ -2276,6 +2276,7 @@ mod tests {
             mint_keypair,
             ..
         } = create_slow_genesis_config(2);
+        let alice = Keypair::new();
 
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
@@ -2301,7 +2302,6 @@ mod tests {
                 let banking_tracer = BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone()).unwrap();
                 let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
         // Process a batch that includes a transaction that receives two lamports.
-        let alice = Keypair::new();
         let tx =
             system_transaction::transfer(&mint_keypair, &alice.pubkey(), 2, genesis_config.hash());
 
