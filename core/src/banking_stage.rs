@@ -1972,7 +1972,7 @@ mod tests {
             get_tmp_ledger_path_auto_delete,
             leader_schedule_cache::LeaderScheduleCache,
         },
-        solana_perf::packet::{to_packet_batches, PacketFlags},
+        solana_perf::packet::{to_packet_batches, PacketBatch, PacketFlags},
         solana_poh::{
             poh_recorder::{create_test_recorder, Record, WorkingBankEntry},
             poh_service::PohService,
