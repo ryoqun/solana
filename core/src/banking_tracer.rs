@@ -43,11 +43,11 @@ use chrono::Local;
 
 struct GroupedWrite<'a> {
     now: DateTime<Local>,
-    underlying: &'a RollingFileAppender<RollingConditionBasic>,
+    underlying: &'a mut RollingFileAppender<RollingConditionBasic>,
 }
 
 impl<'a> GroupedWrite<'a>  {
-    fn new(underlying: &'a RollingFileAppender<RollingConditionBasic>) -> Self {
+    fn new(underlying: &'a mut RollingFileAppender<RollingConditionBasic>) -> Self {
         Self {
             now: Local::now(),
             underlying,
