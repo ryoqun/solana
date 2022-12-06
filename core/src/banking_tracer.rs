@@ -72,8 +72,8 @@ impl<'a> GroupedWrite<'a>  {
 
 impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
-        if self.now.is_none() {
-            self.now = Some(now.clone());
+        if !self.is_reset.load(Ordering::Relaxed) {
+            self.is_reset.store(true, Ordering::Relaxed);
             self.basic.should_rollover(now, current_filesize)
         } else {
             false
@@ -90,8 +90,7 @@ impl BankingTracer {
     pub fn new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         create_dir_all(&path)?;
         let basic = RollingConditionBasic::new().daily().max_size(1024 * 1024 * 1024);
-        let c = std::cell::RefCell::new(0);
-        let grouped = RollingConditionGrouped::new(basic, &c);
+        let grouped = RollingConditionGrouped::new(basic);
         let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
 
         let trace_output = if enable_tracing {
@@ -102,7 +101,7 @@ impl BankingTracer {
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
                         let mut gw = GroupedWrite::new(&mut output);
-                        //grouped.reset();
+                        grouped.reset();
                         serialize_into(&mut gw, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
