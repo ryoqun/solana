@@ -80,11 +80,9 @@ impl BankingTraceRunner {
                 let (exit, poh_recorder, poh_service, signal_receiver) =
                     create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
 
-                let no_os_memory_stats_reporting =
-                    arg_matches.is_present("no_os_memory_stats_reporting");
                 let system_monitor_service = SystemMonitorService::new(
                     Arc::clone(&exit),
-                    !no_os_memory_stats_reporting,
+                    false,
                     false,
                     false,
                     false,
