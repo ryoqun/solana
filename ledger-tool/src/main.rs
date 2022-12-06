@@ -3409,7 +3409,7 @@ fn main() {
                     .map(|pubkeys| Arc::new(pubkeys.into_iter().collect::<HashSet<_>>()));
 
                 let process_options = ProcessOptions {
-                    poh_verify: false
+                    poh_verify: false,
                     halt_at_slot: value_t!(arg_matches, "halt_at_slot", Slot).ok(),
                     accounts_db_config,
                     ..ProcessOptions::default()
