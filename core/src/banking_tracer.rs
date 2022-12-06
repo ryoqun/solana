@@ -62,7 +62,7 @@ struct GroupedWrite<'a> {
 }
 
 impl<'a> GroupedWrite<'a>  {
-    fn new(underlying: &'a mut RollingFileAppender<RollingConditionGrouped>) -> Self {
+    fn new(underlying: &'a mut RollingFileAppender<&'a RollingConditionGrouped>) -> Self {
         Self {
             now: Local::now(),
             underlying,
