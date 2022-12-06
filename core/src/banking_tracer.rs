@@ -48,7 +48,7 @@ impl BankingTraceRunner {
         (self.non_vote_channel.1.clone(),self.tpu_vote_channel.1.clone(),  self.gossip_vote_channel.1.clone())
     }
 
-    pub fn start(&self, bank_forks: Arc<solana_runtime::bank_forks::BankForks>) {
+    pub fn start(&self, bank_forks: Arc<RwLock<solana_runtime::bank_forks::BankForks>>) {
 use {
     clap::{crate_description, crate_name, Arg, ArgEnum, Command},
     crossbeam_channel::{unbounded, Receiver},
