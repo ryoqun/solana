@@ -35,6 +35,12 @@ enum TracedEvent {
     PacketBatch(String, Vec<PacketBatch>),
 }
 
+struct GroupedWrite {
+}
+
+impl RollingCondition for GroupedWrite {
+}
+
 impl BankingTracer {
     pub fn new(path: PathBuf, enable_tracing: bool, exit: Arc<AtomicBool>) -> Result<Self, std::io::Error> {
         create_dir_all(&path)?;
@@ -44,7 +50,8 @@ impl BankingTracer {
             let a = unbounded();
             let receiver = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTracer".into()).spawn(move || {
-                // temporary custom Write impl to avoid repeatd current time inqueries
+                // temporary custom Write impl to avoid repeatd current time inqueries =>
+                // GroupedWrite
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
