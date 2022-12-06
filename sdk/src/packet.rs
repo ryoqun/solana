@@ -1,7 +1,7 @@
 use {
     bincode::{Options, Result},
     bitflags::bitflags,
-    serde::Serialize,
+    serde::{Serialize, Deserialize},
     std::{
         fmt, io,
         net::{IpAddr, Ipv4Addr, SocketAddr},
@@ -19,7 +19,7 @@ pub const PACKET_DATA_SIZE: usize = 1280 - 40 - 8;
 
 bitflags! {
     #[repr(C)]
-    #[derive(Serialize)]
+    #[derive(Serialize, Deserialize)]
     pub struct PacketFlags: u8 {
         const DISCARD        = 0b0000_0001;
         const FORWARDED      = 0b0000_0010;
@@ -29,7 +29,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Meta {
     pub size: usize,
@@ -39,7 +39,7 @@ pub struct Meta {
     pub sender_stake: u64,
 }
 
-#[derive(Clone, Eq, Serialize)]
+#[derive(Clone, Eq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Packet {
     // Bytes past Packet.meta.size are not valid to read from.
