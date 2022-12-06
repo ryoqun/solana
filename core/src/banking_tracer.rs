@@ -35,10 +35,13 @@ enum TracedEvent {
     PacketBatch(String, Vec<PacketBatch>),
 }
 
+struct RollingConditionGrouped {
+}
+
 struct GroupedWrite {
 }
 
-impl RollingCondition for GroupedWrite {
+impl RollingCondition for RollingConditionGrouped {
     fn should_rollover(&mut self, _: &chrono::DateTime<chrono::Local>, _: u64) -> bool { todo!() }
 }
 
@@ -61,6 +64,7 @@ impl BankingTracer {
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
+                        // grouped_write.begin();
                         serialize_into(&mut output, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
