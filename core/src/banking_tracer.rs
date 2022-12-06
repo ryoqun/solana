@@ -16,7 +16,7 @@ use rolling_file::{RollingFileAppender, RollingConditionBasic, RollingCondition}
 use bincode::serialize_into;
 use solana_sdk::slot_history::Slot;
 
-pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
+pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedBankingPacketSender;
 type RealBankingPacketSender = Sender<BankingPacketBatch>;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
