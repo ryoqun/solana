@@ -41,7 +41,7 @@ impl BankingTracer {
                 // change to timed loop!
                 // temporary custom Write impl to avoid repeatd current time inqueries
                 // custom RollingCondition to memoize the first rolling decision
-                while exit.load(Ordering::Relaxed) {
+                while exit.load(std::sync::atomic::Ordering::Relaxed) {
                     if let Ok(mm) = aa.try_recv() {
                         serialize_into(&mut output, &mm).unwrap();
                     }
