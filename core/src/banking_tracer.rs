@@ -73,13 +73,11 @@ impl BankingTracer {
             let a = unbounded();
             let receiver = a.1.clone();
             let join_handle = std::thread::Builder::new().name("solBanknTracer".into()).spawn(move || {
-                // temporary custom Write impl to avoid repeatd current time inqueries =>
-                // GroupedWrite
                 // custom RollingCondition to memoize the first rolling decision
                 while !exit.load(std::sync::atomic::Ordering::Relaxed) {
                     while let Ok(mm) = receiver.try_recv() {
                         let mut gw = GroupedWrite::new(&mut output);
-                        // grouped_write.begin();
+                        // rolling_condition_grouped.reset();
                         serialize_into(&mut gw, &mm).unwrap();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(100));
