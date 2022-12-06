@@ -36,11 +36,11 @@ enum TracedEvent {
 }
 
 struct RollingConditionGrouped {
-    basic: usize,
+    basic: RollingConditionBasic,
 }
 
 impl RollingConditionGrouped {
-    fn new(basic: usize) -> Self {
+    fn new(basic: RollingConditionBasic) -> Self {
         Self {
             basic,
         }
