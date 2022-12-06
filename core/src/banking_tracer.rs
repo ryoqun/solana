@@ -38,6 +38,8 @@ enum TracedEvent {
 struct RollingConditionGrouped {
 }
 
+use chrono::DateTime;
+
 struct GroupedWrite {
     now: DateTime<Local>,
     underlying: usize,
