@@ -1906,6 +1906,9 @@ impl BankingStage {
         for bank_thread_hdl in self.bank_thread_hdls {
             bank_thread_hdl.join()?;
         }
+        if let Some(tracer_thread_hdl) = self.tracer_thread_hdl {
+            tracer_thread_hdl.join()?;
+        }
         Ok(())
     }
 }
