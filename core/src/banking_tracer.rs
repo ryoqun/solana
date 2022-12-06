@@ -27,7 +27,7 @@ struct TimedTracedEvent(u64, TracedEvent);
 #[derive(Serialize)]
 enum TracedEvent {
     BankStart,
-    PacketBatch(Vec<PacketBatch>),
+    PacketBatch(String, Vec<PacketBatch>),
 }
 
 impl BankingTracer {
