@@ -3,7 +3,7 @@ use {
         sigverify::SigverifyTracerPacketStats,
     },
     crossbeam_channel::{
-        Receiver as CrossbeamReceiver, RecvTimeoutError, Sender as CrossbeamSender, unbounded,
+        Receiver, RecvTimeoutError, Sender, unbounded,
     },
 };
 use std::path::Path;
@@ -16,8 +16,8 @@ use solana_sdk::slot_history::Slot;
 
 pub type BankingPacketBatch = (Vec<PacketBatch>, Option<SigverifyTracerPacketStats>);
 pub type BankingPacketSender = TracedBankingPacketSender;
-type RealBankingPacketSender = CrossbeamSender<BankingPacketBatch>;
-pub type BankingPacketReceiver = CrossbeamReceiver<BankingPacketBatch>;
+type RealBankingPacketSender = Sender<BankingPacketBatch>;
+pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
 #[derive(Debug)]
 pub struct BankingTracer {
@@ -80,12 +80,12 @@ impl BankingTracer {
 
 pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
-    mirrored_sender_to_trace: Option<CrossbeamSender<TimedTracedEvent>>,
+    mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
     name: &'static str,
 }
 
 impl TracedBankingPacketSender {
-    fn new(sender_to_banking: RealBankingPacketSender, mirrored_sender_to_trace: Option<CrossbeamSender<TimedTracedEvent>>, name: &'static str) -> Self {
+    fn new(sender_to_banking: RealBankingPacketSender, mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>, name: &'static str) -> Self {
         Self {
             sender_to_banking,
             mirrored_sender_to_trace,
