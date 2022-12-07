@@ -9,3 +9,9 @@ pub struct RuntimeConfig {
     pub log_messages_bytes_limit: Option<usize>,
     pub transaction_account_lock_limit: Option<usize>,
 }
+
+impl RuntimeConfig {
+    fn skip_check_age(&self) {
+        self.skip_check_age.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
