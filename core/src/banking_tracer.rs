@@ -155,7 +155,7 @@ impl BankingTraceReplayer {
             verified_receiver,
             tpu_vote_receiver,
             gossip_vote_receiver,
-            1,
+            4,
             None,
             replay_vote_sender,
             None,
