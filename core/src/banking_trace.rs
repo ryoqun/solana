@@ -287,8 +287,8 @@ pub fn sender_overhead_minimized_loop<T>(
     mut on_recv: impl FnMut(T) -> (),
 ) {
     'outer: while !exit.load(std::sync::atomic::Ordering::Relaxed) {
-        loop {
-            'inner: match receiver.try_recv() {
+        'inner: loop {
+            match receiver.try_recv() {
                 Ok(message) => on_recv(message),
                 Err(TryRecvError::Empty) => break 'inner,
                 Err(TryRecvError::Disconnected) => break 'outer,
