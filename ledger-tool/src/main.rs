@@ -2023,8 +2023,9 @@ fn main() {
                     .conflicts_with("no_snapshot")
             )
         ).subcommand(
-            SubCommand::with_name("recreate-blocks")
-            .about("Recreate a block with banking trace as if a leader")
+            SubCommand::with_name("simulate-leader-blocks")
+            .about("Simulate recreating a block with banking trace as if a leader")
+            .arg(&max_genesis_archive_unpacked_size_arg)
         ).subcommand(
             SubCommand::with_name("accounts")
             .about("Print account stats and contents after processing the ledger")
