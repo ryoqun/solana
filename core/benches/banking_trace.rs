@@ -108,7 +108,7 @@ fn bench_banking_tracer_10_1gb(bencher: &mut Bencher) {
             std::path::PathBuf::new().join("/tmp/banking-tracer"),
             true,
             exit.clone(),
-            1024 * 1024 * 1024,
+            1024 * 1024,
         )
         .unwrap();
         let (s, r) = tracer.create_channel_non_vote();
@@ -119,7 +119,7 @@ fn bench_banking_tracer_10_1gb(bencher: &mut Bencher) {
             })
         });
 
-        for _ in 0..1_000_000 {
+        for _ in 0..1000 {
             s.send(m.clone()).unwrap();
         }
         drop(s);
