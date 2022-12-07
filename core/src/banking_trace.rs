@@ -290,7 +290,7 @@ pub fn sender_overhead_minimized_loop<T>(
         loop {
             match receiver.try_recv() {
                 Ok(message) => on_recv(message),
-                Err(TryRecvError::JJ) => 3,
+                Err(TryRecvError::Disconnected) => break 'outer,
             }
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
