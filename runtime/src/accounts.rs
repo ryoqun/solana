@@ -1598,6 +1598,7 @@ mod tests {
             feature_set,
             fee_structure,
             None,
+            None,
         )
     }
 
