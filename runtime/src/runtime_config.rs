@@ -11,11 +11,11 @@ pub struct RuntimeConfig {
 }
 
 impl RuntimeConfig {
-    fn skip_check_age(&self) {
+    pub fn skip_check_age(&self) {
         self.skip_check_age.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
-    fn is_check_age_skipped(&self) -> bool{
+    pub fn is_check_age_skipped(&self) -> bool{
         self.skip_check_age.load(std::sync::atomic::Ordering::Relaxed)
     }
 }

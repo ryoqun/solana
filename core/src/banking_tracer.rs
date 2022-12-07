@@ -185,6 +185,7 @@ impl BankingTraceReplayer {
             banking_tracer,
         );
         bank.clear_signatures();
+        bank.runtime_config.skip_check_age();
 
         poh_recorder.write().unwrap().set_bank(&bank, false);
         loop {
