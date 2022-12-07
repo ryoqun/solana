@@ -184,8 +184,8 @@ impl BankingTraceReplayer {
             bank_forks.clone(),
             banking_tracer,
         );
+        bank.skip_check_age();
         bank.clear_signatures();
-        bank.runtime_config().skip_check_age();
 
         poh_recorder.write().unwrap().set_bank(&bank, false);
         loop {

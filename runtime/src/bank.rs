@@ -3934,6 +3934,11 @@ impl Bank {
         self.rc.accounts.accounts_db.set_shrink_paths(paths);
     }
 
+    // danger
+    pub fn skip_check_age(&self) {
+        self.runtime_config.skip_check_age();
+    }
+
     fn check_age<'a>(
         &self,
         txs: impl Iterator<Item = &'a SanitizedTransaction>,
@@ -3941,6 +3946,10 @@ impl Bank {
         max_age: usize,
         error_counters: &mut TransactionErrorMetrics,
     ) -> Vec<TransactionCheckResult> {
+        if self.runtime_config.is_check_age_skipped() {
+            return txs.map(|_| (Ok(()), None)).collect();
+        }
+
         let hash_queue = self.blockhash_queue.read().unwrap();
         let last_blockhash = hash_queue.last_hash();
         let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
