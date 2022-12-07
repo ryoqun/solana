@@ -293,7 +293,10 @@ pub fn sender_overhead_minimized_loop<T, const SLEEP_MS: u64>(
             match receiver.try_recv() {
                 Ok(message) => on_recv(message),
                 Err(TryRecvError::Empty) => break 'inner,
-                Err(TryRecvError::Disconnected) => break 'outer,
+                Err(TryRecvError::Disconnected) => {
+                    assert_eq!(receiver.len(), 0);
+                    break 'outer;
+                },
             }
         }
         std::thread::sleep(std::time::Duration::from_millis(SLEEP_MS));
