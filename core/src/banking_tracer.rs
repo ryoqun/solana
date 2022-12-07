@@ -184,10 +184,12 @@ impl BankingTraceReplayer {
             bank_forks.clone(),
             banking_tracer,
         );
-        bank.skip_check_age();
-        bank.clear_signatures();
 
+        bank.skip_check_age();
+
+        bank.clear_signatures();
         poh_recorder.write().unwrap().set_bank(&bank, false);
+
         loop {
             if poh_recorder.read().unwrap().bank().is_none() {
                 poh_recorder
@@ -205,7 +207,9 @@ impl BankingTraceReplayer {
                 std::u64::MAX,
             );
 
+            bank.clear_signatures();
             poh_recorder.write().unwrap().set_bank(&bank, false);
+
             sleep(std::time::Duration::from_millis(100));
         }
         exit.store(true, Ordering::Relaxed);
