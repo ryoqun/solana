@@ -111,7 +111,7 @@ impl BankingTraceReplayer {
                 dbg!(&d);
                 break;
             };
-            dbg!(&event);
+            //dbg!(&event);
             let s = event.0;
             match event.1 {
                 TracedEvent::NewBankStart(_, slot) => {
@@ -163,6 +163,7 @@ impl BankingTraceReplayer {
             bank_forks.clone(),
             banking_tracer,
         );
+        bank.clear_signatures();
         poh_recorder.write().unwrap().set_bank(&bank, false);
         loop {
             if poh_recorder.read().unwrap().bank().is_none() {
