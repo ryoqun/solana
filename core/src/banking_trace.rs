@@ -1,7 +1,7 @@
 use {
     crate::sigverify::SigverifyTracerPacketStats,
     bincode::serialize_into,
-    crossbeam_channel::{unbounded, Receiver, SendError, Sender},
+    crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
     solana_perf::packet::PacketBatch,
     solana_sdk::slot_history::Slot,
