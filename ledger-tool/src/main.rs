@@ -2025,6 +2025,7 @@ fn main() {
         ).subcommand(
             SubCommand::with_name("simulate-leader-blocks")
             .about("Simulate recreating a block with banking trace as if a leader")
+            .arg(&halt_at_slot_arg)
             .arg(&max_genesis_archive_unpacked_size_arg)
         ).subcommand(
             SubCommand::with_name("accounts")
