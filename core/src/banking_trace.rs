@@ -295,7 +295,7 @@ pub fn sender_overhead_minimized_loop<T>(
             }
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
-    }
+    };
 }
 
 impl BankingTracer {
