@@ -3361,7 +3361,7 @@ fn main() {
                     }
                 }
             }
-            ("simulate-leader-block", Some(arg_matches)) => {
+            ("simulate-leader-blocks", Some(arg_matches)) => {
                 let mut accounts_index_config = AccountsIndexConfig::default();
                 if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
                     accounts_index_config.bins = Some(bins);
