@@ -281,7 +281,7 @@ impl<'a> Write for GroupedWriter<'a> {
     }
 }
 
-pub fn sender_overhead_minimized_loop<T, const SLEEP_MS: u64>(
+pub fn sender_overhead_minimized_loop<T, const SLEEP_MS: u64 = 100>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
     mut on_recv: impl FnMut(T) -> (),
