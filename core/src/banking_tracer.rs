@@ -131,12 +131,12 @@ impl BankingTraceReplayer {
         let bank_slot = bank.slot();
 
         std::thread::spawn(move || {
-            let range = if let Some(start) = &bank_starts_by_slot.get(&bank_slot){
-                start..
+            let range_iter = if let Some(start) = &bank_starts_by_slot.get(&bank_slot){
+                packet_batches_by_time.get_range(start..)
             } else {
-                ..
+                packet_batches_by_time.get_range(..)
             };
-            for (name, batch) in packet_batches_by_time.get_range(range) {
+            for (name, batch) in range_iter {
                 match name.as_str() {
                     "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
                     "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
