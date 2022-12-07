@@ -247,12 +247,12 @@ impl RollingConditionGrouped {
 
 use chrono::{DateTime, Local};
 
-struct GroupedWrite<'a> {
+struct GroupedWriter<'a> {
     now: DateTime<Local>,
     underlying: &'a mut RollingFileAppender<RollingConditionGrouped>,
 }
 
-impl<'a> GroupedWrite<'a> {
+impl<'a> GroupedWriter<'a> {
     fn new(underlying: &'a mut RollingFileAppender<RollingConditionGrouped>) -> Self {
         Self {
             now: Local::now(),
@@ -272,7 +272,7 @@ impl RollingCondition for RollingConditionGrouped {
     }
 }
 
-impl<'a> Write for GroupedWrite<'a> {
+impl<'a> Write for GroupedWriter<'a> {
     fn write(&mut self, buf: &[u8]) -> std::result::Result<usize, std::io::Error> {
         self.underlying.write_with_datetime(buf, &self.now)
     }
@@ -318,10 +318,9 @@ impl BankingTracer {
             let join_handle = std::thread::Builder::new()
                 .name("solBanknTracer".into())
                 .spawn(move || {
-                    // custom RollingCondition to memoize the first rolling decision
-                    sender_overhead_minimized_loop(exit, receiver, |mm| {
+                    sender_overhead_minimized_loop(exit, receiver, |trace_event| {
                         output.condition_mut().reset();
-                        serialize_into(&mut GroupedWrite::new(&mut output), &mm).unwrap();
+                        serialize_into(&mut GroupedWriter::new(&mut output), &trace_event).unwrap();
                     });
                     output.flush().unwrap();
                 })
