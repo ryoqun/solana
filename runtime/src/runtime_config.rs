@@ -4,7 +4,7 @@ use solana_program_runtime::compute_budget::ComputeBudget;
 #[derive(AbiExample, Debug, Default, Clone)]
 pub struct RuntimeConfig {
     pub bpf_jit: bool,
-    pub skip_check_age: bool,
+    pub skip_check_age: std::sync::AtomicBool,
     pub compute_budget: Option<ComputeBudget>,
     pub log_messages_bytes_limit: Option<usize>,
     pub transaction_account_lock_limit: Option<usize>,
