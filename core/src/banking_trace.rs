@@ -288,8 +288,9 @@ pub fn sender_overhead_minimized_loop<T>(
 ) {
     'outer: while !exit.load(std::sync::atomic::Ordering::Relaxed) {
         loop {
-            match receiver.try_recv() {
+            'inner: match receiver.try_recv() {
                 Ok(message) => on_recv(message),
+                Err(TryRecvError::Empty) => break 'inner,
                 Err(TryRecvError::Disconnected) => break 'outer,
             }
         }
