@@ -132,9 +132,9 @@ impl BankingTraceReplayer {
 
         std::thread::spawn(move || {
             let range_iter = if let Some(start) = &bank_starts_by_slot.get(&bank_slot){
-                packet_batches_by_time.get_range(start..)
+                packet_batches_by_time.range(start..)
             } else {
-                packet_batches_by_time.get_range(..)
+                packet_batches_by_time.range(..)
             };
             for (name, batch) in range_iter {
                 match name.as_str() {
