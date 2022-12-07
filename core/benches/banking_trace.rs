@@ -127,6 +127,7 @@ fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Benche
         }
 
         drop(dummy_main_sender);
+        drop(tracer);
         dummy_main_thread_handle.join().unwrap();
         tracer_join_handle.unwrap().join().unwrap();
     });
