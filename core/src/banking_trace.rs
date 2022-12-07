@@ -281,7 +281,7 @@ impl<'a> Write for GroupedWriter<'a> {
     }
 }
 
-pub fn sender_overhead_minimized_loop<T, const SLEEP_MS: u64 = 100>(
+pub fn sender_overhead_minimized_loop<T, const SLEEP_MS: u64>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
     mut on_recv: impl FnMut(T) -> (),
@@ -318,7 +318,7 @@ impl BankingTracer {
             let join_handle = std::thread::Builder::new()
                 .name("solBanknTracer".into())
                 .spawn(move || {
-                    sender_overhead_minimized_loop(exit, receiver, |trace_event| {
+                    sender_overhead_minimized_loop::<_, 100>(exit, receiver, |trace_event| {
                         output.condition_mut().reset();
                         serialize_into(&mut GroupedWriter::new(&mut output), &trace_event).unwrap();
                     });
