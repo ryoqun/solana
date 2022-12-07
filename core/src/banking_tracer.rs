@@ -136,7 +136,7 @@ impl BankingTraceReplayer {
             } else {
                 packet_batches_by_time.range(..)
             };
-            for (&_key, &value) in &range_iter {
+            for (&_key, &value) in range_iter {
                 let (name, batch) = &value;
 
                 match name.as_str() {
