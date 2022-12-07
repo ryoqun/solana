@@ -9,7 +9,7 @@ use {
 };
 
 #[bench]
-fn bench_banking_tracer_main_thread_overhead_baseline(bencher: &mut Bencher) {
+fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
     let tracer = solana_core::banking_trace::BankingTracer::new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
