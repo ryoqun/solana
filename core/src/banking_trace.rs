@@ -286,9 +286,11 @@ pub fn sender_overhead_minimized_loop<T>(
     receiver: crossbeam_channel::Receiver<T>,
     mut on_recv: impl FnMut(T) -> (),
 ) {
-    while !exit.load(std::sync::atomic::Ordering::Relaxed) {
-        while let Ok(mm) = receiver.try_recv() {
-            on_recv(mm);
+    'outer: while !exit.load(std::sync::atomic::Ordering::Relaxed) {
+        loop {
+            match receiver.try_recv() {
+                Ok(message) => on_recv(message),
+            }
         }
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
