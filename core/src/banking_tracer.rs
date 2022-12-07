@@ -138,15 +138,17 @@ impl BankingTraceReplayer {
             };
             info!("replaying events: {} out of {}", range_iter.clone().count(), packet_batches_by_time.len());
 
-            for (&_key, ref value) in range_iter {
-                let (name, batch) = &value;
-                info!("sent {} {} batches", name, batch.0.len());
+            loop {
+                for (&_key, ref value) in range_iter {
+                    let (name, batch) = &value;
+                    info!("sent {} {} batches", name, batch.0.len());
 
-                match name.as_str() {
-                    "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
-                    "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
-                    "tpu-vote" => tpu_vote_sender.send(batch.clone()).unwrap(),
-                    a => panic!("unknown: {}", a),
+                    match name.as_str() {
+                        "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
+                        "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
+                        "tpu-vote" => tpu_vote_sender.send(batch.clone()).unwrap(),
+                        a => panic!("unknown: {}", a),
+                    }
                 }
             }
         });
