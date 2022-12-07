@@ -122,7 +122,7 @@ fn bench_banking_tracer_10_1gb(bencher: &mut Bencher) {
         for _ in 0..1_000_000 {
             s.send(m.clone()).unwrap();
         }
-        drop(r);
+        drop(s);
         t.join();
     });
 }
