@@ -71,7 +71,7 @@ mod serde_bytes_array {
 pub struct Packet {
     // Bytes past Packet.meta.size are not valid to read from.
     // Use Packet.data(index) to read from the buffer.
-    #[serde_with(serde_bytes_array)]
+    #[serde(with = "serde_bytes_array")]
     buffer: [u8; PACKET_DATA_SIZE],
     pub meta: Meta,
 }
