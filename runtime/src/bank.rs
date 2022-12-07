@@ -19537,6 +19537,7 @@ pub(crate) mod tests {
             &bank.feature_set,
             &FeeStructure::default(),
             None,
+            None,
         );
 
         let compute_budget = bank.runtime_config.compute_budget.unwrap_or_else(|| {
