@@ -138,6 +138,7 @@ impl BankingTraceReplayer {
             };
             for (&_key, ref value) in range_iter {
                 let (name, batch) = &value;
+                info!("sent {} {} batches", name, batch.0.len());
 
                 match name.as_str() {
                     "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
