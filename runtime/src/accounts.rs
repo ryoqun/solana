@@ -637,6 +637,7 @@ impl Accounts {
         feature_set: &FeatureSet,
         fee_structure: &FeeStructure,
         account_overrides: Option<&AccountOverrides>,
+        lamports_per_signature_override: Option<u64>,
     ) -> Vec<TransactionLoadResult> {
         txs.iter()
             .zip(lock_results)
@@ -648,7 +649,7 @@ impl Accounts {
                         .unwrap_or_else(|| {
                             hash_queue.get_lamports_per_signature(tx.message().recent_blockhash())
                         });
-                    let fee = if let Some(lamports_per_signature) = lamports_per_signature {
+                    let fee = if let Some(lamports_per_signature) = lamports_per_signature.or_else(lamports_per_signature_override) {
                         Bank::calculate_fee(
                             tx.message(),
                             lamports_per_signature,
