@@ -99,12 +99,12 @@ fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Benche
     let chunk_size = 10;
     let tx = test_tx();
     let aa = to_packet_batches(&vec![tx; len], chunk_size);
-    let m = Arc::new((aa.clone(), None));
+    let packet_batch = Arc::new((aa.clone(), None));
 
     bencher.iter(move || {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
 
-        std::fs::remove_dir_all("/tmp/banking-trace/")?;
+        std::fs::remove_dir_all("/tmp/banking-trace/").unwrap();
 
         let tracer = solana_core::banking_trace::BankingTracer::_new(
             std::path::PathBuf::new().join("/tmp/banking-trace/event"),
@@ -113,18 +113,18 @@ fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Benche
             50 * 1024 * 1024,
         )
         .unwrap();
-        let (s, r) = tracer.create_channel_non_vote();
+        let (dummy_main_sender, dummy_main_receiver) = tracer.create_channel_non_vote();
 
-        let t = std::thread::spawn(move || {
-            solana_core::banking_trace::sender_overhead_minimized_loop(exit.clone(), r, |m| {
-                test::black_box(m);
+        let join_handle = std::thread::spawn(move || {
+            solana_core::banking_trace::sender_overhead_minimized_loop(exit.clone(), dummy_main_receiver, |packet_batch| {
+                test::black_box(packet_batch);
             })
         });
 
         for _ in 0..1000 {
-            s.send(m.clone()).unwrap();
+            dummy_main_sender.send(packet_batch.clone()).unwrap();
         }
         drop(s);
-        t.join().unwrap();
+        join_handle.join().unwrap();
     });
 }
