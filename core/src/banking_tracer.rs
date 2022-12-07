@@ -123,14 +123,16 @@ impl BankingTraceReplayer {
             }
         }
 
-        for (name, batch) in packet_batches_by_time.values() {
-            match name.as_str() {
-                "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
-                "gossip-vote" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
-                "tpu-vote" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
-                a => panic!("unknown: {}", a),
+        std::thread::spawn(move || {
+            for (name, batch) in packet_batches_by_time.values() {
+                match name.as_str() {
+                    "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
+                    "gossip-vote" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
+                    "tpu-vote" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
+                    a => panic!("unknown: {}", a),
+                }
             }
-        }
+        });
 
         let (verified_receiver, tpu_vote_receiver, gossip_vote_receiver) = self.prepare_receivers();
 
@@ -164,6 +166,7 @@ impl BankingTraceReplayer {
             banking_tracer,
         );
         bank.clear_signatures();
+
         poh_recorder.write().unwrap().set_bank(&bank, false);
         loop {
             if poh_recorder.read().unwrap().bank().is_none() {
@@ -183,7 +186,6 @@ impl BankingTraceReplayer {
             );
 
             poh_recorder.write().unwrap().set_bank(&bank, false);
-            info!("sleeping...");
             sleep(std::time::Duration::from_millis(100));
         }
         exit.store(true, Ordering::Relaxed);
