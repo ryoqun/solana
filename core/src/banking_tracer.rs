@@ -136,7 +136,7 @@ impl BankingTraceReplayer {
             } else {
                 packet_batches_by_time.range(..)
             };
-            info!("replaying events: {} out of {}", range_iter.count(), packet_batches_by_time.len());
+            info!("replaying events: {} out of {}", range_iter.clone().count(), packet_batches_by_time.len());
 
             for (&_key, ref value) in range_iter {
                 let (name, batch) = &value;
