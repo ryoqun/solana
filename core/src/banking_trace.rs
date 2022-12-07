@@ -283,7 +283,7 @@ impl<'a> Write for GroupedWrite<'a> {
 
 pub fn sender_overhead_minimized_loop<T>(
     exit: Arc<AtomicBool>,
-    receiver: crossbeam_channel::Receiver<T>,
+    receiver: Receiver<T>,
     mut on_recv: impl FnMut(T) -> (),
 ) {
     'outer: while !exit.load(std::sync::atomic::Ordering::Relaxed) {
