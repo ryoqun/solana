@@ -281,7 +281,7 @@ impl<'a> Write for GroupedWriter<'a> {
     }
 }
 
-pub fn sender_overhead_minimized_loop<T>(
+pub fn sender_overhead_minimized_loop<T, const SLEEP_MS: usize>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
     mut on_recv: impl FnMut(T) -> (),
@@ -296,7 +296,7 @@ pub fn sender_overhead_minimized_loop<T>(
                 Err(TryRecvError::Disconnected) => break 'outer,
             }
         }
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(SLEEP_MS));
     };
 }
 
