@@ -56,24 +56,22 @@ mod serde_bytes_array {
     where
         D: Deserializer<'de>,
     {
-        let slice: &[u8] = serde_bytes::deserialize(deserializer)?;
-        let array: [u8; N] = slice.try_into().map_err(|_| {
+        let vec: Vec<u8> = serde_bytes::deserialize(deserializer)?;
+        let vec_len = vec.len();
+        let array: [u8; N] = vec.try_into().map_err(|_| {
             let expected = format!("[u8; {}]", N);
-            D::Error::invalid_length(slice.len(), &expected.as_str())
+            D::Error::invalid_length(vec_len, &expected.as_str())
         })?;
         Ok(array)
     }
 }
 
-use serde_with::serde_as;
-
-#[serde_as]
 #[derive(Clone, Eq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Packet {
     // Bytes past Packet.meta.size are not valid to read from.
     // Use Packet.data(index) to read from the buffer.
-    #[serde_as(as = "[_; PACKET_DATA_SIZE]")]
+    #[serde_with(serde_bytes_array)]
     buffer: [u8; PACKET_DATA_SIZE],
     pub meta: Meta,
 }
