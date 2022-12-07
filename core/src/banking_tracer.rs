@@ -136,7 +136,7 @@ impl BankingTraceReplayer {
             } else {
                 packet_batches_by_time.range(..)
             };
-            for (&_key, &(&name, &batch)) in range_iter {
+            for (&_key, (&aname, &batch)) in range_iter {
                 match name.as_str() {
                     "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
                     "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
