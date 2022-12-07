@@ -123,12 +123,18 @@ impl BankingTraceReplayer {
             }
         }
 
+        let (non_vote_sender, gossip_vote_sender, tpu_vote_sender) = (
+            self.non_vote_channel.0.clone(),
+            self.gossip_vote_channel.0.clone(),
+            self.tpu_vote_channel.0.clone(),
+        );
+
         std::thread::spawn(move || {
             for (name, batch) in packet_batches_by_time.values() {
                 match name.as_str() {
-                    "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
-                    "gossip-vote" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
-                    "tpu-vote" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
+                    "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
+                    "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
+                    "tpu-vote" => tpu_vote_sender.send(batch.clone()).unwrap(),
                     a => panic!("unknown: {}", a),
                 }
             }
