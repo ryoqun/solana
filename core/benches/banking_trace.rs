@@ -9,7 +9,7 @@ use {
 };
 
 #[bench]
-fn bench_banking_tracer_overhead_baseline(bencher: &mut Bencher) {
+fn bench_banking_tracer_main_thread_overhead_baseline(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
     let tracer = solana_core::banking_trace::BankingTracer::new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
@@ -37,7 +37,7 @@ fn bench_banking_tracer_overhead_baseline(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_banking_tracer_overhead_under_peak_write(bencher: &mut Bencher) {
+fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
     let tracer = solana_core::banking_trace::BankingTracer::new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
@@ -65,7 +65,7 @@ fn bench_banking_tracer_overhead_under_peak_write(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_banking_tracer_overhead_under_sustained_write(bencher: &mut Bencher) {
+fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
     let tracer = solana_core::banking_trace::BankingTracer::_new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
@@ -94,7 +94,7 @@ fn bench_banking_tracer_overhead_under_sustained_write(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_banking_tracer_throughput_10_1gb(bencher: &mut Bencher) {
+fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Bencher) {
     let len = 4;
     let chunk_size = 10;
     let tx = test_tx();

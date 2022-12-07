@@ -288,6 +288,8 @@ pub fn sender_overhead_minimized_loop<T>(
 ) {
     'outer: while !exit.load(std::sync::atomic::Ordering::Relaxed) {
         'inner: loop {
+            // avoid futex-based locking here, because a sender has to wake up
+            // me at syscall cost.
             match receiver.try_recv() {
                 Ok(message) => on_recv(message),
                 Err(TryRecvError::Empty) => break 'inner,
