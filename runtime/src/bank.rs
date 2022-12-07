@@ -4467,6 +4467,7 @@ impl Bank {
             &self.feature_set,
             &self.fee_structure,
             account_overrides,
+            self.runtime_config.is_check_age_skipped().then(Some(self.lamports_per_signature())),
         );
         load_time.stop();
 
