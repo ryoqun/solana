@@ -130,7 +130,7 @@ impl BankingTraceReplayer {
         );
 
         std::thread::spawn(move || {
-            dbg!(&bank_starts_by_slot.get(&bank.slot()));
+            dbg!(&bank_starts_by_slot.get(&bank.clone().slot()));
             for (name, batch) in packet_batches_by_time.values() {
                 match name.as_str() {
                     "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
