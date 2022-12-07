@@ -128,7 +128,7 @@ impl BankingTraceReplayer {
                 "non-vote" => self.non_vote_channel.0.send(batch.clone()).unwrap(),
                 "gossip-vote" => self.gossip_vote_channel.0.send(batch.clone()).unwrap(),
                 "tpu-vote" => self.tpu_vote_channel.0.send(batch.clone()).unwrap(),
-                a => panic!(format!("unknown: {}", a)),
+                a => panic!("unknown: {}", a),
             }
         }
 
