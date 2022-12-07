@@ -6,7 +6,7 @@ use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
     solana_client::connection_cache::ConnectionCache,
-    solana_core::{banking_stage::BankingStage, banking_tracer::BankingTracer},
+    solana_core::{banking_stage::BankingStage, banking_trace::BankingTracer},
     solana_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,

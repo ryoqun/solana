@@ -1,6 +1,6 @@
 use {
     crate::{
-        banking_tracer::BankingPacketSender,
+        banking_trace::BankingPacketSender,
         optimistic_confirmation_verifier::OptimisticConfirmationVerifier,
         replay_stage::DUPLICATE_THRESHOLD,
         result::{Error, Result},
@@ -1686,7 +1686,7 @@ mod tests {
         let mut bank_vote_sender_state_option: Option<BankVoteSenderState> = None;
         let verified_vote_packets = VerifiedVotePackets::default();
         let (verified_packets_sender, _verified_packets_receiver) =
-            crate::banking_tracer::BankingTracer::channel_for_test();
+            crate::banking_trace::BankingTracer::channel_for_test();
 
         // 1) If we hand over a `current_leader_bank`, vote sender state should be updated
         ClusterInfoVoteListener::check_for_leader_bank_and_send_votes(

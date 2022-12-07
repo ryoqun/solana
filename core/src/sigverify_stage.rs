@@ -532,7 +532,7 @@ mod tests {
         solana_logger::setup();
         trace!("start");
         let (packet_s, packet_r) = unbounded();
-        let (verified_s, verified_r) = crate::banking_tracer::BankingTracer::channel_for_test();
+        let (verified_s, verified_r) = crate::banking_trace::BankingTracer::channel_for_test();
         let verifier = TransactionSigVerifier::new(verified_s);
         let stage = SigVerifyStage::new(packet_r, verifier, "test");
 

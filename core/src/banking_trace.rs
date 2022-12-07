@@ -64,7 +64,7 @@ impl BankingTraceReplayer {
         blockstore: Arc<solana_ledger::blockstore::Blockstore>,
     ) {
         use {
-            crate::{banking_stage::BankingStage, banking_tracer::BankingTracer},
+            crate::{banking_stage::BankingStage, banking_trace::BankingTracer},
             crossbeam_channel::{unbounded, Receiver},
             log::*,
             rand::{thread_rng, Rng},

@@ -25,7 +25,7 @@ use {
     },
     solana_cli_output::{CliAccount, CliAccountNewConfig, OutputFormat},
     solana_core::{
-        banking_tracer::BankingTraceReplayer, system_monitor_service::SystemMonitorService,
+        banking_trace::BankingTraceReplayer, system_monitor_service::SystemMonitorService,
         validator::move_and_async_delete_path,
     },
     solana_entry::entry::Entry,

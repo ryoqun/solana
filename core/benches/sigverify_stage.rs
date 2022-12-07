@@ -148,7 +148,7 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
     solana_logger::setup();
     trace!("start");
     let (packet_s, packet_r) = unbounded();
-    let (verified_s, verified_r) = solana_core::banking_tracer::BankingTracer::channel_for_test();
+    let (verified_s, verified_r) = solana_core::banking_trace::BankingTracer::channel_for_test();
     let verifier = TransactionSigVerifier::new(verified_s);
     let stage = SigVerifyStage::new(packet_r, verifier, "bench");
 
@@ -226,7 +226,7 @@ fn prepare_batches(discard_factor: i32) -> (Vec<PacketBatch>, usize) {
 
 fn bench_shrink_sigverify_stage_core(bencher: &mut Bencher, discard_factor: i32) {
     let (batches0, num_valid_packets) = prepare_batches(discard_factor);
-    let (verified_s, _verified_r) = solana_core::banking_tracer::BankingTracer::channel_for_test();
+    let (verified_s, _verified_r) = solana_core::banking_trace::BankingTracer::channel_for_test();
     let verifier = TransactionSigVerifier::new(verified_s);
 
     let mut c = 0;

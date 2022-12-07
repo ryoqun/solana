@@ -11,7 +11,7 @@ use {
 #[bench]
 fn bench_banking_tracer_baseline_throughput(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-    let tracer = solana_core::banking_tracer::BankingTracer::new(
+    let tracer = solana_core::banking_trace::BankingTracer::new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         false,
         exit.clone(),
@@ -20,7 +20,7 @@ fn bench_banking_tracer_baseline_throughput(bencher: &mut Bencher) {
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_tracer::sender_overhead_minimized_loop(exit.clone(), r, |m| {
+        solana_core::banking_trace::sender_overhead_minimized_loop(exit.clone(), r, |m| {
             test::black_box(m);
         })
     });
@@ -39,7 +39,7 @@ fn bench_banking_tracer_baseline_throughput(bencher: &mut Bencher) {
 #[bench]
 fn bench_banking_tracer_peak_throughput(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-    let tracer = solana_core::banking_tracer::BankingTracer::new(
+    let tracer = solana_core::banking_trace::BankingTracer::new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         true,
         exit.clone(),
@@ -48,7 +48,7 @@ fn bench_banking_tracer_peak_throughput(bencher: &mut Bencher) {
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_tracer::sender_overhead_minimized_loop(exit.clone(), r, |m| {
+        solana_core::banking_trace::sender_overhead_minimized_loop(exit.clone(), r, |m| {
             test::black_box(m);
         })
     });
@@ -67,7 +67,7 @@ fn bench_banking_tracer_peak_throughput(bencher: &mut Bencher) {
 #[bench]
 fn bench_banking_tracer_sustained_throughput(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-    let tracer = solana_core::banking_tracer::BankingTracer::_new(
+    let tracer = solana_core::banking_trace::BankingTracer::_new(
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         true,
         exit.clone(),
@@ -77,7 +77,7 @@ fn bench_banking_tracer_sustained_throughput(bencher: &mut Bencher) {
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_tracer::sender_overhead_minimized_loop(exit.clone(), r, |m| {
+        solana_core::banking_trace::sender_overhead_minimized_loop(exit.clone(), r, |m| {
             test::black_box(m);
         })
     });
