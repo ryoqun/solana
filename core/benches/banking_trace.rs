@@ -114,8 +114,9 @@ fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Benche
         )
         .unwrap();
         let (dummy_main_sender, dummy_main_receiver) = tracer.create_channel_non_vote();
+        let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
-        let join_handle = std::thread::spawn(move || {
+        let dummy_main_thread_handle = std::thread::spawn(move || {
             solana_core::banking_trace::sender_overhead_minimized_loop::<_, 0>(exit.clone(), dummy_main_receiver, |packet_batch| {
                 test::black_box(packet_batch);
             })
@@ -124,7 +125,9 @@ fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Benche
         for _ in 0..1000 {
             dummy_main_sender.send(packet_batch.clone()).unwrap();
         }
+
         drop(dummy_main_sender);
-        join_handle.join().unwrap();
+        dummy_main_thread_handle.join().unwrap();
+        tracer_join_handle.unwrap().join().unwrap();
     });
 }
