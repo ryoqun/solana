@@ -94,7 +94,7 @@ fn bench_banking_tracer_overhead_under_sustained_write(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_banking_tracer_10_1gb(bencher: &mut Bencher) {
+fn bench_banking_tracer_throughput_10_1gb(bencher: &mut Bencher) {
     let len = 4;
     let chunk_size = 10;
     let tx = test_tx();
