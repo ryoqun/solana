@@ -1304,6 +1304,15 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                 .long("replay-slots-concurrently")
                 .help("Allow concurrent replay of slots on different forks")
         )
+        .arg(
+            Arg::with_name("banking_trace_size")
+                .long("enable-banking-trace")
+                .value_name("MAX_BYTES")
+                .validator(is_parsable::<u64>)
+                .takes_value(true)
+                .default_value(default_args.banking_trace_size)
+                .help("Enables banking trace with optionally given maximum trace total bytes")
+        );
         .args(&get_deprecated_arguments())
         .after_help("The default subcommand is run")
         .subcommand(
@@ -2171,15 +2180,6 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                 .validator(is_parsable::<u64>)
                 .takes_value(true)
                 .help("Override the runtime's account lock limit per transaction")
-        )
-        .arg(
-            Arg::with_name("banking_trace_size")
-                .long("enable-banking-trace")
-                .value_name("MAX_BYTES")
-                .validator(is_parsable::<u64>)
-                .takes_value(true)
-                .default_value(default_args.banking_trace_size)
-                .help("Enables banking trace with optionally given maximum trace total bytes")
         );
 }
 
