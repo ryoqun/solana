@@ -409,7 +409,7 @@ impl BankingTracer {
         )
     }
 
-    pub fn ensure_prepare_path(path, &PathBuf) -> Result<(), std::io::Error> {
+    pub fn ensure_prepare_path(path: &PathBuf) -> Result<(), std::io::Error> {
         create_dir_all(path)
     }
 
