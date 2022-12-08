@@ -310,7 +310,7 @@ impl BankingTracer {
         exit: Arc<AtomicBool>,
         max_size: u64,
     ) -> Result<Self, std::io::Error> {
-        Self::ensure_prepare_path(path);
+        Self::ensure_prepare_path(&path);
         let basic = RollingConditionBasic::new().daily().max_size(max_size);
         let grouped = RollingConditionGrouped::new(basic);
         let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
