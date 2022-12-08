@@ -83,18 +83,16 @@ impl PacketDeserializer {
     ) -> Result<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let a = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
-
-        let (batch_vec, mut aggregated_tracer_packet_stats_option) =
+        let (mut packet_batches, mut aggregated_tracer_packet_stats_option) =
             (a.0.clone(), a.1.clone());
-        let received_messages = vec![a];
 
         let mut num_packets_received: usize = packet_batches.iter().map(|batch| batch.len()).sum();
         while let Ok(a) = self.packet_batch_receiver.try_recv() {
-            let (batch_vec, tracer_packet_stats_option) = (&a.0, &a.1);
+            let (packet_batch, tracer_packet_stats_option) = (&a.0, &a.1);
             trace!("got more packet batches in packet deserializer");
             let (packets_received, packet_count_overflowed) = num_packets_received
-                .overflowing_add(batch_vec.iter().map(|batch| batch.len()).sum());
-            received_messages.push(a);
+                .overflowing_add(packet_batch.iter().map(|batch| batch.len()).sum());
+            packet_batches.extend_from_slice(packet_batch);
 
             if let Some(tracer_packet_stats) = &tracer_packet_stats_option {
                 if let Some(aggregated_tracer_packet_stats) =
@@ -115,7 +113,7 @@ impl PacketDeserializer {
             num_packets_received = packets_received;
         }
 
-        Ok((received_messages, aggregated_tracer_packet_stats_option))
+        Ok((packet_batches, aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
