@@ -95,9 +95,10 @@ impl PacketDeserializer {
         let a = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
         let (_packet_batches, mut aggregated_tracer_packet_stats_option) =
             (a.0.clone(), a.1.clone());
-        let mut messages = vec![a];
 
         let mut num_packets_received: usize = a.0.iter().map(|batch| batch.len()).sum();
+        let mut messages = vec![a];
+
         while let Ok(a) = self.packet_batch_receiver.try_recv() {
             let tracer_packet_stats_option = &a.1;
             trace!("got more packet batches in packet deserializer");
