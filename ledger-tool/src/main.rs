@@ -3407,20 +3407,12 @@ fn main() {
                     ..AccountsDbConfig::default()
                 });
 
-                let debug_keys = pubkeys_of(arg_matches, "debug_key")
-                    .map(|pubkeys| Arc::new(pubkeys.into_iter().collect::<HashSet<_>>()));
-
                 let process_options = ProcessOptions {
                     poh_verify: false,
                     halt_at_slot: value_t!(arg_matches, "halt_at_slot", Slot).ok(),
                     accounts_db_config,
                     ..ProcessOptions::default()
                 };
-                let print_accounts_stats = arg_matches.is_present("print_accounts_stats");
-                println!(
-                    "genesis hash: {}",
-                    open_genesis_config_by(&ledger_path, arg_matches).hash()
-                );
 
                 let blockstore = open_blockstore(
                     &ledger_path,
