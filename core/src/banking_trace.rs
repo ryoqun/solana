@@ -310,7 +310,7 @@ impl BankingTracer {
         exit: Arc<AtomicBool>,
         max_size: u64,
     ) -> Result<Self, std::io::Error> {
-        create_dir_all(&path)?;
+        Self::ensure_prepare_path(path);
         let basic = RollingConditionBasic::new().daily().max_size(max_size);
         let grouped = RollingConditionGrouped::new(basic);
         let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
@@ -407,6 +407,13 @@ impl BankingTracer {
             TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name),
             channel.1,
         )
+    }
+
+    pub fn ensure_prepare_path() -> Result<(), std::io::Error> {
+        create_dir_all(&path)
+    }
+
+    pub fn ensure_cleanup_path() {
     }
 }
 
