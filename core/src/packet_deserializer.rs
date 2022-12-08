@@ -117,7 +117,7 @@ impl PacketDeserializer {
         let mut b = packet_batches.into_iter();
         let (mut i, mut j) = (0, 1);
 
-        struct AA {messages: bool, i: usize, j: usize};
+        struct AA {messages: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, i: usize, j: usize};
 
         impl std::iter::Iterator for AA {
             fn next(&mut self) -> usize {
