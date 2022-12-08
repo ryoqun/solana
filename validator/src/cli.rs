@@ -1734,7 +1734,7 @@ impl DefaultArgs {
             exit_max_delinquent_stake: "5".to_string(),
             wait_for_restart_window_min_idle_time: "10".to_string(),
             wait_for_restart_window_max_delinquent_stake: "5".to_string(),
-            banking_trace_size: solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE.to_string(),
+            banking_trace_size: solana_core::banking_trace::DEFAULT_BANKING_TRACE_SIZE.to_string(),
         }
     }
 }
