@@ -11,6 +11,7 @@ use {
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
         time::SystemTime,
+        thread::JoinHandle,
     },
 };
 
@@ -19,11 +20,12 @@ pub type BankingPacketSender = TracedBankingPacketSender;
 type RealBankingPacketSender = Sender<BankingPacketBatch>;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
+#[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct BankingTracer {
     enabled_tracer: Option<(
         (Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>),
-        Option<std::thread::JoinHandle<()>>,
+        Option<JoinHandle<()>>,
     )>,
 }
 
@@ -203,7 +205,7 @@ pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
 #[derive(Serialize, Deserialize, Debug)]
 enum TracedEvent {
-    NewBankStart(u32, Slot),
+    NewBankStart(u32, Slot), // also copy each channel's `.len()`s?
     PacketBatch(String, BankingPacketBatch),
 }
 
@@ -264,7 +266,7 @@ impl<'a> Write for GroupedWriter<'a> {
 pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
-    mut on_recv: impl FnMut(T) -> (),
+    mut on_recv: impl FnMut(T),
 ) {
     'outer: while !exit.load(std::sync::atomic::Ordering::Relaxed) {
         'inner: loop {
@@ -286,7 +288,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
 const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
-pub const TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD: u64 = 1 * 1024 * 1024 * 1024;
+pub const TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD: u64 = 1024 * 1024 * 1024;
 pub const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
 pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
     TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD * TRACE_FILE_ROTATE_COUNT;
@@ -345,7 +347,7 @@ impl BankingTracer {
         &self,
         name: &'static str,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
-        Self::channel(self.enabled_tracer.as_ref().map(|a| a.0 .0.clone()), name)
+        Self::channel(self.enabled_tracer.as_ref().map(|((_, sender), _)| sender.clone()), name)
     }
 
     pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
@@ -362,7 +364,7 @@ impl BankingTracer {
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (
-            self.enabled_tracer.as_mut().map(|a| a.1.take()).flatten(),
+            self.enabled_tracer.as_mut().and_then(|(_, tracer)| tracer.take()),
             Arc::new(self),
         )
     }
