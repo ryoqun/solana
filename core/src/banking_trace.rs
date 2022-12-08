@@ -10,8 +10,8 @@ use {
         io::{BufReader, Write},
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
-        time::SystemTime,
         thread::JoinHandle,
+        time::SystemTime,
     },
 };
 
@@ -347,7 +347,12 @@ impl BankingTracer {
         &self,
         name: &'static str,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
-        Self::channel(self.enabled_tracer.as_ref().map(|((sender, _), _)| sender.clone()), name)
+        Self::channel(
+            self.enabled_tracer
+                .as_ref()
+                .map(|((sender, _), _)| sender.clone()),
+            name,
+        )
     }
 
     pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
@@ -364,7 +369,9 @@ impl BankingTracer {
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (
-            self.enabled_tracer.as_mut().and_then(|(_, tracer)| tracer.take()),
+            self.enabled_tracer
+                .as_mut()
+                .and_then(|(_, tracer)| tracer.take()),
             Arc::new(self),
         )
     }
