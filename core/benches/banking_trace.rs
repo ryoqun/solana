@@ -107,7 +107,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let dir_cleanup = std::fs::remove_dir_all("/tmp/banking-trace/");
         match dir_cleanup {
             Ok(_) => (),
-            Err(std::io::ErrorKind::NotFound) => (),
+            Err(std::io::Error{kind: std::io::ErrorKind::NotFound}) => (),
             Err(_) => dir_cleanup.unwrap(),
         };
 
