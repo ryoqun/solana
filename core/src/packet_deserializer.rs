@@ -122,7 +122,7 @@ impl PacketDeserializer {
         impl std::iter::Iterator for AA {
             type Item = PacketBatch;
 
-            fn next(&mut self) -> usize {
+            fn next(&mut self) -> Option<Self::Item> {
                 let mut found = None;
                 loop {
                     if let Some(message) = messages.get(self.i) {
