@@ -311,20 +311,20 @@ impl BankingTracer {
             let basic = RollingConditionBasic::new().daily().max_size(max_size);
             let grouped = RollingConditionGrouped::new(basic);
             let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
-            let a = unbounded();
-            let receiver = a.1.clone();
-            let join_handle = std::thread::Builder::new()
+            let sender_and_receiver = unbounded();
+            let trace_receiver = sender_and_receiver.1.clone();
+            let tracing_thread = std::thread::Builder::new()
                 .name("solBanknTracer".into())
                 .spawn(move || {
-                    sender_overhead_minimized_receiver_loop::<_, 100>(exit, receiver, |trace_event| {
+                    sender_overhead_minimized_receiver_loop::<_, 100>(exit, trace_receiver, |event| {
                         output.condition_mut().reset();
-                        serialize_into(&mut GroupedWriter::new(&mut output), &trace_event).unwrap();
+                        serialize_into(&mut GroupedWriter::new(&mut output), &event).unwrap();
                     });
                     output.flush().unwrap();
                 })
                 .unwrap();
 
-            Ok((a, Some(join_handle)))
+            Ok((sender_and_receiver, Some(tracing_thread)))
         }).transpose()?;
 
         Ok(Self { tracer })
