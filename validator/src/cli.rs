@@ -2172,10 +2172,10 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
         .arg(
             Arg::with_name("banking_trace_size")
                 .long("enable-banking-trace")
-                .value_name("OPTIONAL_TRACE_TOTAL_SIZE")
+                .value_name("MAX_BYTES")
                 .validator(is_parsable::<u64>)
                 .takes_value(true)
-                .default_value(solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE.as_str())
+                .default_value(solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE.into())
                 .help("Enables banking trace with optionally given maximum trace total bytes")
         );
 }
