@@ -116,27 +116,32 @@ impl PacketDeserializer {
         }
         let mut b = packet_batches.into_iter();
         let (mut i, mut j) = (0, 1);
-        let a = std::iter::from_fn(move || {
-            let mut found = None;
-            loop {
-                if let Some(message) = messages.get(i) {
-                    if let Some(packet_batch) = message.0.get(j) {
-                        j += 1;
-                        found = Some(packet_batch);
-                        break;
-                    } else {
-                        j = 0;
-                        i += 1;
-                        continue;
-                    }
-                } else {
-                    break;
-                };
-            }
-            found.cloned()
-        });
 
-        Ok((a, aggregated_tracer_packet_stats_option))
+        struct AA {messages: bool, i: usize, j: usize};
+
+        impl std::iter::Iterator<Item = PacketBatch> for AA {
+            fn next(&mut self) -> usize {
+                let mut found = None;
+                loop {
+                    if let Some(message) = messages.get(self.i) {
+                        if let Some(packet_batch) = message.0.get(self.j) {
+                            self.j += 1;
+                            found = Some(packet_batch);
+                            break;
+                        } else {
+                            self.j = 0;
+                            self.i += 1;
+                            continue;
+                        }
+                    } else {
+                        break;
+                    };
+                }
+                found.cloned()
+            }
+        };
+
+        Ok((AA{messages, i: 0, j: 0}, aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
