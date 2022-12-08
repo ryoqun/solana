@@ -65,7 +65,7 @@ impl PacketDeserializer {
             failed_sigverify_count += packet_batch.len().saturating_sub(packet_indexes.len());
 
             deserialized_packets.extend(Self::deserialize_packets(&packet_batch, &packet_indexes));
-        })
+        });
 
         ReceivePacketResults {
             deserialized_packets,
