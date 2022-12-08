@@ -115,11 +115,15 @@ impl PacketDeserializer {
             num_packets_received = packets_received;
         }
         let mut b = packet_batches.into_iter();
-        let mut i = 0;
+        let mut (i, j) = (0, 1);
         let a = std::iter::from_fn(move || {
             if let Some(message) = messages.get(i) {
-                i += 1;
-                Some(3)
+                if let Some(packet_batch) = message.0.get(j) {
+                    j += 1;
+                    Some(packet_batch)
+                } else {
+                    i += 1;
+                }
             } else {
                 None
             };
