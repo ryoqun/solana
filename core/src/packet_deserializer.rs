@@ -117,7 +117,7 @@ impl PacketDeserializer {
         let mut b = packet_batches.into_iter();
         let (mut i, mut j) = (0, 1);
         let a = std::iter::from_fn(move || {
-            let found = None;
+            let mut found = None;
             loop {
                 if let Some(message) = messages.get(i) {
                     if let Some(packet_batch) = message.0.get(j) {
