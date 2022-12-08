@@ -10,6 +10,7 @@ use {
         },
         keypair::SKIP_SEED_PHRASE_VALIDATION_ARG,
     },
+    solana_core::banking_trace::DEFAULT_BANKING_TRACE_SIZE,
     solana_faucet::faucet::FAUCET_PORT,
     solana_net_utils::{MINIMUM_VALIDATOR_PORT_RANGE_WIDTH, VALIDATOR_PORT_RANGE},
     solana_rpc::{rpc::MAX_REQUEST_BODY_SIZE, rpc_pubsub_service::PubSubConfig},
@@ -1734,7 +1735,7 @@ impl DefaultArgs {
             exit_max_delinquent_stake: "5".to_string(),
             wait_for_restart_window_min_idle_time: "10".to_string(),
             wait_for_restart_window_max_delinquent_stake: "5".to_string(),
-            banking_trace_size: solana_core::banking_trace::DEFAULT_BANKING_TRACE_SIZE.to_string(),
+            banking_trace_size: DEFAULT_BANKING_TRACE_SIZE.to_string(),
         }
     }
 }
