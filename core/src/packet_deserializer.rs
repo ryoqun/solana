@@ -114,7 +114,7 @@ impl PacketDeserializer {
             }
             num_packets_received = packets_received;
         }
-        let b = packet_batches.into_iter();
+        let mut b = packet_batches.into_iter();
         let a = std::iter::from_fn(move || {
             b.next()
         });
