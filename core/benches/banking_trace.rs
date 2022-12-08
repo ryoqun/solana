@@ -37,7 +37,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     let tracer = solana_core::banking_trace::BankingTracer::new_with_config(Some((
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
-        TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD,
+        solana_core::banking_trace::TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD,
     )))
     .unwrap();
     let (s, r) = tracer.create_channel_non_vote();
