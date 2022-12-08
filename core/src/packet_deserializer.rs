@@ -120,6 +120,8 @@ impl PacketDeserializer {
         struct AA {messages: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, i: usize, j: usize};
 
         impl std::iter::Iterator for AA {
+            type Item = PacketBatch;
+
             fn next(&mut self) -> usize {
                 let mut found = None;
                 loop {
