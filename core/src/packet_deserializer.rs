@@ -115,7 +115,10 @@ impl PacketDeserializer {
             num_packets_received = packets_received;
         }
 
-        Ok((packet_batches.into_iter(), aggregated_tracer_packet_stats_option))
+        let a = std::iter::from_fn(|| {
+        });
+
+        Ok((a.into_iter(), aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
