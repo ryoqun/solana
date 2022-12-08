@@ -380,7 +380,6 @@ impl Validator {
         use_quic: bool,
         tpu_connection_pool_size: usize,
         tpu_enable_udp: bool,
-        banking_trace_size: u64,
     ) -> Result<Self, String> {
         let id = identity_keypair.pubkey();
         assert_eq!(id, node.info.id);
@@ -1020,7 +1019,7 @@ impl Validator {
             &staked_nodes,
             config.staked_nodes_overrides.clone(),
             tpu_enable_udp,
-            banking_trace_size,
+            config.banking_trace_size,
         );
 
         datapoint_info!(
