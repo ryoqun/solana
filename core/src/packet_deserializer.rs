@@ -51,7 +51,7 @@ impl PacketDeserializer {
     }
 
     fn on_each_pachet_batch(
-        batch_vecs: &[BankingPacketBatch], mut on_each: impl FnMut(&PacketBatch) -> (),
+        batch_vecs: &[BankingPacketBatch], mut on_each: impl FnMut(&PacketBatch),
         ) {
         for vec in batch_vecs {
             for b in &vec.0 {
