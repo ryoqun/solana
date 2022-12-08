@@ -2190,6 +2190,7 @@ mod tests {
             DEFAULT_TPU_USE_QUIC,
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
             DEFAULT_TPU_ENABLE_UDP,
+            EMPTY_BANKING_TRACE_SIZE,
         )
         .expect("assume successful validator start");
         assert_eq!(
