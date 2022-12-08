@@ -54,7 +54,7 @@ impl PacketDeserializer {
         packet_batches: impl std::iter::Iterator<Item = PacketBatch>,
         sigverify_tracer_stats_option: Option<SigverifyTracerPacketStats>,
     ) -> ReceivePacketResults {
-        let packet_count: usize = packet_batches.map(|x| x.len()).sum();
+        let packet_count: usize = packet_batches.clone().map(|x| x.len()).sum();
         let mut passed_sigverify_count: usize = 0;
         let mut failed_sigverify_count: usize = 0;
         let mut deserialized_packets = Vec::with_capacity(packet_count);
