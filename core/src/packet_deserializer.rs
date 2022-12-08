@@ -80,7 +80,7 @@ impl PacketDeserializer {
         &self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
-    ) -> Result<(impl std::iter::Iterator<Item = PacketBatch>/* + Clone*/, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
+    ) -> Result<(impl std::iter::Iterator<Item = impl AsRef<PacketBatch>>/* + Clone*/, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let a = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
         let (mut packet_batches, mut aggregated_tracer_packet_stats_option) =
