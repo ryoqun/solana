@@ -347,7 +347,7 @@ impl BankingTracer {
         &self,
         name: &'static str,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
-        Self::channel(self.enabled_tracer.as_ref().map(|((_, sender), _)| sender.clone()), name)
+        Self::channel(self.enabled_tracer.as_ref().map(|((sender, _), _)| sender.clone()), name)
     }
 
     pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
