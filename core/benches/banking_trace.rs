@@ -94,7 +94,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
 }
 
 #[bench]
-fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Bencher) {
+fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let len = 4;
     let chunk_size = 10;
     let tx = test_tx();
@@ -104,7 +104,12 @@ fn bench_banking_tracer_background_thread_throughput_10_1gb(bencher: &mut Benche
     bencher.iter(move || {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
 
-        std::fs::remove_dir_all("/tmp/banking-trace/").unwrap();
+        let dir_cleanup = std::fs::remove_dir_all("/tmp/banking-trace/")
+        match dir_cleanup {
+            Ok(_) => (),
+            Err(io::ErrorKind::NotFound) => (),
+            Err(_) => dir_cleanup.unwrap(),
+        };
 
         let tracer = solana_core::banking_trace::BankingTracer::_new(
             std::path::PathBuf::new().join("/tmp/banking-trace/event"),
