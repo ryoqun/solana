@@ -306,7 +306,7 @@ impl BankingTracer {
     pub fn new_with_config(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, std::io::Error> {
-        let tracer = maybe_config.map(|(path, exit, max_size)| -> usize {
+        let tracer = maybe_config.map(|(path, exit, max_size)| -> Result<_, std::io::Error> {
             Self::ensure_prepare_path(&path)?;
             let basic = RollingConditionBasic::new().daily().max_size(max_size);
             let grouped = RollingConditionGrouped::new(basic);
