@@ -21,7 +21,7 @@ pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
 #[derive(Debug)]
 pub struct BankingTracer {
-    tracer: Option<(
+    enabled_tracer: Option<(
         (Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>),
         Option<std::thread::JoinHandle<()>>,
     )>,
@@ -312,7 +312,7 @@ impl BankingTracer {
     pub fn new_with_config(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, std::io::Error> {
-        let tracer = maybe_config.map(|(path, exit, total_size)| -> Result<_, std::io::Error> {
+        let enabled_tracer = maybe_config.map(|(path, exit, total_size)| -> Result<_, std::io::Error> {
             let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
             assert!(roll_threshold_size > 0);
 
@@ -337,7 +337,7 @@ impl BankingTracer {
             Ok((sender_and_receiver, Some(tracing_thread)))
         }).transpose()?;
 
-        Ok(Self { tracer })
+        Ok(Self { enabled_tracer })
     }
 
     pub fn new_disabled() -> Self {
@@ -348,7 +348,7 @@ impl BankingTracer {
         &self,
         name: &'static str,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
-        Self::channel(self.tracer.as_ref().map(|a| a.0 .0.clone()), name)
+        Self::channel(self.enabled_tracer.as_ref().map(|a| a.0 .0.clone()), name)
     }
 
     pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
@@ -365,13 +365,13 @@ impl BankingTracer {
 
     pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
         (
-            self.tracer.as_mut().map(|a| a.1.take()).flatten(),
+            self.enabled_tracer.as_mut().map(|a| a.1.take()).flatten(),
             Arc::new(self),
         )
     }
 
     pub fn new_bank_start(&self, id: u32, slot: Slot) {
-        if let Some(tracer) = &self.tracer {
+        if let Some(tracer) = &self.enabled_tracer {
             tracer
                 .0
                  .0
