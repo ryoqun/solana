@@ -10,8 +10,8 @@ use {
         io::{BufReader, Write},
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
-        thread::JoinHandle,
-        time::SystemTime,
+        thread::{sleep, JoinHandle},
+        time::{Duration, SystemTime},
     },
 };
 
