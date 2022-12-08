@@ -8,6 +8,7 @@ use {
     rand::{seq::SliceRandom, thread_rng},
     solana_clap_utils::input_parsers::{keypair_of, keypairs_of, pubkey_of, value_of},
     solana_core::{
+        banking_trace::EMPTY_BANKING_TRACE_SIZE,
         ledger_cleanup_service::{DEFAULT_MAX_LEDGER_SHREDS, DEFAULT_MIN_MAX_LEDGER_SHREDS},
         system_monitor_service::SystemMonitorService,
         tower_storage,
@@ -1364,8 +1365,10 @@ pub fn main() {
     }
 
     validator_config.banking_trace_size = if matches.occurrences_of("banking_trace_size") == 0 {
-        solana_core::banking_trace::EMPTY_BANKING_TRACE_SIZE
+        // disable if no explicit flag given; this effectively results in opt-in
+        EMPTY_BANKING_TRACE_SIZE
     } else {
+        // DEFAULT_BANKING_TRACE_SIZE or user-supplied override value
         value_t_or_exit!(matches, "banking_trace_size", u64)
     };
 
