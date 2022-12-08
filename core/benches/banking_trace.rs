@@ -111,12 +111,11 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         // trace files created by prior bench iterations.
         solana_core::banking_trace::BankingTracer::ensure_cleanup_path(&path);
 
-        let tracer = solana_core::banking_trace::BankingTracer::_new(
+        let tracer = solana_core::banking_trace::BankingTracer::new_with_config(Some(
             path,
-            true,
             exit.clone(),
             50 * 1024 * 1024,
-        )
+        ))
         .unwrap();
         let (dummy_main_sender, dummy_main_receiver) = tracer.create_channel_non_vote();
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
