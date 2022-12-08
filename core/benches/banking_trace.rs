@@ -15,9 +15,13 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(exit.clone(), r, |m| {
-            test::black_box(m);
-        })
+        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(
+            exit.clone(),
+            r,
+            |m| {
+                test::black_box(m);
+            },
+        )
     });
 
     let len = 4;
@@ -43,9 +47,13 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(exit.clone(), r, |m| {
-            test::black_box(m);
-        })
+        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(
+            exit.clone(),
+            r,
+            |m| {
+                test::black_box(m);
+            },
+        )
     });
 
     let len = 4;
@@ -71,9 +79,13 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(exit.clone(), r, |m| {
-            test::black_box(m);
-        })
+        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(
+            exit.clone(),
+            r,
+            |m| {
+                test::black_box(m);
+            },
+        )
     });
 
     let len = 4;
@@ -116,9 +128,13 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread_handle = std::thread::spawn(move || {
-            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(exit.clone(), dummy_main_receiver, |packet_batch| {
-                test::black_box(packet_batch);
-            })
+            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(
+                exit.clone(),
+                dummy_main_receiver,
+                |packet_batch| {
+                    test::black_box(packet_batch);
+                },
+            )
         });
 
         for _ in 0..1000 {
@@ -132,8 +148,10 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     });
 
     // prevent TempDir's auto cleanup
-    std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION").is_ok().then(|| {
-        eprintln!("prevented to remove {:?}", temp_dir.path());
-        drop(temp_dir.into_path());
-    });
+    std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION")
+        .is_ok()
+        .then(|| {
+            eprintln!("prevented to remove {:?}", temp_dir.path());
+            drop(temp_dir.into_path());
+        });
 }

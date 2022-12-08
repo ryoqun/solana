@@ -649,7 +649,9 @@ impl Accounts {
                         .unwrap_or_else(|| {
                             hash_queue.get_lamports_per_signature(tx.message().recent_blockhash())
                         });
-                    let fee = if let Some(lamports_per_signature) = lamports_per_signature.or(lamports_per_signature_override) {
+                    let fee = if let Some(lamports_per_signature) =
+                        lamports_per_signature.or(lamports_per_signature_override)
+                    {
                         Bank::calculate_fee(
                             tx.message(),
                             lamports_per_signature,

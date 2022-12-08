@@ -67,21 +67,14 @@ impl BankingTraceReplayer {
             crate::banking_stage::BankingStage,
             log::*,
             solana_client::connection_cache::ConnectionCache,
-            solana_gossip::cluster_info::{Node},
-            solana_ledger::{
-                leader_schedule_cache::LeaderScheduleCache,
-            },
+            solana_gossip::cluster_info::Node,
+            solana_ledger::leader_schedule_cache::LeaderScheduleCache,
             solana_poh::poh_recorder::create_test_recorder,
             solana_runtime::bank::Bank,
-            solana_sdk::{
-                signature::Keypair,
-            },
+            solana_sdk::signature::Keypair,
             solana_streamer::socket::SocketAddrSpace,
             solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
-            std::{
-                sync::atomic::Ordering,
-                thread::sleep,
-            },
+            std::{sync::atomic::Ordering, thread::sleep},
         };
 
         let mut bank = bank_forks.read().unwrap().working_bank();
@@ -115,12 +108,16 @@ impl BankingTraceReplayer {
         let bank_slot = bank.slot();
 
         std::thread::spawn(move || {
-            let range_iter = if let Some(start) = &bank_starts_by_slot.get(&bank_slot){
+            let range_iter = if let Some(start) = &bank_starts_by_slot.get(&bank_slot) {
                 packet_batches_by_time.range(*start..)
             } else {
                 packet_batches_by_time.range(..)
             };
-            info!("replaying events: {} out of {}", range_iter.clone().count(), packet_batches_by_time.len());
+            info!(
+                "replaying events: {} out of {}",
+                range_iter.clone().count(),
+                packet_batches_by_time.len()
+            );
 
             loop {
                 for (&_key, ref value) in range_iter.clone() {
@@ -279,11 +276,11 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
                 Err(TryRecvError::Disconnected) => {
                     assert_eq!(receiver.len(), 0);
                     break 'outer;
-                },
+                }
             }
         }
         std::thread::sleep(std::time::Duration::from_millis(SLEEP_MS));
-    };
+    }
 }
 
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
@@ -291,36 +288,51 @@ const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
 const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
 pub const TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD: u64 = 1 * 1024 * 1024 * 1024;
 pub const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
-pub const DEFAULT_BANKING_TRACE_SIZE: u64 = TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD * TRACE_FILE_ROTATE_COUNT;
+pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
+    TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD * TRACE_FILE_ROTATE_COUNT;
 
 impl BankingTracer {
     pub fn new_with_config(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, std::io::Error> {
-        let enabled_tracer = maybe_config.map(|(path, exit, total_size)| -> Result<_, std::io::Error> {
-            let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
-            assert!(roll_threshold_size > 0);
+        let enabled_tracer = maybe_config
+            .map(|(path, exit, total_size)| -> Result<_, std::io::Error> {
+                let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
+                assert!(roll_threshold_size > 0);
 
-            Self::ensure_prepare_path(&path)?;
-            let grouped = RollingConditionGrouped::new(
-                RollingConditionBasic::new().daily().max_size(roll_threshold_size)
-            );
-            let mut output = RollingFileAppender::new_with_buffer_capacity(path.join("events"), grouped, (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(), BUF_WRITER_CAPACITY)?;
-            let sender_and_receiver = unbounded();
-            let trace_receiver = sender_and_receiver.1.clone();
-            let tracing_thread = std::thread::Builder::new()
-                .name("solBanknTracer".into())
-                .spawn(move || {
-                    sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(exit, trace_receiver, |event| {
-                        output.condition_mut().reset();
-                        serialize_into(&mut GroupedWriter::new(&mut output), &event).unwrap();
-                    });
-                    output.flush().unwrap();
-                })
-                .unwrap();
+                Self::ensure_prepare_path(&path)?;
+                let grouped = RollingConditionGrouped::new(
+                    RollingConditionBasic::new()
+                        .daily()
+                        .max_size(roll_threshold_size),
+                );
+                let mut output = RollingFileAppender::new_with_buffer_capacity(
+                    path.join("events"),
+                    grouped,
+                    (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
+                    BUF_WRITER_CAPACITY,
+                )?;
+                let sender_and_receiver = unbounded();
+                let trace_receiver = sender_and_receiver.1.clone();
+                let tracing_thread = std::thread::Builder::new()
+                    .name("solBanknTracer".into())
+                    .spawn(move || {
+                        sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(
+                            exit,
+                            trace_receiver,
+                            |event| {
+                                output.condition_mut().reset();
+                                serialize_into(&mut GroupedWriter::new(&mut output), &event)
+                                    .unwrap();
+                            },
+                        );
+                        output.flush().unwrap();
+                    })
+                    .unwrap();
 
-            Ok((sender_and_receiver, Some(tracing_thread)))
-        }).transpose()?;
+                Ok((sender_and_receiver, Some(tracing_thread)))
+            })
+            .transpose()?;
 
         Ok(Self { enabled_tracer })
     }

@@ -50,7 +50,10 @@ impl PacketDeserializer {
         ))
     }
 
-    fn for_each_pachet_batch(banking_batches: &[BankingPacketBatch], mut for_each: impl FnMut(&PacketBatch)) {
+    fn for_each_pachet_batch(
+        banking_batches: &[BankingPacketBatch],
+        mut for_each: impl FnMut(&PacketBatch),
+    ) {
         for banking_batch in banking_batches {
             for batch in &banking_batch.0 {
                 for_each(&batch)
@@ -89,10 +92,18 @@ impl PacketDeserializer {
         &self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
-    ) -> Result<(usize, Vec<BankingPacketBatch>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
+    ) -> Result<
+        (
+            usize,
+            Vec<BankingPacketBatch>,
+            Option<SigverifyTracerPacketStats>,
+        ),
+        RecvTimeoutError,
+    > {
         let start = Instant::now();
         let message = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
-        let (packet_batches, mut aggregated_tracer_packet_stats_option) = (&message.0, message.1.clone());
+        let (packet_batches, mut aggregated_tracer_packet_stats_option) =
+            (&message.0, message.1.clone());
 
         let mut num_packets_received: usize = packet_batches.iter().map(|batch| batch.len()).sum();
         let mut messages = vec![message];
@@ -122,7 +133,11 @@ impl PacketDeserializer {
             }
         }
 
-        Ok((num_packets_received, messages, aggregated_tracer_packet_stats_option))
+        Ok((
+            num_packets_received,
+            messages,
+            aggregated_tracer_packet_stats_option,
+        ))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
@@ -175,7 +190,11 @@ mod tests {
         assert_eq!(packet_batches.len(), 2);
 
         let packet_count: usize = packet_batches.iter().map(|x| x.len()).sum();
-        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, &vec![BankingPacketBatch::new((packet_batches, None))], None);
+        let results = PacketDeserializer::deserialize_and_collect_packets(
+            packet_count,
+            &vec![BankingPacketBatch::new((packet_batches, None))],
+            None,
+        );
         assert_eq!(results.deserialized_packets.len(), 2);
         assert!(results.new_tracer_stats_option.is_none());
         assert_eq!(results.passed_sigverify_count, 2);
@@ -190,7 +209,11 @@ mod tests {
         packet_batches[0][0].meta.set_discard(true);
         let packet_count: usize = packet_batches.iter().map(|x| x.len()).sum();
 
-        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, &vec![BankingPacketBatch::new((packet_batches, None))], None);
+        let results = PacketDeserializer::deserialize_and_collect_packets(
+            packet_count,
+            &vec![BankingPacketBatch::new((packet_batches, None))],
+            None,
+        );
         assert_eq!(results.deserialized_packets.len(), 1);
         assert!(results.new_tracer_stats_option.is_none());
         assert_eq!(results.passed_sigverify_count, 1);
