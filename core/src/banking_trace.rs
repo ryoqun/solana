@@ -9,7 +9,10 @@ use {
         fs::{create_dir_all, remove_dir_all, File},
         io::{BufReader, Write},
         path::PathBuf,
-        sync::{atomic::{AtomicBool, Ordering}, Arc},
+        sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        },
         thread::{sleep, JoinHandle},
         time::{Duration, SystemTime},
     },
@@ -66,15 +69,11 @@ impl BankingTraceReplayer {
         blockstore: Arc<solana_ledger::blockstore::Blockstore>,
     ) {
         use {
-            crate::banking_stage::BankingStage,
-            log::*,
-            solana_client::connection_cache::ConnectionCache,
-            solana_gossip::cluster_info::Node,
+            crate::banking_stage::BankingStage, log::*,
+            solana_client::connection_cache::ConnectionCache, solana_gossip::cluster_info::Node,
             solana_ledger::leader_schedule_cache::LeaderScheduleCache,
-            solana_poh::poh_recorder::create_test_recorder,
-            solana_runtime::bank::Bank,
-            solana_sdk::signature::Keypair,
-            solana_streamer::socket::SocketAddrSpace,
+            solana_poh::poh_recorder::create_test_recorder, solana_runtime::bank::Bank,
+            solana_sdk::signature::Keypair, solana_streamer::socket::SocketAddrSpace,
             solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
         };
 
@@ -386,20 +385,14 @@ impl BankingTracer {
         }
     }
 
-    pub fn channel_for_test() -> (
-        TracedBankingPacketSender,
-        Receiver<BankingPacketBatch>,
-    ) {
+    pub fn channel_for_test() -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
         Self::channel(None, "_dummy_name_for_test")
     }
 
     pub fn channel(
         maybe_mirrored_channel: Option<Sender<TimedTracedEvent>>,
         name: &'static str,
-    ) -> (
-        TracedBankingPacketSender,
-        Receiver<BankingPacketBatch>,
-    ) {
+    ) -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
         let channel = unbounded();
         (
             TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name),
@@ -441,10 +434,7 @@ impl TracedBankingPacketSender {
         }
     }
 
-    pub fn send(
-        &self,
-        batch: BankingPacketBatch,
-    ) -> Result<(), SendError<BankingPacketBatch>> {
+    pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
         if let Some(mirror) = &self.mirrored_sender_to_trace {
             mirror
                 .send(TimedTracedEvent(
