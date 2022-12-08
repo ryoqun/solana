@@ -107,6 +107,8 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
         let path = temp_dir.path().join("banking-trace");
 
+        // make sure fresh setup; otherwise banking tracer appends and rotates
+        // trace files created by prior bench iterations.
         solana_core::banking_trace::BankingTracer::ensure_cleanup_path(&path);
 
         let tracer = solana_core::banking_trace::BankingTracer::_new(
