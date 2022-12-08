@@ -116,19 +116,9 @@ impl PacketDeserializer {
         }
         let mut b = packet_batches.into_iter();
         let (mut i, mut j) = (0, 1);
-        let mut message = None;
         let a = std::iter::from_fn(move || {
             let mut found = None;
             loop {
-                if message.is_none() {
-                    message = Some(messages.pop());
-                }
-                if let Some(message) = message {
-                    
-                } else {
-                    break;
-                }
-                /*
                 if let Some(message) = messages.get(i) {
                     if let Some(packet_batch) = message.0.get(j) {
                         j += 1;
@@ -142,7 +132,6 @@ impl PacketDeserializer {
                 } else {
                     break;
                 };
-                */
             }
             found.cloned()
         });
