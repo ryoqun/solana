@@ -28,7 +28,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
     let chunk_size = 10;
     let tx = test_tx();
     let aa = to_packet_batches(&vec![tx; len], chunk_size);
-    let m = Arc::new((aa.clone(), None));
+    let m = Arc::new((aa, None));
 
     bencher.iter(move || {
         s.send(m.clone()).unwrap();
@@ -60,7 +60,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     let chunk_size = 10;
     let tx = test_tx();
     let aa = to_packet_batches(&vec![tx; len], chunk_size);
-    let m = Arc::new((aa.clone(), None));
+    let m = Arc::new((aa, None));
 
     bencher.iter(move || {
         s.send(m.clone()).unwrap();

@@ -56,7 +56,7 @@ impl PacketDeserializer {
     ) {
         for banking_batch in banking_batches {
             for batch in &banking_batch.0 {
-                for_each(&batch)
+                for_each(batch)
             }
         }
     }
