@@ -160,8 +160,7 @@ impl BankingTraceReplayer {
         let (exit, poh_recorder, poh_service, signal_receiver) =
             create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
 
-        let banking_tracer =
-            BankingTracer::new(blockstore.banking_tracer_path(), false, exit.clone()).unwrap();
+        let banking_tracer = BankingTracer::new_disabled();
         let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
             Node::new_localhost().info,
             Arc::new(Keypair::new()),
