@@ -70,7 +70,6 @@ serde = "1.0.144"
 serde_arrays = "0.1.0"
 serde_bytes = "0.11"
 serde_derive = "1.0.103"
-serde_with = "2.1.0"
 serde_json = { version = "1.0.83", optional = true }
 sha2 = "0.10.5"
 sha3 = { version = "0.10.4", optional = true }
