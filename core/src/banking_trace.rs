@@ -64,7 +64,7 @@ impl BankingTraceReplayer {
         blockstore: Arc<solana_ledger::blockstore::Blockstore>,
     ) {
         use {
-            crate::{banking_stage::BankingStage, banking_trace::BankingTracer},
+            crate::banking_stage::BankingStage,
             log::*,
             solana_client::connection_cache::ConnectionCache,
             solana_gossip::cluster_info::{Node},
