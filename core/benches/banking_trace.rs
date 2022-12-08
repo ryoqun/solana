@@ -104,7 +104,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     bencher.iter(move || {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
 
-        let dir_cleanup: usize = std::fs::remove_dir_all("/tmp/banking-trace/").or_else(|err| {
+        std::fs::remove_dir_all("/tmp/banking-trace/").or_else(|err| {
             if err.kind() == std::io::ErrorKind::NotFound {
                 Ok(())
             } else {
