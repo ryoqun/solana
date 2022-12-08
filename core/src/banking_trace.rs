@@ -302,21 +302,29 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
     };
 }
 
+const TRACE_FILE_ROTATE_COUNT: usize = 14;
+const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
+pub const TRACE_FILE_DEFAULT_ROTATE_THRESHOLD: u64 = 1 * 1024 * 1024;
+
 impl BankingTracer {
     pub fn new_with_config(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, std::io::Error> {
-        let tracer = maybe_config.map(|(path, exit, max_size)| -> Result<_, std::io::Error> {
+        let tracer = maybe_config.map(|(path, exit, total_size)| -> Result<_, std::io::Error> {
+            let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
+            assert!(roll_threshold_size > 0);
+
             Self::ensure_prepare_path(&path)?;
-            let basic = RollingConditionBasic::new().daily().max_size(max_size);
-            let grouped = RollingConditionGrouped::new(basic);
-            let mut output = RollingFileAppender::new(path.join("events"), grouped, 10)?;
+            let grouped = RollingConditionGrouped::new(
+                RollingConditionBasic::new().daily().max_size(roll_threshold_size)
+            )
+            let mut output = RollingFileAppender::new(path.join("events"), grouped, TRACE_FILE_ROTATE_COUNT)?;
             let sender_and_receiver = unbounded();
             let trace_receiver = sender_and_receiver.1.clone();
             let tracing_thread = std::thread::Builder::new()
                 .name("solBanknTracer".into())
                 .spawn(move || {
-                    sender_overhead_minimized_receiver_loop::<_, 100>(exit, trace_receiver, |event| {
+                    sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(exit, trace_receiver, |event| {
                         output.condition_mut().reset();
                         serialize_into(&mut GroupedWriter::new(&mut output), &event).unwrap();
                     });
@@ -328,12 +336,6 @@ impl BankingTracer {
         }).transpose()?;
 
         Ok(Self { tracer })
-    }
-
-    pub fn new(
-        path: Option<(PathBuf, Arc<AtomicBool>)>,
-    ) -> Result<Self, std::io::Error> {
-        Self::new_with_config(path.map(|(path, exit)| (path, exit, 1024 * 1024 * 1024)))
     }
 
     pub fn new_disabled() -> Self {
