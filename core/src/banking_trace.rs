@@ -317,7 +317,7 @@ impl BankingTracer {
             Self::ensure_prepare_path(&path)?;
             let grouped = RollingConditionGrouped::new(
                 RollingConditionBasic::new().daily().max_size(roll_threshold_size)
-            )
+            );
             let mut output = RollingFileAppender::new(path.join("events"), grouped, TRACE_FILE_ROTATE_COUNT)?;
             let sender_and_receiver = unbounded();
             let trace_receiver = sender_and_receiver.1.clone();
