@@ -338,7 +338,7 @@ impl BankingTracer {
     }
 
     pub fn new_disabled() -> Self {
-        Self::new_with_config(None)
+        Self::new_with_config(None).unwrap()
     }
 
     pub fn create_channel(
