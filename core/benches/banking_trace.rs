@@ -96,10 +96,11 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let packet_batch = Arc::new((aa.clone(), None));
 
     let temp_dir = tempfile::TempDir::new().unwrap();
+    let base_path = temp_dir.path();
 
     bencher.iter(move || {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-        let path = temp_dir.path().join("banking-trace");
+        let path = base_path.join("banking-trace");
 
         // make sure fresh setup; otherwise banking tracer appends and rotates
         // trace files created by prior bench iterations.
@@ -131,7 +132,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     });
 
     // prevent TempDir's auto cleanup
-    std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION").is_ok().then(move || {
+    std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION").is_ok().then(|| {
         eprintln!("prevented to remove {:?}", temp_dir.path());
         drop(temp_dir.into_path());
     });
