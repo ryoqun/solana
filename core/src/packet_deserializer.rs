@@ -44,7 +44,7 @@ impl PacketDeserializer {
         let (num_packets_received, packet_batches, sigverify_tracer_stats_option) =
             self.receive_until(recv_timeout, capacity)?;
         Ok(Self::deserialize_and_collect_packets(
-            num_packets_received
+            num_packets_received,
             &packet_batches,
             sigverify_tracer_stats_option,
         ))
