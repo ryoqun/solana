@@ -119,7 +119,7 @@ impl PacketDeserializer {
 
         struct AA {messages: bool, i: usize, j: usize};
 
-        impl std::iter::Iterator<Item = PacketBatch> for AA {
+        impl std::iter::Iterator for AA {
             fn next(&mut self) -> usize {
                 let mut found = None;
                 loop {
