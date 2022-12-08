@@ -139,7 +139,7 @@ impl PacketDeserializer {
                         break;
                     };
                 }
-                found.cloned()
+                found
             }
         };
 
