@@ -1311,7 +1311,7 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                 .validator(is_parsable::<u64>)
                 .takes_value(true)
                 .default_value(&default_args.banking_trace_size)
-                .help("Enables banking trace with optionally given maximum trace total bytes")
+                .help("Record recent trace events in ledger, retaining up to the maximum total bytes")
         )
         .args(&get_deprecated_arguments())
         .after_help("The default subcommand is run")
