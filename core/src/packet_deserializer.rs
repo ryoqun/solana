@@ -51,7 +51,7 @@ impl PacketDeserializer {
 
     /// Deserialize packet batches and collect them into ReceivePacketResults
     fn deserialize_and_collect_packets(
-        packet_batches: impl std::iter::Iterator<Item = PacketBatch>,// + Clone,
+        packet_batches: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>,
         sigverify_tracer_stats_option: Option<SigverifyTracerPacketStats>,
     ) -> ReceivePacketResults {
         let packet_count: usize = 0; //packet_batches.clone().map(|x| x.len()).sum();
@@ -80,7 +80,7 @@ impl PacketDeserializer {
         &self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
-    ) -> Result<(impl std::iter::Iterator<Item = PacketBatch>/* + Clone*/, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
+    ) -> Result<(Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let a = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
         let (mut packet_batches, mut aggregated_tracer_packet_stats_option) =
