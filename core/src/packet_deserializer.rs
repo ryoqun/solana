@@ -41,9 +41,10 @@ impl PacketDeserializer {
         recv_timeout: Duration,
         capacity: usize,
     ) -> Result<ReceivePacketResults, RecvTimeoutError> {
-        let (packet_batches, sigverify_tracer_stats_option) =
+        let (num_packets_received, packet_batches, sigverify_tracer_stats_option) =
             self.receive_until(recv_timeout, capacity)?;
         Ok(Self::deserialize_and_collect_packets(
+            num_packets_received
             &packet_batches,
             sigverify_tracer_stats_option,
         ))
@@ -61,10 +62,10 @@ impl PacketDeserializer {
 
     /// Deserialize packet batches and collect them into ReceivePacketResults
     fn deserialize_and_collect_packets(
+        packet_count: usize,
         packet_batches: &[BankingPacketBatch],
         sigverify_tracer_stats_option: Option<SigverifyTracerPacketStats>,
     ) -> ReceivePacketResults {
-        let packet_count: usize = 0; //packet_batches.clone().map(|x| x.len()).sum();
         let mut passed_sigverify_count: usize = 0;
         let mut failed_sigverify_count: usize = 0;
         let mut deserialized_packets = Vec::with_capacity(packet_count);
@@ -90,7 +91,7 @@ impl PacketDeserializer {
         &self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
-    ) -> Result<(Vec<BankingPacketBatch>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
+    ) -> Result<(usize, Vec<BankingPacketBatch>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let message = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
         let (packet_batches, mut aggregated_tracer_packet_stats_option) = (&message.0, message.1.clone());
@@ -113,6 +114,7 @@ impl PacketDeserializer {
                 }
             }
             messages.push(message);
+            num_packets_received = packets_received;
 
             if start.elapsed() >= recv_timeout
                 || packet_count_overflowed
@@ -120,10 +122,9 @@ impl PacketDeserializer {
             {
                 break;
             }
-            num_packets_received = packets_received;
         }
 
-        Ok((messages, aggregated_tracer_packet_stats_option))
+        Ok((num_packets_received, messages, aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
