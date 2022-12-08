@@ -50,8 +50,8 @@ impl PacketDeserializer {
     }
 
     /// Deserialize packet batches and collect them into ReceivePacketResults
-    fn deserialize_and_collect_packets<'a>(
-        packet_batches: impl std::iter::Iterator<Item = &'a PacketBatch>,// + Clone,
+    fn deserialize_and_collect_packets(
+        packet_batches: impl std::iter::Iterator<Item = PacketBatch>,// + Clone,
         sigverify_tracer_stats_option: Option<SigverifyTracerPacketStats>,
     ) -> ReceivePacketResults {
         let packet_count: usize = 0; //packet_batches.clone().map(|x| x.len()).sum();
@@ -76,11 +76,11 @@ impl PacketDeserializer {
     }
 
     /// Receives packet batches from sigverify stage with a timeout, and aggregates tracer packet stats
-    fn receive_until<'a>(
-        &'a self,
+    fn receive_until(
+        &self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
-    ) -> Result<(impl std::iter::Iterator<Item = &'a PacketBatch>/* + Clone*/, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
+    ) -> Result<(impl std::iter::Iterator<Item = PacketBatch>/* + Clone*/, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let a = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
         let (mut packet_batches, mut aggregated_tracer_packet_stats_option) =
@@ -117,12 +117,12 @@ impl PacketDeserializer {
         let mut b = packet_batches.into_iter();
         let (mut i, mut j) = (0, 1);
 
-        struct AA<'a> {messages: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, i: usize, j: usize, _p: std::marker::PhantomData<&'a usize>};
+        struct AA {messages: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, i: usize, j: usize};
 
-        impl<'bbb> std::iter::Iterator for AA<'bbb> {
-            type Item = &'bbb PacketBatch;
+        impl std::iter::Iterator for AA {
+            type Item = PacketBatch;
 
-            fn next(&'a mut self) -> Option<Self::Item> {
+            fn next(&mut self) -> Option<Self::Item> {
                 let mut found = None;
                 loop {
                     if let Some(message) = self.messages.get(self.i) {
@@ -139,11 +139,11 @@ impl PacketDeserializer {
                         break;
                     };
                 }
-                found
+                found.cloned()
             }
         };
 
-        Ok((AA{messages, i: 0, j: 0, _p: Default::default()}, aggregated_tracer_packet_stats_option))
+        Ok((AA{messages, i: 0, j: 0}, aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
