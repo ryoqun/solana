@@ -143,7 +143,7 @@ impl PacketDeserializer {
             }
         };
 
-        Ok((AA{messages, i: 0, j: 0}, aggregated_tracer_packet_stats_option))
+        Ok((AA{messages, i: 0, j: 0, _p: Default::default()}, aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
