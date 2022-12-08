@@ -121,13 +121,13 @@ impl PacketDeserializer {
                 if let Some(message) = messages.get(i) {
                     if let Some(packet_batch) = message.0.get(j) {
                         j += 1;
-                        break Some(packet_batch)
+                        break Some(packet_batch);
                     } else {
                         i += 1;
                         continue;
                     }
                 } else {
-                    break None
+                    break None;
                 };
             }
             b.next()
