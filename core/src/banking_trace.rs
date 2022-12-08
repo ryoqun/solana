@@ -420,7 +420,7 @@ impl BankingTracer {
             } else {
                 Err(err)
             }
-        }).unwrap();
+        })
     }
 }
 
