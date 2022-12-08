@@ -2175,7 +2175,7 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                 .value_name("MAX_BYTES")
                 .validator(is_parsable::<u64>)
                 .takes_value(true)
-                .default_value(&format!("{}", solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE))
+                .default_value(&format!("{}", solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE.to_string()))
                 .help("Enables banking trace with optionally given maximum trace total bytes")
         );
 }
