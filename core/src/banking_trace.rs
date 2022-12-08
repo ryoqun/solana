@@ -324,7 +324,7 @@ impl BankingTracer {
                 })
                 .unwrap();
 
-            Some((a, Some(join_handle)))
+            (a, Some(join_handle))
         });
 
         Ok(Self { tracer })
