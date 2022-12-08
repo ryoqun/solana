@@ -304,7 +304,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
 }
 
 impl BankingTracer {
-    pub fn _new(
+    pub fn new_with_config(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, std::io::Error> {
         let tracer = maybe_config.map(|(path, exit, max_size)| {
@@ -332,11 +332,9 @@ impl BankingTracer {
     }
 
     pub fn new(
-        path: PathBuf,
-        enable_tracing: bool,
-        exit: Arc<AtomicBool>,
+        enable: bool,
     ) -> Result<Self, std::io::Error> {
-        Self::_new(path, enable_tracing, exit, 1024 * 1024 * 1024)
+        Self::new_with_config(enable.then_some(path, exit, 1024 * 1024 * 1024))
     }
 
     pub fn new_for_test() -> Self {
