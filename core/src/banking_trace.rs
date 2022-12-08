@@ -449,10 +449,8 @@ impl TracedBankingPacketSender {
     pub fn send(
         &self,
         batch: BankingPacketBatch,
-    ) -> std::result::Result<(), SendError<BankingPacketBatch>> {
+    ) -> Result<(), SendError<BankingPacketBatch>> {
         if let Some(mirror) = &self.mirrored_sender_to_trace {
-            // remove .clone() by using Arc<PacketBatch>
-            //let a = Arc::new((batch.0.clone(), None));
             mirror
                 .send(TimedTracedEvent(
                     SystemTime::now(),
