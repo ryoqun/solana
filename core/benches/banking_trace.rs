@@ -67,11 +67,11 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-    let tracer = solana_core::banking_trace::BankingTracer::new_with_config(Some(
+    let tracer = solana_core::banking_trace::BankingTracer::new_with_config(Some((
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
         1024 * 1024, // cause more frequent trace file rotation
-    ))
+    )))
     .unwrap();
     let (s, r) = tracer.create_channel_non_vote();
 
