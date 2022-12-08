@@ -50,7 +50,7 @@ impl PacketDeserializer {
     }
 
     fn on_each_pachet_batch(
-        packet_batches: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, impl FnMut(PacketBatch) => (),
+        packet_batches: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, on_each: impl FnMut(PacketBatch) => (),
         ) {
     }
 
