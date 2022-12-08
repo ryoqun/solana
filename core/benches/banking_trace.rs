@@ -110,7 +110,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
             } else {
                 Err(err)
             }
-        });
+        }).unwrap();
 
         let tracer = solana_core::banking_trace::BankingTracer::_new(
             std::path::PathBuf::new().join("/tmp/banking-trace/event"),
