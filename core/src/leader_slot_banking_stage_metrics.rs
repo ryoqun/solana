@@ -371,7 +371,7 @@ impl LeaderSlotMetricsTracker {
     }
 
     pub fn new_for_test() -> Self {
-        Self::new(0, Arc::new(BankingTracer::new_for_test()))
+        Self::new(0, Arc::new(BankingTracer::new_disabled()))
     }
 
     fn create_new_slot_metrics(&self, bank_start: &BankStart) -> Option<LeaderSlotMetrics> {
