@@ -1363,7 +1363,7 @@ pub fn main() {
         validator_config.max_ledger_shreds = Some(limit_ledger_size);
     }
 
-    validatro_config.banking_trace_size = value_t!(matches, "banking_trace_size", u64).ok();
+    validator_config.banking_trace_size = value_t!(matches, "banking_trace_size", u64).ok();
 
     validator_config.ledger_column_options = LedgerColumnOptions {
         compression_type: match matches.value_of("rocksdb_ledger_compression") {
