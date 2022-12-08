@@ -132,7 +132,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
 
     // prevent TempDir's auto cleanup
     std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION").is_ok().then(|| {
-        eprintln!("prevented to remove {}", temp_dir.path());
+        eprintln!("prevented to remove {:?}", temp_dir.path());
         drop(temp_dir.into_path());
     });
 }
