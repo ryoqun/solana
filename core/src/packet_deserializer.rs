@@ -122,7 +122,7 @@ impl PacketDeserializer {
                 Some(3)
             } else {
                 None
-            }
+            };
             b.next()
         });
 
