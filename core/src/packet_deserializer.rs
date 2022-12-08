@@ -115,35 +115,8 @@ impl PacketDeserializer {
             num_packets_received = packets_received;
         }
         let mut b = packet_batches.into_iter();
-        let (mut i, mut j) = (0, 1);
 
-        struct AA {messages: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, i: usize, j: usize};
-
-        impl AA {
-            type Item = PacketBatch;
-
-            fn on_next(&mut self, on_next: impl FnMut(&PacketBatch) -> ()) -> Option<Self::Item> {
-                let mut found = None;
-                loop {
-                    if let Some(message) = self.messages.get(self.i) {
-                        if let Some(packet_batch) = message.0.get(self.j) {
-                            self.j += 1;
-                            found = Some(packet_batch);
-                            break;
-                        } else {
-                            self.j = 0;
-                            self.i += 1;
-                            continue;
-                        }
-                    } else {
-                        break;
-                    };
-                }
-                found.cloned()
-            }
-        };
-
-        Ok((AA{messages, i: 0, j: 0}, aggregated_tracer_packet_stats_option))
+        Ok((messages, aggregated_tracer_packet_stats_option))
     }
 
     fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
