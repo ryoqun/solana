@@ -332,9 +332,9 @@ impl BankingTracer {
     }
 
     pub fn new(
-        enable: bool,
+        path: Option<(PathBuf, Arc<AtomicBool>)>,
     ) -> Result<Self, std::io::Error> {
-        Self::new_with_config(enable.then_some(path, exit, 1024 * 1024 * 1024))
+        Self::new_with_config(path.map(|(path, exit)| (path, exit, 1024 * 1024 * 1024)))
     }
 
     pub fn new_for_test() -> Self {
