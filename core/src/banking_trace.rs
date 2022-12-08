@@ -65,7 +65,6 @@ impl BankingTraceReplayer {
     ) {
         use {
             crate::{banking_stage::BankingStage, banking_trace::BankingTracer},
-            crossbeam_channel::unbounded,
             log::*,
             solana_client::connection_cache::ConnectionCache,
             solana_gossip::cluster_info::{Node},
