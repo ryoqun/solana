@@ -174,6 +174,7 @@ pub struct ValidatorConfig {
     pub ledger_column_options: LedgerColumnOptions,
     pub runtime_config: RuntimeConfig,
     pub replay_slots_concurrently: bool,
+    pub banking_trace_size: u64,
 }
 
 impl Default for ValidatorConfig {
@@ -236,6 +237,7 @@ impl Default for ValidatorConfig {
             ledger_column_options: LedgerColumnOptions::default(),
             runtime_config: RuntimeConfig::default(),
             replay_slots_concurrently: false,
+            banking_trace_size: 0,
         }
     }
 }
@@ -2190,7 +2192,6 @@ mod tests {
             DEFAULT_TPU_USE_QUIC,
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
             DEFAULT_TPU_ENABLE_UDP,
-            EMPTY_BANKING_TRACE_SIZE,
         )
         .expect("assume successful validator start");
         assert_eq!(

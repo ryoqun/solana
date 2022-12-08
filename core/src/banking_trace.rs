@@ -305,7 +305,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
 pub const TRACE_FILE_DEFAULT_ROTATE_THRESHOLD: u64 = 1 * 1024 * 1024;
-const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
+//pub const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
 
 impl BankingTracer {
     pub fn new_with_config(
