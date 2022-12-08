@@ -51,7 +51,7 @@ impl PacketDeserializer {
 
     /// Deserialize packet batches and collect them into ReceivePacketResults
     fn deserialize_and_collect_packets(
-        packet_batches: impl std::iter::Iterator<Item = PacketBatch>,// + Clone,
+        packet_batches: impl std::iter::Iterator<Item = impl AsRef<PacketBatch>>,// + Clone,
         sigverify_tracer_stats_option: Option<SigverifyTracerPacketStats>,
     ) -> ReceivePacketResults {
         let packet_count: usize = 0; //packet_batches.clone().map(|x| x.len()).sum();
