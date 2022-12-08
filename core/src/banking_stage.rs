@@ -4214,9 +4214,9 @@ mod tests {
 
             // Send em all
             [
-                (tpu_packet_batches, &tpu_vote_sender),
-                (gossip_packet_batches, &gossip_verified_vote_sender),
-                (tx_packet_batches, &verified_sender),
+                (tpu_packet_batches, tpu_vote_sender),
+                (gossip_packet_batches, gossip_verified_vote_sender),
+                (tx_packet_batches, verified_sender),
             ]
             .into_iter()
             .map(|(packet_batches, sender)| {
@@ -4226,9 +4226,6 @@ mod tests {
             })
             .for_each(|handle| handle.join().unwrap());
 
-            drop(verified_sender);
-            drop(tpu_vote_sender);
-            drop(gossip_verified_vote_sender);
             banking_stage.join().unwrap();
             exit.store(true, Ordering::Relaxed);
             poh_service.join().unwrap();
