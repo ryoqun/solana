@@ -175,7 +175,7 @@ mod tests {
         assert_eq!(packet_batches.len(), 2);
 
         let packet_count: usize = packet_batches.iter().map(|x| x.len()).sum();
-        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, &packet_batches.iter().map(|a| Arc::new((a, None))).collect(), None);
+        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, &packet_batches.iter().map(|a| Arc::new((a, None))).collect::<Vec<_>>(), None);
         assert_eq!(results.deserialized_packets.len(), 2);
         assert!(results.new_tracer_stats_option.is_none());
         assert_eq!(results.passed_sigverify_count, 2);
