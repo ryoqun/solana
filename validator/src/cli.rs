@@ -1645,6 +1645,8 @@ pub struct DefaultArgs {
     // Wait subcommand
     pub wait_for_restart_window_min_idle_time: String,
     pub wait_for_restart_window_max_delinquent_stake: String,
+
+    pub banking_trace_size: String,
 }
 
 impl DefaultArgs {
@@ -1723,6 +1725,7 @@ impl DefaultArgs {
             exit_max_delinquent_stake: "5".to_string(),
             wait_for_restart_window_min_idle_time: "10".to_string(),
             wait_for_restart_window_max_delinquent_stake: "5".to_string(),
+            banking_trace_size: solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE.to_string(),
         }
     }
 }
@@ -2175,7 +2178,7 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                 .value_name("MAX_BYTES")
                 .validator(is_parsable::<u64>)
                 .takes_value(true)
-                .default_value(&solana_core::banking_trace::OPT_IN_DEFAULT_BANKING_TRACE_SIZE.to_string())
+                .default_value(default_args.banking_trace_size)
                 .help("Enables banking trace with optionally given maximum trace total bytes")
         );
 }
