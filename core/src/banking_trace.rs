@@ -6,7 +6,7 @@ use {
     solana_perf::packet::PacketBatch,
     solana_sdk::slot_history::Slot,
     std::{
-        fs::{create_dir_all, File},
+        fs::{create_dir_all, remove_dir_all, File},
         io::{BufReader, Write},
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
@@ -367,7 +367,7 @@ impl BankingTracer {
         self.create_channel("gossip-vote")
     }
 
-    pub fn finalize_under_arc(mut self) -> (Option<std::thread::JoinHandle<()>>, Arc<Self>) {
+    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<()>>, Arc<Self>) {
         (
             self.enabled_tracer
                 .as_mut()
@@ -377,10 +377,8 @@ impl BankingTracer {
     }
 
     pub fn new_bank_start(&self, id: u32, slot: Slot) {
-        if let Some(tracer) = &self.enabled_tracer {
-            tracer
-                .0
-                 .0
+        if let Some(((sender, _), _)) = &self.enabled_tracer {
+            sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
                     TracedEvent::NewBankStart(id, slot),
@@ -391,17 +389,17 @@ impl BankingTracer {
 
     pub fn channel_for_test() -> (
         TracedBankingPacketSender,
-        crossbeam_channel::Receiver<BankingPacketBatch>,
+        Receiver<BankingPacketBatch>,
     ) {
         Self::channel(None, "_dummy_name_for_test")
     }
 
     pub fn channel(
-        maybe_mirrored_channel: std::option::Option<crossbeam_channel::Sender<TimedTracedEvent>>,
+        maybe_mirrored_channel: Option<Sender<TimedTracedEvent>>,
         name: &'static str,
     ) -> (
         TracedBankingPacketSender,
-        crossbeam_channel::Receiver<BankingPacketBatch>,
+        Receiver<BankingPacketBatch>,
     ) {
         let channel = unbounded();
         (
@@ -415,7 +413,7 @@ impl BankingTracer {
     }
 
     pub fn ensure_cleanup_path(path: &PathBuf) -> Result<(), std::io::Error> {
-        std::fs::remove_dir_all(path).or_else(|err| {
+        remove_dir_all(path).or_else(|err| {
             if err.kind() == std::io::ErrorKind::NotFound {
                 Ok(())
             } else {
