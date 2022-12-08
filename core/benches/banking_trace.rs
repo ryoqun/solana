@@ -110,7 +110,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         solana_core::banking_trace::BankingTracer::ensure_cleanup_path(&path);
 
         let tracer = solana_core::banking_trace::BankingTracer::_new(
-            &path,
+            path,
             true,
             exit.clone(),
             50 * 1024 * 1024,
