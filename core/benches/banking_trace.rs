@@ -104,14 +104,13 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     bencher.iter(move || {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
 
-        let dir_cleanup = std::fs::remove_dir_all("/tmp/banking-trace/");
-        dir_cleanup.map_err(|err|
+        let dir_cleanup = std::fs::remove_dir_all("/tmp/banking-trace/").map_err(|err| {
             if err.kind() == std::io::ErrorKind::NotFound {
                 Ok(())
             } else {
                 err
             }
-        };
+        });
 
         let tracer = solana_core::banking_trace::BankingTracer::_new(
             std::path::PathBuf::new().join("/tmp/banking-trace/event"),
