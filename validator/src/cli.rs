@@ -2168,6 +2168,15 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                 .validator(is_parsable::<u64>)
                 .takes_value(true)
                 .help("Override the runtime's account lock limit per transaction")
+        )
+        .arg(
+            Arg::with_name("banking_trace_size")
+                .long("enable-banking-trace")
+                .value_name("OPTIONAL_TRACE_TOTAL_SIZE")
+                .validator(is_parsable::<u64>)
+                .takes_value(true)
+                .default_value(OPT_IN_DEFAULT_BANKING_TRACE_SIZE.as_str())
+                .help("Enables banking trace with optionally given maximum trace total bytes")
         );
 }
 
