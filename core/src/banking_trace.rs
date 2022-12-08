@@ -9,7 +9,7 @@ use {
         fs::{create_dir_all, remove_dir_all, File},
         io::{BufReader, Write},
         path::PathBuf,
-        sync::{atomic::AtomicBool, Arc},
+        sync::{atomic::{AtomicBool, Ordering}, Arc},
         thread::{sleep, JoinHandle},
         time::{Duration, SystemTime},
     },
