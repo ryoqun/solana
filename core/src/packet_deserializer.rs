@@ -53,7 +53,7 @@ impl PacketDeserializer {
         batch_vecs: Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, on_each: impl FnMut(&PacketBatch) -> (),
         ) {
         for vec in batch_vecs {
-            for b in vec.0 {
+            for b in &vec.0 {
                 on_each(&b)
             }
         }
