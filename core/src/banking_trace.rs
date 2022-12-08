@@ -304,6 +304,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
 
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
+const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
 pub const TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD: u64 = 1 * 1024 * 1024 * 1024;
 pub const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
 pub const DEFAULT_BANKING_TRACE_SIZE: u64 = TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD * TRACE_FILE_ROTATE_COUNT;
@@ -320,7 +321,7 @@ impl BankingTracer {
             let grouped = RollingConditionGrouped::new(
                 RollingConditionBasic::new().daily().max_size(roll_threshold_size)
             );
-            let mut output = RollingFileAppender::new(path.join("events"), grouped, (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap())?;
+            let mut output = RollingFileAppender::new_with_buffer_capacity(path.join("events"), grouped, (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(), BUF_WRITER_CAPACITY)?;
             let sender_and_receiver = unbounded();
             let trace_receiver = sender_and_receiver.1.clone();
             let tracing_thread = std::thread::Builder::new()

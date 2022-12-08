@@ -4088,7 +4088,7 @@ dependencies = [
 [[package]]
 name = "rolling-file"
 version = "0.1.0"
-source = "git+https://github.com/ryoqun/rolling-file-rs?rev=95739dc70565c9ae7d52d8567cfe6647dc6e1618#95739dc70565c9ae7d52d8567cfe6647dc6e1618"
+source = "git+https://github.com/ryoqun/rolling-file-rs?rev=664504e77fad7292dedf5a119d950b80aef67934#664504e77fad7292dedf5a119d950b80aef67934"
 dependencies = [
  "chrono",
 ]
