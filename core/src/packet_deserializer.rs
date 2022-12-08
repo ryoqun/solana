@@ -99,10 +99,10 @@ impl PacketDeserializer {
         let mut messages = vec![message];
 
         while let Ok(message) = self.packet_batch_receiver.try_recv() {
-            let tracer_packet_stats_option = &message.1;
+            let (packet_batch, tracer_packet_stats_option) = (&message.0, &message.1);
             trace!("got more packet batches in packet deserializer");
             let (packets_received, packet_count_overflowed) = num_packets_received
-                .overflowing_add(message.0.iter().map(|batch| batch.len()).sum());
+                .overflowing_add(packet_batch.iter().map(|batch| batch.len()).sum());
 
             if let Some(tracer_packet_stats) = &tracer_packet_stats_option {
                 if let Some(aggregated_tracer_packet_stats) =
