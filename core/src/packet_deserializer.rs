@@ -76,8 +76,8 @@ impl PacketDeserializer {
     }
 
     /// Receives packet batches from sigverify stage with a timeout, and aggregates tracer packet stats
-    fn receive_until(
-        &self,
+    fn receive_until<'a>(
+        &'a self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
     ) -> Result<(impl std::iter::Iterator<Item = PacketBatch>/* + Clone*/, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
