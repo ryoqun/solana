@@ -125,6 +125,7 @@ impl PacketDeserializer {
                         found = Some(packet_batch);
                         break;
                     } else {
+                        j = 0;
                         i += 1;
                         continue;
                     }
