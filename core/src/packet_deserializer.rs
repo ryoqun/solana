@@ -125,7 +125,7 @@ impl PacketDeserializer {
             fn next(&mut self) -> Option<Self::Item> {
                 let mut found = None;
                 loop {
-                    if let Some(message) = messages.get(self.i) {
+                    if let Some(message) = self.messages.get(self.i) {
                         if let Some(packet_batch) = message.0.get(self.j) {
                             self.j += 1;
                             found = Some(packet_batch);
