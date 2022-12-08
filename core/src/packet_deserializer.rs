@@ -133,7 +133,7 @@ impl PacketDeserializer {
                     break;
                 };
             }
-            found.cloned()
+            found
         });
 
         Ok((a, aggregated_tracer_packet_stats_option))
