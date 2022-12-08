@@ -337,8 +337,8 @@ impl BankingTracer {
         Self::new_with_config(path.map(|(path, exit)| (path, exit, 1024 * 1024 * 1024)))
     }
 
-    pub fn new_for_test() -> Self {
-        Self::new(PathBuf::new(), false, Arc::default()).unwrap()
+    pub fn new_disabled() -> Self {
+        Self::new_with_config(None)
     }
 
     pub fn create_channel(
