@@ -101,6 +101,9 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let aa = to_packet_batches(&vec![tx; len], chunk_size);
     let packet_batch = Arc::new((aa.clone(), None));
 
+    let temp_dir = tempfile::TempDir::new().unwrap();
+    dbg!(&temp_dir.path());
+
     bencher.iter(move || {
         let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
 
