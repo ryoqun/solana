@@ -93,9 +93,9 @@ impl PacketDeserializer {
     ) -> Result<(Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let message = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
-        let mut aggregated_tracer_packet_stats_option = message.1.clone();
+        let (packet_batch, mut aggregated_tracer_packet_stats_option) = (&message.0, message.1.clone());
 
-        let mut num_packets_received: usize = message.0.iter().map(|batch| batch.len()).sum();
+        let mut num_packets_received: usize = packet_batch.iter().map(|batch| batch.len()).sum();
         let mut messages = vec![message];
 
         while let Ok(message) = self.packet_batch_receiver.try_recv() {
