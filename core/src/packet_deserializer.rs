@@ -192,7 +192,7 @@ mod tests {
         let packet_count: usize = packet_batches.iter().map(|x| x.len()).sum();
         let results = PacketDeserializer::deserialize_and_collect_packets(
             packet_count,
-            &vec![BankingPacketBatch::new((packet_batches, None))],
+            &[BankingPacketBatch::new((packet_batches, None))],
             None,
         );
         assert_eq!(results.deserialized_packets.len(), 2);
@@ -211,7 +211,7 @@ mod tests {
 
         let results = PacketDeserializer::deserialize_and_collect_packets(
             packet_count,
-            &vec![BankingPacketBatch::new((packet_batches, None))],
+            &[BankingPacketBatch::new((packet_batches, None))],
             None,
         );
         assert_eq!(results.deserialized_packets.len(), 1);
