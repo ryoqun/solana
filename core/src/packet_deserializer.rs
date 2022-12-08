@@ -69,12 +69,12 @@ impl PacketDeserializer {
         let mut failed_sigverify_count: usize = 0;
         let mut deserialized_packets = Vec::with_capacity(packet_count);
         Self::on_each_pachet_batch(packet_batches, |packet_batch| {
-            let packet_indexes = Self::generate_packet_indexes(&packet_batch);
+            let packet_indexes = Self::generate_packet_indexes(packet_batch);
 
             passed_sigverify_count += packet_indexes.len();
             failed_sigverify_count += packet_batch.len().saturating_sub(packet_indexes.len());
 
-            deserialized_packets.extend(Self::deserialize_packets(&packet_batch, &packet_indexes));
+            deserialized_packets.extend(Self::deserialize_packets(packet_batch, &packet_indexes));
         });
 
         ReceivePacketResults {
