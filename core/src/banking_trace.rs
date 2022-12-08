@@ -413,7 +413,14 @@ impl BankingTracer {
         create_dir_all(path)
     }
 
-    pub fn ensure_cleanup_path() {
+    pub fn ensure_cleanup_path(path: &PathBuf) -> Result<(), std::io::Error> {
+        std::fs::remove_dir_all(path).or_else(|err| {
+            if err.kind() == std::io::ErrorKind::NotFound {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        }).unwrap();
     }
 }
 
