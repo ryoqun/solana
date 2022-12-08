@@ -11,12 +11,7 @@ use {
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-    let tracer = solana_core::banking_trace::BankingTracer::new(
-        std::path::PathBuf::new().join("/tmp/banking-tracer"),
-        false,
-        exit.clone(),
-    )
-    .unwrap();
+    let tracer = solana_core::banking_trace::BankingTracer::new_disabled();
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
@@ -39,11 +34,10 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Bencher) {
     let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
-    let tracer = solana_core::banking_trace::BankingTracer::new(
+    let tracer = solana_core::banking_trace::BankingTracer::new(Some((
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
-        true,
         exit.clone(),
-    )
+    )))
     .unwrap();
     let (s, r) = tracer.create_channel_non_vote();
 
