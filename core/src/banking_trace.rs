@@ -67,7 +67,6 @@ impl BankingTraceReplayer {
             crate::{banking_stage::BankingStage, banking_trace::BankingTracer},
             crossbeam_channel::unbounded,
             log::*,
-            rayon::prelude::*,
             solana_client::connection_cache::ConnectionCache,
             solana_gossip::cluster_info::{Node},
             solana_ledger::{
@@ -81,7 +80,7 @@ impl BankingTraceReplayer {
             solana_streamer::socket::SocketAddrSpace,
             solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
             std::{
-                sync::{atomic::Ordering, Arc},
+                sync::atomic::Ordering,
                 thread::sleep,
             },
         };
