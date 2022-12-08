@@ -50,7 +50,7 @@ impl PacketDeserializer {
         ))
     }
 
-    fn on_each_pachet_batch(banking_batches: &[BankingPacketBatch], mut for_each: impl FnMut(&PacketBatch)) {
+    fn for_each_pachet_batch(banking_batches: &[BankingPacketBatch], mut for_each: impl FnMut(&PacketBatch)) {
         for banking_batch in banking_batches {
             for batch in &banking_batch.0 {
                 for_each(&batch)
@@ -67,7 +67,7 @@ impl PacketDeserializer {
         let mut passed_sigverify_count: usize = 0;
         let mut failed_sigverify_count: usize = 0;
         let mut deserialized_packets = Vec::with_capacity(packet_count);
-        Self::on_each_pachet_batch(packet_batches, |packet_batch| {
+        Self::for_each_pachet_batch(packet_batches, |packet_batch| {
             let packet_indexes = Self::generate_packet_indexes(packet_batch);
 
             passed_sigverify_count += packet_indexes.len();
