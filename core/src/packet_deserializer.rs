@@ -90,14 +90,13 @@ impl PacketDeserializer {
         &self,
         recv_timeout: Duration,
         packet_count_upperbound: usize,
-    ) -> Result<(Vec<std::sync::Arc<(Vec<solana_perf::packet::PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
+    ) -> Result<(Vec<BankingPacketBatch>, Option<SigverifyTracerPacketStats>), RecvTimeoutError> {
         let start = Instant::now();
         let message = self.packet_batch_receiver.recv_timeout(recv_timeout)?;
-        let (packet_batch, mut aggregated_tracer_packet_stats_option) = (&message.0, message.1.clone());
+        let (packet_batches, mut aggregated_tracer_packet_stats_option) = (&message.0, message.1.clone());
 
-        let mut num_packets_received: usize = packet_batch.iter().map(|batch| batch.len()).sum();
+        let mut num_packets_received: usize = packet_batches.iter().map(|batch| batch.len()).sum();
         let mut messages = vec![message];
-
         while let Ok(message) = self.packet_batch_receiver.try_recv() {
             let (packet_batch, tracer_packet_stats_option) = (&message.0, message.1.clone());
             trace!("got more packet batches in packet deserializer");
