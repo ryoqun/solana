@@ -2308,9 +2308,7 @@ mod tests {
                 };
                 let (exit, poh_recorder, poh_service, entry_receiver) =
                     create_test_recorder(&bank, &blockstore, Some(poh_config), None);
-                let banking_tracer =
-                    BankingTracer::new(blockstore.banking_tracer_path(), true, exit.clone())
-                        .unwrap();
+                let banking_tracer = BankingTracer::new_disabled();
                 let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
                 // Process a batch that includes a transaction that receives two lamports.
                 let tx = system_transaction::transfer(
