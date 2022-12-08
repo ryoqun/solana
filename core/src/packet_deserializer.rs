@@ -52,7 +52,7 @@ impl PacketDeserializer {
 
     fn on_each_pachet_batch(banking_batch: &[BankingPacketBatch], mut on_each: impl FnMut(&PacketBatch)) {
         for (batch_vec, _) in banking_batch {
-            for batch in *&batch_vec {
+            for batch in batch_vec.as_ref() {
                 on_each(&batch)
             }
         }
