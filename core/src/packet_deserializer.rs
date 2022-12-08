@@ -59,7 +59,7 @@ impl PacketDeserializer {
         let mut failed_sigverify_count: usize = 0;
         let mut deserialized_packets = Vec::with_capacity(packet_count);
         for packet_batch in packet_batches {
-            let packet_indexes = Self::generate_packet_indexes(&packet_batch);
+            let packet_indexes = Self::generate_packet_indexes(packet_batch);
 
             passed_sigverify_count += packet_indexes.len();
             failed_sigverify_count += packet_batch.len().saturating_sub(packet_indexes.len());
@@ -139,7 +139,7 @@ impl PacketDeserializer {
         Ok((a, aggregated_tracer_packet_stats_option))
     }
 
-    fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
+    fn generate_packet_indexes(packet_batch: impl AsRef<PacketBatch>) -> Vec<usize> {
         packet_batch
             .iter()
             .enumerate()
