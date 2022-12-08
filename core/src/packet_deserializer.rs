@@ -161,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_deserialize_and_collect_packets_empty() {
-        let results = PacketDeserializer::deserialize_and_collect_packets([].into_iter(), None);
+        let results = PacketDeserializer::deserialize_and_collect_packets(0, &[], None);
         assert_eq!(results.deserialized_packets.len(), 0);
         assert!(results.new_tracer_stats_option.is_none());
         assert_eq!(results.passed_sigverify_count, 0);
@@ -174,7 +174,8 @@ mod tests {
         let packet_batches = to_packet_batches(&transactions, 1);
         assert_eq!(packet_batches.len(), 2);
 
-        let results = PacketDeserializer::deserialize_and_collect_packets(packet_batches.into_iter(), None);
+        let packet_count: usize = packet_batches.iter().map(|x| x.len()).sum();
+        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, &packet_batches, None);
         assert_eq!(results.deserialized_packets.len(), 2);
         assert!(results.new_tracer_stats_option.is_none());
         assert_eq!(results.passed_sigverify_count, 2);
@@ -189,7 +190,7 @@ mod tests {
         packet_batches[0][0].meta.set_discard(true);
         let packet_count: usize = packet_batches.iter().map(|x| x.len()).sum();
 
-        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, packet_batches.into_iter(), None);
+        let results = PacketDeserializer::deserialize_and_collect_packets(packet_count, &packet_batches, None);
         assert_eq!(results.deserialized_packets.len(), 1);
         assert!(results.new_tracer_stats_option.is_none());
         assert_eq!(results.passed_sigverify_count, 1);
