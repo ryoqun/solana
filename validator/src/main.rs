@@ -1363,7 +1363,11 @@ pub fn main() {
         validator_config.max_ledger_shreds = Some(limit_ledger_size);
     }
 
-    validator_config.banking_trace_size = value_t_or_exit!(matches, "banking_trace_size", u64);
+    validator_config.banking_trace_size = if matches.occurrences_of("banking_trace_size") == 0 {
+        solana_core::banking_trace::EMPTY_BANKING_TRACE_SIZE
+    } else {
+        value_t_or_exit!(matches, "banking_trace_size", u64)
+    };
 
     validator_config.ledger_column_options = LedgerColumnOptions {
         compression_type: match matches.value_of("rocksdb_ledger_compression") {
