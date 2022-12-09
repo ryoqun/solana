@@ -45,7 +45,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
     });
 
     let packet_batch = sample_packet_batch();
-    bencher.iter(move || {
+    bencher.iter(|| {
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
     terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
