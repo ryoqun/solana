@@ -262,7 +262,7 @@ pub struct TracedBankingPacketSender {
 impl TracedBankingPacketSender {
     fn new(
         name: &'static str,
-        sender: Sender<BankingPacketBatch>
+        sender: Sender<BankingPacketBatch>,
         trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> Self {
         Self {
