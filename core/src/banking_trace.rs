@@ -4,7 +4,7 @@ use {
     chrono::{DateTime, Local},
     crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
-    solana_perf::{packet::PacketBatch, test_tx::test_tx},
+    solana_perf::{packet::{PacketBatch, to_packet_batches}, test_tx::test_tx},
     solana_sdk::slot_history::Slot,
     std::{
         fs::{create_dir_all, remove_dir_all, File},
