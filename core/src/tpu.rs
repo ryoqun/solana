@@ -156,7 +156,7 @@ impl Tpu {
             "Vote",
         );
 
-        let banking_tracer = BankingTracer::new_with_config((banking_trace_size > 0).then_some((
+        let banking_tracer = BankingTracer::new((banking_trace_size > 0).then_some((
             blockstore.banking_tracer_path(),
             exit.clone(),
             banking_trace_size,

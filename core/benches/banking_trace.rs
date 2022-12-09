@@ -27,6 +27,10 @@ fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
     BankingTracer::ensure_cleanup_path(path).unwrap();
 }
 
+fn sample_packet_batch() -> BankingPacketBatch {
+    BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None))
+}
+
 fn black_box_packet_batch(packet_batch: BankingPacketBatch) -> TracerThreadResult {
     test::black_box(packet_batch);
     Ok(())
@@ -46,7 +50,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
         )
     });
 
-    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
+    let packet_batch = sample_packet_batch();
     bencher.iter(move || {
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
@@ -71,7 +75,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         )
     });
 
-    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
+    let packet_batch = sample_packet_batch();
     bencher.iter(move || {
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
@@ -96,15 +100,15 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
         )
     });
 
-    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
+    let packet_batch = sample_packet_batch();
     bencher.iter(move || {
-        non_vote_sender.send(Arc::clone(&packet_batch)).unwrap();
+        non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 }
 
 #[bench]
 fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
-    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
+    let packet_batch = sample_packet_batch();
 
     let temp_dir = TempDir::new().unwrap();
     let base_path = temp_dir.path();
