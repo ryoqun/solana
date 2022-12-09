@@ -283,7 +283,8 @@ impl BankingTracer {
                     trace_receiver,
                     |event| -> Result<(), TraceError> {
                         file_appender.condition_mut().reset();
-                        serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)?
+                        serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)?;
+                        Ok(())
                     },
                 )?;
                 file_appender.flush()
