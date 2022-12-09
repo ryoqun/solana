@@ -175,7 +175,9 @@ impl BankingTracer {
     }
 
     pub fn new_disabled() -> Self {
-        Self { enabled_tracer: None }
+        Self {
+            enabled_tracer: None,
+        }
     }
 
     fn create_channel(&self, label: ChannelLabel) -> (BankingPacketSender, BankingPacketReceiver) {
@@ -275,21 +277,22 @@ impl BankingTracer {
         mut file_appender: RollingFileAppender<RollingConditionGrouped>,
         exit: Arc<AtomicBool>,
     ) -> Result<thread::JoinHandle<TracerThreadResult>, TraceError> {
-        let thread = thread::Builder::new()
-            .name("solBanknTracer".into())
-            .spawn(move || -> TracerThreadResult {
-                sender_overhead_minimized_receiver_loop::<_, _, TraceError, TRACE_FILE_WRITE_INTERVAL_MS>(
-                    exit,
-                    trace_receiver,
-                    |event| -> Result<(), TraceError> {
-                        file_appender.condition_mut().reset();
-                        serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)?;
-                        Ok(())
-                    },
-                )?;
+        let thread = thread::Builder::new().name("solBanknTracer".into()).spawn(
+            move || -> TracerThreadResult {
+                sender_overhead_minimized_receiver_loop::<
+                    _,
+                    _,
+                    TraceError,
+                    TRACE_FILE_WRITE_INTERVAL_MS,
+                >(exit, trace_receiver, |event| -> Result<(), TraceError> {
+                    file_appender.condition_mut().reset();
+                    serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)?;
+                    Ok(())
+                })?;
                 file_appender.flush()?;
                 Ok(())
-            })?;
+            },
+        )?;
 
         Ok(thread)
     }
