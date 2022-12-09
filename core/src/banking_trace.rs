@@ -377,10 +377,9 @@ mod tests {
         let tracer = BankingTracer::new_disabled();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
-        let exit_for_dummy_thread = exit.clone();
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
-                exit_for_dummy_thread,
+                exit,
                 non_vote_receiver,
                 |_packet_batch| Ok(()),
             )
@@ -389,7 +388,7 @@ mod tests {
         non_vote_sender
             .send(BankingPacketBatch::new((vec![], None)))
             .unwrap();
-        terminate_tracer(tracer, dummy_main_thread, non_vote_sender, Some(exit));
+        terminate_tracer(tracer, dummy_main_thread, non_vote_sender, None);
     }
 
     #[test]
@@ -401,10 +400,9 @@ mod tests {
             BankingTracer::new(Some((path.clone(), exit.clone(), u64::max_value()))).unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
-        let exit_for_dummy_thread = exit.clone();
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
-                exit_for_dummy_thread,
+                exit,
                 non_vote_receiver,
                 |_packet_batch| Ok(()),
             )
@@ -413,7 +411,7 @@ mod tests {
         non_vote_sender.send(sample_packet_batch()).unwrap();
         tracer.bank_start(1, 2, 3);
 
-        terminate_tracer(tracer, dummy_main_thread, non_vote_sender, Some(exit));
+        terminate_tracer(tracer, dummy_main_thread, non_vote_sender, None);
 
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
         let results = (0..3)
