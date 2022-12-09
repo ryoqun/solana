@@ -103,8 +103,8 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     });
 
     let packet_batch = sample_packet_batch();
-    bencher.iter(move || {
-        non_vote_sender.clone().send(packet_batch.clone()).unwrap();
+    bencher.iter(|| {
+        non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 
     terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
