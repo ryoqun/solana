@@ -250,6 +250,7 @@ impl BankingTracer {
             })
             .unwrap()
     }
+}
 
 pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
