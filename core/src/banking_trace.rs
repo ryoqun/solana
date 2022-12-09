@@ -143,23 +143,12 @@ impl BankingTracer {
     ) -> Result<Self, io::Error> {
         let enabled_tracer = maybe_config
             .map(|(path, exit, total_size)| -> Result<_, io::Error> {
-                let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
-                assert!(roll_threshold_size > 0);
+                let rotate_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
+                assert!(rotate_threshold_size > 0);
 
                 Self::ensure_prepare_path(&path)?;
-                let grouped = RollingConditionGrouped::new(
-                    RollingConditionBasic::new()
-                        .daily()
-                        .max_size(roll_threshold_size),
-                );
-                let sender_and_receiver = unbounded();
-                let trace_receiver = sender_and_receiver.1.clone();
-                let file_appender = RollingFileAppender::new_with_buffer_capacity(
-                    path.join("events"),
-                    grouped,
-                    (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
-                    BUF_WRITER_CAPACITY,
-                )?;
+                let file_appender =
+                    Self::create_file_appender(path, rotate_threshold_size);
                 let tracing_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit);
 
@@ -247,6 +236,22 @@ impl BankingTracer {
                 Err(err)
             }
         })
+    }
+
+    fn create_file_appender(path: PathBuf, rotate_threshold_size: usize) {
+        let grouped = RollingConditionGrouped::new(
+            RollingConditionBasic::new()
+                .daily()
+                .max_size(rotate_threshold_size),
+        );
+        let sender_and_receiver = unbounded();
+        let trace_receiver = sender_and_receiver.1.clone();
+        let file_appender = RollingFileAppender::new_with_buffer_capacity(
+            path.join("events"),
+            grouped,
+            (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
+            BUF_WRITER_CAPACITY,
+        )?;
     }
 
     fn spawn_background_thread(
@@ -365,11 +370,11 @@ impl BankingTraceReplayer {
             match event.1 {
                 TracedEvent::Bank(slot, _, BankStatus::Started, _) => {
                     bank_starts_by_slot.insert(slot, s);
-                }
+                },
                 TracedEvent::PacketBatch(label, batch) => {
                     packet_batches_by_time.insert(s, (label, batch));
-                }
-                _ => {}
+                },
+                _ => {},
             }
         }
 
