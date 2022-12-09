@@ -391,12 +391,17 @@ impl LeaderSlotMetricsTracker {
         Some(metrics)
     }
 
+    pub foo(&self) {
+    }
+
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
     pub(crate) fn check_leader_slot_boundary(
         &mut self,
         bank_start: &Option<BankStart>,
     ) -> MetricsTrackerAction {
         let Self {ref mut leader_slot_metrics, ..} = self;
+
+        self.foo();
 
         let action = match (self.leader_slot_metrics.as_mut(), bank_start) {
             (None, None) => MetricsTrackerAction::Noop,
