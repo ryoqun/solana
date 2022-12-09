@@ -35,7 +35,7 @@ impl PacketDeserializer {
         }
     }
 
-    pub fn incoming_batch_count(&self) -> usize {
+    pub fn unreceived_batch_count(&self) -> usize {
         self.packet_batch_receiver.len()
     }
 
