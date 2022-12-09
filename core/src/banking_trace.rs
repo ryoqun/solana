@@ -47,7 +47,14 @@ pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 enum TracedEvent {
     BankStart(u32, Slot, usize),
     BankEnd(u32, Slot, usize),
-    PacketBatch(String, BankingPacketBatch),
+    PacketBatch(ChannelLabel, BankingPacketBatch),
+}
+
+#[derive(Serialize, Deserialize)]
+enum ChannelLabel {
+    NonVote,
+    TpuVote,
+    GossipVote,
 }
 
 struct RollingConditionGrouped {
@@ -161,9 +168,9 @@ impl BankingTracer {
         Self::new_with_config(None).unwrap()
     }
 
-    fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
+    fn create_channel(&self, label: ChannelLabel) -> (BankingPacketSender, BankingPacketReceiver) {
         Self::channel(
-            name,
+            label,
             self.enabled_tracer
                 .as_ref()
                 .map(|((sender, _), _)| sender.clone()),
@@ -171,15 +178,15 @@ impl BankingTracer {
     }
 
     pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel("non-vote")
+        self.create_channel(ChannelLabel::NonVote)
     }
 
     pub fn create_channel_tpu_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel("tpu-vote")
+        self.create_channel(ChannelLabel::TpuVote)
     }
 
     pub fn create_channel_gossip_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel("gossip-vote")
+        self.create_channel(ChannelLabel::GossipVote)
     }
 
     pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<()>>, Arc<Self>) {
@@ -218,11 +225,11 @@ impl BankingTracer {
     }
 
     pub fn channel(
-        name: &'static str,
+        label: &'static str,
         trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
-        (TracedSender::new(name, sender, trace_sender), receiver)
+        (TracedSender::new(label, sender, trace_sender), receiver)
     }
 
     fn ensure_prepare_path(path: &PathBuf) -> Result<(), io::Error> {
@@ -263,19 +270,19 @@ impl BankingTracer {
 }
 
 pub struct TracedSender {
-    name: &'static str,
+    label: ChannelLabel,
     sender: Sender<BankingPacketBatch>,
     trace_sender: Option<Sender<TimedTracedEvent>>,
 }
 
 impl TracedSender {
     fn new(
-        name: &'static str,
+        label: ChannelLabel,
         sender: Sender<BankingPacketBatch>,
         trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> Self {
         Self {
-            name,
+            label,
             sender,
             trace_sender,
         }
@@ -286,7 +293,7 @@ impl TracedSender {
             trace_sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
-                    TracedEvent::PacketBatch(self.name.into(), Arc::clone(&batch)),
+                    TracedEvent::PacketBatch(self.label, Arc::clone(&batch)),
                 ))
                 .unwrap();
         }
@@ -357,8 +364,8 @@ impl BankingTraceReplayer {
                     bank_starts_by_slot.insert(slot, s);
                 }
                 TracedEvent::BankEnd(_, _, _) => {}
-                TracedEvent::PacketBatch(name, batch) => {
-                    packet_batches_by_time.insert(s, (name, batch));
+                TracedEvent::PacketBatch(label, batch) => {
+                    packet_batches_by_time.insert(s, (label, batch));
                 }
             }
         }
@@ -384,14 +391,13 @@ impl BankingTraceReplayer {
 
             loop {
                 for (&_key, ref value) in range_iter.clone() {
-                    let (name, batch) = &value;
-                    info!("sent {} {} batches", name, batch.0.len());
+                    let (label, batch) = &value;
+                    info!("sent {:?} {} batches", label, batch.0.len());
 
-                    match name.as_str() {
-                        "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
-                        "tpu-vote" => tpu_vote_sender.send(batch.clone()).unwrap(),
-                        "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
-                        a => panic!("unknown: {}", a),
+                    match label {
+                        ChannelLabel::NonVote => non_vote_sender.send(batch.clone()).unwrap(),
+                        ChannelLabel::TpuVote => tpu_vote_sender.send(batch.clone()).unwrap(),
+                        ChannelLabel::GossipVote => gossip_vote_sender.send(batch.clone()).unwrap(),
                     }
                 }
             }
