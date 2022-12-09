@@ -403,9 +403,9 @@ mod tests {
         let results = &(1..3).map( |_|
                                          bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream)).collect::<Vec<_>>();
 
-        assert_matches!(result1, Ok(TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _))));
-        assert_matches!(result2, Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
-        assert_matches!(result3, Err(_));
+        assert_matches!(results[0], Ok(TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _))));
+        assert_matches!(results[1], Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
+        assert_matches!(results[2], Err(_));
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
