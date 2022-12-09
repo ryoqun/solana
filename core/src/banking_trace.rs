@@ -23,7 +23,7 @@ use {
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
-pub type TracerThreadResult = Result<(), TraceError>;
+pub type TracerThreadResult = Result<Option<()>, TraceError>;
 
 #[derive(Error, Debug)]
 pub enum TraceError {
