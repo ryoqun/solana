@@ -50,8 +50,9 @@ enum TracedEvent {
     PacketBatch(ChannelLabel, BankingPacketBatch),
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
-enum ChannelLabel {
+pub enum ChannelLabel {
     NonVote,
     TpuVote,
     GossipVote,
