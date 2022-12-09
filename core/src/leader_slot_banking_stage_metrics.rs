@@ -406,7 +406,7 @@ impl LeaderSlotMetricsTracker {
 
             (Some(leader_slot_metrics), None) => {
                 leader_slot_metrics.mark_slot_end_detected();
-                self.foo(metrics.slot());
+                self.foo(lead_slot_metrics.slot());
 
                 MetricsTrackerAction::ReportAndResetTracker
             }
