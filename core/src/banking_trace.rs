@@ -216,11 +216,11 @@ impl BankingTracer {
     }
 
     pub fn bank_start(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
-        self.bank_event(slot, id, BankStart::Started, unreceived_batch_count);
+        self.bank_event(slot, id, BankStatus::Started, unreceived_batch_count);
     }
 
     pub fn bank_end(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
-        self.bank_event(slot, id, BankStart::Ended, unreceived_batch_count);
+        self.bank_event(slot, id, BankStatus::Ended, unreceived_batch_count);
     }
 
     pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
