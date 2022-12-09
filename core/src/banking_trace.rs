@@ -336,6 +336,8 @@ mod tests {
 
     #[test]
     fn test_new_disabled() {
+        let exit = Arc::<AtomicBool>::default();
+
         let tracer = BankingTracer::new_disabled();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
