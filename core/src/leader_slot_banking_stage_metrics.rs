@@ -413,7 +413,7 @@ impl LeaderSlotMetricsTracker {
             (Some(leader_slot_metrics), Some(bank_start)) => {
                 if leader_slot_metrics.slot != bank_start.working_bank.slot() {
                     // Last slot has ended, new slot has began
-                    leader_slot_metrics.mark_slot_end_detected(self.id);
+                    leader_slot_metrics.mark_slot_end_detected(self);
                     MetricsTrackerAction::ReportAndNewTracker(
                         self.create_new_slot_metrics(bank_start),
                     )
