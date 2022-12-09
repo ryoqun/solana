@@ -3,9 +3,9 @@
 extern crate test;
 
 use {
-    solana_core::banking_trace::{BankingTracer, TraceError},
+    solana_core::banking_trace::{sender_overhead_minimized_receiver_loop, BankingTracer, TraceError},
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
-    std::sync::Arc,
+    std::{sync::{Arc, atomic::AtomicBool}, path::PathBuf, thread},
     test::Bencher,
     tempfile::TempDir,
 };
@@ -21,12 +21,12 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
 
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
-    let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
+    let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new_disabled();
     let (s, r) = tracer.create_channel_non_vote();
 
-    std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+    thread::spawn(move || {
+        sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             r,
             |m| {
@@ -49,7 +49,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Bencher) {
-    let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
+    let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new_with_config(Some((
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
@@ -58,8 +58,8 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     .unwrap();
     let (s, r) = tracer.create_channel_non_vote();
 
-    std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+    thread::spawn(move || {
+        sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             r,
             |m| {
@@ -82,7 +82,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut Bencher) {
-    let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
+    let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new_with_config(Some((
         std::path::PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
@@ -91,8 +91,8 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     .unwrap();
     let (s, r) = tracer.create_channel_non_vote();
 
-    std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+    thread::spawn(move || {
+        sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             r,
             |m| {
@@ -121,7 +121,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let base_path = temp_dir.path();
 
     bencher.iter(move || {
-        let exit = std::sync::Arc::<std::sync::atomic::AtomicBool>::default();
+        let exit = Arc::<AtomicBool>::default();
         let path = base_path.join("banking-trace");
 
         // make sure fresh setup; otherwise banking tracer appends and rotates
@@ -138,8 +138,8 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let (dummy_main_sender, dummy_main_receiver) = tracer.create_channel_non_vote();
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
-        let dummy_main_thread_handle = std::thread::spawn(move || {
-            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+        let dummy_main_thread_handle = thread::spawn(move || {
+            sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
                 dummy_main_receiver,
                 |packet_batch| {
