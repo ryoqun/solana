@@ -356,6 +356,7 @@ impl BankingTraceReplayer {
                 TracedEvent::BankStart(_, slot, _) => {
                     bank_starts_by_slot.insert(slot, s);
                 }
+                TracedEvent::BankEnd(_) => {}, 
                 TracedEvent::PacketBatch(name, batch) => {
                     packet_batches_by_time.insert(s, (name, batch));
                 }
