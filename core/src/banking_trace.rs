@@ -212,10 +212,10 @@ impl BankingTracer {
         maybe_mirrored_channel: Option<Sender<TimedTracedEvent>>,
         name: &'static str,
     ) -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
-        let channel = unbounded();
+        let (sender, receiver) = unbounded();
         (
-            TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name),
-            channel.1,
+            TracedBankingPacketSender::new(sender, maybe_mirrored_channel, name),
+            receiver,
         )
     }
 
