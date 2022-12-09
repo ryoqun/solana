@@ -349,8 +349,7 @@ mod tests {
             )
         });
 
-        let packet_batch = sample_packet_batch();
-        non_vote_sender.send(packet_batch.clone()).unwrap();
+        non_vote_sender.send(BankingPacketBatch::new(vec![], None)).unwrap();
     }
 
     #[test]
