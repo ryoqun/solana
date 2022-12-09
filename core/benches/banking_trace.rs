@@ -3,11 +3,18 @@
 extern crate test;
 
 use {
-    solana_core::banking_trace::{sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, DEFAULT_BANKING_TRACE_SIZE, TraceError, TracerThreadResult},
+    solana_core::banking_trace::{
+        sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, TraceError,
+        TracerThreadResult, DEFAULT_BANKING_TRACE_SIZE,
+    },
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
-    std::{sync::{Arc, atomic::AtomicBool}, path::PathBuf, thread},
-    test::Bencher,
+    std::{
+        path::PathBuf,
+        sync::{atomic::AtomicBool, Arc},
+        thread,
+    },
     tempfile::TempDir,
+    test::Bencher,
 };
 
 fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
@@ -24,7 +31,7 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
             eprintln!("prevented to remove {:?}", temp_dir.path());
             drop(temp_dir.into_path());
         });
-} 
+}
 
 fn sample_packet_batch() -> BankingPacketBatch {
     BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None))
@@ -118,12 +125,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
 
         let exit = Arc::<AtomicBool>::default();
 
-        let tracer = BankingTracer::new(Some((
-            path,
-            exit.clone(),
-            50 * 1024 * 1024,
-        )))
-        .unwrap();
+        let tracer = BankingTracer::new(Some((path, exit.clone(), 50 * 1024 * 1024))).unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
