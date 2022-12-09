@@ -126,7 +126,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
 
     let temp_dir = TempDir::new().unwrap();
-    let path = temp_dir.path().join("banking-trace");
+    let base_path = temp_dir.path();
 
     bencher.iter(move || {
         ensure_fresh_setup_to_benchmark(&path);
@@ -134,7 +134,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let exit = Arc::<AtomicBool>::default();
 
         let tracer = BankingTracer::new_with_config(Some((
-            path,
+            path.join("banking-trace"),
             exit.clone(),
             50 * 1024 * 1024,
         )))
