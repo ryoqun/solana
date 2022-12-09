@@ -225,7 +225,7 @@ impl BankingTracer {
     }
 
     pub fn channel(
-        label: &'static str,
+        label: ChannelLabel,
         trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
