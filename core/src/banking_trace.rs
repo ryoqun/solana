@@ -188,7 +188,7 @@ impl BankingTracer {
         self.create_channel(ChannelLabel::GossipVote)
     }
 
-    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<()>>, Arc<Self>) {
+    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<Result<(), std::boxed::Box<bincode::ErrorKind>>>>, Arc<Self>) {
         (
             self.enabled_tracer
                 .as_mut()
