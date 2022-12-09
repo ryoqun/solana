@@ -154,7 +154,7 @@ impl BankingTracer {
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, TraceError> {
         let enabled_tracer = maybe_config
-            .map(|(path, exit, total_size)| -> Result<_, io::Error> {
+            .map(|(path, exit, total_size)| -> Result<_, TraceError> {
                 let rotate_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
                 assert!(rotate_threshold_size > 0);
 
