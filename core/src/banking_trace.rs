@@ -289,9 +289,7 @@ impl BankingTracer {
                 )?;
                 file_appender.flush()?;
                 Ok(())
-            })?;
-
-        Ok(())
+            }).into()
     }
 }
 
