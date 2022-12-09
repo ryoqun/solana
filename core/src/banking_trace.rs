@@ -342,6 +342,13 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
         });
 }
 
+fn terminate_tracer(tracer: usize, main_thread: usize, sender: usize) {
+    let (tracer_thread, tracer) = tracer.finalize_under_arc();
+    drop((sender, tracer));
+    main_thread.join().unwrap().unwrap();
+    tracer_thread.unwrap().join().unwrap().unwrap();
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -378,7 +385,6 @@ mod tests {
         )))
         .unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
-        let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
@@ -390,9 +396,7 @@ mod tests {
 
         non_vote_sender.send(sample_packet_batch()).unwrap();
         tracer.bank_start(1, 2, 3);
-        drop((non_vote_sender, tracer));
-        dummy_main_thread.join().unwrap().unwrap();
-        tracer_join_handle.unwrap().join().unwrap().unwrap();
+        terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
