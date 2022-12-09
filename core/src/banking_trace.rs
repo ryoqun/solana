@@ -588,7 +588,7 @@ impl BankingTraceReplayer {
         bank.clear_signatures();
         poh_recorder.write().unwrap().set_bank(&bank, false);
 
-        for _ in 0..10 {
+        for _ in 0..200 {
             if poh_recorder.read().unwrap().bank().is_none() {
                 poh_recorder
                     .write()
