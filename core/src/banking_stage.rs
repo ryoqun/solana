@@ -2290,7 +2290,7 @@ mod tests {
             ..
         } = create_slow_genesis_config(2);
         let banking_tracer = BankingTracer::new_disabled();
-        let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+        let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
 
         // Process a batch that includes a transaction that receives two lamports.
         let alice = Keypair::new();
@@ -2307,7 +2307,7 @@ mod tests {
             .map(|batch| (batch, vec![1u8]))
             .collect();
         let packet_batches = convert_from_old_verified(packet_batches);
-        verified_sender
+        non_vote_sender
             .send(Arc::new((packet_batches, None)))
             .unwrap();
 
@@ -2324,11 +2324,11 @@ mod tests {
             .map(|batch| (batch, vec![1u8]))
             .collect();
         let packet_batches = convert_from_old_verified(packet_batches);
-        verified_sender
+        non_vote_sender
             .send(Arc::new((packet_batches, None)))
             .unwrap();
 
-        let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+        let (gossip_vote_sender, gossip_vote_receiver) =
             banking_tracer.create_channel_gossip_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
 
@@ -2359,9 +2359,9 @@ mod tests {
                 let _banking_stage = BankingStage::new_num_threads(
                     &cluster_info,
                     &poh_recorder,
-                    verified_receiver,
+                    non_vote_receiver,
                     tpu_vote_receiver,
-                    gossip_verified_vote_receiver,
+                    gossip_vote_receiver,
                     3,
                     None,
                     replay_vote_sender,
@@ -2377,18 +2377,11 @@ mod tests {
                 }
                 exit.store(true, Ordering::Relaxed);
                 poh_service.join().unwrap();
-                (
-                    entry_receiver,
-                    (
-                        verified_sender,
-                        gossip_verified_vote_sender,
-                        tpu_vote_sender,
-                    ),
-                )
+                entry_receiver
             };
-            drop(verified_sender);
-            drop(vote_sender);
+            drop(non_vote_sender);
             drop(tpu_vote_sender);
+            drop(gossip_vote_sender);
 
             // consume the entire entry_receiver, feed it into a new bank
             // check that the balance is what we expect.
