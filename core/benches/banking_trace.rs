@@ -35,9 +35,10 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
     let tracer = BankingTracer::new_disabled();
     let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
+    let exit_for_dummy_thread = exit.clone();
     let dummy_main_thread = thread::spawn(move || {
         sender_overhead_minimized_receiver_loop::<_, TraceError, 1>(
-            exit.clone(),
+            exit_for_dummy_thread,
             non_vote_receiver,
             black_box_packet_batch,
         )
@@ -63,9 +64,10 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     .unwrap();
     let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
+    let exit_for_dummy_thread = exit.clone();
     let dummy_main_thread = thread::spawn(move || {
         sender_overhead_minimized_receiver_loop::<_, TraceError, 1>(
-            exit.clone(),
+            exit_for_dummy_thread,
             non_vote_receiver,
             black_box_packet_batch,
         )
@@ -95,9 +97,10 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     .unwrap();
     let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
+    let exit_for_dummy_thread = exit.clone();
     let dummy_main_thread = thread::spawn(move || {
         sender_overhead_minimized_receiver_loop::<_, TraceError, 1>(
-            exit.clone(),
+            exit_for_dummy_thread,
             non_vote_receiver,
             black_box_packet_batch,
         )
