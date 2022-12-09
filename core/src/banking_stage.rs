@@ -2036,7 +2036,8 @@ mod tests {
         let banking_tracer = BankingTracer::new_disabled();
         let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
-        let (gossip_vote_sender, gossip_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (gossip_vote_sender, gossip_vote_receiver) =
+            banking_tracer.create_channel_gossip_vote();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
             let blockstore = Arc::new(
@@ -2087,7 +2088,8 @@ mod tests {
         let start_hash = bank.last_blockhash();
         let banking_tracer = BankingTracer::new_disabled();
         let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
-        let (gossip_vote_sender, gossip_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (gossip_vote_sender, gossip_vote_receiver) =
+            banking_tracer.create_channel_gossip_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
@@ -2165,7 +2167,8 @@ mod tests {
         let start_hash = bank.last_blockhash();
         let banking_tracer = BankingTracer::new_disabled();
         let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
-        let (gossip_vote_sender, gossip_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (gossip_vote_sender, gossip_vote_receiver) =
+            banking_tracer.create_channel_gossip_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
@@ -2294,12 +2297,8 @@ mod tests {
 
         // Process a batch that includes a transaction that receives two lamports.
         let alice = Keypair::new();
-        let tx = system_transaction::transfer(
-            &mint_keypair,
-            &alice.pubkey(),
-            2,
-            genesis_config.hash(),
-        );
+        let tx =
+            system_transaction::transfer(&mint_keypair, &alice.pubkey(), 2, genesis_config.hash());
 
         let packet_batches = to_packet_batches(&[tx], 1);
         let packet_batches = packet_batches
@@ -2312,12 +2311,8 @@ mod tests {
             .unwrap();
 
         // Process a second batch that uses the same from account, so conflicts with above TX
-        let tx = system_transaction::transfer(
-            &mint_keypair,
-            &alice.pubkey(),
-            1,
-            genesis_config.hash(),
-        );
+        let tx =
+            system_transaction::transfer(&mint_keypair, &alice.pubkey(), 1, genesis_config.hash());
         let packet_batches = to_packet_batches(&[tx], 1);
         let packet_batches = packet_batches
             .into_iter()
@@ -2331,7 +2326,6 @@ mod tests {
         let (gossip_vote_sender, gossip_vote_receiver) =
             banking_tracer.create_channel_gossip_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
-
 
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {

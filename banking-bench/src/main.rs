@@ -6,7 +6,10 @@ use {
     rand::{thread_rng, Rng},
     rayon::prelude::*,
     solana_client::connection_cache::ConnectionCache,
-    solana_core::{banking_stage::BankingStage, banking_trace::{BankingTracer, BankingPacketBatch, DEFAULT_BANKING_TRACE_SIZE}},
+    solana_core::{
+        banking_stage::BankingStage,
+        banking_trace::{BankingPacketBatch, BankingTracer, DEFAULT_BANKING_TRACE_SIZE},
+    },
     solana_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{
         blockstore::Blockstore,
@@ -411,10 +414,12 @@ fn main() {
             blockstore.banking_tracer_path(),
             exit.clone(),
             DEFAULT_BANKING_TRACE_SIZE,
-        ))).unwrap();
+        )))
+        .unwrap();
         let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
-        let (gossip_vote_sender, gossip_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (gossip_vote_sender, gossip_vote_receiver) =
+            banking_tracer.create_channel_gossip_vote();
         let cluster_info = ClusterInfo::new(
             Node::new_localhost().info,
             Arc::new(Keypair::new()),

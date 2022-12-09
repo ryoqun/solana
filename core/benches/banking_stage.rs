@@ -11,7 +11,7 @@ use {
     solana_client::connection_cache::ConnectionCache,
     solana_core::{
         banking_stage::{BankingStage, BankingStageStats},
-        banking_trace::{BankingTracer, BankingPacketBatch},
+        banking_trace::{BankingPacketBatch, BankingTracer},
         leader_slot_banking_stage_metrics::LeaderSlotMetricsTracker,
         qos_service::QosService,
         unprocessed_packet_batches::*,
@@ -329,7 +329,9 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
                 for xv in v {
                     sent += xv.len();
                 }
-                non_vote_sender.send(BankingPacketBatch::new((v.to_vec(), None))).unwrap();
+                non_vote_sender
+                    .send(BankingPacketBatch::new((v.to_vec(), None)))
+                    .unwrap();
             }
 
             check_txs(&signal_receiver2, txes / CHUNKS);
