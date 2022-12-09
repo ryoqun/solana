@@ -811,7 +811,7 @@ impl BankingStage {
             )
         };
 
-        slot_metrics_tracker.update_incoming_batch_count(incoming_batch_count);
+        slot_metrics_tracker.refresh_incoming_batch_count(incoming_batch_count);
         let metrics_action = slot_metrics_tracker.check_leader_slot_boundary(&bank_start);
 
         (
