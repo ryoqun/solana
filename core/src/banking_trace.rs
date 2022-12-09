@@ -399,11 +399,11 @@ mod tests {
         tracer.bank_start(1, 2, 3);
         terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
 
-        drop_and_clean_temp_dir_unless_suppressed(temp_dir);
-
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(d);
+
+        drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
 }
 
