@@ -352,6 +352,11 @@ pub(crate) enum MetricsTrackerAction {
     ReportAndNewTracker(Option<LeaderSlotMetrics>),
 }
 
+impl MetricsTrackerAction {
+    fn trace(&self, id: u32, &BankingTracer) {
+    }
+}
+
 #[derive(Debug)]
 pub struct LeaderSlotMetricsTracker {
     // Only `Some` if BankingStage detects it's time to construct our leader slot,
