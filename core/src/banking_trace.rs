@@ -14,7 +14,7 @@ use {
             atomic::{AtomicBool, Ordering},
             Arc,
         },
-        thread::{sleep, JoinHandle},
+        thread::{self, sleep, JoinHandle},
         time::{Duration, SystemTime},
     },
 };
@@ -147,7 +147,7 @@ impl BankingTracer {
                 )?;
                 let sender_and_receiver = unbounded();
                 let trace_receiver = sender_and_receiver.1.clone();
-                let tracing_thread = std::thread::Builder::new()
+                let tracing_thread = thread::Builder::new()
                     .name("solBanknTracer".into())
                     .spawn(move || {
                         sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(
@@ -174,7 +174,7 @@ impl BankingTracer {
         Self::new_with_config(None).unwrap()
     }
 
-    pub fn create_channel(
+    fn create_channel(
         &self,
         name: &'static str,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
