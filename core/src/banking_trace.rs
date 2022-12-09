@@ -405,9 +405,10 @@ mod tests {
             BankingTracer::new(Some((path.clone(), exit.clone(), u64::max_value()))).unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
+        let exit_for_dummy_thread = exit.clone();
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
-                exit.clone(),
+                exit_for_dummy_thread,
                 non_vote_receiver,
                 |_packet_batch| Ok(()),
             )
