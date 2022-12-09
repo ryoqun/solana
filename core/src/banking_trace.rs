@@ -383,7 +383,7 @@ mod tests {
 
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
-                exit.clone(),
+                &exit.clone(),
                 non_vote_receiver,
                 |_packet_batch| Ok(()),
             )
