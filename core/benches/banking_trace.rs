@@ -113,7 +113,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
 
     bencher.iter(move || {
-        s.send(Arc::clone(packet_batch)).unwrap();
+        s.send(Arc::clone(&packet_batch)).unwrap();
     });
 }
 
@@ -136,13 +136,13 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
             50 * 1024 * 1024,
         )))
         .unwrap();
-        let (dummy_main_sender, dummy_main_receiver) = tracer.create_channel_non_vote();
+        let (dummy_sender, dummy_receiver) = tracer.create_channel_non_vote();
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread_handle = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
-                dummy_main_receiver,
+                dummy_receiver,
                 |packet_batch| {
                     test::black_box(packet_batch);
                     Ok(())
@@ -151,10 +151,10 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         });
 
         for _ in 0..1000 {
-            dummy_main_sender.send(packet_batch.clone()).unwrap();
+            dummy_sender.send(packet_batch.clone()).unwrap();
         }
 
-        drop((dummy_main_sender, tracer));
+        drop((dummy_sender, tracer));
         dummy_main_thread_handle.join().unwrap().unwrap();
         tracer_join_handle.unwrap().join().unwrap().unwrap();
     });
