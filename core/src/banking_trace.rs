@@ -38,7 +38,7 @@ pub enum TraceError {
     SerializeError(#[from] bincode::Error),
 }
 
-const BASENAME: &'static str = "events";
+const BASENAME: &str = "events";
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
 const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
