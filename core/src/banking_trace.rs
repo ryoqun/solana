@@ -403,7 +403,7 @@ mod tests {
         terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
 
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
-        let results = (1..3)
+        let results = (0..3)
             .map(|_| bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream))
             .collect::<Vec<_>>();
 
