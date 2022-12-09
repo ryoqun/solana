@@ -401,7 +401,7 @@ mod tests {
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 
-        let mut stream = BufReader::new(File::open(path.join(BASENAME).unwrap());
+        let mut stream = BufReader::new(File::open(path.join(BASENAME).unwrap()));
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(d);
     }
