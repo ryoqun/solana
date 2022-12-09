@@ -136,13 +136,13 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
             50 * 1024 * 1024,
         )))
         .unwrap();
-        let (dummy_sender, dummy_receiver) = tracer.create_channel_non_vote();
+        let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread_handle = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
-                dummy_receiver,
+                non_vote_receiver,
                 |packet_batch| {
                     test::black_box(packet_batch);
                     Ok(())
@@ -151,10 +151,10 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         });
 
         for _ in 0..1000 {
-            dummy_sender.send(packet_batch.clone()).unwrap();
+            non_vote_sender.send(packet_batch.clone()).unwrap();
         }
 
-        drop((dummy_sender, tracer));
+        drop((non_vote_sender, tracer));
         dummy_main_thread_handle.join().unwrap().unwrap();
         tracer_join_handle.unwrap().join().unwrap().unwrap();
     });
