@@ -33,10 +33,6 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
         });
 }
 
-fn sample_packet_batch() -> BankingPacketBatch {
-    BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None))
-}
-
 fn black_box_packet_batch(packet_batch: BankingPacketBatch) -> TracerThreadResult {
     test::black_box(packet_batch);
     Ok(())

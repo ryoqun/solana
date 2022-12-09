@@ -328,6 +328,10 @@ impl TracedSender {
     }
 }
 
+fn sample_packet_batch() -> BankingPacketBatch {
+    BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None))
+}
+
 #[cfg(test)]
 mod tests {
     use {
@@ -345,7 +349,7 @@ mod tests {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
                 non_vote_receiver,
-                |packet_batch| Ok(())
+                |_packet_batch| Ok(())
             )
         });
 
@@ -354,6 +358,29 @@ mod tests {
 
     #[test]
     fn test_record_and_restore() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let exit = Arc::<AtomicBool>::default();
+        let tracer = BankingTracer::new(Some((
+            temp_dir.path().join("banking-trace"),
+            exit.clone(),
+            DEFAULT_BANKING_TRACE_SIZE,
+        )))
+        .unwrap();
+        let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
+
+        thread::spawn(move || {
+            sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+                exit.clone(),
+                non_vote_receiver,
+                |_packet_batch| Ok(())
+            )
+        });
+
+        non_vote_sender.send(sample_packet_batch).unwrap();
+        tracer.bank_start();
+
+        drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
 }
 
