@@ -394,7 +394,7 @@ impl LeaderSlotMetricsTracker {
 
     pub fn trace_bank_end(&self, metrics_slot: Slot) {
         self.banking_tracer
-            .bank_start(self.id, metrics_slot, self.incoming_batch_count);
+            .bank_end(self.id, metrics_slot, self.incoming_batch_count);
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()

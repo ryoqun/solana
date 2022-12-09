@@ -794,6 +794,7 @@ impl BankingStage {
         my_pubkey: &Pubkey,
         poh_recorder: &RwLock<PohRecorder>,
         slot_metrics_tracker: &mut LeaderSlotMetricsTracker,
+        incoming_batch_count: usize,
     ) -> (MetricsTrackerAction, BufferedPacketsDecision) {
         let (leader_at_slot_offset, bank_start, would_be_leader, would_be_leader_shortly) = {
             let poh = poh_recorder.read().unwrap();
@@ -810,6 +811,7 @@ impl BankingStage {
             )
         };
 
+        slot_metrics_tracker.update_incoming_batch_count(incoming_batch_count);
         let metrics_action = slot_metrics_tracker.check_leader_slot_boundary(&bank_start);
 
         (
@@ -842,12 +844,13 @@ impl BankingStage {
         connection_cache: &ConnectionCache,
         tracer_packet_stats: &mut TracerPacketStats,
         bank_forks: &Arc<RwLock<BankForks>>,
+        incoming_batch_count: usize,
     ) {
         if unprocessed_transaction_storage.should_not_process() {
             return;
         }
         let ((metrics_action, decision), make_decision_time) = measure!(
-            Self::make_consume_or_forward_decision(my_pubkey, poh_recorder, slot_metrics_tracker)
+            Self::make_consume_or_forward_decision(my_pubkey, poh_recorder, slot_metrics_tracker, incoming_batch_count)
         );
         slot_metrics_tracker.increment_make_decision_us(make_decision_time.as_us());
 
@@ -1050,8 +1053,6 @@ impl BankingStage {
             if !unprocessed_transaction_storage.is_empty()
                 || last_metrics_update.elapsed() >= SLOT_BOUNDARY_CHECK_PERIOD
             {
-                slot_metrics_tracker
-                    .update_incoming_batch_count(packet_deserializer.incoming_batch_count());
                 let (_, process_buffered_packets_time) = measure!(
                     Self::process_buffered_packets(
                         &my_pubkey,
@@ -1070,6 +1071,7 @@ impl BankingStage {
                         &connection_cache,
                         &mut tracer_packet_stats,
                         bank_forks,
+                        packet_deserializer.incoming_batch_count(),
                     ),
                     "process_buffered_packets",
                 );
