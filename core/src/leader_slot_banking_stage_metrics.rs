@@ -391,7 +391,7 @@ impl LeaderSlotMetricsTracker {
         Some(metrics)
     }
 
-    pub foo(&self) {
+    pub fn foo(&self) {
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
