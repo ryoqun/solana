@@ -278,7 +278,7 @@ impl BankingTracer {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
-                sender_overhead_minimized_receiver_loop::<_, _, _, TRACE_FILE_WRITE_INTERVAL_MS>(
+                sender_overhead_minimized_receiver_loop::<_, _, TraceError, TRACE_FILE_WRITE_INTERVAL_MS>(
                     exit,
                     trace_receiver,
                     |event| {
