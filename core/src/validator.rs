@@ -986,10 +986,10 @@ impl Validator {
             &prioritization_fee_cache,
         )?;
 
-        let banking_tracer = BankingTracer::new((banking_trace_size > 0).then_some((
+        let banking_tracer = BankingTracer::new((config.banking_trace_size > 0).then_some((
             blockstore.banking_tracer_path(),
             exit.clone(),
-            banking_trace_size,
+            config.banking_trace_size,
         ))).map_err(|err| format!("{} [{:?}]", &err, &err))?;
 
         let tpu = Tpu::new(
