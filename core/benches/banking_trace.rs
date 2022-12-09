@@ -3,7 +3,7 @@
 extern crate test;
 
 use {
-    solana_core::banking_trace::{sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, TraceError},
+    solana_core::banking_trace::{sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, TraceError, TracerThreadResult},
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
     std::{sync::{Arc, atomic::AtomicBool}, path::PathBuf, thread},
     test::Bencher,
