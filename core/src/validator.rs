@@ -990,7 +990,7 @@ impl Validator {
             blockstore.banking_tracer_path(),
             exit.clone(),
             banking_trace_size,
-        ))).map_err(|err| format!("{}", err))?;
+        ))).map_err(|err| format!("{} [{:?}]", &err, &err))?;
 
         let tpu = Tpu::new(
             &cluster_info,
