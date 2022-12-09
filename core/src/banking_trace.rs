@@ -175,7 +175,7 @@ impl BankingTracer {
     }
 
     pub fn new_disabled() -> Self {
-        Self::new_with_config(None).unwrap()
+        Ok(Self { enabled_tracer: None })
     }
 
     fn create_channel(&self, label: ChannelLabel) -> (BankingPacketSender, BankingPacketReceiver) {
