@@ -8,7 +8,6 @@ use {
         sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, TraceError,
         TracerThreadResult, DEFAULT_BANKING_TRACE_SIZE,
     },
-    solana_perf::{packet::to_packet_batches, test_tx::test_tx},
     std::{
         path::PathBuf,
         sync::{atomic::AtomicBool, Arc},
@@ -124,7 +123,6 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
 
         let tracer = BankingTracer::new(Some((path, exit.clone(), 50 * 1024 * 1024))).unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
-        let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
@@ -138,9 +136,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
             non_vote_sender.send(packet_batch.clone()).unwrap();
         }
 
-        drop((non_vote_sender, tracer));
-        dummy_main_thread.join().unwrap().unwrap();
-        tracer_join_handle.unwrap().join().unwrap().unwrap();
+        terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
     });
 
     drop_and_clean_temp_dir_unless_suppressed(temp_dir);
