@@ -133,7 +133,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
                 dummy_main_receiver,
                 |packet_batch| {
                     test::black_box(packet_batch);
-                    Ok(())
+                    Ok::<_, ()>(())
                 },
             )
         });
