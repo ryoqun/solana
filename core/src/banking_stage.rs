@@ -1050,7 +1050,8 @@ impl BankingStage {
             if !unprocessed_transaction_storage.is_empty()
                 || last_metrics_update.elapsed() >= SLOT_BOUNDARY_CHECK_PERIOD
             {
-                slot_metrics_tracker.update_incoming_batch_count(packet_deserializer.incoming_batch_count());
+                slot_metrics_tracker
+                    .update_incoming_batch_count(packet_deserializer.incoming_batch_count());
                 let (_, process_buffered_packets_time) = measure!(
                     Self::process_buffered_packets(
                         &my_pubkey,

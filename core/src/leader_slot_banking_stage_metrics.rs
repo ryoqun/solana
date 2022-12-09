@@ -386,13 +386,15 @@ impl LeaderSlotMetricsTracker {
             bank_start.working_bank.slot(),
             &bank_start.bank_creation_time,
         );
-        self.banking_tracer.bank_start(self.id, metrics.slot, self.incoming_batch_count);
+        self.banking_tracer
+            .bank_start(self.id, metrics.slot, self.incoming_batch_count);
 
         Some(metrics)
     }
 
     pub fn trace_bank_end(&self, metrics_slot: Slot) {
-        self.banking_tracer.bank_start(self.id, metrics_slot, self.incoming_batch_count);
+        self.banking_tracer
+            .bank_start(self.id, metrics_slot, self.incoming_batch_count);
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
@@ -400,9 +402,7 @@ impl LeaderSlotMetricsTracker {
         &mut self,
         bank_start: &Option<BankStart>,
     ) -> MetricsTrackerAction {
-        let Self {ref mut leader_slot_metrics, ..} = self;
-
-        match (leader_slot_metrics, bank_start) {
+        match (self.leader_slot_metrics.as_mut(), bank_start) {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
