@@ -151,7 +151,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, E, const SLEEP_MS: u64>(
 }
 
 impl BankingTracer {
-    pub fn new_with_config(
+    pub fn new(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
     ) -> Result<Self, TraceError> {
         let enabled_tracer = maybe_config

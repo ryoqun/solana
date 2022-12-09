@@ -3,7 +3,7 @@
 extern crate test;
 
 use {
-    solana_core::banking_trace::{sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, TraceError, TracerThreadResult},
+    solana_core::banking_trace::{sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, DEFAULT_BANKING_TRACE_SIZE, TraceError, TracerThreadResult},
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
     std::{sync::{Arc, atomic::AtomicBool}, path::PathBuf, thread},
     test::Bencher,
@@ -55,10 +55,10 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
-    let tracer = BankingTracer::new_with_config(Some((
+    let tracer = BankingTracer::new(Some((
         PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
-        solana_core::banking_trace::TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD,
+        DEFAULT_BANKING_TRACE_SIZE,
     )))
     .unwrap();
     let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
@@ -80,7 +80,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
-    let tracer = BankingTracer::new_with_config(Some((
+    let tracer = BankingTracer::new(Some((
         PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
         1024 * 1024, // cause more frequent trace file rotation
@@ -115,7 +115,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
 
         let exit = Arc::<AtomicBool>::default();
 
-        let tracer = BankingTracer::new_with_config(Some((
+        let tracer = BankingTracer::new(Some((
             path,
             exit.clone(),
             50 * 1024 * 1024,
