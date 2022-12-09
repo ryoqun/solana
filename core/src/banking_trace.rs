@@ -276,7 +276,7 @@ impl BankingTracer {
                         serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)
                     },
                 )?;
-                file_appender.flush().try_into()
+                file_appender.flush().into()
             })
             .unwrap()
     }
