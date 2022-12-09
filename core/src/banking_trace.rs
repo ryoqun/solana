@@ -354,7 +354,9 @@ pub fn terminate_tracer(
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
     drop((sender, tracer));
     main_thread.join().unwrap().unwrap();
-    tracer_thread.unwrap().join().unwrap().unwrap();
+    if let Some(tracer_thread) = tracer_thread {
+        tracer_thread.join().unwrap().unwrap();
+    }
 }
 
 #[cfg(test)]
