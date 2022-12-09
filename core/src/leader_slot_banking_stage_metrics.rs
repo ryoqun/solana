@@ -353,7 +353,7 @@ pub(crate) enum MetricsTrackerAction {
 }
 
 impl MetricsTrackerAction {
-    pub fn trace(&self, id: u32, deserializer: usize, tracer: &BankingTracer) {
+    pub fn trace(&self, tracker: &LeaderSlotMetricsTracker) {
     }
 }
 
@@ -401,7 +401,7 @@ impl LeaderSlotMetricsTracker {
         &mut self,
         bank_start: &Option<BankStart>,
     ) -> MetricsTrackerAction {
-        match (self.leader_slot_metrics.as_mut(), bank_start) {
+        let action = match (self.leader_slot_metrics.as_mut(), bank_start) {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
@@ -425,7 +425,9 @@ impl LeaderSlotMetricsTracker {
                     MetricsTrackerAction::Noop
                 }
             }
-        }
+        };
+        action.trace(self);
+        action
     }
 
     pub(crate) fn apply_action(&mut self, action: MetricsTrackerAction) -> Option<Slot> {
