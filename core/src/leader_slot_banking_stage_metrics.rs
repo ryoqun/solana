@@ -353,7 +353,7 @@ pub(crate) enum MetricsTrackerAction {
 }
 
 impl MetricsTrackerAction {
-    pub fn trace(&self, id: u32, tracer: &BankingTracer) {
+    pub fn trace(&self, id: u32, deserializer: usize, tracer: &BankingTracer) {
     }
 }
 
@@ -364,6 +364,7 @@ pub struct LeaderSlotMetricsTracker {
     leader_slot_metrics: Option<LeaderSlotMetrics>,
     pub id: u32,
     pub banking_tracer: Arc<BankingTracer>,
+    incoming_batch_count: usize,
 }
 
 impl LeaderSlotMetricsTracker {
@@ -372,7 +373,12 @@ impl LeaderSlotMetricsTracker {
             leader_slot_metrics: None,
             id,
             banking_tracer,
+            incoming_batch_count: 0,
         }
+    }
+
+    pub fn update_incoming_batch_count(&mut self, batch_count) {
+        self.incoming_batch_count = batch_count;
     }
 
     pub fn new_for_test() -> Self {
