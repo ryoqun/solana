@@ -16,12 +16,12 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, _, 0>(
+        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, TraceError, 0>(
             exit.clone(),
             r,
             |m| {
                 test::black_box(m);
-                Ok::<_, TraceError>(())
+                Ok(())
             },
         )
     });
@@ -49,12 +49,12 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, _, 0>(
+        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, TraceError, 0>(
             exit.clone(),
             r,
             |m| {
                 test::black_box(m);
-                Ok::<_, TraceError>(())
+                Ok(())
             },
         )
     });
@@ -82,12 +82,12 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     let (s, r) = tracer.create_channel_non_vote();
 
     std::thread::spawn(move || {
-        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, _, 0>(
+        solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, TraceError, 0>(
             exit.clone(),
             r,
             |m| {
                 test::black_box(m);
-                Ok::<_, TraceError>(())
+                Ok(())
             },
         )
     });
