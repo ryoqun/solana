@@ -277,7 +277,7 @@ impl BankingTracer {
                     },
                 )?;
                 //file_appender.flush()?;
-                Result::Err(3)?
+                Result::Err(3)?;
                 Ok(())
             })
             .unwrap()
