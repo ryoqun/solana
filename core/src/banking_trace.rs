@@ -146,9 +146,13 @@ impl BankingTracer {
                 let rotate_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
                 assert!(rotate_threshold_size > 0);
 
+                let sender_and_receiver = unbounded();
+                let trace_receiver = sender_and_receiver.1.clone();
+
                 Self::ensure_prepare_path(&path)?;
                 let file_appender =
                     Self::create_file_appender(path, rotate_threshold_size)?;
+
                 let tracing_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit);
 
@@ -244,9 +248,6 @@ impl BankingTracer {
                 .daily()
                 .max_size(rotate_threshold_size),
         );
-        let sender_and_receiver = unbounded();
-        let trace_receiver = sender_and_receiver.1.clone();
-
         RollingFileAppender::new_with_buffer_capacity(
             path.join("events"),
             grouped,
