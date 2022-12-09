@@ -396,7 +396,7 @@ impl LeaderSlotMetricsTracker {
         &mut self,
         bank_start: &Option<BankStart>,
     ) -> MetricsTrackerAction {
-        let LeaderSlotMetrics{leader_slot_metrics, ..} = self.leader_slot_metrics;
+        let leader_slot_metrics =a self.leader_slot_metrics;
 
         let action = match (self.leader_slot_metrics.as_mut(), bank_start) {
             (None, None) => MetricsTrackerAction::Noop,
