@@ -238,7 +238,7 @@ impl BankingTracer {
         })
     }
 
-    fn create_file_appender(path: PathBuf, rotate_threshold_size: usize) -> Result<RollingFileAppender<RollingConditionGrouped>, io::Error> {
+    fn create_file_appender(path: PathBuf, rotate_threshold_size: u64) -> Result<RollingFileAppender<RollingConditionGrouped>, io::Error> {
         let grouped = RollingConditionGrouped::new(
             RollingConditionBasic::new()
                 .daily()
