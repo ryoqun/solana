@@ -328,6 +328,17 @@ impl TracedSender {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_new_disabled() {
+    }
+
+    #[test]
+    fn test_record_and_restore() {
+    }
+}
+
 pub struct BankingTraceReplayer {
     path: PathBuf,
     non_vote_channel: (Sender<BankingPacketBatch>, Receiver<BankingPacketBatch>),
