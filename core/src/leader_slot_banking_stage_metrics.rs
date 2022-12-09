@@ -386,14 +386,14 @@ impl LeaderSlotMetricsTracker {
             bank_start.working_bank.slot(),
             &bank_start.bank_creation_time,
         );
-        self.banking_tracer.bank_start(self.id, slot, self.incoming_batch_count);
+        self.banking_tracer.bank_start(self.id, metrics.slot, self.incoming_batch_count);
 
         Some(metrics)
     }
 
     fn end_old_slot_metrics(&self, metrics: &mut LeaderSlotMetrics) {
-        self.banking_tracer.bank_end(self.id, leader_slot_metrics.slot, self.incoming_batch_count);
-        leader_slot_metrics.mark_slot_end_detected();
+        self.banking_tracer.bank_end(self.id, metrics.slot, self.incoming_batch_count);
+        metrics.mark_slot_end_detected();
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
