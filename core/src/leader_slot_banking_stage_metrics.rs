@@ -372,7 +372,7 @@ impl LeaderSlotMetricsTracker {
         }
     }
 
-    pub fn update_incoming_batch_count(&mut self, batch_count: usize) {
+    pub fn refresh_incoming_batch_count(&mut self, batch_count: usize) {
         self.incoming_batch_count = batch_count;
     }
 
