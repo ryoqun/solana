@@ -287,7 +287,8 @@ impl BankingTracer {
                         Ok(())
                     },
                 )?;
-                file_appender.flush()
+                file_appender.flush()?;
+                Ok(())
             })
             .unwrap()
     }
