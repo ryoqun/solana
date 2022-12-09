@@ -402,13 +402,13 @@ mod tests {
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(&d);
-        assert_matches!(d, TimedTracedEvent(_, Ok(TracedEvent::PacketBatch(ChannelLabel::NonVote, _))));
+        assert_matches!(d, Ok(TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _))));
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(&d);
-        assert_matches!(d, TimedTracedEvent(_, Ok(TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
+        assert_matches!(d, Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(&d);
-        assert_matches!(d, TimedTracedEvent(_, Ok(TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
+        assert_matches!(d, Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
