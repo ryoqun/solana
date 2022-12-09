@@ -10,6 +10,13 @@ use {
     tempfile::TempDir,
 };
 
+fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
+    // make sure fresh setup; otherwise banking tracer appends and rotates
+    // trace files created by prior bench iterations, slightly skewing perf
+    // result...
+    BankingTracer::ensure_cleanup_path(path).unwrap();
+}
+
 fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
     std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION")
         .is_ok()
@@ -18,14 +25,6 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
             drop(temp_dir.into_path());
         });
 } 
-
-
-fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
-    // make sure fresh setup; otherwise banking tracer appends and rotates
-    // trace files created by prior bench iterations, slightly skewing perf
-    // result...
-    BankingTracer::ensure_cleanup_path(path).unwrap();
-}
 
 fn sample_packet_batch() -> BankingPacketBatch {
     BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None))
