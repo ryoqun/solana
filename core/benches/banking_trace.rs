@@ -73,7 +73,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     });
 
     let packet_batch = sample_packet_batch();
-    bencher.iter(move || {
+    bencher.iter(|| {
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 
