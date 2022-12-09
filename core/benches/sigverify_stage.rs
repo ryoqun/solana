@@ -177,7 +177,6 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
             if let Ok(message) = verified_r.recv_timeout(Duration::from_millis(10)) {
                 let (verifieds, _) = &*message;
                 for v in verifieds.iter().rev() {
-                    let aa: usize = v;
                     received += v.len();
                     batches.push(v);
                 }
@@ -186,6 +185,7 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
                 }
             }
         }
+        test::black_box(batches);
         trace!("received: {}", received);
     });
     stage.join().unwrap();
