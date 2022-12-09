@@ -128,7 +128,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread_handle = std::thread::spawn(move || {
-            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, 0>(
+            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, _, 0>(
                 exit.clone(),
                 dummy_main_receiver,
                 |packet_batch| {
