@@ -391,7 +391,7 @@ impl LeaderSlotMetricsTracker {
         Some(metrics)
     }
 
-    fn end_old_slot_metrics(&self, metrics: &mut LeaderSlotMetrics) {
+    fn end_old_slot_metrics(&mut self, metrics: &mut LeaderSlotMetrics) {
         self.banking_tracer.bank_end(self.id, metrics.slot, self.incoming_batch_count);
         metrics.mark_slot_end_detected();
     }
