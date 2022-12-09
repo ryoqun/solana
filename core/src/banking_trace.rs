@@ -147,7 +147,8 @@ impl BankingTracer {
                     (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
                     BUF_WRITER_CAPACITY,
                 )?;
-                let tracing_thread = Self::spawn_background_thread(trace_receiver, file_appender, exit);
+                let tracing_thread =
+                    Self::spawn_background_thread(trace_receiver, file_appender, exit);
 
                 Ok((sender_and_receiver, Some(tracing_thread)))
             })
@@ -160,10 +161,7 @@ impl BankingTracer {
         Self::new_with_config(None).unwrap()
     }
 
-    fn create_channel(
-        &self,
-        name: &'static str,
-    ) -> (BankingPacketSender, BankingPacketReceiver) {
+    fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         Self::channel(
             self.enabled_tracer
                 .as_ref()
@@ -233,7 +231,11 @@ impl BankingTracer {
         })
     }
 
-    fn spawn_background_thread(trace_receiver: Receiver<TimedTracedEvent>, mut file_appender: RollingFileAppender<RollingConditionGrouped>, exit: Arc<AtomicBool>) -> thread::JoinHandle<()> {
+    fn spawn_background_thread(
+        trace_receiver: Receiver<TimedTracedEvent>,
+        mut file_appender: RollingFileAppender<RollingConditionGrouped>,
+        exit: Arc<AtomicBool>,
+    ) -> thread::JoinHandle<()> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
