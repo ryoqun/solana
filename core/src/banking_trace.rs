@@ -148,7 +148,7 @@ impl BankingTracer {
 
                 Self::ensure_prepare_path(&path)?;
                 let file_appender =
-                    Self::create_file_appender(path, rotate_threshold_size);
+                    Self::create_file_appender(path, rotate_threshold_size)?;
                 let tracing_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit);
 
@@ -238,7 +238,7 @@ impl BankingTracer {
         })
     }
 
-    fn create_file_appender(path: PathBuf, rotate_threshold_size: usize) {
+    fn create_file_appender(path: PathBuf, rotate_threshold_size: usize) -> usize {
         let grouped = RollingConditionGrouped::new(
             RollingConditionBasic::new()
                 .daily()
@@ -246,12 +246,13 @@ impl BankingTracer {
         );
         let sender_and_receiver = unbounded();
         let trace_receiver = sender_and_receiver.1.clone();
-        let file_appender = RollingFileAppender::new_with_buffer_capacity(
+
+        RollingFileAppender::new_with_buffer_capacity(
             path.join("events"),
             grouped,
             (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
             BUF_WRITER_CAPACITY,
-        )?;
+        )
     }
 
     fn spawn_background_thread(
