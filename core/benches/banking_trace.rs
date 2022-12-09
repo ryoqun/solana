@@ -7,7 +7,17 @@ use {
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
     std::sync::Arc,
     test::Bencher,
+    tempfile::TempDir,
 };
+
+fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
+    std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION")
+        .is_ok()
+        .then(|| {
+            eprintln!("prevented to remove {:?}", temp_dir.path());
+            drop(temp_dir.into_path());
+        });
+} 
 
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
@@ -111,7 +121,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let aa = to_packet_batches(&vec![tx; len], chunk_size);
     let packet_batch = Arc::new((aa, None));
 
-    let temp_dir = tempfile::TempDir::new().unwrap();
+    let temp_dir = TempDir::new().unwrap();
     let base_path = temp_dir.path();
 
     bencher.iter(move || {
@@ -152,11 +162,5 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         tracer_join_handle.unwrap().join().unwrap().unwrap();
     });
 
-    // prevent TempDir's auto cleanup
-    std::env::var("BANKING_TRACE_LEAVE_FILES_FROM_LAST_ITERATION")
-        .is_ok()
-        .then(|| {
-            eprintln!("prevented to remove {:?}", temp_dir.path());
-            drop(temp_dir.into_path());
-        });
+    drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 }
