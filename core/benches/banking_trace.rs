@@ -110,14 +110,10 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
         )
     });
 
-    let len = 4;
-    let chunk_size = 10;
-    let tx = test_tx();
-    let aa = to_packet_batches(&vec![tx; len], chunk_size);
-    let m = Arc::new((aa, None));
+    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
 
     bencher.iter(move || {
-        s.send(m.clone()).unwrap();
+        s.send(Arc::clone(packet_batch)).unwrap();
     });
 }
 
