@@ -135,7 +135,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS:
         }
         sleep(Duration::from_millis(SLEEP_MS));
     }
-    Ok(T::Default)
+    Ok(T::default())
 }
 
 impl BankingTracer {
