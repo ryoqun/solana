@@ -365,11 +365,11 @@ impl BankingTraceReplayer {
             match event.1 {
                 TracedEvent::Bank(slot, _, BankStatus::Started, _) => {
                     bank_starts_by_slot.insert(slot, s);
-                },
+                }
                 TracedEvent::PacketBatch(label, batch) => {
                     packet_batches_by_time.insert(s, (label, batch));
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
 
