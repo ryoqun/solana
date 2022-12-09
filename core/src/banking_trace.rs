@@ -163,10 +163,10 @@ impl BankingTracer {
 
     fn create_channel(&self, name: &'static str) -> (BankingPacketSender, BankingPacketReceiver) {
         Self::channel(
+            name,
             self.enabled_tracer
                 .as_ref()
                 .map(|((sender, _), _)| sender.clone()),
-            name,
         )
     }
 
@@ -203,16 +203,16 @@ impl BankingTracer {
     }
 
     pub fn channel_for_test() -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
-        Self::channel(None, "_dummy_name_for_test")
+        Self::channel("_dummy_name_for_test", None)
     }
 
     pub fn channel(
-        maybe_mirrored_channel: Option<Sender<TimedTracedEvent>>,
         name: &'static str,
+        trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
         (
-            TracedBankingPacketSender::new(sender, maybe_mirrored_channel, name),
+            TracedBankingPacketSender::new(name, sender, trace_sender),
             receiver,
         )
     }
@@ -255,34 +255,34 @@ impl BankingTracer {
 }
 
 pub struct TracedBankingPacketSender {
-    sender_to_banking: RealBankingPacketSender,
-    mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
     name: &'static str,
+    sender: RealBankingPacketSender,
+    trace_sender: Option<Sender<TimedTracedEvent>>,
 }
 
 impl TracedBankingPacketSender {
     fn new(
-        sender_to_banking: RealBankingPacketSender,
-        mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
         name: &'static str,
+        sender: RealBankingPacketSender,
+        trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> Self {
         Self {
-            sender_to_banking,
-            mirrored_sender_to_trace,
             name,
+            sender,
+            trace_sender,
         }
     }
 
     pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
-        if let Some(mirror) = &self.mirrored_sender_to_trace {
-            mirror
+        if let Some(trace_sender) = &self.trace_sender {
+            trace_sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
                     TracedEvent::PacketBatch(self.name.into(), Arc::clone(&batch)),
                 ))
                 .unwrap();
         }
-        self.sender_to_banking.send(batch)
+        self.sender.send(batch)
     }
 }
 
