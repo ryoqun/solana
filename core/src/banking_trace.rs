@@ -401,7 +401,7 @@ mod tests {
 
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream).unwrap();
-        dbg!(d);
+        dbg!(&d);
         assert_matches!(d, TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _)));
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
