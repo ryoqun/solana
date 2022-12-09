@@ -233,7 +233,7 @@ impl BankingTracer {
         })
     }
 
-    fn spawn_background_thread() -> thread::JoinHandle {
+    fn spawn_background_thread<T>() -> thread::JoinHandle<T> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
