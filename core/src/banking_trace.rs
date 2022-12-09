@@ -353,10 +353,10 @@ impl BankingTraceReplayer {
             }
         }
 
-        let (non_vote_sender, gossip_vote_sender, tpu_vote_sender) = (
+        let (non_vote_sender, tpu_vote_sender, gossip_vote_sender) = (
             self.non_vote_channel.0.clone(),
-            self.gossip_vote_channel.0.clone(),
             self.tpu_vote_channel.0.clone(),
+            self.gossip_vote_channel.0.clone(),
         );
         let bank_slot = bank.slot();
 
@@ -379,15 +379,15 @@ impl BankingTraceReplayer {
 
                     match name.as_str() {
                         "non-vote" => non_vote_sender.send(batch.clone()).unwrap(),
-                        "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
                         "tpu-vote" => tpu_vote_sender.send(batch.clone()).unwrap(),
+                        "gossip-vote" => gossip_vote_sender.send(batch.clone()).unwrap(),
                         a => panic!("unknown: {}", a),
                     }
                 }
             }
         });
 
-        let (verified_receiver, tpu_vote_receiver, gossip_vote_receiver) = self.prepare_receivers();
+        let (non_vote_receiver, tpu_vote_receiver, gossip_vote_receiver) = self.prepare_receivers();
 
         let collector = solana_sdk::pubkey::new_rand();
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
@@ -406,7 +406,7 @@ impl BankingTraceReplayer {
         let banking_stage = BankingStage::new_num_threads(
             &cluster_info,
             &poh_recorder,
-            verified_receiver,
+            non_vote_receiver,
             tpu_vote_receiver,
             gossip_vote_receiver,
             4,
