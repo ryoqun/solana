@@ -175,7 +175,8 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
         loop {
             if let Ok(message) = verified_r.recv_timeout(Duration::from_millis(10)) {
                 let (verifieds, _) = &*message;
-                for v: usize in verifieds.iter().rev() {
+                for v in verifieds.iter().rev() {
+                    let aa: usize = v;
                     received += v.len();
                     batches.push(v.clone());
                 }
