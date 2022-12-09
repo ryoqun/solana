@@ -332,6 +332,19 @@ impl TracedSender {
 mod tests {
     #[test]
     fn test_new_disabled() {
+        let tracer = BankingTracer::new_disabled();
+        let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
+
+        thread::spawn(move || {
+            sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+                exit.clone(),
+                non_vote_receiver,
+                black_box_packet_batch,
+            )
+        });
+
+        let packet_batch = sample_packet_batch();
+        non_vote_sender.send(packet_batch.clone()).unwrap();
     }
 
     #[test]
