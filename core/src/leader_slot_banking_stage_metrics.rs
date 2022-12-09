@@ -401,7 +401,7 @@ impl LeaderSlotMetricsTracker {
     ) -> MetricsTrackerAction {
         let Self {ref mut leader_slot_metrics, ..} = self;
 
-        let action = match (leader_slot_metrics, bank_start) {
+        match (leader_slot_metrics, bank_start) {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
@@ -428,8 +428,7 @@ impl LeaderSlotMetricsTracker {
                     MetricsTrackerAction::Noop
                 }
             }
-        };
-        action
+        }
     }
 
     pub(crate) fn apply_action(&mut self, action: MetricsTrackerAction) -> Option<Slot> {
