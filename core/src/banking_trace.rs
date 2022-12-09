@@ -167,7 +167,10 @@ impl BankingTracer {
             .map(|(path, exit, total_size)| -> Result<_, TraceError> {
                 let rotate_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
                 if rotate_threshold_size == 0 {
-                    return Err(TraceError::TooSmallTraceSize(total_size, TRACE_FILE_ROTATE_COUNT));
+                    return Err(TraceError::TooSmallTraceSize(
+                        total_size,
+                        TRACE_FILE_ROTATE_COUNT,
+                    ));
                 }
 
                 let sender_and_receiver = unbounded();
