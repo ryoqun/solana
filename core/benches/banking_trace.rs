@@ -148,7 +148,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         drop(dummy_main_sender);
         drop(tracer);
         dummy_main_thread_handle.join().unwrap().unwrap();
-        tracer_join_handle.unwrap().join().unwrap();
+        tracer_join_handle.unwrap().join().unwrap().unwrap();
     });
 
     // prevent TempDir's auto cleanup
