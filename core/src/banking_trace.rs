@@ -126,19 +126,17 @@ impl<'a> Write for GroupedWriter<'a> {
     }
 }
 
-pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS: u64>(
+pub fn sender_overhead_minimized_receiver_loop<T, E, const SLEEP_MS: u64>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
-    mut on_recv: impl FnMut(T) -> Result<U, E>,
-) -> Result<U, E> {
-    let mut last_value = None;
-
+    mut on_recv: impl FnMut(T) -> Result<(), E>,
+) -> Result<(), E> {
     'outer: while !exit.load(Ordering::Relaxed) {
         'inner: loop {
             // avoid futex-based blocking here, otherwise a sender would have to
             // wake me up at a syscall cost...
             match receiver.try_recv() {
-                Ok(message) => last_value = Some(on_recv(message)?),
+                Ok(message) => on_recv(message)?,
                 Err(TryRecvError::Empty) => break 'inner,
                 Err(TryRecvError::Disconnected) => {
                     assert_eq!(receiver.len(), 0);
@@ -149,7 +147,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS:
         sleep(Duration::from_millis(SLEEP_MS));
     }
 
-    Ok(last_value.unwrap_or_default())
+    Ok(())
 }
 
 impl BankingTracer {
@@ -283,7 +281,6 @@ impl BankingTracer {
         let thread = thread::Builder::new().name("solBanknTracer".into()).spawn(
             move || -> TracerThreadResult {
                 sender_overhead_minimized_receiver_loop::<
-                    _,
                     _,
                     TraceError,
                     TRACE_FILE_WRITE_INTERVAL_MS,
