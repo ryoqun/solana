@@ -391,7 +391,7 @@ impl LeaderSlotMetricsTracker {
         Some(metrics)
     }
 
-    pub fn foo(&self, metrics: Slot) {
+    pub fn trace_bank_end(&self, metrics: Slot) {
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
@@ -405,9 +405,9 @@ impl LeaderSlotMetricsTracker {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
-                leader_slot_metrics.mark_slot_end_detected();
                 let slot = leader_slot_metrics.slot;
-                self.foo(slot);
+                leader_slot_metrics.mark_slot_end_detected();
+                self.trace_bank_end(slot);
 
                 MetricsTrackerAction::ReportAndResetTracker
             }
@@ -420,7 +420,9 @@ impl LeaderSlotMetricsTracker {
             (Some(leader_slot_metrics), Some(bank_start)) => {
                 if leader_slot_metrics.slot != bank_start.working_bank.slot() {
                     // Last slot has ended, new slot has began
+                    let slot = leader_slot_metrics.slot;
                     leader_slot_metrics.mark_slot_end_detected();
+                    self.trace_bank_end(slot);
                     MetricsTrackerAction::ReportAndNewTracker(
                         self.create_new_slot_metrics(bank_start),
                     )
