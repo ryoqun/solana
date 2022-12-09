@@ -22,6 +22,7 @@ use {
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
+pub type TracerThreadResult = Result<(), std::boxed::Box<bincode::ErrorKind>>;
 
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
@@ -188,7 +189,7 @@ impl BankingTracer {
         self.create_channel(ChannelLabel::GossipVote)
     }
 
-    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<Result<(), std::boxed::Box<bincode::ErrorKind>>>>, Arc<Self>) {
+    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<TracerThreadResult>>, Arc<Self>) {
         (
             self.enabled_tracer
                 .as_mut()
