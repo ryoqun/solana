@@ -382,7 +382,7 @@ mod tests {
         let tracer = BankingTracer::new(Some((
             path,
             exit.clone(),
-            u64::max_size(),
+            u64::max_value(),
         )))
         .unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
@@ -401,7 +401,7 @@ mod tests {
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 
-        let mut stream = BufReader::new(File::open(path.join(BASENAME).unwrap()));
+        let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(d);
     }
