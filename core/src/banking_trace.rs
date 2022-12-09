@@ -22,7 +22,16 @@ use {
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
-pub type TracerThreadResult = Result<(), std::boxed::Box<bincode::ErrorKind>>;
+pub type TracerThreadResult = Result<(), TraceError>;
+
+#[derive(Error, Debug)]
+pub enum TraceError {
+    #[error("IO Error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Serialization Error: {0}")]
+    SerializeError(#[from] bincode::Error),
+}
 
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
