@@ -276,6 +276,7 @@ impl BankingTracer {
                     },
                 )?;
                 file_appender.flush().unwrap();
+                Ok(());
             })
             .unwrap()
     }
