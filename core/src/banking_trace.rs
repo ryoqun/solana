@@ -399,7 +399,7 @@ impl BankingTraceReplayer {
                         ChannelLabel::NonVote => non_vote_sender.send(batch.clone()).unwrap(),
                         ChannelLabel::TpuVote => tpu_vote_sender.send(batch.clone()).unwrap(),
                         ChannelLabel::GossipVote => gossip_vote_sender.send(batch.clone()).unwrap(),
-                        ChannelLabel::Dummy => unrecoverable!(),
+                        ChannelLabel::Dummy => unreachable!(),
                     }
                 }
             }
