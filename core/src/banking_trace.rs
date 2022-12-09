@@ -129,7 +129,7 @@ impl<'a> Write for GroupedWriter<'a> {
 pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS: u64>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
-    mut on_recv: impl FnMut(T) -> Result<U, E>,
+    mut on_recv: impl FnMut(T) -> Result<Option<U>, E>,
 ) -> Result<U, E> {
     let mut value = None;
 
@@ -149,7 +149,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS:
         sleep(Duration::from_millis(SLEEP_MS));
     }
 
-    Ok(value.unwrap_or_default())
+    Ok(value)
 }
 
 impl BankingTracer {
