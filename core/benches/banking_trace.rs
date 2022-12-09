@@ -27,7 +27,7 @@ fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
     BankingTracer::ensure_cleanup_path(path).unwrap();
 }
 
-fn black_box_packet_batch(packet_batch: usize) -> Result<(), usize> {
+fn black_box_packet_batch(packet_batch: BankingPacketBatch) -> Result<(), usize> {
     test::black_box(packet_batch);
     Ok(())
 }
