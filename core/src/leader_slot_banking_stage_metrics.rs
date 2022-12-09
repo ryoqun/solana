@@ -353,7 +353,7 @@ pub(crate) enum MetricsTrackerAction {
 }
 
 impl MetricsTrackerAction {
-    fn trace(&self, id: u32, tracer: &BankingTracer) {
+    pub fn trace(&self, id: u32, tracer: &BankingTracer) {
     }
 }
 
