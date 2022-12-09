@@ -54,7 +54,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
             r,
             |m| {
                 test::black_box(m);
-                Ok::<_, ()>(())
+                Ok::<_, TraceError>(())
             },
         )
     });
@@ -87,7 +87,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
             r,
             |m| {
                 test::black_box(m);
-                Ok::<_, ()>(())
+                Ok::<_, TraceError>(())
             },
         )
     });
@@ -132,12 +132,12 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let (tracer_join_handle, tracer) = tracer.finalize_under_arc();
 
         let dummy_main_thread_handle = std::thread::spawn(move || {
-            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, _, 0>(
+            solana_core::banking_trace::sender_overhead_minimized_receiver_loop::<_, _, TraceError, 0>(
                 exit.clone(),
                 dummy_main_receiver,
                 |packet_batch| {
                     test::black_box(packet_batch);
-                    Ok::<_, ()>(())
+                    Ok(())
                 },
             )
         });
