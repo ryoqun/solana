@@ -28,7 +28,7 @@ pub type TracerThreadResult = Result<(), TraceError>;
 #[derive(Error, Debug)]
 pub enum TraceError {
     #[error("IO Error: {0}")]
-    IoError(#[from] std::io::Error),
+    IoError(#[from] std::io::Errr),
 
     #[error("Serialization Error: {0}")]
     SerializeError(#[from] bincode::Error),
