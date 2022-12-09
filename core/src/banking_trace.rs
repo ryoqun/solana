@@ -45,9 +45,14 @@ pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
 #[derive(Serialize, Deserialize, Debug)]
 enum TracedEvent {
-    BankStart(u32, Slot, usize),
-    BankEnd(u32, Slot, usize),
+    Bank(Slot, u32, BankStatus, usize),
     PacketBatch(ChannelLabel, BankingPacketBatch),
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+enum BankStatus {
+    Started,
+    Ended,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
@@ -199,26 +204,23 @@ impl BankingTracer {
         )
     }
 
-    pub fn bank_start(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
+    fn bank_event(&self, slot: Slot, id: u32, status: BankStatus, unreceived_batch_count: usize) {
         if let Some(((sender, _), _)) = &self.enabled_tracer {
             sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
-                    TracedEvent::BankStart(id, slot, unreceived_batch_count),
+                    TracedEvent::Bank(slot, id, status, unreceived_batch_count),
                 ))
                 .unwrap();
         }
     }
 
+    pub fn bank_start(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
+        self.bank_event(slot, id, BankStart::Started, unreceived_batch_count);
+    }
+
     pub fn bank_end(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
-        if let Some(((sender, _), _)) = &self.enabled_tracer {
-            sender
-                .send(TimedTracedEvent(
-                    SystemTime::now(),
-                    TracedEvent::BankEnd(id, slot, unreceived_batch_count),
-                ))
-                .unwrap();
-        }
+        self.bank_event(slot, id, BankStart::Ended, unreceived_batch_count);
     }
 
     pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
