@@ -281,7 +281,7 @@ impl BankingTracer {
                 sender_overhead_minimized_receiver_loop::<_, _, TraceError, TRACE_FILE_WRITE_INTERVAL_MS>(
                     exit,
                     trace_receiver,
-                    |event| {
+                    |event| -> Result<(), TraceError> {
                         file_appender.condition_mut().reset();
                         serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)?
                     },
