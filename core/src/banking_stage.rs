@@ -1974,10 +1974,9 @@ where
 mod tests {
     use {
         super::*,
-        crate::unprocessed_packet_batches,
+        crate::{banking_trace::BankingPacketBatch, unprocessed_packet_batches},
         crossbeam_channel::{unbounded, Receiver},
         solana_address_lookup_table_program::state::{AddressLookupTable, LookupTableMeta},
-        solana_core::banking_trace::BankingPacketBatch,
         solana_entry::entry::{next_entry, next_versioned_entry, Entry, EntrySlice},
         solana_gossip::{cluster_info::Node, contact_info::ContactInfo},
         solana_ledger::{
