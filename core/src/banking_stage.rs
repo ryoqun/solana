@@ -2326,7 +2326,6 @@ mod tests {
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let (gossip_vote_sender, gossip_vote_receiver) =
             banking_tracer.create_channel_gossip_vote();
-
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
             let (replay_vote_sender, _repaly_vote_receiver) = unbounded();
