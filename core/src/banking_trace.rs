@@ -343,7 +343,7 @@ pub fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
         });
 }
 
-fn terminate_tracer(tracer: BankingTracer, main_thread: JoinHandle<TracerThreadResult>, sender: TracedSender) {
+pub fn terminate_tracer(tracer: BankingTracer, main_thread: JoinHandle<TracerThreadResult>, sender: TracedSender) {
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
     drop((sender, tracer));
     main_thread.join().unwrap().unwrap();
