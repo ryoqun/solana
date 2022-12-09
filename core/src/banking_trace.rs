@@ -277,7 +277,7 @@ impl BankingTracer {
     ) -> thread::JoinHandle<TracerThreadResult> {
         thread::Builder::new()
             .name("solBanknTracer".into())
-            .spawn(move || -> Result<(), TraceError> {
+            .spawn(move || -> TraceThreadResult {
                 sender_overhead_minimized_receiver_loop::<_, _, TraceError, TRACE_FILE_WRITE_INTERVAL_MS>(
                     exit,
                     trace_receiver,
