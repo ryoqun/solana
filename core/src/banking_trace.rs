@@ -148,6 +148,9 @@ pub fn sender_overhead_minimized_receiver_loop<T, E, const SLEEP_MS: u64>(
                     break 'outer;
                 }
             };
+            if exit.load(Ordering::Relaxed) {
+                break 'outer;
+            }
         }
         sleep(Duration::from_millis(SLEEP_MS));
     }
