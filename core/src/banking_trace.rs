@@ -276,7 +276,7 @@ impl BankingTracer {
         trace_receiver: Receiver<TimedTracedEvent>,
         mut file_appender: RollingFileAppender<RollingConditionGrouped>,
         exit: Arc<AtomicBool>,
-    ) -> Result<thread::JoinHandle<TracerThreadResult>, TraceError> {
+    ) -> Result<JoinHandle<TracerThreadResult>, TraceError> {
         let thread = thread::Builder::new().name("solBanknTracer".into()).spawn(
             move || -> TracerThreadResult {
                 sender_overhead_minimized_receiver_loop::<
@@ -342,7 +342,7 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
         });
 }
 
-fn terminate_tracer(tracer: usize, main_thread: usize, sender: usize) {
+fn terminate_tracer(tracer: BankingTracer, main_thread: JoinHandle<TracerThreadResult>, sender: TracedSender) {
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
     drop((sender, tracer));
     main_thread.join().unwrap().unwrap();
