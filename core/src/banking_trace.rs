@@ -131,7 +131,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS:
                     assert_eq!(receiver.len(), 0);
                     break 'outer;
                 }
-            }
+            };
         }
         sleep(Duration::from_millis(SLEEP_MS));
     }
