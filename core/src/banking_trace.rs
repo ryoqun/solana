@@ -350,7 +350,12 @@ pub fn terminate_tracer(
     tracer: BankingTracer,
     main_thread: JoinHandle<TracerThreadResult>,
     sender: TracedSender,
+    exit: Option<Arc<AtomicBool>>,
 ) {
+    eprintln!("0");
+    if let Some(exit) = exit {
+        exit.store(true, Ordering::Relaxed);
+    }
     eprintln!("1");
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
     eprintln!("2");
@@ -387,7 +392,7 @@ mod tests {
         non_vote_sender
             .send(BankingPacketBatch::new((vec![], None)))
             .unwrap();
-        terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
+        terminate_tracer(tracer, dummy_main_thread, non_vote_sender, Some(exit));
     }
 
     #[test]
@@ -410,7 +415,7 @@ mod tests {
         non_vote_sender.send(sample_packet_batch()).unwrap();
         tracer.bank_start(1, 2, 3);
 
-        terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
+        terminate_tracer(tracer, dummy_main_thread, non_vote_sender, Some(exit));
 
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
         let results = (0..3)
