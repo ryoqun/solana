@@ -233,7 +233,7 @@ impl BankingTracer {
         })
     }
 
-    fn spawn_background_thread(trace_receiver: Receiver<usize>, file_appender: usize, exit: AtomicBool) -> thread::JoinHandle<()> {
+    fn spawn_background_thread(trace_receiver: Receiver<usize>, file_appender: usize, exit: Arc<AtomicBool>) -> thread::JoinHandle<()> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
