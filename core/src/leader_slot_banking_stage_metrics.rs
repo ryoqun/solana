@@ -312,7 +312,7 @@ impl LeaderSlotMetrics {
         }
     }
 
-    fn mark_slot_end_detected(&mut self, a: &BankingTracer, id: u32, batch_count: usize) {
+    fn mark_slot_end_detected(&mut self) {
         self.timing_metrics.mark_slot_end_detected();
     }
 }
