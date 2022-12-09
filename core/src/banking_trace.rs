@@ -191,12 +191,23 @@ impl BankingTracer {
         )
     }
 
-    pub fn new_bank_start(&self, id: u32, slot: Slot, incoming_batch_count: usize) {
+    pub fn bank_start(&self, id: u32, slot: Slot, incoming_batch_count: usize) {
         if let Some(((sender, _), _)) = &self.enabled_tracer {
             sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
                     TracedEvent::BankStart(id, slot, incoming_batch_count),
+                ))
+                .unwrap();
+        }
+    }
+
+    pub fn bank_end(&self, id: u32, slot: Slot, incoming_batch_count: usize) {
+        if let Some(((sender, _), _)) = &self.enabled_tracer {
+            sender
+                .send(TimedTracedEvent(
+                    SystemTime::now(),
+                    TracedEvent::BankEnd(id, slot, incoming_batch_count),
                 ))
                 .unwrap();
         }
