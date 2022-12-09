@@ -408,7 +408,7 @@ mod tests {
         assert_matches!(d, Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
         dbg!(&d);
-        assert_matches!(d, Err(bincode::Error (UnexpectedEof, _)));
+        assert_matches!(d, Err(_));
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
