@@ -1921,7 +1921,7 @@ impl BankingStage {
         }
         if let Some(tracer_thread_hdl) = self.tracer_thread_hdl {
             if let Err(tracer_result) = tracer_thread_hdl.join()? {
-                error!("tracer thread error: {:?}", tracer_thread);
+                error!("tracer thread error: {:?}", tracer_result);
             }
         }
         Ok(())
