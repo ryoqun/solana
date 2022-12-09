@@ -64,9 +64,11 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Bencher) {
+    let temp_dir = TempDir::new().unwrap();
+
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new(Some((
-        PathBuf::new().join("/tmp/banking-tracer"),
+        temp_dir.join("banking-trace"),
         exit.clone(),
         DEFAULT_BANKING_TRACE_SIZE,
     )))
@@ -85,13 +87,17 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
     bencher.iter(move || {
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
+
+    drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 }
 
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut Bencher) {
+    let temp_dir = TempDir::new().unwrap();
+
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new(Some((
-        PathBuf::new().join("/tmp/banking-tracer"),
+        temp_dir.join("banking-trace"),
         exit.clone(),
         1024 * 1024, // cause more frequent trace file rotation
     )))
@@ -110,14 +116,16 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
     bencher.iter(move || {
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
+
+    drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 }
 
 #[bench]
 fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
-    let packet_batch = sample_packet_batch();
-
     let temp_dir = TempDir::new().unwrap();
     let base_path = temp_dir.path();
+
+    let packet_batch = sample_packet_batch();
 
     bencher.iter(move || {
         let path = base_path.join("banking-trace");
