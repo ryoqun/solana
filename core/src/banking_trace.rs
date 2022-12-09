@@ -355,6 +355,7 @@ pub fn terminate_tracer(
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
     eprintln!("2");
     drop((sender, tracer));
+    dbg!(tracer);
     eprintln!("3");
     main_thread.join().unwrap().unwrap();
     eprintln!("4");
