@@ -67,10 +67,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             non_vote_receiver,
-            |packet_batch| {
-                test::black_box(packet_batch);
-                Ok(())
-            },
+            black_box_packet_batch,
         )
     });
 
@@ -95,10 +92,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             non_vote_receiver,
-            |packet_batch| {
-                test::black_box(packet_batch);
-                Ok(())
-            },
+            black_box_packet_batch,
         )
     });
 
@@ -134,10 +128,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
                 non_vote_receiver,
-                |packet_batch| {
-                    test::black_box(packet_batch);
-                    Ok(())
-                },
+                black_box_packet_batch,
             )
         });
 
