@@ -354,6 +354,10 @@ pub(crate) enum MetricsTrackerAction {
 
 impl MetricsTrackerAction {
     pub fn trace(&self, tracker: &LeaderSlotMetricsTracker) {
+        match self {
+        }
+        match self {
+        }
     }
 }
 
