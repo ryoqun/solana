@@ -37,7 +37,7 @@ pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
 pub struct BankingTracer {
     enabled_tracer: Option<(
         (Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>),
-        Option<JoinHandle<Result<(), std::boxed::Box<bincode::ErrorKind>>>>,
+        Option<JoinHandle<TracerThreadResult>>,
     )>,
 }
 
@@ -264,7 +264,7 @@ impl BankingTracer {
         trace_receiver: Receiver<TimedTracedEvent>,
         mut file_appender: RollingFileAppender<RollingConditionGrouped>,
         exit: Arc<AtomicBool>,
-    ) -> thread::JoinHandle<Result<(), std::boxed::Box<bincode::ErrorKind>>> {
+    ) -> thread::JoinHandle<TracerThreadResult> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
