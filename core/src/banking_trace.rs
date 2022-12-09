@@ -115,17 +115,17 @@ impl<'a> Write for GroupedWriter<'a> {
     }
 }
 
-pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
+pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS: u64>(
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
-    mut on_recv: impl FnMut(T),
+    mut on_recv: impl FnMut(T) -> Result<U, E>,
 ) {
     'outer: while !exit.load(Ordering::Relaxed) {
         'inner: loop {
             // avoid futex-based blocking here, otherwise a sender would have to
             // wake me up at a syscall cost...
             match receiver.try_recv() {
-                Ok(message) => on_recv(message),
+                Ok(message) => on_recv(message)?,
                 Err(TryRecvError::Empty) => break 'inner,
                 Err(TryRecvError::Disconnected) => {
                     assert_eq!(receiver.len(), 0);
@@ -135,6 +135,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
         }
         sleep(Duration::from_millis(SLEEP_MS));
     }
+    Ok(T::Default)
 }
 
 impl BankingTracer {
