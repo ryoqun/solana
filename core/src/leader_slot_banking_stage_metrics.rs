@@ -391,10 +391,6 @@ impl LeaderSlotMetricsTracker {
         Some(metrics)
     }
 
-    fn end_old_slot_metrics(&self, slot: Slot) {
-        self.banking_tracer.bank_end(self.id, slot, self.incoming_batch_count);
-    }
-
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
     pub(crate) fn check_leader_slot_boundary(
         &mut self,
@@ -404,8 +400,7 @@ impl LeaderSlotMetricsTracker {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
-                leader_slot_metrics.mark_slot_end_detected();
-                self.end_old_slot_metrics(leader_slot_metrics.slot);
+                leader_slot_metrics.mark_slot_end_detected(self.banking_tracer, self.id, slot, self.incoming_batch_count);
                 MetricsTrackerAction::ReportAndResetTracker
             }
 
@@ -417,8 +412,7 @@ impl LeaderSlotMetricsTracker {
             (Some(leader_slot_metrics), Some(bank_start)) => {
                 if leader_slot_metrics.slot != bank_start.working_bank.slot() {
                     // Last slot has ended, new slot has began
-                    leader_slot_metrics.mark_slot_end_detected();
-                    self.end_old_slot_metrics(leader_slot_metrics.slot);
+                    leader_slot_metrics.mark_slot_end_detected(self.banking_tracer, self.id, slot, self.incoming_batch_count);
                     MetricsTrackerAction::ReportAndNewTracker(
                         self.create_new_slot_metrics(bank_start),
                     )
