@@ -31,12 +31,12 @@ fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
 fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new_disabled();
-    let (s, r) = tracer.create_channel_non_vote();
+    let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
     thread::spawn(move || {
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
-            r,
+            non_vote_receiver,
             |packet_batch| {
                 test::black_box(packet_batch);
                 Ok(())
@@ -46,7 +46,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 
     let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
     bencher.iter(move || {
-        s.send(packet_batch.clone()).unwrap();
+        non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 }
 
@@ -59,12 +59,12 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         solana_core::banking_trace::TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD,
     )))
     .unwrap();
-    let (s, r) = tracer.create_channel_non_vote();
+    let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
     thread::spawn(move || {
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
-            r,
+            non_vote_receiver,
             |packet_batch| {
                 test::black_box(packet_batch);
                 Ok(())
@@ -74,7 +74,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 
     let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
     bencher.iter(move || {
-        s.send(packet_batch.clone()).unwrap();
+        non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 }
 
@@ -87,12 +87,12 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
         1024 * 1024, // cause more frequent trace file rotation
     )))
     .unwrap();
-    let (s, r) = tracer.create_channel_non_vote();
+    let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
     thread::spawn(move || {
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
-            r,
+            non_vote_receiver,
             |packet_batch| {
                 test::black_box(packet_batch);
                 Ok(())
@@ -102,7 +102,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
 
     let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
     bencher.iter(move || {
-        s.send(Arc::clone(&packet_batch)).unwrap();
+        non_vote_sender.send(Arc::clone(&packet_batch)).unwrap();
     });
 }
 
