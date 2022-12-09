@@ -20,7 +20,7 @@ use {
 };
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
-pub type BankingPacketSender = TracedBankingPacketSender;
+pub type BankingPacketSender = TracedSender;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
@@ -201,17 +201,17 @@ impl BankingTracer {
         }
     }
 
-    pub fn channel_for_test() -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
+    pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
         Self::channel("_dummy_name_for_test", None)
     }
 
     pub fn channel(
         name: &'static str,
         trace_sender: Option<Sender<TimedTracedEvent>>,
-    ) -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
+    ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
         (
-            TracedBankingPacketSender::new(name, sender, trace_sender),
+            TracedSender::new(name, sender, trace_sender),
             receiver,
         )
     }
@@ -253,13 +253,13 @@ impl BankingTracer {
     }
 }
 
-pub struct TracedBankingPacketSender {
+pub struct TracedSender {
     name: &'static str,
     sender: Sender<BankingPacketBatch>,
     trace_sender: Option<Sender<TimedTracedEvent>>,
 }
 
-impl TracedBankingPacketSender {
+impl TracedSender {
     fn new(
         name: &'static str,
         sender: Sender<BankingPacketBatch>,
