@@ -139,15 +139,15 @@ impl BankingTracer {
                         .daily()
                         .max_size(roll_threshold_size),
                 );
-                let mut output = RollingFileAppender::new_with_buffer_capacity(
+                let sender_and_receiver = unbounded();
+                let trace_receiver = sender_and_receiver.1.clone();
+                let mut file_appender = RollingFileAppender::new_with_buffer_capacity(
                     path.join("events"),
                     grouped,
                     (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
                     BUF_WRITER_CAPACITY,
                 )?;
-                let sender_and_receiver = unbounded();
-                let trace_receiver = sender_and_receiver.1.clone();
-                let tracing_thread = Self::spawn_background_thread();
+                let tracing_thread = Self::spawn_background_thread(trace_receiver, file_appender, exit);
 
                 Ok((sender_and_receiver, Some(tracing_thread)))
             })
@@ -233,7 +233,7 @@ impl BankingTracer {
         })
     }
 
-    fn spawn_background_thread() -> thread::JoinHandle<()> {
+    fn spawn_background_thread(trace_receiver: Receiver<usize>, file_appender: usize, exit: AtomicBool) -> thread::JoinHandle<()> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
@@ -241,12 +241,12 @@ impl BankingTracer {
                     exit,
                     trace_receiver,
                     |event| {
-                        output.condition_mut().reset();
-                        serialize_into(&mut GroupedWriter::new(&mut output), &event)
+                        file_appender.condition_mut().reset();
+                        serialize_into(&mut GroupedWriter::new(&mut file_appender), &event)
                             .unwrap();
                     },
                 );
-                output.flush().unwrap();
+                file_appender.flush().unwrap();
             })
             .unwrap()
     }
