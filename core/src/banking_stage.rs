@@ -2162,11 +2162,11 @@ mod tests {
         let bank = Bank::new_no_wallclock_throttle_for_tests(&genesis_config);
         let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
         let bank = Arc::new(bank_forks.read().unwrap().get(0).unwrap());
+        let start_hash = bank.last_blockhash();
         let banking_tracer = BankingTracer::new_disabled();
         let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
-        let (gossip_vote_sender, gossip_verified_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+        let (gossip_vote_sender, gossip_vote_receiver) = banking_tracer.create_channel_gossip_vote();
         let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
-        let start_hash = bank.last_blockhash();
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
             let blockstore = Arc::new(
@@ -2190,7 +2190,7 @@ mod tests {
                 &poh_recorder,
                 non_vote_receiver,
                 tpu_vote_receiver,
-                gossip_verified_vote_receiver,
+                gossip_vote_receiver,
                 None,
                 replay_vote_sender,
                 None,
@@ -2230,7 +2230,7 @@ mod tests {
                 .collect();
             let packet_batches = convert_from_old_verified(packet_batches);
             non_vote_sender // no_ver, anf, tx
-                .send(Arc::new((packet_batches, None)))
+                .send(BankingPacketBatch::new((packet_batches, None)))
                 .unwrap();
 
             drop(non_vote_sender);
@@ -2289,13 +2289,55 @@ mod tests {
             mint_keypair,
             ..
         } = create_slow_genesis_config(2);
+        let banking_tracer = BankingTracer::new_disabled();
+        let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
+
+        // Process a batch that includes a transaction that receives two lamports.
         let alice = Keypair::new();
+        let tx = system_transaction::transfer(
+            &mint_keypair,
+            &alice.pubkey(),
+            2,
+            genesis_config.hash(),
+        );
+
+        let packet_batches = to_packet_batches(&[tx], 1);
+        let packet_batches = packet_batches
+            .into_iter()
+            .map(|batch| (batch, vec![1u8]))
+            .collect();
+        let packet_batches = convert_from_old_verified(packet_batches);
+        verified_sender
+            .send(Arc::new((packet_batches, None)))
+            .unwrap();
+
+        // Process a second batch that uses the same from account, so conflicts with above TX
+        let tx = system_transaction::transfer(
+            &mint_keypair,
+            &alice.pubkey(),
+            1,
+            genesis_config.hash(),
+        );
+        let packet_batches = to_packet_batches(&[tx], 1);
+        let packet_batches = packet_batches
+            .into_iter()
+            .map(|batch| (batch, vec![1u8]))
+            .collect();
+        let packet_batches = convert_from_old_verified(packet_batches);
+        verified_sender
+            .send(Arc::new((packet_batches, None)))
+            .unwrap();
+
+        let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
+            banking_tracer.create_channel_gossip_vote();
+        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
+
 
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
             let (replay_vote_sender, _repaly_vote_receiver) = unbounded();
 
-            let (entry_receiver, senders) = {
+            let entry_receiver = {
                 // start a banking_stage to eat verified receiver
                 let bank = Bank::new_no_wallclock_throttle_for_tests(&genesis_config);
                 let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
@@ -2312,47 +2354,6 @@ mod tests {
                 };
                 let (exit, poh_recorder, poh_service, entry_receiver) =
                     create_test_recorder(&bank, &blockstore, Some(poh_config), None);
-                let banking_tracer = BankingTracer::new_disabled();
-                let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-                // Process a batch that includes a transaction that receives two lamports.
-                let tx = system_transaction::transfer(
-                    &mint_keypair,
-                    &alice.pubkey(),
-                    2,
-                    genesis_config.hash(),
-                );
-
-                let packet_batches = to_packet_batches(&[tx], 1);
-                let packet_batches = packet_batches
-                    .into_iter()
-                    .map(|batch| (batch, vec![1u8]))
-                    .collect();
-                let packet_batches = convert_from_old_verified(packet_batches);
-                verified_sender
-                    .send(Arc::new((packet_batches, None)))
-                    .unwrap();
-
-                // Process a second batch that uses the same from account, so conflicts with above TX
-                let tx = system_transaction::transfer(
-                    &mint_keypair,
-                    &alice.pubkey(),
-                    1,
-                    genesis_config.hash(),
-                );
-                let packet_batches = to_packet_batches(&[tx], 1);
-                let packet_batches = packet_batches
-                    .into_iter()
-                    .map(|batch| (batch, vec![1u8]))
-                    .collect();
-                let packet_batches = convert_from_old_verified(packet_batches);
-                verified_sender
-                    .send(Arc::new((packet_batches, None)))
-                    .unwrap();
-
-                let (gossip_verified_vote_sender, gossip_verified_vote_receiver) =
-                    banking_tracer.create_channel_gossip_vote();
-                let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
-
                 let cluster_info = new_test_cluster_info(Node::new_localhost().info);
                 let cluster_info = Arc::new(cluster_info);
                 let _banking_stage = BankingStage::new_num_threads(
@@ -2385,7 +2386,9 @@ mod tests {
                     ),
                 )
             };
-            drop(senders);
+            drop(verified_sender);
+            drop(vote_sender);
+            drop(tpu_vote_sender);
 
             // consume the entire entry_receiver, feed it into a new bank
             // check that the balance is what we expect.
