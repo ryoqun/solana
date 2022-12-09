@@ -355,8 +355,8 @@ pub(crate) enum MetricsTrackerAction {
 impl MetricsTrackerAction {
     pub fn trace(&self, tracker: &LeaderSlotMetricsTracker) {
         match self {
-            MetricsTrackerAction::Noop | MetricsTrackerAction::ReportAndResetTracker => (),
             MetricsTrackerAction::NewTracker(Some(me)) | MetricsTrackerAction::ReportAndNewTracker(Some(me)) => tracker.banking_tracer.new_bank_start(tracker.id, me.slot),
+            _ => (),
         }
         match self {
             Noop => {},
