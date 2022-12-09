@@ -209,7 +209,7 @@ impl BankingTracer {
         (
             self.enabled_tracer
                 .as_mut()
-                .and_then(|(_, tracer)| tracer.take()),
+                .and_then(|(_, tracer_thread)| tracer_thread.take()),
             Arc::new(self),
         )
     }
@@ -351,12 +351,18 @@ pub fn terminate_tracer(
     main_thread: JoinHandle<TracerThreadResult>,
     sender: TracedSender,
 ) {
+    eprintln!("1");
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
+    eprintln!("2");
     drop((sender, tracer));
+    eprintln!("3");
     main_thread.join().unwrap().unwrap();
+    eprintln!("4");
     if let Some(tracer_thread) = tracer_thread {
+        eprintln!("5");
         tracer_thread.join().unwrap().unwrap();
     }
+    eprintln!("6");
 }
 
 #[cfg(test)]
