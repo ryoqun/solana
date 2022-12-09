@@ -276,7 +276,7 @@ impl TracedBankingPacketSender {
             mirror
                 .send(TimedTracedEvent(
                     SystemTime::now(),
-                    TracedEvent::PacketBatch(self.name.into(), batch.clone() /*a*/),
+                    TracedEvent::PacketBatch(self.name.into(), Arc::clone(batch)),
                 ))
                 .unwrap();
         }
