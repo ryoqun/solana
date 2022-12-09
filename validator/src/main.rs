@@ -1365,7 +1365,7 @@ pub fn main() {
     }
 
     validator_config.banking_trace_size = if matches.occurrences_of("banking_trace_size") == 0 {
-        // disable if no explicit flag given; this effectively results in opt-in
+        // disable with no explicit flag; then, this effectively becomes `opt-in`
         EMPTY_BANKING_TRACE_SIZE
     } else {
         // DEFAULT_BANKING_TRACE_SIZE or user-supplied override value
