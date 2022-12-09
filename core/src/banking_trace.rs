@@ -349,7 +349,7 @@ mod tests {
             )
         });
 
-        non_vote_sender.send(BankingPacketBatch::new(vec![], None)).unwrap();
+        non_vote_sender.send(BankingPacketBatch::new((vec![], None))).unwrap();
     }
 
     #[test]
