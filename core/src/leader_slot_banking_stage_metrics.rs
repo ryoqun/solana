@@ -401,7 +401,7 @@ impl LeaderSlotMetricsTracker {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
-                leader_slot_metrics.mark_slot_end_detected(self.id);
+                //leader_slot_metrics.mark_slot_end_detected(self.id);
                 MetricsTrackerAction::ReportAndResetTracker
             }
 
