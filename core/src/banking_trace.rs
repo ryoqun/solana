@@ -4,7 +4,10 @@ use {
     chrono::{DateTime, Local},
     crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
-    solana_perf::{packet::{PacketBatch, to_packet_batches}, test_tx::test_tx},
+    solana_perf::{
+        packet::{to_packet_batches, PacketBatch},
+        test_tx::test_tx,
+    },
     solana_sdk::slot_history::Slot,
     std::{
         fs::{create_dir_all, remove_dir_all, File},
@@ -343,7 +346,11 @@ pub fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
         });
 }
 
-pub fn terminate_tracer(tracer: BankingTracer, main_thread: JoinHandle<TracerThreadResult>, sender: TracedSender) {
+pub fn terminate_tracer(
+    tracer: BankingTracer,
+    main_thread: JoinHandle<TracerThreadResult>,
+    sender: TracedSender,
+) {
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
     drop((sender, tracer));
     main_thread.join().unwrap().unwrap();
@@ -352,9 +359,7 @@ pub fn terminate_tracer(tracer: BankingTracer, main_thread: JoinHandle<TracerThr
 
 #[cfg(test)]
 mod tests {
-    use {
-        super::*,
-    };
+    use super::*;
 
     #[test]
     fn test_new_disabled() {
@@ -367,11 +372,13 @@ mod tests {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
                 non_vote_receiver,
-                |_packet_batch| Ok(())
+                |_packet_batch| Ok(()),
             )
         });
 
-        non_vote_sender.send(BankingPacketBatch::new((vec![], None))).unwrap();
+        non_vote_sender
+            .send(BankingPacketBatch::new((vec![], None)))
+            .unwrap();
     }
 
     #[test]
@@ -379,19 +386,15 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let path = temp_dir.path().join("banking-trace");
         let exit = Arc::<AtomicBool>::default();
-        let tracer = BankingTracer::new(Some((
-            path.clone(),
-            exit.clone(),
-            u64::max_value(),
-        )))
-        .unwrap();
+        let tracer =
+            BankingTracer::new(Some((path.clone(), exit.clone(), u64::max_value()))).unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
                 non_vote_receiver,
-                |_packet_batch| Ok(())
+                |_packet_batch| Ok(()),
             )
         });
 
@@ -400,11 +403,24 @@ mod tests {
         terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
 
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
-        let results = (1..3).map( |_|
-                                         bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream)).collect::<Vec<_>>();
+        let results = (1..3)
+            .map(|_| bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream))
+            .collect::<Vec<_>>();
 
-        assert_matches!(results[0], Ok(TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _))));
-        assert_matches!(results[1], Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
+        assert_matches!(
+            results[0],
+            Ok(TimedTracedEvent(
+                _,
+                TracedEvent::PacketBatch(ChannelLabel::NonVote, _)
+            ))
+        );
+        assert_matches!(
+            results[1],
+            Ok(TimedTracedEvent(
+                _,
+                TracedEvent::Bank(1, 2, BankStatus::Started, 3)
+            ))
+        );
         assert_matches!(results[2], Err(_));
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);

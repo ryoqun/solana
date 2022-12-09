@@ -4,9 +4,9 @@ extern crate test;
 
 use {
     solana_core::banking_trace::{
-        sample_packet_batch, drop_and_clean_temp_dir_unless_suppressed, terminate_tracer,
-        sender_overhead_minimized_receiver_loop, BankingPacketBatch, BankingTracer, TraceError,
-        TracerThreadResult, DEFAULT_BANKING_TRACE_SIZE,
+        drop_and_clean_temp_dir_unless_suppressed, sample_packet_batch,
+        sender_overhead_minimized_receiver_loop, terminate_tracer, BankingPacketBatch,
+        BankingTracer, TraceError, TracerThreadResult, DEFAULT_BANKING_TRACE_SIZE,
     },
     std::{
         path::PathBuf,
@@ -23,7 +23,6 @@ fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
     // result...
     BankingTracer::ensure_cleanup_path(path).unwrap();
 }
-
 
 fn black_box_packet_batch(packet_batch: BankingPacketBatch) -> TracerThreadResult {
     test::black_box(packet_batch);
