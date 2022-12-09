@@ -274,7 +274,7 @@ impl BankingTracer {
         trace_receiver: Receiver<TimedTracedEvent>,
         mut file_appender: RollingFileAppender<RollingConditionGrouped>,
         exit: Arc<AtomicBool>,
-    ) -> thread::JoinHandle<TracerThreadResult> {
+    ) -> Result<thread::JoinHandle<TracerThreadResult>, TraceError> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || -> TracerThreadResult {
@@ -289,7 +289,9 @@ impl BankingTracer {
                 )?;
                 file_appender.flush()?;
                 Ok(())
-            })
+            })?
+
+        Ok(())
     }
 }
 
