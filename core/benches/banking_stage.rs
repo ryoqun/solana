@@ -329,7 +329,7 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
                 for xv in v {
                     sent += xv.len();
                 }
-                non_vote_sender.send(Arc::new((v.to_vec(), None))).unwrap();
+                non_vote_sender.send(BankingPacketBatch::new((v.to_vec(), None))).unwrap();
             }
 
             check_txs(&signal_receiver2, txes / CHUNKS);
