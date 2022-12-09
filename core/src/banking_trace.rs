@@ -388,7 +388,7 @@ mod tests {
         });
 
         non_vote_sender.send(sample_packet_batch()).unwrap();
-        tracer.bank_start();
+        tracer.bank_start(1, 2, 3);
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
