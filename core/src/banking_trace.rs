@@ -45,7 +45,8 @@ pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
 #[derive(Serialize, Deserialize, Debug)]
 enum TracedEvent {
-    NewBankStart(u32, Slot, usize), // also copy each channel's `.len()`s?
+    BankStart(u32, Slot, usize),
+    BankEnd(u32, Slot, usize),
     PacketBatch(String, BankingPacketBatch),
 }
 
@@ -195,7 +196,7 @@ impl BankingTracer {
             sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
-                    TracedEvent::NewBankStart(id, slot, incoming_batch_count),
+                    TracedEvent::BankStart(id, slot, incoming_batch_count),
                 ))
                 .unwrap();
         }
@@ -341,7 +342,7 @@ impl BankingTraceReplayer {
             //dbg!(&event);
             let s = event.0;
             match event.1 {
-                TracedEvent::NewBankStart(_, slot, _) => {
+                TracedEvent::BankStart(_, slot, _) => {
                     bank_starts_by_slot.insert(slot, s);
                 }
                 TracedEvent::PacketBatch(name, batch) => {

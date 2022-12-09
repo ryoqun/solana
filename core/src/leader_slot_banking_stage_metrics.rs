@@ -352,19 +352,6 @@ pub(crate) enum MetricsTrackerAction {
     ReportAndNewTracker(Option<LeaderSlotMetrics>),
 }
 
-impl MetricsTrackerAction {
-    pub fn trace(&self, tracker: &LeaderSlotMetricsTracker) {
-        match self {
-            MetricsTrackerAction::NewTracker(Some(me)) | MetricsTrackerAction::ReportAndNewTracker(Some(me)) => tracker.banking_tracer.new_bank_start(tracker.id, me.slot, tracker.incoming_batch_count),
-            _ => (),
-        }
-        match self {
-            Noop => {},
-            _ => todo!(),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct LeaderSlotMetricsTracker {
     // Only `Some` if BankingStage detects it's time to construct our leader slot,
@@ -394,12 +381,19 @@ impl LeaderSlotMetricsTracker {
     }
 
     fn create_new_slot_metrics(&self, bank_start: &BankStart) -> Option<LeaderSlotMetrics> {
-        let slot = bank_start.working_bank.slot();
-        Some(LeaderSlotMetrics::new(
+        let metrics = LeaderSlotMetrics::new(
             self.id,
-            slot,
+            bank_start.working_bank.slot(),
             &bank_start.bank_creation_time,
-        ))
+        );
+        self.banking_tracer.bank_start(self.id, slot, self.incoming_batch_count);
+
+        Some(metrics)
+    }
+
+    fn end_old_slot_metrics(&self, metrics: &mut LeaderSlotMetrics) {
+        self.banking_tracer.bank_end(self.id, leader_slot_metrics.slot, self.incoming_batch_count);
+        leader_slot_metrics.mark_slot_end_detected();
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
@@ -411,7 +405,7 @@ impl LeaderSlotMetricsTracker {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
-                leader_slot_metrics.mark_slot_end_detected();
+                self.end_old_slot_metrics(leader_slot_metrics);
                 MetricsTrackerAction::ReportAndResetTracker
             }
 
@@ -423,7 +417,7 @@ impl LeaderSlotMetricsTracker {
             (Some(leader_slot_metrics), Some(bank_start)) => {
                 if leader_slot_metrics.slot != bank_start.working_bank.slot() {
                     // Last slot has ended, new slot has began
-                    leader_slot_metrics.mark_slot_end_detected();
+                    self.end_old_slot_metrics(leader_slot_metrics);
                     MetricsTrackerAction::ReportAndNewTracker(
                         self.create_new_slot_metrics(bank_start),
                     )
@@ -432,7 +426,6 @@ impl LeaderSlotMetricsTracker {
                 }
             }
         };
-        action.trace(self);
         action
     }
 
