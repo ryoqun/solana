@@ -37,21 +37,16 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             r,
-            |m| {
-                test::black_box(m);
+            |packet_batch| {
+                test::black_box(packet_batch);
                 Ok(())
             },
         )
     });
 
-    let len = 4;
-    let chunk_size = 10;
-    let tx = test_tx();
-    let aa = to_packet_batches(&vec![tx; len], chunk_size);
-    let m = Arc::new((aa, None));
-
+    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
     bencher.iter(move || {
-        s.send(m.clone()).unwrap();
+        s.send(packet_batch.clone()).unwrap();
     });
 }
 
@@ -70,21 +65,16 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             r,
-            |m| {
-                test::black_box(m);
+            |packet_batch| {
+                test::black_box(packet_batch);
                 Ok(())
             },
         )
     });
 
-    let len = 4;
-    let chunk_size = 10;
-    let tx = test_tx();
-    let aa = to_packet_batches(&vec![tx; len], chunk_size);
-    let m = Arc::new((aa, None));
-
+    let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
     bencher.iter(move || {
-        s.send(m.clone()).unwrap();
+        s.send(packet_batch.clone()).unwrap();
     });
 }
 
@@ -103,15 +93,14 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             r,
-            |m| {
-                test::black_box(m);
+            |packet_batch| {
+                test::black_box(packet_batch);
                 Ok(())
             },
         )
     });
 
     let packet_batch = BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
-
     bencher.iter(move || {
         s.send(Arc::clone(&packet_batch)).unwrap();
     });
