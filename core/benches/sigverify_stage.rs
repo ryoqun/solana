@@ -172,21 +172,21 @@ fn bench_sigverify_stage(bencher: &mut Bencher) {
         }
         let mut received = 0;
         trace!("sent: {}", sent_len);
-        let mut batches = vec![];
+        let mut messages = vec![];
         loop {
             if let Ok(message) = verified_r.recv_timeout(Duration::from_millis(10)) {
                 let (verifieds, _) = &*message;
                 for v in verifieds.iter().rev() {
                     received += v.len();
-                    batches.push(v);
                 }
+                messages.push(message);
                 if use_same_tx || received >= sent_len {
                     break;
                 }
             }
         }
-        test::black_box(batches);
         trace!("received: {}", received);
+        test::black_box(messages);
     });
     stage.join().unwrap();
 }
