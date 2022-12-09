@@ -215,11 +215,11 @@ impl BankingTracer {
         }
     }
 
-    pub fn bank_start(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
+    pub fn bank_start(&self, slot: Slot, id: u32, unreceived_batch_count: usize) {
         self.bank_event(slot, id, BankStatus::Started, unreceived_batch_count);
     }
 
-    pub fn bank_end(&self, id: u32, slot: Slot, unreceived_batch_count: usize) {
+    pub fn bank_end(&self, slot: Slot, id: u32, unreceived_batch_count: usize) {
         self.bank_event(slot, id, BankStatus::Ended, unreceived_batch_count);
     }
 
