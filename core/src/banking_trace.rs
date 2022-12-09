@@ -421,7 +421,10 @@ mod tests {
                 TracedEvent::Bank(1, 2, BankStatus::Started, 3)
             ))
         );
-        assert_matches!(results[2], Err(_));
+        assert_matches!(
+            results[2],
+            Err(_) // in this way, rustfmt formats this line like the above
+        );
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
