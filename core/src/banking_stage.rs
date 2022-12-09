@@ -2307,7 +2307,7 @@ mod tests {
             .collect();
         let packet_batches = convert_from_old_verified(packet_batches);
         non_vote_sender
-            .send(Arc::new((packet_batches, None)))
+            .send(BankingPacketBatch::new((packet_batches, None)))
             .unwrap();
 
         // Process a second batch that uses the same from account, so conflicts with above TX
@@ -2320,12 +2320,12 @@ mod tests {
             .collect();
         let packet_batches = convert_from_old_verified(packet_batches);
         non_vote_sender
-            .send(Arc::new((packet_batches, None)))
+            .send(BankingPacketBatch::new((packet_batches, None)))
             .unwrap();
 
+        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let (gossip_vote_sender, gossip_vote_receiver) =
             banking_tracer.create_channel_gossip_vote();
-        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
 
         let ledger_path = get_tmp_ledger_path_auto_delete!();
         {
