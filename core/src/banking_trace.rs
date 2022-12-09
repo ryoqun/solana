@@ -36,6 +36,9 @@ pub enum TraceError {
 
     #[error("Serialization Error: {0}")]
     SerializeError(#[from] bincode::Error),
+
+    #[error("Trace size is too small (must be larger than {1}): {0}")]
+    TooSmallTraceSize(usize, usize),
 }
 
 const BASENAME: &str = "events";
@@ -163,7 +166,9 @@ impl BankingTracer {
         let enabled_tracer = maybe_config
             .map(|(path, exit, total_size)| -> Result<_, TraceError> {
                 let rotate_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
-                assert!(rotate_threshold_size > 0);
+                if rotate_threshold_size == 0 {
+                    return TraceError::TooSmallTraceSize(total_size, TRACE_FILE_ROTATE_COUNT);
+                }
 
                 let sender_and_receiver = unbounded();
                 let trace_receiver = sender_and_receiver.1.clone();
