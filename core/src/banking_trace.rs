@@ -17,6 +17,7 @@ use {
         thread::{self, sleep, JoinHandle},
         time::{Duration, SystemTime},
     },
+    thiserror::Error,
 };
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
