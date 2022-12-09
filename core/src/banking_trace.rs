@@ -233,7 +233,7 @@ impl BankingTracer {
         })
     }
 
-    fn spawn_background_thread(trace_receiver: Receiver<TimedTracedEvent>, file_appender: RollingFileAppender<RollingConditionGrouped>, exit: Arc<AtomicBool>) -> thread::JoinHandle<()> {
+    fn spawn_background_thread(trace_receiver: Receiver<TimedTracedEvent>, mut file_appender: RollingFileAppender<RollingConditionGrouped>, exit: Arc<AtomicBool>) -> thread::JoinHandle<()> {
         thread::Builder::new()
             .name("solBanknTracer".into())
             .spawn(move || {
