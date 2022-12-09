@@ -160,8 +160,7 @@ impl Tpu {
             blockstore.banking_tracer_path(),
             exit.clone(),
             banking_trace_size,
-        )))
-        .unwrap();
+        )))?;
         let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
 
         let stats = Arc::new(StreamStats::default());
