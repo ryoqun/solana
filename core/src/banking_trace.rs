@@ -38,7 +38,7 @@ pub enum TraceError {
     SerializeError(#[from] bincode::Error),
 
     #[error("Trace size is too small (must be larger than {1}): {0}")]
-    TooSmallTraceSize(usize, usize),
+    TooSmallTraceSize(u64, u64),
 }
 
 const BASENAME: &str = "events";
