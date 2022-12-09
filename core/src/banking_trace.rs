@@ -50,12 +50,12 @@ enum TracedEvent {
     PacketBatch(ChannelLabel, BankingPacketBatch),
 }
 
-#[allow(clippy::enum_variant_names)]
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum ChannelLabel {
     NonVote,
     TpuVote,
     GossipVote,
+    Dummy,
 }
 
 struct RollingConditionGrouped {
@@ -222,7 +222,7 @@ impl BankingTracer {
     }
 
     pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
-        Self::channel(ChannelLabel::NonVote, None)
+        Self::channel(ChannelLabel::Dummy, None)
     }
 
     pub fn channel(
