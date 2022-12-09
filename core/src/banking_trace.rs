@@ -35,6 +35,7 @@ pub enum TraceError {
     SerializeError(#[from] bincode::Error),
 }
 
+const BASENAME: &'static str = "events";
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
 const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
 const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
@@ -265,7 +266,7 @@ impl BankingTracer {
                 .max_size(rotate_threshold_size),
         );
         RollingFileAppender::new_with_buffer_capacity(
-            path.join("events"),
+            path.join(BASENAME),
             grouped,
             (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
             BUF_WRITER_CAPACITY,
@@ -376,12 +377,12 @@ mod tests {
     #[test]
     fn test_record_and_restore() {
         let temp_dir = TempDir::new().unwrap();
-
+        let path = temp_dir.path().join("banking-trace");
         let exit = Arc::<AtomicBool>::default();
         let tracer = BankingTracer::new(Some((
-            temp_dir.path().join("banking-trace"),
+            path,
             exit.clone(),
-            DEFAULT_BANKING_TRACE_SIZE,
+            u64::max_size(),
         )))
         .unwrap();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
@@ -399,6 +400,10 @@ mod tests {
         terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
+
+        let mut stream = BufReader::new(File::open(path.join(BASENAME).unwrap());
+        let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
+        dbg!(d);
     }
 }
 
