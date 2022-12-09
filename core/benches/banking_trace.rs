@@ -3,6 +3,7 @@
 extern crate test;
 
 use {
+    solana_core::banking_trace::TraceError,
     solana_perf::{packet::to_packet_batches, test_tx::test_tx},
     std::sync::Arc,
     test::Bencher,
@@ -20,7 +21,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
             r,
             |m| {
                 test::black_box(m);
-                Ok::<_, ()>(())
+                Ok::<_, TraceError>(())
             },
         )
     });
