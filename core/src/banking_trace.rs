@@ -150,8 +150,7 @@ impl BankingTracer {
                 let trace_receiver = sender_and_receiver.1.clone();
 
                 Self::ensure_prepare_path(&path)?;
-                let file_appender =
-                    Self::create_file_appender(path, rotate_threshold_size)?;
+                let file_appender = Self::create_file_appender(path, rotate_threshold_size)?;
 
                 let tracing_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit);
@@ -242,7 +241,10 @@ impl BankingTracer {
         })
     }
 
-    fn create_file_appender(path: PathBuf, rotate_threshold_size: u64) -> Result<RollingFileAppender<RollingConditionGrouped>, io::Error> {
+    fn create_file_appender(
+        path: PathBuf,
+        rotate_threshold_size: u64,
+    ) -> Result<RollingFileAppender<RollingConditionGrouped>, io::Error> {
         let grouped = RollingConditionGrouped::new(
             RollingConditionBasic::new()
                 .daily()
@@ -372,11 +374,11 @@ impl BankingTraceReplayer {
             match event.1 {
                 TracedEvent::Bank(slot, _, BankStatus::Started, _) => {
                     bank_starts_by_slot.insert(slot, s);
-                },
+                }
                 TracedEvent::PacketBatch(label, batch) => {
                     packet_batches_by_time.insert(s, (label, batch));
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
 
