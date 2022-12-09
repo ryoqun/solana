@@ -810,8 +810,11 @@ impl BankingStage {
             )
         };
 
+        let metrics_action = slot_metrics_tracker.check_leader_slot_boundary(&bank_start);
+        metrics_action.trace(slot_metrics_tracker.id, banking_tracer);
+
         (
-            slot_metrics_tracker.check_leader_slot_boundary(&bank_start),
+            metrics_action,
             Self::consume_or_forward_packets(
                 my_pubkey,
                 leader_at_slot_offset,
