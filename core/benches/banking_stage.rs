@@ -197,6 +197,11 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
     // during the benchmark
     genesis_config.ticks_per_slot = 10_000;
 
+    let banking_tracer = BankingTracer::new_disabled();
+    let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
+    let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
+    let (gossip_vote_sender, gossip_vote_receiver) = banking_tracer.create_channel_gossip_vote();
+
     let mut bank = Bank::new_for_benches(&genesis_config);
     // Allow arbitrary transaction processing time for the purposes of this bench
     bank.ns_per_slot = u128::MAX;
@@ -266,10 +271,6 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
         );
         let (exit, poh_recorder, poh_service, signal_receiver) =
             create_test_recorder(&bank, &blockstore, None, None);
-        let banking_tracer = BankingTracer::new_disabled();
-        let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
-        let (vote_sender, vote_receiver) = banking_tracer.create_channel_gossip_vote();
-        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
         let cluster_info = ClusterInfo::new(
             Node::new_localhost().info,
             Arc::new(Keypair::new()),
@@ -280,9 +281,9 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
         let _banking_stage = BankingStage::new(
             &cluster_info,
             &poh_recorder,
-            verified_receiver,
+            non_vote_receiver,
             tpu_vote_receiver,
-            vote_receiver,
+            gossip_vote_receiver,
             None,
             s,
             None,
@@ -305,13 +306,13 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
             let mut sent = 0;
             if let Some(vote_packets) = &vote_packets {
                 tpu_vote_sender
-                    .send(Arc::new((
+                    .send(BankingPacketBatch::new((
                         vote_packets[start..start + chunk_len].to_vec(),
                         None,
                     )))
                     .unwrap();
-                vote_sender
-                    .send(Arc::new((
+                gossip_vote_sender
+                    .send(BankingPacketBatch::new((
                         vote_packets[start..start + chunk_len].to_vec(),
                         None,
                     )))
@@ -328,7 +329,7 @@ fn bench_banking(bencher: &mut Bencher, tx_type: TransactionType) {
                 for xv in v {
                     sent += xv.len();
                 }
-                verified_sender.send(Arc::new((v.to_vec(), None))).unwrap();
+                non_vote_sender.send(Arc::new((v.to_vec(), None))).unwrap();
             }
 
             check_txs(&signal_receiver2, txes / CHUNKS);
