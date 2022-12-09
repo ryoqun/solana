@@ -380,7 +380,7 @@ mod tests {
         let path = temp_dir.path().join("banking-trace");
         let exit = Arc::<AtomicBool>::default();
         let tracer = BankingTracer::new(Some((
-            path,
+            path.clone(),
             exit.clone(),
             u64::max_value(),
         )))
