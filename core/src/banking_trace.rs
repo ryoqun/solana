@@ -540,7 +540,7 @@ impl BankingTraceReplayer {
             loop {
                 for (&_key, ref value) in range_iter.clone() {
                     let (label, batch) = &value;
-                    info!("sent {:?} {} batches", label, batch.0.len());
+                    debug!("sent {:?} {} batches", label, batch.0.len());
 
                     match label {
                         ChannelLabel::NonVote => non_vote_sender.send(batch.clone()).unwrap(),
