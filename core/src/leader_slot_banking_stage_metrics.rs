@@ -406,7 +406,8 @@ impl LeaderSlotMetricsTracker {
 
             (Some(leader_slot_metrics), None) => {
                 leader_slot_metrics.mark_slot_end_detected();
-                self.foo(leader_slot_metrics.slot);
+                let slot = leader_slot_metrics.slot;
+                self.foo(slot);
 
                 MetricsTrackerAction::ReportAndResetTracker
             }
