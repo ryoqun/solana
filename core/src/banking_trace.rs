@@ -345,7 +345,7 @@ mod tests {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit.clone(),
                 non_vote_receiver,
-                |packet_batch| {}
+                |packet_batch| Ok(())
             )
         });
 
