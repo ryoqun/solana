@@ -50,7 +50,7 @@ enum TracedEvent {
     PacketBatch(ChannelLabel, BankingPacketBatch),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 enum ChannelLabel {
     NonVote,
     TpuVote,
