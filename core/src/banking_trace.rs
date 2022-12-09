@@ -330,6 +330,10 @@ impl TracedSender {
 
 #[cfg(test)]
 mod tests {
+    use {
+        super::*,
+    };
+
     #[test]
     fn test_new_disabled() {
         let tracer = BankingTracer::new_disabled();
