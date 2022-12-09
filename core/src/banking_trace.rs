@@ -221,7 +221,7 @@ impl BankingTracer {
     }
 
     pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
-        Self::channel("_dummy_name_for_test", None)
+        Self::channel(ChannelLabel::NonVote, None)
     }
 
     pub fn channel(
