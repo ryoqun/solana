@@ -341,7 +341,7 @@ impl BankingTraceReplayer {
             //dbg!(&event);
             let s = event.0;
             match event.1 {
-                TracedEvent::NewBankStart(_, slot) => {
+                TracedEvent::NewBankStart(_, slot, _) => {
                     bank_starts_by_slot.insert(slot, s);
                 }
                 TracedEvent::PacketBatch(name, batch) => {
