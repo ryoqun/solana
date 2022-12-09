@@ -36,7 +36,7 @@ pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
 pub struct BankingTracer {
     enabled_tracer: Option<(
         (Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>),
-        Option<JoinHandle<()>>,
+        Option<JoinHandle<Result<(), std::boxed::Box<bincode::ErrorKind>>>>,
     )>,
 }
 
