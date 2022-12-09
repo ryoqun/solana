@@ -21,7 +21,6 @@ use {
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedBankingPacketSender;
-type RealBankingPacketSender = Sender<BankingPacketBatch>;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
 const TRACE_FILE_ROTATE_COUNT: u64 = 14;
@@ -256,14 +255,14 @@ impl BankingTracer {
 
 pub struct TracedBankingPacketSender {
     name: &'static str,
-    sender: RealBankingPacketSender,
+    sender: Sender<BankingPacketBatch>,
     trace_sender: Option<Sender<TimedTracedEvent>>,
 }
 
 impl TracedBankingPacketSender {
     fn new(
         name: &'static str,
-        sender: RealBankingPacketSender,
+        sender: Sender<BankingPacketBatch>
         trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> Self {
         Self {
