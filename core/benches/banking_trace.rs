@@ -19,6 +19,14 @@ fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
         });
 } 
 
+
+fn ensure_fresh_setup_to_benchmark() {
+    // make sure fresh setup; otherwise banking tracer appends and rotates
+    // trace files created by prior bench iterations, slightly skewing perf
+    // result...
+    BankingTracer::ensure_cleanup_path(&path).unwrap();
+}
+
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
@@ -51,7 +59,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new_with_config(Some((
-        std::path::PathBuf::new().join("/tmp/banking-tracer"),
+        PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
         solana_core::banking_trace::TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD,
     )))
@@ -84,7 +92,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new_with_config(Some((
-        std::path::PathBuf::new().join("/tmp/banking-tracer"),
+        PathBuf::new().join("/tmp/banking-tracer"),
         exit.clone(),
         1024 * 1024, // cause more frequent trace file rotation
     )))
@@ -118,16 +126,12 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
     let packet_batch = Arc::new((to_packet_batches(&vec![test_tx(); 4], 10), None));
 
     let temp_dir = TempDir::new().unwrap();
-    let base_path = temp_dir.path();
+    let path = temp_dir.path().join("banking-trace");
 
     bencher.iter(move || {
-        let exit = Arc::<AtomicBool>::default();
-        let path = base_path.join("banking-trace");
+        ensure_fresh_setup_to_benchmark(path);
 
-        // make sure fresh setup; otherwise banking tracer appends and rotates
-        // trace files created by prior bench iterations, slightly skewing perf
-        // result...
-        BankingTracer::ensure_cleanup_path(&path).unwrap();
+        let exit = Arc::<AtomicBool>::default();
 
         let tracer = BankingTracer::new_with_config(Some((
             path,
@@ -153,8 +157,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
             dummy_main_sender.send(packet_batch.clone()).unwrap();
         }
 
-        drop(dummy_main_sender);
-        drop(tracer);
+        drop((dummy_main_sender, tracer));
         dummy_main_thread_handle.join().unwrap().unwrap();
         tracer_join_handle.unwrap().join().unwrap().unwrap();
     });
