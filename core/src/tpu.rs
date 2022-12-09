@@ -100,7 +100,7 @@ impl Tpu {
         staked_nodes: &Arc<RwLock<StakedNodes>>,
         shared_staked_nodes_overrides: Arc<RwLock<HashMap<Pubkey, u64>>>,
         tpu_enable_udp: bool,
-        banking_trace_size: BankingTracer,
+        banking_tracer: BankingTracer,
     ) -> Self {
         let TpuSockets {
             transactions: transactions_sockets,

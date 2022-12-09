@@ -4,6 +4,7 @@ pub use solana_perf::report_target_features;
 use {
     crate::{
         accounts_hash_verifier::AccountsHashVerifier,
+        banking_trace::BankingTracer,
         broadcast_stage::BroadcastStageType,
         cache_block_meta_service::{CacheBlockMetaSender, CacheBlockMetaService},
         cluster_info_vote_listener::VoteTracker,
@@ -989,7 +990,7 @@ impl Validator {
             blockstore.banking_tracer_path(),
             exit.clone(),
             banking_trace_size,
-        )))?;
+        ))).map_err(|err| format!("{}", err))?;
 
         let tpu = Tpu::new(
             &cluster_info,
