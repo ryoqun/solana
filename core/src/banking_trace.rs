@@ -403,6 +403,9 @@ mod tests {
         let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream).unwrap();
         dbg!(&d);
         assert_matches!(d, TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _)));
+        let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream).unwrap();
+        dbg!(&d);
+        assert_matches!(d, TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3)));
 
         drop_and_clean_temp_dir_unless_suppressed(temp_dir);
     }
