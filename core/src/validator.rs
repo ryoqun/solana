@@ -985,6 +985,12 @@ impl Validator {
             &prioritization_fee_cache,
         )?;
 
+        let banking_tracer = BankingTracer::new((banking_trace_size > 0).then_some((
+            blockstore.banking_tracer_path(),
+            exit.clone(),
+            banking_trace_size,
+        )))?;
+
         let tpu = Tpu::new(
             &cluster_info,
             &poh_recorder,
@@ -1019,7 +1025,7 @@ impl Validator {
             &staked_nodes,
             config.staked_nodes_overrides.clone(),
             tpu_enable_udp,
-            config.banking_trace_size,
+            banking_tracer,
         );
 
         datapoint_info!(

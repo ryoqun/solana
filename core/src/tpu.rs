@@ -100,7 +100,7 @@ impl Tpu {
         staked_nodes: &Arc<RwLock<StakedNodes>>,
         shared_staked_nodes_overrides: Arc<RwLock<HashMap<Pubkey, u64>>>,
         tpu_enable_udp: bool,
-        banking_trace_size: u64,
+        banking_trace_size: BankingTracer,
     ) -> Self {
         let TpuSockets {
             transactions: transactions_sockets,
@@ -156,11 +156,6 @@ impl Tpu {
             "Vote",
         );
 
-        let banking_tracer = BankingTracer::new((banking_trace_size > 0).then_some((
-            blockstore.banking_tracer_path(),
-            exit.clone(),
-            banking_trace_size,
-        )))?;
         let (verified_sender, verified_receiver) = banking_tracer.create_channel_non_vote();
 
         let stats = Arc::new(StreamStats::default());
