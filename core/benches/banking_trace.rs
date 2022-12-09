@@ -76,7 +76,9 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 
+    eprintln!("done!");
     terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
+    eprintln!("here!");
     drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 }
 
