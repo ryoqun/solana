@@ -152,7 +152,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS:
 impl BankingTracer {
     pub fn new_with_config(
         maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
-    ) -> Result<Self, io::Error> {
+    ) -> Result<Self, TraceError> {
         let enabled_tracer = maybe_config
             .map(|(path, exit, total_size)| -> Result<_, io::Error> {
                 let rotate_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
@@ -165,7 +165,7 @@ impl BankingTracer {
                 let file_appender = Self::create_file_appender(path, rotate_threshold_size)?;
 
                 let tracing_thread =
-                    Self::spawn_background_thread(trace_receiver, file_appender, exit);
+                    Self::spawn_background_thread(trace_receiver, file_appender, exit)?;
 
                 Ok((sender_and_receiver, Some(tracing_thread)))
             })
