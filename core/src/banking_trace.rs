@@ -210,10 +210,7 @@ impl BankingTracer {
         trace_sender: Option<Sender<TimedTracedEvent>>,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
-        (
-            TracedSender::new(name, sender, trace_sender),
-            receiver,
-        )
+        (TracedSender::new(name, sender, trace_sender), receiver)
     }
 
     fn ensure_prepare_path(path: &PathBuf) -> Result<(), io::Error> {
