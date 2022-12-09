@@ -391,7 +391,7 @@ impl LeaderSlotMetricsTracker {
         Some(metrics)
     }
 
-    pub fn foo(&self) {
+    pub fn foo(&self, metrics: &LeaderSlotMetrics) {
     }
 
     // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
@@ -401,12 +401,11 @@ impl LeaderSlotMetricsTracker {
     ) -> MetricsTrackerAction {
         let Self {ref mut leader_slot_metrics, ..} = self;
 
-        self.foo();
-
         let action = match (self.leader_slot_metrics.as_mut(), bank_start) {
             (None, None) => MetricsTrackerAction::Noop,
 
             (Some(leader_slot_metrics), None) => {
+                self.foo(leader_slot_metrics);
                 leader_slot_metrics.mark_slot_end_detected(&self.banking_tracer, self.id, self.incoming_batch_count);
                 MetricsTrackerAction::ReportAndResetTracker
             }
