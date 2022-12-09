@@ -1,13 +1,14 @@
 use {
     crate::sigverify::SigverifyTracerPacketStats,
     bincode::serialize_into,
+    chrono::{DateTime, Local},
     crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
     solana_perf::packet::PacketBatch,
     solana_sdk::slot_history::Slot,
     std::{
         fs::{create_dir_all, remove_dir_all, File},
-        io::{BufReader, Write},
+        io::{self, BufReader, Write},
         path::PathBuf,
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -23,6 +24,14 @@ pub type BankingPacketSender = TracedBankingPacketSender;
 type RealBankingPacketSender = Sender<BankingPacketBatch>;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 
+const TRACE_FILE_ROTATE_COUNT: u64 = 14;
+const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
+const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
+pub const TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD: u64 = 1024 * 1024 * 1024;
+pub const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
+pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
+    TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD * TRACE_FILE_ROTATE_COUNT;
+
 #[allow(clippy::type_complexity)]
 #[derive(Debug)]
 pub struct BankingTracer {
@@ -30,6 +39,245 @@ pub struct BankingTracer {
         (Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>),
         Option<JoinHandle<()>>,
     )>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
+
+#[derive(Serialize, Deserialize, Debug)]
+enum TracedEvent {
+    NewBankStart(u32, Slot), // also copy each channel's `.len()`s?
+    PacketBatch(String, BankingPacketBatch),
+}
+
+struct RollingConditionGrouped {
+    basic: RollingConditionBasic,
+    is_checked: bool,
+}
+
+impl RollingConditionGrouped {
+    fn new(basic: RollingConditionBasic) -> Self {
+        Self {
+            basic,
+            is_checked: bool::default(),
+        }
+    }
+
+    fn reset(&mut self) {
+        self.is_checked = false;
+    }
+}
+
+struct GroupedWriter<'a> {
+    now: DateTime<Local>,
+    underlying: &'a mut RollingFileAppender<RollingConditionGrouped>,
+}
+
+impl<'a> GroupedWriter<'a> {
+    fn new(underlying: &'a mut RollingFileAppender<RollingConditionGrouped>) -> Self {
+        Self {
+            now: Local::now(),
+            underlying,
+        }
+    }
+}
+
+impl RollingCondition for RollingConditionGrouped {
+    fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
+        if !self.is_checked {
+            self.is_checked = true;
+            self.basic.should_rollover(now, current_filesize)
+        } else {
+            false
+        }
+    }
+}
+
+impl<'a> Write for GroupedWriter<'a> {
+    fn write(&mut self, buf: &[u8]) -> std::result::Result<usize, io::Error> {
+        self.underlying.write_with_datetime(buf, &self.now)
+    }
+    fn flush(&mut self) -> std::result::Result<(), io::Error> {
+        self.underlying.flush()
+    }
+}
+
+pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
+    exit: Arc<AtomicBool>,
+    receiver: Receiver<T>,
+    mut on_recv: impl FnMut(T),
+) {
+    'outer: while !exit.load(Ordering::Relaxed) {
+        'inner: loop {
+            // avoid futex-based blocking here, otherwise a sender would have to
+            // wake me up at a syscall cost...
+            match receiver.try_recv() {
+                Ok(message) => on_recv(message),
+                Err(TryRecvError::Empty) => break 'inner,
+                Err(TryRecvError::Disconnected) => {
+                    assert_eq!(receiver.len(), 0);
+                    break 'outer;
+                }
+            }
+        }
+        sleep(Duration::from_millis(SLEEP_MS));
+    }
+}
+
+impl BankingTracer {
+    pub fn new_with_config(
+        maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
+    ) -> Result<Self, io::Error> {
+        let enabled_tracer = maybe_config
+            .map(|(path, exit, total_size)| -> Result<_, io::Error> {
+                let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
+                assert!(roll_threshold_size > 0);
+
+                Self::ensure_prepare_path(&path)?;
+                let grouped = RollingConditionGrouped::new(
+                    RollingConditionBasic::new()
+                        .daily()
+                        .max_size(roll_threshold_size),
+                );
+                let mut output = RollingFileAppender::new_with_buffer_capacity(
+                    path.join("events"),
+                    grouped,
+                    (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
+                    BUF_WRITER_CAPACITY,
+                )?;
+                let sender_and_receiver = unbounded();
+                let trace_receiver = sender_and_receiver.1.clone();
+                let tracing_thread = std::thread::Builder::new()
+                    .name("solBanknTracer".into())
+                    .spawn(move || {
+                        sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(
+                            exit,
+                            trace_receiver,
+                            |event| {
+                                output.condition_mut().reset();
+                                serialize_into(&mut GroupedWriter::new(&mut output), &event)
+                                    .unwrap();
+                            },
+                        );
+                        output.flush().unwrap();
+                    })
+                    .unwrap();
+
+                Ok((sender_and_receiver, Some(tracing_thread)))
+            })
+            .transpose()?;
+
+        Ok(Self { enabled_tracer })
+    }
+
+    pub fn new_disabled() -> Self {
+        Self::new_with_config(None).unwrap()
+    }
+
+    pub fn create_channel(
+        &self,
+        name: &'static str,
+    ) -> (BankingPacketSender, BankingPacketReceiver) {
+        Self::channel(
+            self.enabled_tracer
+                .as_ref()
+                .map(|((sender, _), _)| sender.clone()),
+            name,
+        )
+    }
+
+    pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel("non-vote")
+    }
+
+    pub fn create_channel_tpu_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel("tpu-vote")
+    }
+
+    pub fn create_channel_gossip_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel("gossip-vote")
+    }
+
+    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<()>>, Arc<Self>) {
+        (
+            self.enabled_tracer
+                .as_mut()
+                .and_then(|(_, tracer)| tracer.take()),
+            Arc::new(self),
+        )
+    }
+
+    pub fn new_bank_start(&self, id: u32, slot: Slot) {
+        if let Some(((sender, _), _)) = &self.enabled_tracer {
+            sender
+                .send(TimedTracedEvent(
+                    SystemTime::now(),
+                    TracedEvent::NewBankStart(id, slot),
+                ))
+                .unwrap();
+        }
+    }
+
+    pub fn channel_for_test() -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
+        Self::channel(None, "_dummy_name_for_test")
+    }
+
+    pub fn channel(
+        maybe_mirrored_channel: Option<Sender<TimedTracedEvent>>,
+        name: &'static str,
+    ) -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
+        let channel = unbounded();
+        (
+            TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name),
+            channel.1,
+        )
+    }
+
+    fn ensure_prepare_path(path: &PathBuf) -> Result<(), io::Error> {
+        create_dir_all(path)
+    }
+
+    pub fn ensure_cleanup_path(path: &PathBuf) -> Result<(), io::Error> {
+        remove_dir_all(path).or_else(|err| {
+            if err.kind() == io::ErrorKind::NotFound {
+                Ok(())
+            } else {
+                Err(err)
+            }
+        })
+    }
+}
+
+pub struct TracedBankingPacketSender {
+    sender_to_banking: RealBankingPacketSender,
+    mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
+    name: &'static str,
+}
+
+impl TracedBankingPacketSender {
+    fn new(
+        sender_to_banking: RealBankingPacketSender,
+        mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
+        name: &'static str,
+    ) -> Self {
+        Self {
+            sender_to_banking,
+            mirrored_sender_to_trace,
+            name,
+        }
+    }
+
+    pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
+        if let Some(mirror) = &self.mirrored_sender_to_trace {
+            mirror
+                .send(TimedTracedEvent(
+                    SystemTime::now(),
+                    TracedEvent::PacketBatch(self.name.into(), batch.clone() /*a*/),
+                ))
+                .unwrap();
+        }
+        self.sender_to_banking.send(batch)
+    }
 }
 
 pub struct BankingTraceReplayer {
@@ -195,254 +443,5 @@ impl BankingTraceReplayer {
         exit.store(true, Ordering::Relaxed);
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
-
-#[derive(Serialize, Deserialize, Debug)]
-enum TracedEvent {
-    NewBankStart(u32, Slot), // also copy each channel's `.len()`s?
-    PacketBatch(String, BankingPacketBatch),
-}
-
-struct RollingConditionGrouped {
-    basic: RollingConditionBasic,
-    is_checked: bool,
-}
-
-impl RollingConditionGrouped {
-    fn new(basic: RollingConditionBasic) -> Self {
-        Self {
-            basic,
-            is_checked: bool::default(),
-        }
-    }
-
-    fn reset(&mut self) {
-        self.is_checked = false;
-    }
-}
-
-use chrono::{DateTime, Local};
-
-struct GroupedWriter<'a> {
-    now: DateTime<Local>,
-    underlying: &'a mut RollingFileAppender<RollingConditionGrouped>,
-}
-
-impl<'a> GroupedWriter<'a> {
-    fn new(underlying: &'a mut RollingFileAppender<RollingConditionGrouped>) -> Self {
-        Self {
-            now: Local::now(),
-            underlying,
-        }
-    }
-}
-
-impl RollingCondition for RollingConditionGrouped {
-    fn should_rollover(&mut self, now: &DateTime<Local>, current_filesize: u64) -> bool {
-        if !self.is_checked {
-            self.is_checked = true;
-            self.basic.should_rollover(now, current_filesize)
-        } else {
-            false
-        }
-    }
-}
-
-impl<'a> Write for GroupedWriter<'a> {
-    fn write(&mut self, buf: &[u8]) -> std::result::Result<usize, std::io::Error> {
-        self.underlying.write_with_datetime(buf, &self.now)
-    }
-    fn flush(&mut self) -> std::result::Result<(), std::io::Error> {
-        self.underlying.flush()
-    }
-}
-
-pub fn sender_overhead_minimized_receiver_loop<T, const SLEEP_MS: u64>(
-    exit: Arc<AtomicBool>,
-    receiver: Receiver<T>,
-    mut on_recv: impl FnMut(T),
-) {
-    'outer: while !exit.load(Ordering::Relaxed) {
-        'inner: loop {
-            // avoid futex-based blocking here, otherwise a sender would have to
-            // wake me up at a syscall cost...
-            match receiver.try_recv() {
-                Ok(message) => on_recv(message),
-                Err(TryRecvError::Empty) => break 'inner,
-                Err(TryRecvError::Disconnected) => {
-                    assert_eq!(receiver.len(), 0);
-                    break 'outer;
-                }
-            }
-        }
-        sleep(Duration::from_millis(SLEEP_MS));
-    }
-}
-
-const TRACE_FILE_ROTATE_COUNT: u64 = 14;
-const TRACE_FILE_WRITE_INTERVAL_MS: u64 = 100;
-const BUF_WRITER_CAPACITY: usize = 10 * 1024 * 1024;
-pub const TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD: u64 = 1024 * 1024 * 1024;
-pub const EMPTY_BANKING_TRACE_SIZE: u64 = 0;
-pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
-    TRACE_FILE_DEFAULT_ROTATE_BYTE_THRESHOLD * TRACE_FILE_ROTATE_COUNT;
-
-impl BankingTracer {
-    pub fn new_with_config(
-        maybe_config: Option<(PathBuf, Arc<AtomicBool>, u64)>,
-    ) -> Result<Self, std::io::Error> {
-        let enabled_tracer = maybe_config
-            .map(|(path, exit, total_size)| -> Result<_, std::io::Error> {
-                let roll_threshold_size = total_size / TRACE_FILE_ROTATE_COUNT;
-                assert!(roll_threshold_size > 0);
-
-                Self::ensure_prepare_path(&path)?;
-                let grouped = RollingConditionGrouped::new(
-                    RollingConditionBasic::new()
-                        .daily()
-                        .max_size(roll_threshold_size),
-                );
-                let mut output = RollingFileAppender::new_with_buffer_capacity(
-                    path.join("events"),
-                    grouped,
-                    (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
-                    BUF_WRITER_CAPACITY,
-                )?;
-                let sender_and_receiver = unbounded();
-                let trace_receiver = sender_and_receiver.1.clone();
-                let tracing_thread = std::thread::Builder::new()
-                    .name("solBanknTracer".into())
-                    .spawn(move || {
-                        sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(
-                            exit,
-                            trace_receiver,
-                            |event| {
-                                output.condition_mut().reset();
-                                serialize_into(&mut GroupedWriter::new(&mut output), &event)
-                                    .unwrap();
-                            },
-                        );
-                        output.flush().unwrap();
-                    })
-                    .unwrap();
-
-                Ok((sender_and_receiver, Some(tracing_thread)))
-            })
-            .transpose()?;
-
-        Ok(Self { enabled_tracer })
-    }
-
-    pub fn new_disabled() -> Self {
-        Self::new_with_config(None).unwrap()
-    }
-
-    pub fn create_channel(
-        &self,
-        name: &'static str,
-    ) -> (BankingPacketSender, BankingPacketReceiver) {
-        Self::channel(
-            self.enabled_tracer
-                .as_ref()
-                .map(|((sender, _), _)| sender.clone()),
-            name,
-        )
-    }
-
-    pub fn create_channel_non_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel("non-vote")
-    }
-
-    pub fn create_channel_tpu_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel("tpu-vote")
-    }
-
-    pub fn create_channel_gossip_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel("gossip-vote")
-    }
-
-    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<()>>, Arc<Self>) {
-        (
-            self.enabled_tracer
-                .as_mut()
-                .and_then(|(_, tracer)| tracer.take()),
-            Arc::new(self),
-        )
-    }
-
-    pub fn new_bank_start(&self, id: u32, slot: Slot) {
-        if let Some(((sender, _), _)) = &self.enabled_tracer {
-            sender
-                .send(TimedTracedEvent(
-                    SystemTime::now(),
-                    TracedEvent::NewBankStart(id, slot),
-                ))
-                .unwrap();
-        }
-    }
-
-    pub fn channel_for_test() -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
-        Self::channel(None, "_dummy_name_for_test")
-    }
-
-    pub fn channel(
-        maybe_mirrored_channel: Option<Sender<TimedTracedEvent>>,
-        name: &'static str,
-    ) -> (TracedBankingPacketSender, Receiver<BankingPacketBatch>) {
-        let channel = unbounded();
-        (
-            TracedBankingPacketSender::new(channel.0, maybe_mirrored_channel, name),
-            channel.1,
-        )
-    }
-
-    fn ensure_prepare_path(path: &PathBuf) -> Result<(), std::io::Error> {
-        create_dir_all(path)
-    }
-
-    pub fn ensure_cleanup_path(path: &PathBuf) -> Result<(), std::io::Error> {
-        remove_dir_all(path).or_else(|err| {
-            if err.kind() == std::io::ErrorKind::NotFound {
-                Ok(())
-            } else {
-                Err(err)
-            }
-        })
-    }
-}
-
-pub struct TracedBankingPacketSender {
-    sender_to_banking: RealBankingPacketSender,
-    mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
-    name: &'static str,
-}
-
-impl TracedBankingPacketSender {
-    fn new(
-        sender_to_banking: RealBankingPacketSender,
-        mirrored_sender_to_trace: Option<Sender<TimedTracedEvent>>,
-        name: &'static str,
-    ) -> Self {
-        Self {
-            sender_to_banking,
-            mirrored_sender_to_trace,
-            name,
-        }
-    }
-
-    pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
-        if let Some(mirror) = &self.mirrored_sender_to_trace {
-            mirror
-                .send(TimedTracedEvent(
-                    SystemTime::now(),
-                    TracedEvent::PacketBatch(self.name.into(), batch.clone() /*a*/),
-                ))
-                .unwrap();
-        }
-        self.sender_to_banking.send(batch)
     }
 }
