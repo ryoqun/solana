@@ -363,13 +363,13 @@ impl BankingTraceReplayer {
             //dbg!(&event);
             let s = event.0;
             match event.1 {
-                TracedEvent::BankStart(_, slot, _) => {
+                TracedEvent::Bank(slot, _, BankStatus::Started _) => {
                     bank_starts_by_slot.insert(slot, s);
-                }
-                TracedEvent::BankEnd(_, _, _) => {}
+                },
                 TracedEvent::PacketBatch(label, batch) => {
                     packet_batches_by_time.insert(s, (label, batch));
-                }
+                },
+                _ => {},
             }
         }
 
