@@ -119,7 +119,7 @@ pub fn sender_overhead_minimized_receiver_loop<T, U: Default, E, const SLEEP_MS:
     exit: Arc<AtomicBool>,
     receiver: Receiver<T>,
     mut on_recv: impl FnMut(T) -> Result<U, E>,
-) {
+) -> Result<U, E> {
     'outer: while !exit.load(Ordering::Relaxed) {
         'inner: loop {
             // avoid futex-based blocking here, otherwise a sender would have to
