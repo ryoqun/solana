@@ -27,6 +27,11 @@ fn ensure_fresh_setup_to_benchmark(path: &PathBuf) {
     BankingTracer::ensure_cleanup_path(path).unwrap();
 }
 
+fn black_box_packet_batch(packet_batch: usize) -> Result<(), usize> {
+    test::black_box(packet_batch);
+    Ok(())
+}
+
 #[bench]
 fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher) {
     let exit = Arc::<AtomicBool>::default();
@@ -37,10 +42,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
         sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit.clone(),
             non_vote_receiver,
-            |packet_batch| {
-                test::black_box(packet_batch);
-                Ok(())
-            },
+            black_box_packet_batch,
         )
     });
 
