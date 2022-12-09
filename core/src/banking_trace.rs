@@ -355,22 +355,15 @@ pub fn terminate_tracer(
     sender: TracedSender,
     exit: Option<Arc<AtomicBool>>,
 ) {
-    eprintln!("0");
     if let Some(exit) = exit {
         exit.store(true, Ordering::Relaxed);
     }
-    eprintln!("1");
     let (tracer_thread, tracer) = tracer.finalize_under_arc();
-    eprintln!("2");
     drop((sender, tracer));
-    eprintln!("3");
     main_thread.join().unwrap().unwrap();
-    eprintln!("4");
     if let Some(tracer_thread) = tracer_thread {
-        eprintln!("5");
         tracer_thread.join().unwrap().unwrap();
     }
-    eprintln!("6");
 }
 
 #[cfg(test)]

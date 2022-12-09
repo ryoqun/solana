@@ -37,7 +37,7 @@ fn bench_banking_tracer_main_thread_overhead_noop_baseline(bencher: &mut Bencher
 
     let exit_for_dummy_thread = exit.clone();
     let dummy_main_thread = thread::spawn(move || {
-        sender_overhead_minimized_receiver_loop::<_, TraceError, 1>(
+        sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit_for_dummy_thread,
             non_vote_receiver,
             black_box_packet_batch,
@@ -66,7 +66,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 
     let exit_for_dummy_thread = exit.clone();
     let dummy_main_thread = thread::spawn(move || {
-        sender_overhead_minimized_receiver_loop::<_, TraceError, 1>(
+        sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit_for_dummy_thread,
             non_vote_receiver,
             black_box_packet_batch,
@@ -78,9 +78,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         non_vote_sender.send(packet_batch.clone()).unwrap();
     });
 
-    eprintln!("done!");
     terminate_tracer(tracer, dummy_main_thread, non_vote_sender, Some(exit));
-    eprintln!("here!");
     drop_and_clean_temp_dir_unless_suppressed(temp_dir);
 }
 
@@ -99,7 +97,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
 
     let exit_for_dummy_thread = exit.clone();
     let dummy_main_thread = thread::spawn(move || {
-        sender_overhead_minimized_receiver_loop::<_, TraceError, 1>(
+        sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
             exit_for_dummy_thread,
             non_vote_receiver,
             black_box_packet_batch,
