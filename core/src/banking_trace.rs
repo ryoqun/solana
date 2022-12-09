@@ -147,21 +147,7 @@ impl BankingTracer {
                 )?;
                 let sender_and_receiver = unbounded();
                 let trace_receiver = sender_and_receiver.1.clone();
-                let tracing_thread = thread::Builder::new()
-                    .name("solBanknTracer".into())
-                    .spawn(move || {
-                        sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(
-                            exit,
-                            trace_receiver,
-                            |event| {
-                                output.condition_mut().reset();
-                                serialize_into(&mut GroupedWriter::new(&mut output), &event)
-                                    .unwrap();
-                            },
-                        );
-                        output.flush().unwrap();
-                    })
-                    .unwrap();
+                let tracing_thread = Self::spawn_background_thread();
 
                 Ok((sender_and_receiver, Some(tracing_thread)))
             })
@@ -246,7 +232,24 @@ impl BankingTracer {
             }
         })
     }
-}
+
+    fn spawn_background_thread() -> usize {
+        thread::Builder::new()
+            .name("solBanknTracer".into())
+            .spawn(move || {
+                sender_overhead_minimized_receiver_loop::<_, TRACE_FILE_WRITE_INTERVAL_MS>(
+                    exit,
+                    trace_receiver,
+                    |event| {
+                        output.condition_mut().reset();
+                        serialize_into(&mut GroupedWriter::new(&mut output), &event)
+                            .unwrap();
+                    },
+                );
+                output.flush().unwrap();
+            })
+            .unwrap()
+    }
 
 pub struct TracedBankingPacketSender {
     sender_to_banking: RealBankingPacketSender,
