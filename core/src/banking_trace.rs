@@ -400,8 +400,8 @@ mod tests {
         terminate_tracer(tracer, dummy_main_thread, non_vote_sender);
 
         let mut stream = BufReader::new(File::open(path.join(BASENAME)).unwrap());
-        let [result1, result2, result3] = &(1..3).map( |_|
-                                         bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream)).collect::<Vec<_>>()[..];
+        let results = &(1..3).map( |_|
+                                         bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream)).collect::<Vec<_>>();
 
         assert_matches!(result1, Ok(TimedTracedEvent(_, TracedEvent::PacketBatch(ChannelLabel::NonVote, _))));
         assert_matches!(result2, Ok(TimedTracedEvent(_, TracedEvent::Bank(1, 2, BankStatus::Started, 3))));
