@@ -141,7 +141,7 @@ impl BankingTracer {
                 );
                 let sender_and_receiver = unbounded();
                 let trace_receiver = sender_and_receiver.1.clone();
-                let mut file_appender = RollingFileAppender::new_with_buffer_capacity(
+                let file_appender = RollingFileAppender::new_with_buffer_capacity(
                     path.join("events"),
                     grouped,
                     (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
