@@ -68,7 +68,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
 
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new(Some((
-        temp_dir.join("banking-trace"),
+        temp_dir.path().join("banking-trace"),
         exit.clone(),
         DEFAULT_BANKING_TRACE_SIZE,
     )))
@@ -97,7 +97,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
 
     let exit = Arc::<AtomicBool>::default();
     let tracer = BankingTracer::new(Some((
-        temp_dir.join("banking-trace"),
+        temp_dir.path().join("banking-trace"),
         exit.clone(),
         1024 * 1024, // cause more frequent trace file rotation
     )))
