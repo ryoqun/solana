@@ -400,6 +400,32 @@ mod tests {
     }
 
     #[test]
+    fn test_send_after_exited() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("banking-trace");
+        let exit = Arc::<AtomicBool>::default();
+        let tracer =
+            BankingTracer::new(Some((path.clone(), exit.clone(), u64::max_value()))).unwrap();
+        let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
+
+        let dummy_main_thread = thread::spawn(move || {
+            sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
+                exit,
+                non_vote_receiver,
+                |_packet_batch| Ok(()),
+            )
+        });
+
+        exit.store(true, Ordering::Relaxed);
+        let (tracer_thread, tracer) = tracer.finalize_under_arc();
+        dummy_main_thread.join().unwrap().unwrap();
+        tracer_thread.unwrap().join().unwrap().unwrap();
+        tracer.bank_end(1, 2, 3);
+        drop(tracer);
+        non_vote_sender.send(sample_packet_batch()).unwrap();
+    }
+
+    #[test]
     fn test_record_and_restore() {
         let temp_dir = TempDir::new().unwrap();
         let path = temp_dir.path().join("banking-trace");
