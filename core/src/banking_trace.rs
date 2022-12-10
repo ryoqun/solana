@@ -412,8 +412,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let path = temp_dir.path().join("banking-trace");
         let exit = Arc::<AtomicBool>::default();
-        let tracer =
-            BankingTracer::new(Some((path, exit.clone(), u64::max_value()))).unwrap();
+        let tracer = BankingTracer::new(Some((path, exit.clone(), u64::max_value()))).unwrap();
         let (tracer_thread, tracer) = tracer.finalize_under_arc();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
