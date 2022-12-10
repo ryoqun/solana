@@ -440,7 +440,7 @@ mod tests {
         non_vote_sender.send(sample_packet_batch()).unwrap();
 
         // finally terminate and join the main thread
-        exit_for_dummy_threadw.store(true, Ordering::Relaxed);
+        exit_for_dummy_thread2.store(true, Ordering::Relaxed);
         dummy_main_thread.join().unwrap().unwrap();
     }
 
