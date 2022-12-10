@@ -226,13 +226,15 @@ impl BankingTracer {
     }
 
     fn bank_event(&self, slot: Slot, id: u32, status: BankStatus, unreceived_batch_count: usize) {
-        if let Some((sender, _, _exit)) = &self.enabled_tracer {
-            sender
-                .send(TimedTracedEvent(
-                    SystemTime::now(),
-                    TracedEvent::Bank(slot, id, status, unreceived_batch_count),
-                ))
-                .expect("active tracer thread unless exit is true");
+        if let Some((sender, _, exit)) = &self.enabled_tracer {
+            if !exit.load(Ordering::Relaxed) {
+                sender
+                    .send(TimedTracedEvent(
+                        SystemTime::now(),
+                        TracedEvent::Bank(slot, id, status, unreceived_batch_count),
+                    ))
+                    .expect("active tracer thread unless exit is true");
+            }
         }
     }
 
