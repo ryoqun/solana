@@ -200,8 +200,7 @@ impl BankingTracer {
             label,
             self.enabled_tracer
                 .as_ref()
-                .map(|(sender, _)| sender.clone()),
-            self.exit,
+                .map(|(sender, _, exit)| (sender.clone(), exit)),
         )
     }
 
@@ -251,11 +250,10 @@ impl BankingTracer {
 
     pub fn channel(
         label: ChannelLabel,
-        trace_sender: Option<Sender<TimedTracedEvent>>,
-        exit: Arc<AtomicBool>,
+        trace_sender: Option<(Sender<TimedTracedEvent>, Arc<AtomicBool>)>,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
-        (TracedSender::new(label, sender, trace_sender, exit), receiver)
+        (TracedSender::new(label, sender, trace_sender), receiver)
     }
 
     fn ensure_prepare_path(path: &PathBuf) -> Result<(), io::Error> {
@@ -317,27 +315,24 @@ impl BankingTracer {
 pub struct TracedSender {
     label: ChannelLabel,
     sender: Sender<BankingPacketBatch>,
-    trace_sender: Option<Sender<TimedTracedEvent>>,
-    exit: Arc<AtomicBool>,
+    trace_sender: Option<(Sender<TimedTracedEvent>, Arc<AtomicBool>)>,
 }
 
 impl TracedSender {
     fn new(
         label: ChannelLabel,
         sender: Sender<BankingPacketBatch>,
-        trace_sender: Option<Sender<TimedTracedEvent>>,
-        exit: Arc<AtomicBool>
+        trace_sender: Option<(Sender<TimedTracedEvent>, Arc<AtomicBool>)>,
     ) -> Self {
         Self {
             label,
             sender,
             trace_sender,
-            exit,
         }
     }
 
     pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
-        if let Some(trace_sender) = &self.trace_sender {
+        if let Some((trace_sender, exit)) = &self.trace_sender {
             trace_sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
