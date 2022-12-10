@@ -259,6 +259,12 @@ fn main() {
                 .help("Skip transaction sanity execution"),
         )
         .arg(
+            Arg::new("trace_banking")
+                .long("trace-banking")
+                .takes_value(false)
+                .help("Enable banking tracing"),
+        )
+        .arg(
             Arg::new("write_lock_contention")
                 .long("write-lock-contention")
                 .takes_value(true)
@@ -410,7 +416,7 @@ fn main() {
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let (exit, poh_recorder, poh_service, signal_receiver) =
             create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
-        let banking_tracer = BankingTracer::new(matches.is_present("banking_trace").then_some((
+        let banking_tracer = BankingTracer::new(matches.is_present("trace_banking").then_some((
             blockstore.banking_tracer_path(),
             exit.clone(),
             DEFAULT_BANKING_TRACE_SIZE,
