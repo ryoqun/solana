@@ -332,7 +332,7 @@ impl TracedSender {
     }
 
     pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
-        if let Some((trace_sender, exit)) = &self.trace_sender {
+        if let Some((trace_sender, _exit)) = &self.trace_sender {
             trace_sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
@@ -421,9 +421,14 @@ mod tests {
         let (tracer_thread, tracer) = tracer.finalize_under_arc();
         dummy_main_thread.join().unwrap().unwrap();
         tracer_thread.unwrap().join().unwrap().unwrap();
+
+        // shouldn't panic
         tracer.bank_end(1, 2, 3);
+
         drop(tracer);
-        //non_vote_sender.send(sample_packet_batch()).unwrap();
+
+        // shouldn't panic
+        non_vote_sender.send(sample_packet_batch()).unwrap();
     }
 
     #[test]
