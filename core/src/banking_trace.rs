@@ -200,7 +200,7 @@ impl BankingTracer {
             label,
             self.enabled_tracer
                 .as_ref()
-                .map(|(sender, _, exit)| (sender.clone(), exit)),
+                .map(|(sender, _, exit)| (sender.clone(), exit.clone())),
         )
     }
 
