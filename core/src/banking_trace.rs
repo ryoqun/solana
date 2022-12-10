@@ -54,7 +54,7 @@ pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
 #[derive(Debug)]
 pub struct BankingTracer {
     enabled_tracer: Option<(
-        (Sender<TimedTracedEvent>, Receiver<TimedTracedEvent>),
+        Sender<TimedTracedEvent>,
         Option<JoinHandle<TracerThreadResult>>,
     )>,
 }
@@ -173,8 +173,7 @@ impl BankingTracer {
                     ));
                 }
 
-                let sender_and_receiver = unbounded();
-                let trace_receiver = sender_and_receiver.1.clone();
+                let (trace_sender, trace_receiver) = unbounded();
 
                 Self::ensure_prepare_path(&path)?;
                 let file_appender = Self::create_file_appender(path, rotate_threshold_size)?;
@@ -182,7 +181,7 @@ impl BankingTracer {
                 let tracing_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit)?;
 
-                Ok((sender_and_receiver, Some(tracing_thread)))
+                Ok((trace_sender, Some(tracing_thread)))
             })
             .transpose()?;
 
@@ -200,7 +199,7 @@ impl BankingTracer {
             label,
             self.enabled_tracer
                 .as_ref()
-                .map(|((sender, _), _)| sender.clone()),
+                .map(|(sender, _)| sender.clone()),
         )
     }
 
@@ -226,7 +225,7 @@ impl BankingTracer {
     }
 
     fn bank_event(&self, slot: Slot, id: u32, status: BankStatus, unreceived_batch_count: usize) {
-        if let Some(((sender, _), _)) = &self.enabled_tracer {
+        if let Some((sender, _)) = &self.enabled_tracer {
             sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
@@ -423,7 +422,7 @@ mod tests {
         tracer_thread.unwrap().join().unwrap().unwrap();
         tracer.bank_end(1, 2, 3);
         drop(tracer);
-        non_vote_sender.send(sample_packet_batch()).unwrap();
+        //non_vote_sender.send(sample_packet_batch()).unwrap();
     }
 
     #[test]
