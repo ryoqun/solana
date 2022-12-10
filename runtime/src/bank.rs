@@ -3835,6 +3835,11 @@ impl Bank {
         self.rc.accounts.accounts_db.set_shrink_paths(paths);
     }
 
+    // danger
+    pub fn skip_check_age(&self) {
+        self.runtime_config.skip_check_age();
+    }
+
     fn check_age<'a>(
         &self,
         txs: impl Iterator<Item = &'a SanitizedTransaction>,
@@ -3842,6 +3847,10 @@ impl Bank {
         max_age: usize,
         error_counters: &mut TransactionErrorMetrics,
     ) -> Vec<TransactionCheckResult> {
+        if self.runtime_config.is_check_age_skipped() {
+            return txs.map(|_| (Ok(()), None)).collect();
+        }
+
         let hash_queue = self.blockhash_queue.read().unwrap();
         let last_blockhash = hash_queue.last_hash();
         let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
@@ -4361,6 +4370,9 @@ impl Bank {
             &self.feature_set,
             &self.fee_structure,
             account_overrides,
+            self.runtime_config
+                .is_check_age_skipped()
+                .then(|| self.get_lamports_per_signature()),
         );
         load_time.stop();
 
@@ -4734,7 +4746,12 @@ impl Bank {
                     .map(|maybe_lamports_per_signature| (maybe_lamports_per_signature, true))
                     .unwrap_or_else(|| {
                         (
-                            hash_queue.get_lamports_per_signature(tx.message().recent_blockhash()),
+                            (if self.runtime_config.is_check_age_skipped() {
+                                Some(self.get_lamports_per_signature())
+                            } else {
+                                hash_queue
+                                    .get_lamports_per_signature(tx.message().recent_blockhash())
+                            }),
                             false,
                         )
                     });
@@ -19302,6 +19319,7 @@ pub(crate) mod tests {
             &bank.rent_collector,
             &bank.feature_set,
             &FeeStructure::default(),
+            None,
             None,
         );
 
