@@ -408,6 +408,7 @@ mod tests {
         let exit = Arc::<AtomicBool>::default();
         let tracer =
             BankingTracer::new(Some((path.clone(), exit.clone(), u64::max_value()))).unwrap();
+        let (tracer_thread, tracer) = tracer.finalize_under_arc();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
         let exit_for_dummy_thread = exit.clone();
@@ -419,10 +420,10 @@ mod tests {
             )
         });
 
+        // kill and join threads
         exit.store(true, Ordering::Relaxed);
-        let (tracer_thread, tracer) = tracer.finalize_under_arc();
-        dummy_main_thread.join().unwrap().unwrap();
         tracer_thread.unwrap().join().unwrap().unwrap();
+        dummy_main_thread.join().unwrap().unwrap();
 
         // shouldn't panic
         tracer.bank_end(1, 2, 3);
