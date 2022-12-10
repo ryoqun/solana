@@ -220,13 +220,13 @@ impl BankingTracer {
         (
             self.enabled_tracer
                 .as_mut()
-                .and_then(|(_, tracer_thread)| tracer_thread.take()),
+                .and_then(|(_, tracer_thread, _)| tracer_thread.take()),
             Arc::new(self),
         )
     }
 
     fn bank_event(&self, slot: Slot, id: u32, status: BankStatus, unreceived_batch_count: usize) {
-        if let Some((sender, _)) = &self.enabled_tracer {
+        if let Some((sender, _, _exit)) = &self.enabled_tracer {
             sender
                 .send(TimedTracedEvent(
                     SystemTime::now(),
