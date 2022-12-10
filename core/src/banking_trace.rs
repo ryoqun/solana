@@ -236,7 +236,7 @@ impl BankingTracer {
                         SystemTime::now(),
                         TracedEvent::Bank(slot, id, status, unreceived_batch_count),
                     ))
-                    .expect("active tracer thread unless exit is true");
+                    .expect("active tracer thread unless exited");
             }
         }
     }
@@ -345,7 +345,7 @@ impl TracedSender {
                         SystemTime::now(),
                         TracedEvent::PacketBatch(self.label, Arc::clone(&batch)),
                     ))
-                    .expect("active tracer thread unless exit is true");
+                    .expect("active tracer thread unless exited");
             }
         }
         self.sender.send(batch)
@@ -417,7 +417,7 @@ mod tests {
         let (tracer_thread, tracer) = tracer.finalize_under_arc();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
-        let exit_for_dummy_thread = Arc::default();
+        let exit_for_dummy_thread = Arc::<AtomicBool>::default();
         let exit_for_dummy_thread2 = exit_for_dummy_thread.clone();
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
