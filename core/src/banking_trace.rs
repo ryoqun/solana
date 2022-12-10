@@ -54,9 +54,9 @@ pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
 #[derive(Debug)]
 pub struct BankingTracer {
     enabled_tracer: Option<(
-        Arc<AtomicBool>,
         Sender<TimedTracedEvent>,
         Option<JoinHandle<TracerThreadResult>>,
+        Arc<AtomicBool>,
     )>,
 }
 
@@ -245,7 +245,7 @@ impl BankingTracer {
     }
 
     pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
-        Self::channel(ChannelLabel::Dummy, None, Arc::default())
+        Self::channel(ChannelLabel::Dummy, None)
     }
 
     pub fn channel(
