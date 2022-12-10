@@ -37,6 +37,9 @@ pub enum TraceError {
     #[error("Serialization Error: {0}")]
     SerializeError(#[from] bincode::Error),
 
+    #[error("Integer Cast Error: {0}")]
+    IntegerCastError(#[from] std::num::TryFromIntError),
+
     #[error("Trace size is too small (must be larger than {1}): {0}")]
     TooSmallTraceSize(u64, u64),
 }
