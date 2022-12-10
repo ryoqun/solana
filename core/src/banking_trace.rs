@@ -284,7 +284,7 @@ impl BankingTracer {
         RollingFileAppender::new_with_buffer_capacity(
             path.join(BASENAME),
             grouped,
-            (TRACE_FILE_ROTATE_COUNT - 1).try_into().unwrap(),
+            (TRACE_FILE_ROTATE_COUNT - 1).try_into()?,
             BUF_WRITER_CAPACITY,
         )
     }
@@ -334,13 +334,15 @@ impl TracedSender {
     }
 
     pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
-        if let Some((trace_sender, _exit)) = &self.trace_sender {
-            trace_sender
-                .send(TimedTracedEvent(
-                    SystemTime::now(),
-                    TracedEvent::PacketBatch(self.label, Arc::clone(&batch)),
-                ))
-                .unwrap();
+        if let Some((trace_sender, exit)) = &self.trace_sender {
+            if !exit.load(Ordering::Relaxed) {
+                trace_sender
+                    .send(TimedTracedEvent(
+                        SystemTime::now(),
+                        TracedEvent::PacketBatch(self.label, Arc::clone(&batch)),
+                    ))
+                    .unwrap();
+            }
         }
         self.sender.send(batch)
     }
