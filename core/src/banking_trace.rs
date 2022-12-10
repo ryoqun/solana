@@ -345,7 +345,7 @@ impl TracedSender {
                         SystemTime::now(),
                         TracedEvent::PacketBatch(self.label, Arc::clone(&batch)),
                     ))
-                    .unwrap();
+                    .expect("active tracer thread unless exit is true");
             }
         }
         self.sender.send(batch)
@@ -417,7 +417,8 @@ mod tests {
         let (tracer_thread, tracer) = tracer.finalize_under_arc();
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
-        let exit_for_dummy_thread = exit.clone();
+        let exit_for_dummy_thread = Arc::default();
+        let exit_for_dummy_thread2 = exit_for_dummy_thread.clone();
         let dummy_main_thread = thread::spawn(move || {
             sender_overhead_minimized_receiver_loop::<_, TraceError, 0>(
                 exit_for_dummy_thread,
@@ -426,10 +427,9 @@ mod tests {
             )
         });
 
-        // kill and join threads
+        // kill and join the tracer thread
         exit.store(true, Ordering::Relaxed);
         tracer_thread.unwrap().join().unwrap().unwrap();
-        dummy_main_thread.join().unwrap().unwrap();
 
         // shouldn't panic
         tracer.bank_end(1, 2, 3);
@@ -438,6 +438,10 @@ mod tests {
 
         // shouldn't panic
         non_vote_sender.send(sample_packet_batch()).unwrap();
+
+        // finally terminate and join the main thread
+        exit_for_dummy_threadw.store(true, Ordering::Relaxed);
+        dummy_main_thread.join().unwrap().unwrap();
     }
 
     #[test]
