@@ -54,6 +54,7 @@ pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
 #[derive(Debug)]
 pub struct BankingTracer {
     enabled_tracer: Option<(
+        Arc<AtomicBool>,
         Sender<TimedTracedEvent>,
         Option<JoinHandle<TracerThreadResult>>,
     )>,
@@ -179,9 +180,9 @@ impl BankingTracer {
                 let file_appender = Self::create_file_appender(path, rotate_threshold_size)?;
 
                 let tracing_thread =
-                    Self::spawn_background_thread(trace_receiver, file_appender, exit)?;
+                    Self::spawn_background_thread(trace_receiver, file_appender, exit.clone())?;
 
-                Ok((trace_sender, Some(tracing_thread)))
+                Ok((exit, trace_sender, Some(tracing_thread)))
             })
             .transpose()?;
 
@@ -200,6 +201,7 @@ impl BankingTracer {
             self.enabled_tracer
                 .as_ref()
                 .map(|(sender, _)| sender.clone()),
+            exit,
         )
     }
 
@@ -231,7 +233,7 @@ impl BankingTracer {
                     SystemTime::now(),
                     TracedEvent::Bank(slot, id, status, unreceived_batch_count),
                 ))
-                .unwrap();
+                .expect("active tracer thread unless exit is true");
         }
     }
 
@@ -244,15 +246,16 @@ impl BankingTracer {
     }
 
     pub fn channel_for_test() -> (TracedSender, Receiver<BankingPacketBatch>) {
-        Self::channel(ChannelLabel::Dummy, None)
+        Self::channel(ChannelLabel::Dummy, None, Arc::default())
     }
 
     pub fn channel(
         label: ChannelLabel,
         trace_sender: Option<Sender<TimedTracedEvent>>,
+        exit: Arc<AtomicBool>,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
-        (TracedSender::new(label, sender, trace_sender), receiver)
+        (TracedSender::new(label, sender, trace_sender, exit), receiver)
     }
 
     fn ensure_prepare_path(path: &PathBuf) -> Result<(), io::Error> {
@@ -315,6 +318,7 @@ pub struct TracedSender {
     label: ChannelLabel,
     sender: Sender<BankingPacketBatch>,
     trace_sender: Option<Sender<TimedTracedEvent>>,
+    exit: Arc<AtomicBool>,
 }
 
 impl TracedSender {
@@ -322,11 +326,13 @@ impl TracedSender {
         label: ChannelLabel,
         sender: Sender<BankingPacketBatch>,
         trace_sender: Option<Sender<TimedTracedEvent>>,
+        exit: Arc<AtomicBool>
     ) -> Self {
         Self {
             label,
             sender,
             trace_sender,
+            exit,
         }
     }
 
