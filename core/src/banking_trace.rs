@@ -339,7 +339,7 @@ impl TracedSender {
 
     pub fn send(&self, batch: BankingPacketBatch) -> Result<(), SendError<BankingPacketBatch>> {
         if let Some((trace_sender, exit)) = &self.trace_sender {
-            if true || !exit.load(Ordering::Relaxed) {
+            if !exit.load(Ordering::Relaxed) {
                 trace_sender
                     .send(TimedTracedEvent(
                         SystemTime::now(),
