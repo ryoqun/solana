@@ -284,12 +284,13 @@ impl BankingTracer {
                 .daily()
                 .max_size(rotate_threshold_size),
         );
-        RollingFileAppender::new_with_buffer_capacity(
+        let appender = RollingFileAppender::new_with_buffer_capacity(
             path.join(BASENAME),
             grouped,
             (TRACE_FILE_ROTATE_COUNT - 1).try_into()?,
             BUF_WRITER_CAPACITY,
-        )
+        )?;
+        Ok(appender)
     }
 
     fn spawn_background_thread(
