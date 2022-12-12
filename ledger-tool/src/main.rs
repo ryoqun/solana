@@ -3368,6 +3368,13 @@ fn main() {
                 }
             }
             ("simulate-leader-blocks", Some(arg_matches)) => {
+                let simulator = BankingSimulator::new(PathBuf::new().join("/dev/stdin"));
+
+                if std::env::var("DUMP").is_ok() {
+                    simulator.dump();
+                    return
+                }
+
                 let mut accounts_index_config = AccountsIndexConfig::default();
                 if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
                     accounts_index_config.bins = Some(bins);
@@ -3439,7 +3446,6 @@ fn main() {
                     exit(1);
                 });
 
-                let simulator = BankingSimulator::new(PathBuf::new().join("/dev/stdin"));
                 //simulator.seek(bank); => Ok or Err("no BankStart")
                 simulator.simulate(bank_forks, Arc::new(blockstore));
 
