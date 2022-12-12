@@ -3371,7 +3371,7 @@ fn main() {
                 let simulator = BankingSimulator::new(PathBuf::new().join("/dev/stdin"));
 
                 if std::env::var("DUMP").is_ok() {
-                    simulator.dump();
+                    simulator.dump(None);
                     return
                 }
 
