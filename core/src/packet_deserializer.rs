@@ -71,7 +71,7 @@ impl PacketDeserializer {
     /// Deserialize packet batches and collect them into ReceivePacketResults
     pub fn deserialize_and_collect_packets(
         packet_count: usize,
-        packet_batches: &[impl AsRef<BankingPacketBatch>],
+        packet_batches: &[impl Deref<BankingPacketBatch>],
     ) -> ReceivePacketResults {
         let mut passed_sigverify_count: usize = 0;
         let mut failed_sigverify_count: usize = 0;
