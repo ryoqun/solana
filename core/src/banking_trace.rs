@@ -700,8 +700,8 @@ impl BankingTraceReplayer {
         let bank_slot = bank.slot();
 
         std::thread::spawn(move || {
-            let (first_leader_slot, range_iter) = if let Some((first_leader_slot, start)) = bank_starts_by_slot.range(bank_slot..).next().and(|(sl, st)| bank_starts_by_slot.range(..sl).next()) {
-                (Some(first_leader_slot), packet_batches_by_time.range(*start..))
+            let (most_recent_past_leader_slot, range_iter) = if let Some((most_recent_past_leader_slot, start)) = bank_starts_by_slot.range(bank_slot..).next().and_then(|(sl, st)| bank_starts_by_slot.range(..sl).next()) {
+                (Some(most_recent_past_leader_slot), packet_batches_by_time.range(*start..))
             } else {
                 (None, packet_batches_by_time.range(..))
             };
@@ -710,7 +710,7 @@ impl BankingTraceReplayer {
                 range_iter.clone().count(),
                 packet_batches_by_time.len(),
                 bank_slot,
-                first_leader_slot,
+                most_recent_past_leader_slot,
             );
 
             loop {
