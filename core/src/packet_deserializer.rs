@@ -69,7 +69,7 @@ impl PacketDeserializer {
     }
 
     /// Deserialize packet batches and collect them into ReceivePacketResults
-    fn deserialize_and_collect_packets(
+    pub fn deserialize_and_collect_packets(
         packet_count: usize,
         packet_batches: &[BankingPacketBatch],
     ) -> ReceivePacketResults {
