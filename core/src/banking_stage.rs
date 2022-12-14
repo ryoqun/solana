@@ -496,6 +496,7 @@ impl BankingStage {
                             &bank_forks,
                             unprocessed_transaction_storage,
                         );
+                        info!("banking thread ended!");
                     })
                     .unwrap()
             })
