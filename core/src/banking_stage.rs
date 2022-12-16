@@ -418,7 +418,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
-        (tracer_thread_hdl, banking_tracer): (TracerThread, Arc<BankingTracer>),
+        banking_tracer: Arc<BankingTracer>,
     ) -> Self {
         assert!(num_threads >= MIN_TOTAL_THREADS);
         // Single thread to generate entries from many banks.
