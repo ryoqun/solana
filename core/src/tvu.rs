@@ -452,7 +452,7 @@ pub mod tests {
             None,
             &Arc::new(ConnectionCache::default()),
             &_ignored_prioritization_fee_cache,
-            BankingTracer::new_disabled().finalize_under_arc().1,
+            BankingTracer::new_disabled(),
         )
         .expect("assume success");
         exit.store(true, Ordering::Relaxed);
