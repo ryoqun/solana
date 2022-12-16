@@ -15,7 +15,7 @@ use {
         path::PathBuf,
         sync::{
             atomic::{AtomicBool, Ordering},
-            Arc,
+            Arc, Mutex,
         },
         thread::{self, sleep, JoinHandle},
         time::{Duration, SystemTime},
