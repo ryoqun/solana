@@ -389,7 +389,7 @@ pub mod for_test {
     }
 
     pub fn terminate_tracer(
-        tracer: BankingTracer,
+        tracer: Arc<BankingTracer>,
         main_thread: JoinHandle<TracerThreadResult>,
         sender: TracedSender,
         exit: Option<Arc<AtomicBool>>,
