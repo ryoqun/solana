@@ -28,6 +28,7 @@ pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacke
 pub type BankingPacketSender = TracedSender;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 pub type TracerThreadResult = Result<(), TraceError>;
+pub type TracerThread = Option<JoinHandle<TracerThreadResult>>;
 
 #[derive(Error, Debug)]
 pub enum TraceError {
@@ -218,7 +219,7 @@ impl BankingTracer {
         self.create_channel(ChannelLabel::GossipVote)
     }
 
-    pub fn finalize_under_arc(mut self) -> (Option<JoinHandle<TracerThreadResult>>, Arc<Self>) {
+    pub fn finalize_under_arc(mut self) -> (TracerThread, Arc<Self>) {
         (
             self.enabled_tracer
                 .as_mut()
