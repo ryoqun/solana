@@ -945,7 +945,7 @@ impl ReplayStage {
                         &mut skipped_slots_info,
                         has_new_vote_been_rooted,
                         transaction_status_sender.is_some(),
-                        banking_tracer,
+                        &banking_tracer,
                     );
 
                     let poh_bank = poh_recorder.read().unwrap().bank();
