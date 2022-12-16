@@ -220,6 +220,15 @@ impl BankingTracer {
         self.create_channel(ChannelLabel::GossipVote)
     }
 
+    pub fn take_tracer_thread_join_handle(&self) -> TracerThread {
+        self.enabled_tracer.as_ref().map(|a| {
+            a.1.lock()
+                .unwrap()
+                .take()
+                .expect("no double take; BankingStage should only do once!")
+        })
+    }
+
     fn bank_event(
         &self,
         slot: Slot,
@@ -326,12 +335,6 @@ impl BankingTracer {
         )?;
 
         Ok(thread)
-    }
-
-    pub fn take_tracer_thread_join_handle(&self) -> TracerThread {
-        self.enabled_tracer
-            .as_ref()
-            .map(|a| a.1.lock().unwrap().take().unwrap())
     }
 }
 
