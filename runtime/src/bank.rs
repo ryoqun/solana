@@ -6700,7 +6700,7 @@ impl Bank {
             self.slot(),
             bank_hash_info.stats,
         );
-        hash_override.unwrap_or(hash)
+        bank_hash_override.unwrap_or(hash)
     }
 
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
