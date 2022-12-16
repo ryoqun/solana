@@ -8,7 +8,7 @@ use {
         packet::{to_packet_batches, PacketBatch},
         test_tx::test_tx,
     },
-    solana_sdk::slot_history::Slot,
+    solana_sdk::{hash::Hash, slot_history::Slot},
     std::{
         fs::{create_dir_all, remove_dir_all},
         io::{self, Write},
