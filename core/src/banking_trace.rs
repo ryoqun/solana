@@ -393,7 +393,7 @@ pub mod for_test {
         if let Some(exit) = exit {
             exit.store(true, Ordering::Relaxed);
         }
-        let tracer_thread = tracer.enabled_tracer.map(|a| a.1).lock().unwrap().take();
+        let tracer_thread = tracer.enabled_tracer.map(|a| a.1.lock().unwrap().take());
         drop((sender, tracer));
         main_thread.join().unwrap().unwrap();
         if let Some(tracer_thread) = tracer_thread {
