@@ -334,7 +334,7 @@ impl BankingTracer {
     }
 
     pub fn take_tracer_thread_join_handle(&self) -> TracerThread {
-        self.enabled_tracer.map(|a| a.1.lock().unwrap().take().unwrap())
+        self.enabled_tracer.as_ref().map(|a| a.1.lock().unwrap().take().unwrap())
     }
 }
 
