@@ -1023,7 +1023,7 @@ impl Validator {
             &staked_nodes,
             config.staked_nodes_overrides.clone(),
             tpu_enable_udp,
-            (tracer_thread, banking_tracer),
+            banking_tracer,
         );
 
         datapoint_info!(
