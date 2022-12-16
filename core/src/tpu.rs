@@ -4,7 +4,7 @@
 use {
     crate::{
         banking_stage::BankingStage,
-        banking_trace::BankingTracer,
+        banking_trace::{BankingTracer, TracerThread},
         broadcast_stage::{BroadcastStage, BroadcastStageType, RetransmitSlotsReceiver},
         cluster_info_vote_listener::{
             ClusterInfoVoteListener, GossipDuplicateConfirmedSlotsSender,
