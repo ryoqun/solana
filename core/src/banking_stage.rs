@@ -387,7 +387,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
-        banking_tracer_with_thread: (TracerThread, Arc<BankingTracer>),
+        banking_tracer: Arc<BankingTracer>,
     ) -> Self {
         Self::new_num_threads(
             cluster_info,
@@ -401,7 +401,7 @@ impl BankingStage {
             log_messages_bytes_limit,
             connection_cache,
             bank_forks,
-            banking_tracer_with_thread,
+            banking_tracer,
         )
     }
 
