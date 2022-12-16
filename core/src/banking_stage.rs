@@ -4,7 +4,7 @@
 
 use {
     crate::{
-        banking_trace::{BankingPacketReceiver, BankingTracer, TracerThread, TracerThreadResult},
+        banking_trace::{BankingPacketReceiver, BankingTracer, TracerThread},
         forward_packet_batches_by_accounts::ForwardPacketBatchesByAccounts,
         immutable_deserialized_packet::ImmutableDeserializedPacket,
         latest_unprocessed_votes::{LatestUnprocessedVotes, VoteSource},
