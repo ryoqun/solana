@@ -59,7 +59,7 @@ pub const DEFAULT_BANKING_TRACE_SIZE: u64 =
 pub struct BankingTracer {
     enabled_tracer: Option<(
         Sender<TimedTracedEvent>,
-        Option<JoinHandle<TracerThreadResult>>,
+        Mutex<Option<JoinHandle<TracerThreadResult>>>,
         Arc<AtomicBool>,
     )>,
 }
@@ -218,15 +218,6 @@ impl BankingTracer {
 
     pub fn create_channel_gossip_vote(&self) -> (BankingPacketSender, BankingPacketReceiver) {
         self.create_channel(ChannelLabel::GossipVote)
-    }
-
-    pub fn finalize_under_arc(mut self) -> (TracerThread, Arc<Self>) {
-        (
-            self.enabled_tracer
-                .as_mut()
-                .and_then(|(_, tracer_thread, _)| tracer_thread.take()),
-            Arc::new(self),
-        )
     }
 
     fn bank_event(
