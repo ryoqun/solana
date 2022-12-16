@@ -186,7 +186,7 @@ impl BankingTracer {
                 let tracing_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit.clone())?;
 
-                Ok((trace_sender, Mute::new(Some(tracing_thread)), exit))
+                Ok((trace_sender, Mutex::new(Some(tracing_thread)), exit))
             })
             .transpose()?;
 
