@@ -511,9 +511,10 @@ impl BankingStage {
                     .unwrap()
             })
             .collect();
+
         Self {
             bank_thread_hdls,
-            tracer_thread_hdl,
+            tracer_thread_hdl: banking_tracer.take_tracer_thread_join_handle(),
         }
     }
 
