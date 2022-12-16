@@ -129,6 +129,7 @@ fn bench_banking_tracer_background_thread_throughput(bencher: &mut Bencher) {
         let exit = Arc::<AtomicBool>::default();
 
         let tracer = BankingTracer::new(Some((path, exit.clone(), 50 * 1024 * 1024))).unwrap();
+        let tracer = Arc::new(tracer);
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
         let dummy_main_thread = thread::spawn(move || {
