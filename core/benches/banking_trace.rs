@@ -64,6 +64,7 @@ fn bench_banking_tracer_main_thread_overhead_under_peak_write(bencher: &mut Benc
         DEFAULT_BANKING_TRACE_SIZE,
     )))
     .unwrap();
+    let tracer = Arc::new(tracer);
     let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
     let exit_for_dummy_thread = exit.clone();
@@ -95,6 +96,7 @@ fn bench_banking_tracer_main_thread_overhead_under_sustained_write(bencher: &mut
         1024 * 1024, // cause more frequent trace file rotation
     )))
     .unwrap();
+    let tracer = Arc::new(tracer);
     let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
     let exit_for_dummy_thread = exit.clone();
