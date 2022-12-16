@@ -930,12 +930,13 @@ impl Validator {
             exit.clone(),
         );
 
-        let (tracer_thread, banking_tracer) = BankingTracer::new((config.banking_trace_size > 0).then_some((
+        let banking_tracer = BankingTracer::new((config.banking_trace_size > 0).then_some((
             blockstore.banking_tracer_path(),
             exit.clone(),
             config.banking_trace_size,
         )))
-        .map_err(|err| format!("{} [{:?}]", &err, &err))?.finalize_under_arc();
+        .map_err(|err| format!("{} [{:?}]", &err, &err))?;
+        let banking_tracer = Arc::new(banking_tracer);
 
         let (replay_vote_sender, replay_vote_receiver) = unbounded();
         let tvu = Tvu::new(
