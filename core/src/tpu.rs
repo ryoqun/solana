@@ -236,7 +236,7 @@ impl Tpu {
             log_messages_bytes_limit,
             connection_cache.clone(),
             bank_forks.clone(),
-            banking_tracer,
+            (tracer_thread, banking_tracer),
         );
 
         let broadcast_stage = broadcast_type.new_broadcast_stage(
