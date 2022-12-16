@@ -451,6 +451,7 @@ pub mod tests {
             None,
             &Arc::new(ConnectionCache::default()),
             &_ignored_prioritization_fee_cache,
+            banking_tracer,
         )
         .expect("assume success");
         exit.store(true, Ordering::Relaxed);
