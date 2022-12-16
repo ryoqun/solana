@@ -3,7 +3,7 @@
 use {
     crate::{
         ancestor_hashes_service::AncestorHashesReplayUpdateSender,
-        banking_tracer::BankingTracer,
+        banking_trace::BankingTracer,
         broadcast_stage::RetransmitSlotsSender,
         cache_block_meta_service::CacheBlockMetaSender,
         cluster_info_vote_listener::{
