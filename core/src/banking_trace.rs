@@ -195,7 +195,7 @@ impl BankingTracer {
 
     pub fn new_disabled() -> Self {
         Self {
-            enabled_tracer: None,
+            enabled_tracer: Mutex::default(),
         }
     }
 
