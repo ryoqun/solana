@@ -251,8 +251,8 @@ impl BankingTracer {
     pub fn hash_event(
         &self,
         slot: Slot,
-        blockhash: &Hash,
-        bank_hash: &Hash,
+        blockhash: Hash,
+        bank_hash: Hash,
     ) {
         if let Some((sender, _, exit)) = &self.enabled_tracer {
             if !exit.load(Ordering::Relaxed) {
