@@ -930,6 +930,13 @@ impl Validator {
             exit.clone(),
         );
 
+        let (tracer_thread, banking_tracer) = BankingTracer::new((config.banking_trace_size > 0).then_some((
+            blockstore.banking_tracer_path(),
+            exit.clone(),
+            config.banking_trace_size,
+        )))
+        .map_err(|err| format!("{} [{:?}]", &err, &err))?.finalize_under_arc();
+
         let (replay_vote_sender, replay_vote_receiver) = unbounded();
         let tvu = Tvu::new(
             vote_account,
@@ -978,14 +985,8 @@ impl Validator {
             config.runtime_config.log_messages_bytes_limit,
             &connection_cache,
             &prioritization_fee_cache,
+            banking_tracer.clone(),
         )?;
-
-        let banking_tracer = BankingTracer::new((config.banking_trace_size > 0).then_some((
-            blockstore.banking_tracer_path(),
-            exit.clone(),
-            config.banking_trace_size,
-        )))
-        .map_err(|err| format!("{} [{:?}]", &err, &err))?;
 
         let tpu = Tpu::new(
             &cluster_info,
@@ -1021,7 +1022,7 @@ impl Validator {
             &staked_nodes,
             config.staked_nodes_overrides.clone(),
             tpu_enable_udp,
-            banking_tracer,
+            (tracer_thread, banking_tracer),
         );
 
         datapoint_info!(
