@@ -333,7 +333,7 @@ impl BankingTracer {
         Ok(thread)
     }
 
-    fn take_tracer_thread_join_handle(&self) {
+    fn take_tracer_thread_join_handle(&self) -> TracerThread {
         self.enabled_tracer.map(|a| a.1.lock().unwrap().take().unwrap())
     }
 }
