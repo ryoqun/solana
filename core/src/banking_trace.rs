@@ -479,6 +479,7 @@ mod tests {
         let exit = Arc::<AtomicBool>::default();
         let tracer =
             BankingTracer::new(Some((path.clone(), exit.clone(), u64::max_value()))).unwrap();
+        let tracer = Arc::new(tracer);
         let (non_vote_sender, non_vote_receiver) = tracer.create_channel_non_vote();
 
         let dummy_main_thread = thread::spawn(move || {
