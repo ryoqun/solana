@@ -128,6 +128,7 @@ impl Tvu {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: &Arc<ConnectionCache>,
         prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
+        banking_tracer: Arc<BankingTracer>,
     ) -> Result<Self, String> {
         let TvuSockets {
             repair: repair_socket,
@@ -288,6 +289,7 @@ impl Tvu {
             block_metadata_notifier,
             log_messages_bytes_limit,
             prioritization_fee_cache.clone(),
+            banking_tracer,
         )?;
 
         let ledger_cleanup_service = tvu_config.max_ledger_shreds.map(|max_ledger_shreds| {
