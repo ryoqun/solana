@@ -332,6 +332,10 @@ impl BankingTracer {
 
         Ok(thread)
     }
+
+    fn take_tracer_thread_join_handle(&self) {
+        self.enabled_tracer.map(|a| a.1.lock().unwrap().take().unwrap())
+    }
 }
 
 pub struct TracedSender {
@@ -393,7 +397,7 @@ pub mod for_test {
         if let Some(exit) = exit {
             exit.store(true, Ordering::Relaxed);
         }
-        let tracer_thread = tracer.enabled_tracer.map(|a| a.1.lock().unwrap().take().unwrap());
+        let tracer_thread = tracer.take_tracer_thread_join_handle();
         drop((sender, tracer));
         main_thread.join().unwrap().unwrap();
         if let Some(tracer_thread) = tracer_thread {
