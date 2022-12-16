@@ -1761,7 +1761,7 @@ impl ReplayStage {
                 false
             };
 
-            banking_tracer.hash_event(parent.slot(), parent.last_blockhash(), parent.hash());
+            banking_tracer.hash_event(parent.slot(), &parent.last_blockhash(), &parent.hash());
             let tpu_bank = Self::new_bank_from_parent_with_notify(
                 &parent,
                 poh_slot,
