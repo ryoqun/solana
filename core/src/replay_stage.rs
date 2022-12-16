@@ -945,6 +945,7 @@ impl ReplayStage {
                         &mut skipped_slots_info,
                         has_new_vote_been_rooted,
                         transaction_status_sender.is_some(),
+                        banking_tracer,
                     );
 
                     let poh_bank = poh_recorder.read().unwrap().bank();
@@ -1649,6 +1650,7 @@ impl ReplayStage {
         skipped_slots_info: &mut SkippedSlotsInfo,
         has_new_vote_been_rooted: bool,
         track_transaction_indexes: bool,
+        banking_tracer: &Arc<BankingTracer>,
     ) {
         // all the individual calls to poh_recorder.read() are designed to
         // increase granularity, decrease contention
@@ -1759,6 +1761,7 @@ impl ReplayStage {
                 false
             };
 
+            banking_tracer.hash_event(parent.slot(), parent.last_blockhash(), parent.hash());
             let tpu_bank = Self::new_bank_from_parent_with_notify(
                 &parent,
                 poh_slot,

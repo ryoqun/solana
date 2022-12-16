@@ -69,8 +69,9 @@ pub struct TimedTracedEvent(std::time::SystemTime, TracedEvent);
 
 #[derive(Serialize, Deserialize, Debug)]
 enum TracedEvent {
-    Bank(Slot, u32, BankStatus, usize),
     PacketBatch(ChannelLabel, BankingPacketBatch),
+    Bank(Slot, u32, BankStatus, usize),
+    BlockAndBankHash(Slot, Hash, Hash),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -241,6 +242,24 @@ impl BankingTracer {
                     .send(TimedTracedEvent(
                         SystemTime::now(),
                         TracedEvent::Bank(slot, id, status, unprocessed_transaction_count),
+                    ))
+                    .expect("active tracer thread unless exited");
+            }
+        }
+    }
+
+    pub fn hash_event(
+        &self,
+        slot: Slot,
+        blockhash: &Hash,
+        bank_hash: &Hash,
+    ) {
+        if let Some((sender, _, exit)) = &self.enabled_tracer {
+            if !exit.load(Ordering::Relaxed) {
+                sender
+                    .send(TimedTracedEvent(
+                        SystemTime::now(),
+                        TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash),
                     ))
                     .expect("active tracer thread unless exited");
             }
