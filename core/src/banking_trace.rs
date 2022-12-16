@@ -193,10 +193,10 @@ impl BankingTracer {
         Ok(Self { enabled_tracer })
     }
 
-    pub fn new_disabled() -> Self {
-        Self {
+    pub fn new_disabled() -> Arc<Self> {
+        Arc::new(Self {
             enabled_tracer: None,
-        }
+        })
     }
 
     fn create_channel(&self, label: ChannelLabel) -> (BankingPacketSender, BankingPacketReceiver) {
