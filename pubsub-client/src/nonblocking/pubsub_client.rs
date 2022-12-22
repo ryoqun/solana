@@ -699,8 +699,3 @@ impl PubsubClient {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    // see client-test/test/client.rs
-}

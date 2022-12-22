@@ -375,35 +375,3 @@ fn get_slot_and_append_vec_id(filename: &str) -> (Slot, usize) {
 
     (slot, append_vec_id)
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::append_vec::AppendVec};
-
-    #[test]
-    fn test_get_snapshot_file_kind() {
-        assert_eq!(None, get_snapshot_file_kind("file.txt"));
-        assert_eq!(
-            Some(SnapshotFileKind::Version),
-            get_snapshot_file_kind("version")
-        );
-        assert_eq!(
-            Some(SnapshotFileKind::BankFields),
-            get_snapshot_file_kind("1234")
-        );
-        assert_eq!(
-            Some(SnapshotFileKind::Storage),
-            get_snapshot_file_kind("1000.999")
-        );
-    }
-
-    #[test]
-    fn test_get_slot_and_append_vec_id() {
-        let expected_slot = 12345;
-        let expected_id = 9987;
-        let (slot, id) =
-            get_slot_and_append_vec_id(&AppendVec::file_name(expected_slot, expected_id));
-        assert_eq!(expected_slot, slot);
-        assert_eq!(expected_id, id);
-    }
-}
