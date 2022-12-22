@@ -962,7 +962,7 @@ pub struct Bank {
     pub status_cache: Arc<RwLock<BankStatusCache>>,
 
     /// FIFO queue of `recent_blockhash` items
-    blockhash_queue: RwLock<BlockhashQueue>,
+    pub blockhash_queue: RwLock<BlockhashQueue>,
 
     /// The set of parents including this bank
     pub ancestors: Ancestors,
@@ -3947,25 +3947,40 @@ impl Bank {
 
         txs.zip(lock_results)
             .map(|(tx, lock_res)| match lock_res {
-                Ok(()) => {
-                    let recent_blockhash = tx.message().recent_blockhash();
-                    if hash_queue.is_hash_valid_for_age(recent_blockhash, max_age) {
-                        (Ok(()), None)
-                    } else if let Some((address, account)) =
-                        self.check_transaction_for_nonce(tx, &next_durable_nonce)
-                    {
-                        (Ok(()), Some(NoncePartial::new(address, account)))
-                    } else {
-                        error_counters.blockhash_not_found += 1;
-                        (Err(TransactionError::BlockhashNotFound), None)
-                    }
-                }
+                Ok(()) => self.check_transaction_age(
+                    tx,
+                    max_age,
+                    &next_durable_nonce,
+                    &hash_queue,
+                    error_counters,
+                ),
                 Err(e) => (Err(e.clone()), None),
             })
             .collect()
     }
 
-    fn is_transaction_already_processed(
+    pub fn check_transaction_age(
+        &self,
+        tx: &SanitizedTransaction,
+        max_age: usize,
+        next_durable_nonce: &DurableNonce,
+        hash_queue: &BlockhashQueue,
+        error_counters: &mut TransactionErrorMetrics,
+    ) -> TransactionCheckResult {
+        let recent_blockhash = tx.message().recent_blockhash();
+        if hash_queue.is_hash_valid_for_age(recent_blockhash, max_age) {
+            (Ok(()), None)
+        } else if let Some((address, account)) =
+            self.check_transaction_for_nonce(tx, next_durable_nonce)
+        {
+            (Ok(()), Some(NoncePartial::new(address, account)))
+        } else {
+            error_counters.blockhash_not_found += 1;
+            (Err(TransactionError::BlockhashNotFound), None)
+        }
+    }
+
+    pub fn is_transaction_already_processed(
         &self,
         sanitized_tx: &SanitizedTransaction,
         status_cache: &BankStatusCache,
@@ -3977,15 +3992,14 @@ impl Bank {
             .is_some()
     }
 
-    fn check_status_cache(
+    fn check_status_cache<'a>(
         &self,
-        sanitized_txs: &[SanitizedTransaction],
+        sanitized_txs: impl Iterator<Item = &'a SanitizedTransaction>,
         lock_results: Vec<TransactionCheckResult>,
         error_counters: &mut TransactionErrorMetrics,
     ) -> Vec<TransactionCheckResult> {
         let rcache = self.status_cache.read().unwrap();
         sanitized_txs
-            .iter()
             .zip(lock_results)
             .map(|(sanitized_tx, (lock_result, nonce))| {
                 if lock_result.is_ok()
@@ -4040,15 +4054,15 @@ impl Bank {
         }
     }
 
-    pub fn check_transactions(
+    pub fn check_transactions<'a>(
         &self,
-        sanitized_txs: &[SanitizedTransaction],
+        sanitized_txs: impl Iterator<Item = &'a SanitizedTransaction> + Clone,
         lock_results: &[Result<()>],
         max_age: usize,
         error_counters: &mut TransactionErrorMetrics,
     ) -> Vec<TransactionCheckResult> {
         let age_results =
-            self.check_age(sanitized_txs.iter(), lock_results, max_age, error_counters);
+            self.check_age(sanitized_txs.clone(), lock_results, max_age, error_counters);
         self.check_status_cache(sanitized_txs, age_results, error_counters)
     }
 
@@ -4440,7 +4454,7 @@ impl Bank {
 
         let mut check_time = Measure::start("check_transactions");
         let check_results = self.check_transactions(
-            sanitized_txs,
+            sanitized_txs.iter(),
             batch.lock_results(),
             max_age,
             &mut error_counters,
@@ -7742,9 +7756,9 @@ impl Bank {
     }
 
     /// Checks a batch of sanitized transactions again bank for age and status
-    pub fn check_transactions_with_forwarding_delay(
+    pub fn check_transactions_with_forwarding_delay<'a>(
         &self,
-        transactions: &[SanitizedTransaction],
+        transactions: impl Iterator<Item = &'a SanitizedTransaction> + Clone,
         filter: &[transaction::Result<()>],
         forward_transactions_to_leader_at_slot_offset: u64,
     ) -> Vec<TransactionCheckResult> {

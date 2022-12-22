@@ -11,6 +11,7 @@ use {
         },
         fetch_stage::FetchStage,
         find_packet_sender_stake_stage::FindPacketSenderStakeStage,
+        scheduler_stage::{SchedulerKind, SchedulerStage},
         sigverify::TransactionSigVerifier,
         sigverify_stage::SigVerifyStage,
         staked_nodes_updater_service::StakedNodesUpdaterService,
@@ -60,6 +61,7 @@ pub struct Tpu {
     fetch_stage: FetchStage,
     sigverify_stage: SigVerifyStage,
     vote_sigverify_stage: SigVerifyStage,
+    scheduler_stage: SchedulerStage,
     banking_stage: BankingStage,
     cluster_info_vote_listener: ClusterInfoVoteListener,
     broadcast_stage: BroadcastStage,
@@ -99,6 +101,7 @@ impl Tpu {
         staked_nodes: &Arc<RwLock<StakedNodes>>,
         shared_staked_nodes_overrides: Arc<RwLock<HashMap<Pubkey, u64>>>,
         tpu_enable_udp: bool,
+        use_central_scheduler: bool,
     ) -> Self {
         let TpuSockets {
             transactions: transactions_sockets,
@@ -222,18 +225,45 @@ impl Tpu {
             cluster_confirmed_slot_sender,
         );
 
-        let banking_stage = BankingStage::new(
-            cluster_info,
-            poh_recorder,
-            verified_receiver,
-            verified_tpu_vote_packets_receiver,
-            verified_gossip_vote_packets_receiver,
-            transaction_status_sender,
-            replay_vote_sender,
-            log_messages_bytes_limit,
-            connection_cache.clone(),
-            bank_forks.clone(),
-        );
+        let (scheduler_stage, banking_stage) = if use_central_scheduler {
+            let (scheduler_stage, transactions_receivers, processed_transactions_sender) =
+                SchedulerStage::new(
+                    SchedulerKind::MultiIteratorScheduler,
+                    verified_receiver,
+                    bank_forks.clone(),
+                    poh_recorder.clone(),
+                    cluster_info,
+                );
+            let banking_stage = BankingStage::new_external_scheduler(
+                cluster_info,
+                poh_recorder,
+                transactions_receivers.unwrap(),
+                processed_transactions_sender.unwrap(),
+                verified_tpu_vote_packets_receiver,
+                verified_gossip_vote_packets_receiver,
+                transaction_status_sender,
+                replay_vote_sender,
+                log_messages_bytes_limit,
+                connection_cache.clone(),
+                bank_forks.clone(),
+            );
+
+            (scheduler_stage, banking_stage)
+        } else {
+            let banking_stage = BankingStage::new(
+                cluster_info,
+                poh_recorder,
+                verified_receiver,
+                verified_tpu_vote_packets_receiver,
+                verified_gossip_vote_packets_receiver,
+                transaction_status_sender,
+                replay_vote_sender,
+                log_messages_bytes_limit,
+                connection_cache.clone(),
+                bank_forks.clone(),
+            );
+            (SchedulerStage::default(), banking_stage)
+        };
 
         let broadcast_stage = broadcast_type.new_broadcast_stage(
             broadcast_sockets,
@@ -250,6 +280,7 @@ impl Tpu {
             fetch_stage,
             sigverify_stage,
             vote_sigverify_stage,
+            scheduler_stage,
             banking_stage,
             cluster_info_vote_listener,
             broadcast_stage,
@@ -267,6 +298,7 @@ impl Tpu {
             self.sigverify_stage.join(),
             self.vote_sigverify_stage.join(),
             self.cluster_info_vote_listener.join(),
+            self.scheduler_stage.join(),
             self.banking_stage.join(),
             self.find_packet_sender_stake_stage.join(),
             self.vote_find_packet_sender_stake_stage.join(),

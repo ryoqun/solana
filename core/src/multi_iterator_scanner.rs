@@ -106,9 +106,9 @@ where
         self.get_current_items()
     }
 
-    /// Consume the iterator and return the payload.
-    pub fn finalize(self) -> U {
-        self.payload
+    /// Consume the iterator and return the payload and whether each element was processed.
+    pub fn finalize(self) -> (U, Vec<bool>) {
+        (self.payload, self.already_handled)
     }
 
     /// Initialize the `current_positions` vector for the first batch.
