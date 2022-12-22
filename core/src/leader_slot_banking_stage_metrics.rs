@@ -1,8 +1,5 @@
 use {
-    crate::{
-        leader_slot_banking_stage_timing_metrics::*,
-        unprocessed_transaction_storage::InsertPacketBatchSummary,
-    },
+    crate::leader_slot_banking_stage_timing_metrics::*,
     solana_poh::poh_recorder::BankStart,
     solana_runtime::transaction_error_metrics::*,
     solana_sdk::{clock::Slot, saturating_add_assign},
@@ -58,18 +55,6 @@ pub(crate) struct ProcessTransactionsSummary {
 // validator's leader slot
 #[derive(Debug, Default)]
 struct LeaderSlotPacketCountMetrics {
-    // total number of live packets TPU received from verified receiver for processing.
-    total_new_valid_packets: u64,
-
-    // total number of packets TPU received from sigverify that failed signature verification.
-    newly_failed_sigverify_count: u64,
-
-    // total number of dropped packet due to the thread's buffered packets capacity being reached.
-    exceeded_buffer_limit_dropped_packets_count: u64,
-
-    // total number of packets that got added to the pending buffer after arriving to BankingStage
-    newly_buffered_packets_count: u64,
-
     // total number of transactions in the buffer that were filtered out due to things like age and
     // duplicate signature checks
     retryable_packets_filtered_count: u64,
@@ -150,26 +135,6 @@ impl LeaderSlotPacketCountMetrics {
             "banking_stage-leader_slot_packet_counts",
             ("id", id as i64, i64),
             ("slot", slot as i64, i64),
-            (
-                "total_new_valid_packets",
-                self.total_new_valid_packets as i64,
-                i64
-            ),
-            (
-                "newly_failed_sigverify_count",
-                self.newly_failed_sigverify_count as i64,
-                i64
-            ),
-            (
-                "exceeded_buffer_limit_dropped_packets_count",
-                self.exceeded_buffer_limit_dropped_packets_count as i64,
-                i64
-            ),
-            (
-                "newly_buffered_packets_count",
-                self.newly_buffered_packets_count as i64,
-                i64
-            ),
             (
                 "retryable_packets_filtered_count",
                 self.retryable_packets_filtered_count as i64,
@@ -273,8 +238,6 @@ pub(crate) struct LeaderSlotMetrics {
 
     transaction_error_metrics: TransactionErrorMetrics,
 
-    vote_packet_count_metrics: VotePacketCountMetrics,
-
     timing_metrics: LeaderSlotTimingMetrics,
 
     // Used by tests to check if the `self.report()` method was called
@@ -288,7 +251,6 @@ impl LeaderSlotMetrics {
             slot,
             packet_count_metrics: LeaderSlotPacketCountMetrics::new(),
             transaction_error_metrics: TransactionErrorMetrics::new(),
-            vote_packet_count_metrics: VotePacketCountMetrics::new(),
             timing_metrics: LeaderSlotTimingMetrics::new(bank_creation_time),
             is_reported: false,
         }
@@ -300,7 +262,6 @@ impl LeaderSlotMetrics {
         self.timing_metrics.report(self.id, self.slot);
         self.transaction_error_metrics.report(self.id, self.slot);
         self.packet_count_metrics.report(self.id, self.slot);
-        self.vote_packet_count_metrics.report(self.id, self.slot);
     }
 
     /// Returns `Some(self.slot)` if the metrics have been reported, otherwise returns None
@@ -315,41 +276,6 @@ impl LeaderSlotMetrics {
     fn mark_slot_end_detected(&mut self) {
         self.timing_metrics.mark_slot_end_detected();
     }
-}
-
-// Metrics describing vote tx packets that were processed in the tpu vote thread as well as
-// extraneous votes that were filtered out
-#[derive(Debug, Default)]
-pub(crate) struct VotePacketCountMetrics {
-    // How many votes ingested from gossip were dropped
-    dropped_gossip_votes: u64,
-
-    // How many votes ingested from tpu were dropped
-    dropped_tpu_votes: u64,
-}
-
-impl VotePacketCountMetrics {
-    fn new() -> Self {
-        Self { ..Self::default() }
-    }
-
-    fn report(&self, id: u32, slot: Slot) {
-        datapoint_info!(
-            "banking_stage-vote_packet_counts",
-            ("id", id, i64),
-            ("slot", slot, i64),
-            ("dropped_gossip_votes", self.dropped_gossip_votes, i64),
-            ("dropped_tpu_votes", self.dropped_tpu_votes, i64)
-        );
-    }
-}
-
-#[derive(Debug)]
-pub(crate) enum MetricsTrackerAction {
-    Noop,
-    ReportAndResetTracker,
-    NewTracker(Option<LeaderSlotMetrics>),
-    ReportAndNewTracker(Option<LeaderSlotMetrics>),
 }
 
 #[derive(Debug)]
@@ -368,68 +294,41 @@ impl LeaderSlotMetricsTracker {
         }
     }
 
-    // Check leader slot, return MetricsTrackerAction to be applied by apply_action()
-    pub(crate) fn check_leader_slot_boundary(
-        &mut self,
-        bank_start: &Option<BankStart>,
-    ) -> MetricsTrackerAction {
+    pub(crate) fn apply_working_bank(&mut self, bank_start: Option<&BankStart>) -> Option<Slot> {
         match (self.leader_slot_metrics.as_mut(), bank_start) {
-            (None, None) => MetricsTrackerAction::Noop,
+            (None, None) => None,
 
             (Some(leader_slot_metrics), None) => {
                 leader_slot_metrics.mark_slot_end_detected();
-                MetricsTrackerAction::ReportAndResetTracker
+                leader_slot_metrics.report();
+                let reported_slot = leader_slot_metrics.reported_slot();
+                self.leader_slot_metrics = None;
+                reported_slot
             }
 
-            // Our leader slot has begain, time to create a new slot tracker
             (None, Some(bank_start)) => {
-                MetricsTrackerAction::NewTracker(Some(LeaderSlotMetrics::new(
+                self.leader_slot_metrics = Some(LeaderSlotMetrics::new(
                     self.id,
                     bank_start.working_bank.slot(),
                     &bank_start.bank_creation_time,
-                )))
+                ));
+                self.leader_slot_metrics.as_ref().unwrap().reported_slot()
             }
 
             (Some(leader_slot_metrics), Some(bank_start)) => {
                 if leader_slot_metrics.slot != bank_start.working_bank.slot() {
-                    // Last slot has ended, new slot has began
                     leader_slot_metrics.mark_slot_end_detected();
-                    MetricsTrackerAction::ReportAndNewTracker(Some(LeaderSlotMetrics::new(
+                    leader_slot_metrics.report();
+                    let reported_slot = leader_slot_metrics.reported_slot();
+                    self.leader_slot_metrics = Some(LeaderSlotMetrics::new(
                         self.id,
                         bank_start.working_bank.slot(),
                         &bank_start.bank_creation_time,
-                    )))
+                    ));
+                    reported_slot
                 } else {
-                    MetricsTrackerAction::Noop
+                    None
                 }
-            }
-        }
-    }
-
-    pub(crate) fn apply_action(&mut self, action: MetricsTrackerAction) -> Option<Slot> {
-        match action {
-            MetricsTrackerAction::Noop => None,
-            MetricsTrackerAction::ReportAndResetTracker => {
-                let mut reported_slot = None;
-                if let Some(leader_slot_metrics) = self.leader_slot_metrics.as_mut() {
-                    leader_slot_metrics.report();
-                    reported_slot = leader_slot_metrics.reported_slot();
-                }
-                self.leader_slot_metrics = None;
-                reported_slot
-            }
-            MetricsTrackerAction::NewTracker(new_slot_metrics) => {
-                self.leader_slot_metrics = new_slot_metrics;
-                self.leader_slot_metrics.as_ref().unwrap().reported_slot()
-            }
-            MetricsTrackerAction::ReportAndNewTracker(new_slot_metrics) => {
-                let mut reported_slot = None;
-                if let Some(leader_slot_metrics) = self.leader_slot_metrics.as_mut() {
-                    leader_slot_metrics.report();
-                    reported_slot = leader_slot_metrics.reported_slot();
-                }
-                self.leader_slot_metrics = new_slot_metrics;
-                reported_slot
             }
         }
     }
@@ -532,21 +431,6 @@ impl LeaderSlotMetricsTracker {
         }
     }
 
-    pub(crate) fn accumulate_insert_packet_batches_summary(
-        &mut self,
-        insert_packet_batches_summary: &InsertPacketBatchSummary,
-    ) {
-        self.increment_exceeded_buffer_limit_dropped_packets_count(
-            insert_packet_batches_summary.total_dropped_packets() as u64,
-        );
-        self.increment_dropped_gossip_vote_count(
-            insert_packet_batches_summary.dropped_gossip_packets() as u64,
-        );
-        self.increment_dropped_tpu_vote_count(
-            insert_packet_batches_summary.dropped_tpu_packets() as u64
-        );
-    }
-
     pub(crate) fn accumulate_transaction_errors(
         &mut self,
         error_metrics: &TransactionErrorMetrics,
@@ -555,51 +439,6 @@ impl LeaderSlotMetricsTracker {
             leader_slot_metrics
                 .transaction_error_metrics
                 .accumulate(error_metrics);
-        }
-    }
-
-    // Packet inflow/outflow/processing metrics
-    pub(crate) fn increment_total_new_valid_packets(&mut self, count: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .packet_count_metrics
-                    .total_new_valid_packets,
-                count
-            );
-        }
-    }
-
-    pub(crate) fn increment_newly_failed_sigverify_count(&mut self, count: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .packet_count_metrics
-                    .newly_failed_sigverify_count,
-                count
-            );
-        }
-    }
-
-    pub(crate) fn increment_exceeded_buffer_limit_dropped_packets_count(&mut self, count: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .packet_count_metrics
-                    .exceeded_buffer_limit_dropped_packets_count,
-                count
-            );
-        }
-    }
-
-    pub(crate) fn increment_newly_buffered_packets_count(&mut self, count: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .packet_count_metrics
-                    .newly_buffered_packets_count,
-                count
-            );
         }
     }
 
@@ -701,25 +540,6 @@ impl LeaderSlotMetricsTracker {
         }
     }
 
-    pub(crate) fn increment_receive_and_buffer_packets_us(&mut self, us: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .timing_metrics
-                    .outer_loop_timings
-                    .receive_and_buffer_packets_us,
-                us
-            );
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .timing_metrics
-                    .outer_loop_timings
-                    .receive_and_buffer_packets_invoked_count,
-                1
-            );
-        }
-    }
-
     // Processing buffer timing metrics
     pub(crate) fn increment_make_decision_us(&mut self, us: u64) {
         if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
@@ -814,28 +634,6 @@ impl LeaderSlotMetricsTracker {
                     .process_packets_timings
                     .filter_retryable_packets_us,
                 us
-            );
-        }
-    }
-
-    pub(crate) fn increment_dropped_gossip_vote_count(&mut self, count: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .vote_packet_count_metrics
-                    .dropped_gossip_votes,
-                count
-            );
-        }
-    }
-
-    pub(crate) fn increment_dropped_tpu_vote_count(&mut self, count: u64) {
-        if let Some(leader_slot_metrics) = &mut self.leader_slot_metrics {
-            saturating_add_assign!(
-                leader_slot_metrics
-                    .vote_packet_count_metrics
-                    .dropped_tpu_votes,
-                count
             );
         }
     }

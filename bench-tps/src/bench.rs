@@ -87,6 +87,30 @@ impl<'a> KeypairChunks<'a> {
             dest: dest_keypair_chunks,
         }
     }
+
+    /// Split input vector of keypairs into conflict sets with chunks of given size
+    fn new_with_conflict_groups(
+        keypairs: &'a [Keypair],
+        chunk_size: usize,
+        num_conflict_groups: usize,
+    ) -> Self {
+        let mut source: Vec<Vec<&Keypair>> = Vec::new();
+        let mut dest: Vec<VecDeque<&Keypair>> = Vec::new();
+
+        // Transfer from accounts to the first account in each conflict group
+        for chunk in keypairs.chunks_exact(2 * chunk_size) {
+            source.push(chunk[..chunk_size].iter().collect());
+            dest.push(
+                chunk[..chunk_size]
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, _)| &chunk[chunk_size + idx % num_conflict_groups])
+                    .collect(),
+            );
+        }
+
+        Self { source, dest }
+    }
 }
 
 struct TransactionChunkGenerator<'a, 'b, T: ?Sized> {
@@ -110,8 +134,13 @@ where
         chunk_size: usize,
         use_randomized_compute_unit_price: bool,
         instruction_padding_config: Option<InstructionPaddingConfig>,
+        num_conflict_groups: Option<usize>,
     ) -> Self {
-        let account_chunks = KeypairChunks::new(gen_keypairs, chunk_size);
+        let account_chunks = if let Some(num_conflict_groups) = num_conflict_groups {
+            KeypairChunks::new_with_conflict_groups(gen_keypairs, chunk_size, num_conflict_groups)
+        } else {
+            KeypairChunks::new(gen_keypairs, chunk_size)
+        };
         let nonce_chunks =
             nonce_keypairs.map(|nonce_keypairs| KeypairChunks::new(nonce_keypairs, chunk_size));
 
@@ -353,6 +382,7 @@ where
         use_randomized_compute_unit_price,
         use_durable_nonce,
         instruction_padding_config,
+        num_conflict_groups,
         ..
     } = config;
 
@@ -364,6 +394,7 @@ where
         tx_count,
         use_randomized_compute_unit_price,
         instruction_padding_config,
+        num_conflict_groups,
     );
 
     let first_tx_count = loop {

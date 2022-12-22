@@ -481,7 +481,7 @@ impl VoteStorage {
             }
         }
 
-        scanner.finalize().reached_end_of_slot
+        scanner.finalize().0.reached_end_of_slot
     }
 }
 
@@ -747,7 +747,7 @@ impl ThreadLocalUnprocessedPackets {
     ) -> Vec<usize> {
         let filter = vec![Ok(()); transactions.len()];
         let results = bank.check_transactions_with_forwarding_delay(
-            transactions,
+            transactions.iter(),
             &filter,
             FORWARD_TRANSACTIONS_TO_LEADER_AT_SLOT_OFFSET,
         );
@@ -901,7 +901,7 @@ impl ThreadLocalUnprocessedPackets {
             new_retryable_packets.extend(retryable_packets);
         }
 
-        let reached_end_of_slot = scanner.finalize().reached_end_of_slot;
+        let reached_end_of_slot = scanner.finalize().0.reached_end_of_slot;
 
         self.unprocessed_packet_batches.packet_priority_queue = new_retryable_packets;
         self.verify_priority_queue(original_capacity);
