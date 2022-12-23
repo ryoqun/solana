@@ -844,6 +844,9 @@ impl BankingStage {
         );
         slot_metrics_tracker.increment_make_decision_us(make_decision_time.as_us());
 
+        // metrics_action must always be consumed by .apply_action() as it's a finishing part of
+        // 2-stage state change of slot_metrics_tracker, which is just initiated by
+        // check_leader_slot_boundary().
         match decision {
             BufferedPacketsDecision::Consume(bank_start) => {
                 // Take metrics action before consume packets (potentially resetting the
@@ -912,7 +915,14 @@ impl BankingStage {
                 // Take metrics action after forwarding packets
                 slot_metrics_tracker.apply_action(metrics_action);
             }
-            _ => (),
+            BufferedPacketsDecision::Hold => {
+                // Need to reset tracker by applying the action as soon as ReportAndResetTracker is
+                // returned from check_leader_slot_boundary().
+                // Otherwise, metrics_action won't never switch to Noop, skewing metrics because of
+                // calling mark_slot_end_detected() repeatedly until next BankStart become
+                // available...
+                slot_metrics_tracker.apply_action(metrics_action);
+            }
         }
     }
 
