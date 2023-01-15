@@ -27,7 +27,6 @@ use {
     solana_core::{
         banking_trace::BankingSimulator,
         system_monitor_service::{SystemMonitorService, SystemMonitorStatsReportConfig},
-        validator::move_and_async_delete_path,
     },
     solana_entry::entry::Entry,
     solana_geyser_plugin_manager::geyser_plugin_service::GeyserPluginService,
@@ -3407,11 +3406,10 @@ fn main() {
                 }
 
                 let accounts_db_config = Some(AccountsDbConfig {
-                    skip_rewrites: arg_matches.is_present("accounts_db_skip_rewrites"),
                     ancient_append_vec_offset: value_t!(
                         matches,
                         "accounts_db_ancient_append_vecs",
-                        u64
+                        i64
                     )
                     .ok(),
                     skip_initial_hash_calc: arg_matches
