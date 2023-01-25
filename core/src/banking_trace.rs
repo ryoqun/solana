@@ -249,9 +249,10 @@ impl BankingTracer {
     fn trace_event(&self, on_trace: impl Fn() -> TimedTracedEvent) {
         if let Some(ActiveTracer { trace_sender, exit }) = &self.active_tracer {
             if !exit.load(Ordering::Relaxed) {
+                let event = on_trace();
                 info!("send trace event!: {:?}", &event);
                 trace_sender
-                    .send(on_trace())
+                    .send(event)
                     .expect("active tracer thread unless exited");
             } else {
                 info!("NOT send bank event...!");
@@ -843,8 +844,8 @@ impl BankingSimulator {
         // if slot is too short => bail
         info!("warmup_duration: {:?}", warmup_duration);
 
-        let banking_retracer = BankingTracer::new(Some((
-            blockstore.banking_retracer_path(),
+        let (banking_retracer, retracer_thread) = BankingTracer::new(Some((
+            &blockstore.banking_retracer_path(),
             exit.clone(),
             BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT,
         ))).unwrap();
@@ -1052,7 +1053,7 @@ impl BankingSimulator {
                 let new_bank = Bank::new_from_parent_with_options(&bank, &simulated_leader, new_slot, options);
                 // make sure parent is frozen for finalized hashes via the above
                 // new()-ing of its child bank
-                banking_retracer.hash_event(bank.slot(), bank.last_blockhash(), bank.hash());
+                banking_retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
                 bank_forks.write().unwrap().insert(new_bank);
                 bank = bank_forks.read().unwrap().working_bank();
                 poh_recorder.write().unwrap().set_bank(&bank, false);
@@ -1072,6 +1073,9 @@ impl BankingSimulator {
         sender_thread.join().unwrap();
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
+        if let Some(retracer_thread) = retracer_thread {
+            retracer_thread.join().unwrap();
+        }
 
         // TODO: add flag to store shreds into ledger so that we can even benchmark replay stgage with
         // actua blocks created by these simulation
