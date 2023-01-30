@@ -161,9 +161,8 @@ impl fmt::Debug for Packet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Packet {{ size: {:?}, addr: {:?} }}",
-            self.meta.size,
-            self.meta.socket_addr()
+            "Packet {{ meta: {:?}, }}",
+            self.meta,
         )
     }
 }

@@ -858,6 +858,7 @@ impl PartialEq for Bank {
             accounts_data_size_delta_off_chain: _,
             fee_structure: _,
             incremental_snapshot_persistence: _,
+            blockhash_override: _,
             // Ignore new fields explicitly if they do not impact PartialEq.
             // Adding ".." will remove compile-time checks that if a new field
             // is added to the struct, this PartialEq is accordingly updated.
@@ -1115,6 +1116,8 @@ pub struct Bank {
     pub fee_structure: FeeStructure,
 
     pub incremental_snapshot_persistence: Option<BankIncrementalSnapshotPersistence>,
+
+    pub blockhash_override: Option<Hash>,
 }
 
 struct VoteWithStakeDelegations {
@@ -1137,6 +1140,7 @@ struct LoadVoteAndStakeAccountsResult {
 #[derive(Debug, Default)]
 pub struct NewBankOptions {
     pub vote_only_bank: bool,
+    pub blockhash_override: Option<Hash>,
 }
 
 #[derive(Debug, Default)]
@@ -1317,6 +1321,7 @@ impl Bank {
             accounts_data_size_delta_on_chain: AtomicI64::new(0),
             accounts_data_size_delta_off_chain: AtomicI64::new(0),
             fee_structure: FeeStructure::default(),
+            blockhash_override: Default::default(),
         };
 
         let accounts_data_size_initial = bank.get_total_accounts_stats().unwrap().data_len as u64;
@@ -1465,7 +1470,7 @@ impl Bank {
         new_bank_options: NewBankOptions,
     ) -> Self {
         let mut time = Measure::start("bank::new_from_parent");
-        let NewBankOptions { vote_only_bank } = new_bank_options;
+        let NewBankOptions { vote_only_bank, blockhash_override } = new_bank_options;
 
         parent.freeze();
         assert_ne!(slot, parent.slot());
@@ -1611,6 +1616,7 @@ impl Bank {
             accounts_data_size_delta_on_chain: AtomicI64::new(0),
             accounts_data_size_delta_off_chain: AtomicI64::new(0),
             fee_structure: parent.fee_structure.clone(),
+            blockhash_override,
         };
 
         let (_, ancestors_time_us) = measure_us!({
@@ -1905,6 +1911,7 @@ impl Bank {
             accounts_data_size_delta_on_chain: AtomicI64::new(0),
             accounts_data_size_delta_off_chain: AtomicI64::new(0),
             fee_structure: FeeStructure::default(),
+            blockhash_override: Default::default(),
         };
         bank.finish_init(
             genesis_config,
@@ -3120,7 +3127,7 @@ impl Bank {
         }
     }
 
-    pub fn freeze(&self) {
+    pub fn _freeze(&self, bank_hash_override: Option<Hash>) {
         // This lock prevents any new commits from BankingStage
         // `process_and_record_transactions_locked()` from coming
         // in after the last tick is observed. This is because in
@@ -3143,9 +3150,17 @@ impl Bank {
 
             // freeze is a one-way trip, idempotent
             self.freeze_started.store(true, Relaxed);
-            *hash = self.hash_internal_state();
+            *hash = self._hash_internal_state(bank_hash_override);
             self.rc.accounts.accounts_db.mark_slot_frozen(self.slot());
         }
+    }
+
+    pub fn freeze(&self) {
+        self._freeze(None);
+    }
+
+    pub fn freeze_with_bank_hash_override(&self, bank_hash_override: Option<Hash>) {
+        self._freeze(bank_hash_override);
     }
 
     // dangerous; don't use this; this is only needed for ledger-tool's special command
@@ -3566,7 +3581,7 @@ impl Bank {
         // readers can starve this write lock acquisition and ticks would be slowed down too
         // much if the write lock is acquired for each tick.
         let mut w_blockhash_queue = self.blockhash_queue.write().unwrap();
-        w_blockhash_queue.register_hash(blockhash, self.fee_rate_governor.lamports_per_signature);
+        w_blockhash_queue.register_hash(&self.blockhash_override.as_ref().unwrap_or(blockhash), self.fee_rate_governor.lamports_per_signature);
         self.update_recent_blockhashes_locked(&w_blockhash_queue);
     }
 
@@ -3835,6 +3850,28 @@ impl Bank {
         self.rc.accounts.accounts_db.set_shrink_paths(paths);
     }
 
+    // danger
+    pub fn skip_check_age(&self) {
+        self.runtime_config.skip_check_age();
+    }
+
+    pub fn check_age_tx(&self, tx: &SanitizedTransaction) -> (Result<()>, std::option::Option<NoncePartial>) {
+        let max_age = MAX_PROCESSING_AGE;
+        let hash_queue = self.blockhash_queue.read().unwrap();
+        let last_blockhash = hash_queue.last_hash();
+        let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
+        let recent_blockhash = tx.message().recent_blockhash();
+        if hash_queue.is_hash_valid_for_age(recent_blockhash, max_age) {
+            (Ok(()), None)
+        } else if let Some((address, account)) =
+            self.check_transaction_for_nonce(tx, &next_durable_nonce)
+        {
+            (Ok(()), Some(NoncePartial::new(address, account)))
+        } else {
+            (Err(TransactionError::BlockhashNotFound), None)
+        }
+    }
+
     fn check_age<'a>(
         &self,
         txs: impl Iterator<Item = &'a SanitizedTransaction>,
@@ -3842,6 +3879,10 @@ impl Bank {
         max_age: usize,
         error_counters: &mut TransactionErrorMetrics,
     ) -> Vec<TransactionCheckResult> {
+        if self.runtime_config.is_check_age_skipped() {
+            return txs.map(|_| (Ok(()), None)).collect();
+        }
+
         let hash_queue = self.blockhash_queue.read().unwrap();
         let last_blockhash = hash_queue.last_hash();
         let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
@@ -4361,6 +4402,9 @@ impl Bank {
             &self.feature_set,
             &self.fee_structure,
             account_overrides,
+            self.runtime_config
+                .is_check_age_skipped()
+                .then(|| self.get_lamports_per_signature()),
         );
         load_time.stop();
 
@@ -4734,7 +4778,12 @@ impl Bank {
                     .map(|maybe_lamports_per_signature| (maybe_lamports_per_signature, true))
                     .unwrap_or_else(|| {
                         (
-                            hash_queue.get_lamports_per_signature(tx.message().recent_blockhash()),
+                            (if self.runtime_config.is_check_age_skipped() {
+                                Some(self.get_lamports_per_signature())
+                            } else {
+                                hash_queue
+                                    .get_lamports_per_signature(tx.message().recent_blockhash())
+                            }),
                             false,
                         )
                     });
@@ -6595,6 +6644,10 @@ impl Bank {
     /// Hash the `accounts` HashMap. This represents a validator's interpretation
     ///  of the delta of the ledger since the last vote and up to now
     fn hash_internal_state(&self) -> Hash {
+        self._hash_internal_state(None)
+    }
+
+    fn _hash_internal_state(&self, bank_hash_override: Option<Hash>) -> Hash {
         // If there are no accounts, return the hash of the previous state and the latest blockhash
         let bank_hash_info = self.rc.accounts.bank_hash_info_at(self.slot());
         let mut signature_count_buf = [0u8; 8];
@@ -6631,12 +6684,13 @@ impl Bank {
         }
 
         info!(
-            "bank frozen: {} hash: {} accounts_delta: {} signature_count: {} last_blockhash: {} capitalization: {}{}",
+            "bank frozen: {} hash: {} accounts_delta: {} signature_count: {} last_blockhash: {}{} capitalization: {}{}",
             self.slot(),
-            hash,
+            bank_hash_override.map(|ho| format!("{ho} (overrode: {hash})")).unwrap_or_else(|| format!("{hash}")),
             bank_hash_info.accounts_delta_hash.0,
             self.signature_count(),
             self.last_blockhash(),
+            self.blockhash_override.map(|_| format!(" (overrode)")).unwrap_or_else(|| format!("")),
             self.capitalization(),
             if let Some(epoch_accounts_hash) = epoch_accounts_hash {
                 format!(", epoch_accounts_hash: {:?}", epoch_accounts_hash.as_ref())
@@ -6650,7 +6704,7 @@ impl Bank {
             self.slot(),
             bank_hash_info.stats,
         );
-        hash
+        bank_hash_override.unwrap_or(hash)
     }
 
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
@@ -19302,6 +19356,7 @@ pub(crate) mod tests {
             &bank.rent_collector,
             &bank.feature_set,
             &FeeStructure::default(),
+            None,
             None,
         );
 
