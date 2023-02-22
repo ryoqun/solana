@@ -34,19 +34,24 @@ pub(super) struct PreBalanceInfo {
     pub mint_decimals: HashMap<Pubkey, u8>,
 }
 
+use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+
 pub struct Committer {
     transaction_status_sender: Option<TransactionStatusSender>,
     replay_vote_sender: ReplayVoteSender,
+    prioritization_fee_cache: Arc<PrioritizationFeeCache>,
 }
 
 impl Committer {
     pub fn new(
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: ReplayVoteSender,
+        prioritization_fee_cache: Arc<PrioritizationFeeCache>,
     ) -> Self {
         Self {
             transaction_status_sender,
             replay_vote_sender,
+            prioritization_fee_cache,
         }
     }
 
@@ -76,6 +81,19 @@ impl Committer {
 
         let (last_blockhash, lamports_per_signature) =
             bank.last_blockhash_and_lamports_per_signature();
+
+        use itertools::Itertools;
+        let executed_transactions = execution_results
+            .iter()
+            .zip(batch.sanitized_transactions())
+            .filter_map(|(execution_result, tx)| {
+                if execution_result.was_executed() {
+                    Some(tx)
+                } else {
+                    None
+                }
+            })
+            .collect_vec();
 
         let (tx_results, commit_time_us) = measure_us!(bank.commit_transactions(
             batch.sanitized_transactions(),
@@ -119,6 +137,7 @@ impl Committer {
                 pre_balance_info,
                 starting_transaction_index,
             );
+            self.prioritization_fee_cache.update(bank.clone(), executed_transactions.into_iter());
         });
         execute_and_commit_timings.find_and_send_votes_us = find_and_send_votes_us;
         (commit_time_us, commit_transaction_statuses)

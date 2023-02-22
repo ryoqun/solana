@@ -276,6 +276,8 @@ pub struct FilterForwardingResults {
     pub(crate) total_filter_packets_us: u64,
 }
 
+use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+
 impl BankingStage {
     /// Create the stage using `bank`. Exit when `verified_receiver` is dropped.
     #[allow(clippy::too_many_arguments)]
@@ -290,6 +292,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
+        prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
     ) -> Self {
         Self::new_num_threads(
             cluster_info,
@@ -303,6 +306,7 @@ impl BankingStage {
             log_messages_bytes_limit,
             connection_cache,
             bank_forks,
+            prioritization_fee_cache,
         )
     }
 
@@ -319,6 +323,7 @@ impl BankingStage {
         log_messages_bytes_limit: Option<usize>,
         connection_cache: Arc<ConnectionCache>,
         bank_forks: Arc<RwLock<BankForks>>,
+        prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
     ) -> Self {
         assert!(num_threads >= MIN_TOTAL_THREADS);
         // Single thread to generate entries from many banks.
@@ -385,6 +390,7 @@ impl BankingStage {
                 let committer = Committer::new(
                     transaction_status_sender.clone(),
                     replay_vote_sender.clone(),
+                    prioritization_fee_cache.clone()
                 );
                 let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
                 let forwarder = Forwarder::new(

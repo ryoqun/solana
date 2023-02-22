@@ -1054,6 +1054,7 @@ impl Validator {
             config.runtime_config.log_messages_bytes_limit,
             &staked_nodes,
             config.staked_nodes_overrides.clone(),
+            &prioritization_fee_cache,
             banking_tracer,
             tracer_thread,
             tpu_enable_udp,

@@ -72,6 +72,8 @@ pub struct Tpu {
     tracer_thread_hdl: TracerThread,
 }
 
+use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
+
 impl Tpu {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -100,6 +102,7 @@ impl Tpu {
         log_messages_bytes_limit: Option<usize>,
         staked_nodes: &Arc<RwLock<StakedNodes>>,
         shared_staked_nodes_overrides: Arc<RwLock<HashMap<Pubkey, u64>>>,
+        prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
         banking_tracer: Arc<BankingTracer>,
         tracer_thread_hdl: TracerThread,
         tpu_enable_udp: bool,
@@ -244,6 +247,7 @@ impl Tpu {
             log_messages_bytes_limit,
             connection_cache.clone(),
             bank_forks.clone(),
+            prioritization_fee_cache,
         );
 
         let broadcast_stage = broadcast_type.new_broadcast_stage(
