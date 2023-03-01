@@ -69,6 +69,7 @@ pub struct Consumer {
     transaction_recorder: TransactionRecorder,
     qos_service: QosService,
     log_messages_bytes_limit: Option<usize>,
+    #[cfg(test)]
     test_fn: Option<Box<dyn Fn() + Send>>,
 }
 
@@ -78,6 +79,7 @@ impl Consumer {
         transaction_recorder: TransactionRecorder,
         qos_service: QosService,
         log_messages_bytes_limit: Option<usize>,
+        #[cfg(test)]
         test_fn: Option<Box<dyn Fn() + Send>>,
     ) -> Self {
         Self {
@@ -85,6 +87,7 @@ impl Consumer {
             transaction_recorder,
             qos_service,
             log_messages_bytes_limit,
+            #[cfg(test)]
             test_fn,
         }
     }
@@ -197,6 +200,7 @@ impl Consumer {
         // Out of the buffered packets just retried, collect any still unprocessed
         // transactions in this batch for forwarding
         *rebuffered_packet_count += retryable_transaction_indexes.len();
+        #[cfg(test)]
         if let Some(test_fn) = &self.test_fn {
             test_fn();
         }
