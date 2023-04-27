@@ -26,6 +26,6 @@ jobs:
       uses: rossjrw/pr-preview-action@v1.4.0
       with:
         source-dir: ./target/doc/
-        deploy-repository: ryoqun/ghtest-project-cargo-doc-previews
+        deploy-repository: ryoqun/solana-rustdoc-preview
         umbrella-dir: .
         token: ${{ secrets.RUSTDOC_PREVIEW_REPO_TOKEN }}
