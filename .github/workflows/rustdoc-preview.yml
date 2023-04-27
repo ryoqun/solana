@@ -10,7 +10,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTDOCFLAGS: --enable-index-page -Z unstable-options
-  RUSTFLAGS: -Z sparse-registry
 
 jobs:
   doc:
