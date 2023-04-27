@@ -22,3 +22,10 @@ jobs:
       run: sudo apt install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
     - name: step-cargo
       run: cargo doc --no-deps --document-private-items --package solana-runtime
+    - name: step-git
+      uses: rossjrw/pr-preview-action@v1.4.0
+      with:
+        source-dir: ./target/doc/
+        deploy-repository: ryoqun/ghtest-project-cargo-doc-previews
+        umbrella-dir: .
+        token: ${{ secrets.RUSTDOC_PREVIEW_REPO_TOKEN }}
