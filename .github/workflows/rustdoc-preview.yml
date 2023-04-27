@@ -19,6 +19,6 @@ jobs:
     - name: step-rustup
       uses: dtolnay/rust-toolchain@nightly
     - name: step-apt
-      run: apt install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+      run: sudo apt install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
     - name: step-cargo
       run: cargo doc --no-deps --document-private-items --package solana-runtime
