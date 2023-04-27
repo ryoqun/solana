@@ -21,7 +21,7 @@ jobs:
     - name: step-apt
       run: sudo apt install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
     - name: step-cargo
-      run: cargo doc --no-deps --document-private-items --package solana-runtime
+      run: cargo doc --no-deps --document-private-items --workspace
     - name: step-git
       uses: rossjrw/pr-preview-action@v1.4.0
       with:
