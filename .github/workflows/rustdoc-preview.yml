@@ -1,0 +1,23 @@
+name: rustdoc-previews
+
+concurrency: preview-${{ github.ref }}
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+env:
+  CARGO_TERM_COLOR: always
+  RUSTDOCFLAGS: --enable-index-page -Z unstable-options
+
+jobs:
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install nightly Rust toolchain
+      uses: dtolnay/rust-toolchain@nightly
+    - name: Run doc
+      run: cargo doc --no-deps --document-private-items
