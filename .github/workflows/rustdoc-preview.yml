@@ -1,4 +1,4 @@
-name: rustdoc-previews
+name: workflow-rustdoc-preview
 
 concurrency: preview-${{ github.ref }}
 on:
@@ -12,11 +12,13 @@ env:
   RUSTDOCFLAGS: --enable-index-page -Z unstable-options
 
 jobs:
-  doc:
+  job-rustdoc-preview:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install nightly Rust toolchain
+    - name: step-rustup
       uses: dtolnay/rust-toolchain@nightly
-    - name: Run doc
-      run: cargo doc --no-deps --document-private-items
+    - name: step-apt
+      run: apt install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+    - name: step-cargo
+      run: cargo doc --no-deps --document-private-items --package solana-runtime
