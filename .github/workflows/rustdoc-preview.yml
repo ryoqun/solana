@@ -7,7 +7,6 @@ on:
       - opened
       - reopened
       - synchronize
-      - closed
 env:
   CARGO_TERM_COLOR: always
   RUSTDOCFLAGS: --enable-index-page -Z unstable-options
