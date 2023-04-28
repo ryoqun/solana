@@ -115,7 +115,7 @@ impl PooledScheduler {
                 let pool = pool.clone();
                 move || {
                     while let Ok(tx) = transaction_receiver.recv() {
-                        let timings = Default::default();
+                        let mut timings = Default::default();
                         let result = execute_batch(
                             (|| panic!())(),
                             (|| panic!())(),
