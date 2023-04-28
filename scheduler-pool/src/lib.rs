@@ -103,6 +103,8 @@ struct PooledScheduler {
 
 impl PooledScheduler {
     fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
+        let (sender, receiver) = crossbeam_channel::unbounded();
+
         Self {
             id: thread_rng().gen::<SchedulerId>(),
             pool,
