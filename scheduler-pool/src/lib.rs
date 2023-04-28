@@ -111,19 +111,21 @@ impl PooledScheduler {
         std::thread::spawn({
             let pool = pool.clone();
             move || {
-            while let Ok(tx) = transaction_receiver.recv() {
-                let result = execute_batch(
-                    panic!(),
-                    panic!(),
-                    pool.transaction_status_sender.as_ref(),
-                    pool.replay_vote_sender.as_ref(),
-                    panic!(),
-                    pool.log_messages_bytes_limit,
-                    &pool.prioritization_fee_cache,
-                );
-                result_sender.send((result, Default::default())).unwrap();
+                while let Ok(tx) = transaction_receiver.recv() {
+                    let timings = Default::default();
+                    let result = execute_batch(
+                        panic!(),
+                        panic!(),
+                        pool.transaction_status_sender.as_ref(),
+                        pool.replay_vote_sender.as_ref(),
+                        timings,
+                        pool.log_messages_bytes_limit,
+                        &pool.prioritization_fee_cache,
+                    );
+                    result_sender.send((result, timings).unwrap();
+                }
             }
-        }});
+        });
 
         Self {
             id: thread_rng().gen::<SchedulerId>(),
