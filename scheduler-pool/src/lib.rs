@@ -99,6 +99,8 @@ struct PooledScheduler {
     pool: Arc<SchedulerPool>,
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
+    transaction_sender: usize,
+    result_receiver: usize,
 }
 
 impl PooledScheduler {
@@ -107,6 +109,9 @@ impl PooledScheduler {
         let (result_sender, result_receiver) = crossbeam_channel::unbounded();
 
         std::thread::spawn(|| {
+            while let Ok(tx) = transaction_receiver.recv() {
+                result_sender.send(Ok(())).unwrap();
+            }
         });
 
         Self {
