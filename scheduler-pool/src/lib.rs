@@ -109,6 +109,7 @@ impl PooledScheduler {
         let (result_sender, result_receiver) = crossbeam_channel::unbounded();
 
         for _ in 0..1 {
+            let result_sender = result_sender.clone();
             std::thread::spawn({
                 let pool = pool.clone();
                 move || {
