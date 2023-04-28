@@ -122,7 +122,7 @@ impl PooledScheduler {
                         pool.log_messages_bytes_limit,
                         &pool.prioritization_fee_cache,
                     );
-                    result_sender.send((result, timings).unwrap();
+                    result_sender.send((result, timings)).unwrap();
                 }
             }
         });
