@@ -117,8 +117,8 @@ impl PooledScheduler {
                     while let Ok(tx) = transaction_receiver.recv() {
                         let timings = Default::default();
                         let result = execute_batch(
-                            panic!(),
-                            panic!(),
+                            (|| panic!())(),
+                            (|| panic!())(),
                             pool.transaction_status_sender.as_ref(),
                             pool.replay_vote_sender.as_ref(),
                             &mut timings,
