@@ -103,13 +103,19 @@ struct PooledScheduler {
 
 impl PooledScheduler {
     fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
-        let (sender, receiver) = crossbeam_channel::unbounded();
+        let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
+        let (result_sender, result_receiver) = crossbeam_channel::unbounded();
+
+        std::thread::spawn(|| {
+        });
 
         Self {
             id: thread_rng().gen::<SchedulerId>(),
             pool,
             context: Some(initial_context),
             result_with_timings: Mutex::default(),
+            transaction_sender,
+            result_receiver,
         }
     }
 }

@@ -6785,6 +6785,7 @@ name = "solana-scheduler-pool"
 version = "1.16.0"
 dependencies = [
  "assert_matches",
+ "crossbeam-channel",
  "rand 0.7.3",
  "solana-ledger",
  "solana-logger 1.16.0",
