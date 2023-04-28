@@ -114,7 +114,7 @@ impl PooledScheduler {
             std::thread::spawn({
                 let pool = pool.clone();
                 move || {
-                    while let Ok(tx) = transaction_receiver.recv() {
+                    while let Ok(_tx) = transaction_receiver.recv() {
                         let mut timings = Default::default();
                         let result = execute_batch(
                             (|| panic!())(),
