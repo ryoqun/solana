@@ -1,5 +1,4 @@
 name: workflow-rustdoc-preview
-
 concurrency: preview-${{ github.ref }}
 on:
   pull_request:
@@ -7,10 +6,10 @@ on:
       - opened
       - reopened
       - synchronize
+      - closed
 env:
   CARGO_TERM_COLOR: always
   RUSTDOCFLAGS: --enable-index-page -Z unstable-options
-
 jobs:
   job-rustdoc-preview:
     runs-on: ubuntu-latest
