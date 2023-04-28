@@ -112,14 +112,15 @@ impl PooledScheduler {
             let transaction_receiver = transaction_receiver.clone();
             let result_sender = result_sender.clone();
             std::thread::spawn({
-                let p = || panic!();
+                let p1 = || panic!();
+                let p2 = || panic!();
                 let pool = pool.clone();
                 move || {
                     while let Ok(_tx) = transaction_receiver.recv() {
                         let mut timings = Default::default();
                         let result = execute_batch(
-                            p(),
-                            p(),
+                            p1(),
+                            p2(),
                             pool.transaction_status_sender.as_ref(),
                             pool.replay_vote_sender.as_ref(),
                             &mut timings,
