@@ -16,8 +16,8 @@ use {
     },
 };
 
-// Limit the size of cluster-slots map in case
-// of receiving bogus epoch slots values.
+/// Limit the size of cluster-slots map in case
+/// of receiving bogus epoch slots values.
 const CLUSTER_SLOTS_TRIM_SIZE: usize = 524_288; // 512K
 
 pub(crate) type SlotPubkeys = HashMap</*node:*/ Pubkey, /*stake:*/ u64>;
