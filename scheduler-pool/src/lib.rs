@@ -247,12 +247,16 @@ mod tests {
 
         let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool = SchedulerPool::new_dyn(None, None, None, _ignored_prioritization_fee_cache);
-        let bank = Arc::new(Bank::default_for_tests());
-        let context = &SchedulingContext::new(SchedulingMode::BlockVerification, bank);
+        let create_context = || {
+            SchedulingContext::new(
+                SchedulingMode::BlockVerification,
+                Arc::new(Bank::default_for_tests()),
+            )
+        };
 
-        let mut scheduler1 = pool.take_from_pool(context.clone());
+        let mut scheduler1 = pool.take_from_pool(create_context());
         let scheduler_id1 = scheduler1.id();
-        let mut scheduler2 = pool.take_from_pool(context.clone());
+        let mut scheduler2 = pool.take_from_pool(create_context());
         let scheduler_id2 = scheduler2.id();
         assert_ne!(scheduler_id1, scheduler_id2);
 
@@ -267,9 +271,9 @@ mod tests {
         );
         pool.return_to_pool(scheduler2);
 
-        let scheduler3 = pool.take_from_pool(context.clone());
+        let scheduler3 = pool.take_from_pool(create_context());
         assert_eq!(scheduler_id2, scheduler3.id());
-        let scheduler4 = pool.take_from_pool(context.clone());
+        let scheduler4 = pool.take_from_pool(create_context());
         assert_eq!(scheduler_id1, scheduler4.id());
     }
 
@@ -280,9 +284,9 @@ mod tests {
         let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool = SchedulerPool::new_dyn(None, None, None, _ignored_prioritization_fee_cache);
         let bank = Arc::new(Bank::default_for_tests());
-        let context = &SchedulingContext::new(SchedulingMode::BlockVerification, bank);
+        let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank);
 
-        let mut scheduler = pool.take_from_pool(context.clone());
+        let mut scheduler = pool.take_from_pool(context);
 
         assert!(scheduler.context().is_some());
         assert_matches!(
@@ -303,11 +307,11 @@ mod tests {
         assert!(!Arc::ptr_eq(old_bank, new_bank));
 
         let old_context =
-            &SchedulingContext::new(SchedulingMode::BlockVerification, old_bank.clone());
+            SchedulingContext::new(SchedulingMode::BlockVerification, old_bank.clone());
         let new_context =
-            &SchedulingContext::new(SchedulingMode::BlockVerification, new_bank.clone());
+            SchedulingContext::new(SchedulingMode::BlockVerification, new_bank.clone());
 
-        let mut scheduler = pool.take_from_pool(old_context.clone());
+        let mut scheduler = pool.take_from_pool(old_context);
         let scheduler_id = scheduler.id();
         assert_matches!(
             scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
@@ -315,7 +319,7 @@ mod tests {
         );
         pool.return_to_pool(scheduler);
 
-        let scheduler = pool.take_from_pool(new_context.clone());
+        let scheduler = pool.take_from_pool(new_context);
         assert_eq!(scheduler_id, scheduler.id());
         assert!(Arc::ptr_eq(scheduler.context().unwrap().bank(), new_bank));
     }

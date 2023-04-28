@@ -156,7 +156,7 @@ impl AbiExample for InstalledSchedulerBoxInBank {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct SchedulingContext {
     mode: SchedulingMode,
     // Intentionally not using Weak<Bank> for performance reasons
