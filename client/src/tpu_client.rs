@@ -22,7 +22,7 @@ pub use {
 
 /// Client which sends transactions directly to the current leader's TPU port over UDP.
 /// The client uses RPC to determine the current leader and fetch node contact info
-/// This is just a thin wrapper over the "BackendTpuClient", use that directly for more efficiency.
+/// This is just a thin wrapper over the [BackendTpuClient], use that directly for more efficiency.
 pub struct TpuClient<
     P, // ConnectionPool
     M, // ConnectionManager
