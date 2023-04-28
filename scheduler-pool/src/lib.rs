@@ -135,9 +135,9 @@ impl InstalledScheduler for PooledScheduler {
 
     fn schedule_execution(&self, transaction: &SanitizedTransaction, index: usize) {
         let context = self.context.as_ref().expect("active context");
+        let bank = context.bank();
 
-        let batch = context
-            .bank()
+        let batch = bank
             .prepare_sanitized_batch_without_locking(transaction.clone());
         let batch_with_indexes = TransactionBatchWithIndexes {
             batch,
@@ -158,7 +158,7 @@ impl InstalledScheduler for PooledScheduler {
         if result.is_ok() || !fail_fast {
             *result = execute_batch(
                 &batch_with_indexes,
-                context.bank(),
+                bank,
                 self.pool.transaction_status_sender.as_ref(),
                 self.pool.replay_vote_sender.as_ref(),
                 timings,
