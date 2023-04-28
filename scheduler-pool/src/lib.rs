@@ -110,7 +110,7 @@ impl PooledScheduler {
 
         std::thread::spawn(|| {
             while let Ok(tx) = transaction_receiver.recv() {
-                result_sender.send(Ok(())).unwrap();
+                result_sender.send((Ok(()), Default::default())).unwrap();
             }
         });
 
