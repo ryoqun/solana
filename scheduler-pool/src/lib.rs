@@ -118,7 +118,7 @@ impl PooledScheduler {
                         panic!(),
                         pool.transaction_status_sender.as_ref(),
                         pool.replay_vote_sender.as_ref(),
-                        timings,
+                        &mut timings,
                         pool.log_messages_bytes_limit,
                         &pool.prioritization_fee_cache,
                     );
