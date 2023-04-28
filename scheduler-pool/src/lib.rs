@@ -100,7 +100,7 @@ struct PooledScheduler {
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
     transaction_sender: usize,
-    result_receiver: usize,
+    result_receiver: crossbeam_channel::Receiver<ResultWithTimings>,
 }
 
 impl PooledScheduler {
