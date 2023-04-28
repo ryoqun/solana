@@ -39,7 +39,7 @@ use {
     },
 };
 
-/// Adapter so we can unify the interfaces of built-in programs and syscalls
+/// Adapter so we can unify the interfaces of built-in programs and syscalls!!!!
 #[macro_export]
 macro_rules! declare_process_instruction {
     ($process_instruction:ident, $cu_to_consume:expr, |$invoke_context:ident| $inner:tt) => {
