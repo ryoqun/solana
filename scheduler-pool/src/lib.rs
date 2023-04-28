@@ -99,7 +99,7 @@ struct PooledScheduler {
     pool: Arc<SchedulerPool>,
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
-    transaction_sender: crossbeam_channel::Sender<Transaction>,
+    transaction_sender: crossbeam_channel::Sender<SanitizedTransaction>,
     result_receiver: crossbeam_channel::Receiver<ResultWithTimings>,
 }
 
