@@ -108,7 +108,9 @@ impl PooledScheduler {
         let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
         let (result_sender, result_receiver) = crossbeam_channel::unbounded();
 
-        std::thread::spawn(move || {
+        std::thread::spawn({
+            let pool = pool.clone();
+            move || {
             while let Ok(tx) = transaction_receiver.recv() {
                 let result = execute_batch(
                     panic!(),
@@ -121,7 +123,7 @@ impl PooledScheduler {
                 );
                 result_sender.send((result, Default::default())).unwrap();
             }
-        });
+        }});
 
         Self {
             id: thread_rng().gen::<SchedulerId>(),
