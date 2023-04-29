@@ -261,9 +261,9 @@ impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler2<T> {
     }
 }
 
-enum Flushable {
+enum ChainedChannel {
     Payload((SanitizedTransaction, usize)),
-    Flush,
+    NextChannel(),
 }
 
 impl<T: TransactionHandler> PooledScheduler2<T> {
