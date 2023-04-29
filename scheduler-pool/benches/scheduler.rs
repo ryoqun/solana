@@ -31,6 +31,8 @@ use {
     test::Bencher,
 };
 
+const tx_count: usize = 10_000;
+
 struct D;
 
 impl solana_scheduler_pool::TransactionHandler for D {
@@ -94,7 +96,6 @@ fn bench_pooled_scheduler_single_threaded_arc_mutation(bencher: &mut Bencher) {
         genesis_config.hash(),
     ));
     bencher.iter(|| {
-        let tx_count = 20_000;
         for _ in 0..tx_count {
             scheduler.schedule_execution(tx0.clone(), 0);
         }
@@ -128,7 +129,6 @@ fn bench_pooled_scheduler_single_threaded_no_arc_mutation(bencher: &mut Bencher)
         genesis_config.hash(),
     ));
     bencher.iter(|| {
-        let tx_count = 20_000;
         for _ in 0..tx_count {
             scheduler.schedule_execution(tx0.clone(), 0);
         }
@@ -162,7 +162,6 @@ fn bench_pooled_scheduler_arc_mutation(bencher: &mut Bencher) {
         genesis_config.hash(),
     ));
     bencher.iter(|| {
-        let tx_count = 20_000;
         let t = scheduler.recv(tx_count);
 
         for _ in 0..tx_count {
@@ -199,8 +198,6 @@ fn bench_pooled_scheduler_no_arc_mutation(bencher: &mut Bencher) {
         genesis_config.hash(),
     ));
     bencher.iter(|| {
-        let tx_count = 20_000;
-
         for _ in 0..tx_count {
             scheduler.schedule_execution(tx0.clone(), 0);
         }
