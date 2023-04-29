@@ -309,11 +309,11 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
     pub fn recv(&self, count: usize) -> std::thread::JoinHandle<()> {
         let result_receiver = self.result_receiver.clone();
 
-        std::thread::spawn(move || {
+        //std::thread::spawn(move || {
             for _ in 0..count {
                 std::hint::black_box(result_receiver.recv().unwrap().0.unwrap());
             }
-        })
+        //})
     }
 }
 impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler
