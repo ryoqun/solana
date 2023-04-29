@@ -276,7 +276,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
         let lane_count: usize = std::env::var("SOLANA_LANE_COUNT").ok()
             .and_then(|num_threads| num_threads.parse().ok())
             .unwrap_or(std::thread::available_parallelism().unwrap().into());
-        error!("lane count: {lane_count}");
+        log::error!("lane count: {lane_count}");
 
         for _ in 0..lane_count {
             let bank = Arc::clone(initial_context.bank());
