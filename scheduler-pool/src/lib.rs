@@ -273,7 +273,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
         let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
         let (result_sender, result_receiver) = crossbeam_channel::unbounded();
 
-        for _ in 0..8 {
+        for _ in 0..4 {
             let bank = Arc::clone(initial_context.bank());
             let transaction_receiver = transaction_receiver.clone();
             let result_sender = result_sender.clone();
