@@ -176,6 +176,8 @@ fn bench_pooled_scheduler_arc_mutation(bencher: &mut Bencher) {
         scheduler.replace_context(create_context());
         t.join().unwrap();
     });
+    let t = scheduler.recv(tx_count);
+    t.join().unwrap();
 }
 
 #[bench]
