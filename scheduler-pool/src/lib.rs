@@ -109,9 +109,15 @@ impl InstalledSchedulerPool for SchedulerPool {
 use solana_runtime::bank::Bank;
 
 pub trait TransactionHandler {
-    fn handle_transaction(result: &mut solana_sdk::transaction::Result<()>, timings: &mut ExecuteTimings, bank: &Arc<Bank>, transaction: &SanitizedTransaction, index: usize, pool: &SchedulerPool) {
-        let batch = bank
-            .prepare_sanitized_batch_without_locking(transaction.clone());
+    fn handle_transaction(
+        result: &mut solana_sdk::transaction::Result<()>,
+        timings: &mut ExecuteTimings,
+        bank: &Arc<Bank>,
+        transaction: &SanitizedTransaction,
+        index: usize,
+        pool: &SchedulerPool,
+    ) {
+        let batch = bank.prepare_sanitized_batch_without_locking(transaction.clone());
         let batch_with_indexes = TransactionBatchWithIndexes {
             batch,
             transaction_indexes: vec![index],
@@ -129,8 +135,7 @@ pub trait TransactionHandler {
     }
 }
 
-impl TransactionHandler for () {
-}
+impl TransactionHandler for () {}
 
 // Currently, simplest possible implementation (i.e. single-threaded)
 // this will be replaced with more proper implementation...
@@ -146,7 +151,9 @@ pub struct PooledScheduler<T: TransactionHandler> {
 }
 
 impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler<T> {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { todo!() }
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        todo!()
+    }
 }
 
 impl<T: TransactionHandler> PooledScheduler<T> {
@@ -181,9 +188,10 @@ impl<T: TransactionHandler> PooledScheduler<T> {
             _phantom: Default::default(),
         }
     }
-
 }
-impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler for PooledScheduler<T> {
+impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler
+    for PooledScheduler<T>
+{
     fn id(&self) -> SchedulerId {
         self.id
     }
@@ -207,9 +215,9 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
         // so, we're NOT scheduling at all; rather, just execute tx straight off.  we doesn't need
         // to solve inter-tx locking deps only in the case of single-thread fifo like this....
         //if result.is_ok() || !fail_fast {
-            //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
-            self.transaction_sender.send(transaction).unwrap();
-            //self.result_receiver.recv().unwrap();
+        //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
+        self.transaction_sender.send(transaction).unwrap();
+        //self.result_receiver.recv().unwrap();
         //}
     }
 
@@ -238,9 +246,10 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
             None
         } else {
             {
-        let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
-        let (result, timings) =
-            result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
+                let result_with_timings =
+                    &mut *self.result_with_timings.lock().expect("not poisoned");
+                let (result, timings) =
+                    result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
             }
             self.result_with_timings
                 .lock()
@@ -273,7 +282,9 @@ pub struct PooledScheduler2<T: TransactionHandler> {
 }
 
 impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler2<T> {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { todo!() }
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        todo!()
+    }
 }
 
 impl<T: TransactionHandler> PooledScheduler2<T> {
@@ -308,9 +319,10 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
             _phantom: Default::default(),
         }
     }
-
 }
-impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler for PooledScheduler2<T> {
+impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler
+    for PooledScheduler2<T>
+{
     fn id(&self) -> SchedulerId {
         self.id
     }
@@ -334,9 +346,9 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
         // so, we're NOT scheduling at all; rather, just execute tx straight off.  we doesn't need
         // to solve inter-tx locking deps only in the case of single-thread fifo like this....
         //if result.is_ok() || !fail_fast {
-            //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
-            self.transaction_sender.send(transaction).unwrap();
-            //self.result_receiver.recv().unwrap();
+        //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
+        self.transaction_sender.send(transaction).unwrap();
+        //self.result_receiver.recv().unwrap();
         //}
     }
 
@@ -365,9 +377,10 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
             None
         } else {
             {
-        let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
-        let (result, timings) =
-            result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
+                let result_with_timings =
+                    &mut *self.result_with_timings.lock().expect("not poisoned");
+                let (result, timings) =
+                    result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
             }
             self.result_with_timings
                 .lock()
