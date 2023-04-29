@@ -273,7 +273,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
         let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
         let (result_sender, result_receiver) = crossbeam_channel::unbounded();
 
-        let lane_count = env::var("SOLANA_LANE_COUNT").ok()
+        let lane_count = std::env::var("SOLANA_LANE_COUNT").ok()
             .and_then(|num_threads| num_threads.parse().ok())
             .unwrap_or(8);
 
