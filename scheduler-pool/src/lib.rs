@@ -273,7 +273,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
             std::thread::spawn({
                 let pool = pool.clone();
                 move || {
-                    while let Ok((tx, idx)) = transaction_receiver.recv() {
+                    while let Ok((tx, idx, _b)) = transaction_receiver.recv() {
                         let mut result = Ok(());
                         let mut timings = Default::default();
                         T::handle_transaction(&mut result, &mut timings, &bank, &tx, idx, &pool);
