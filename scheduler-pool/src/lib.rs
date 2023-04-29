@@ -261,10 +261,12 @@ impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler2<T> {
     }
 }
 
+/*
 enum ChainedChannel {
     Payload((SanitizedTransaction, usize)),
     NextChannel(),
 }
+*/
 
 impl<T: TransactionHandler> PooledScheduler2<T> {
     pub fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
@@ -297,6 +299,13 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
             transaction_sender,
             result_receiver,
             _phantom: Default::default(),
+        }
+    }
+
+    fn recv(&self, count: usize) {
+        let mut count = 0;
+        for _ 0..count {
+            self.result_receiver.recv().unwrap();
         }
     }
 }
