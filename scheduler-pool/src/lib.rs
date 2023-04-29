@@ -145,8 +145,6 @@ pub struct PooledScheduler<T: TransactionHandler> {
     pool: Arc<SchedulerPool>,
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
-    transaction_sender: crossbeam_channel::Sender<SanitizedTransaction>,
-    result_receiver: crossbeam_channel::Receiver<ResultWithTimings>,
     _phantom: std::marker::PhantomData<T>,
 }
 
@@ -158,33 +156,11 @@ impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler<T> {
 
 impl<T: TransactionHandler> PooledScheduler<T> {
     pub fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
-        let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
-        let (result_sender, result_receiver) = crossbeam_channel::unbounded();
-
-        for _ in 0..1 {
-            let bank = Arc::clone(initial_context.bank());
-            let transaction_receiver = transaction_receiver.clone();
-            let result_sender = result_sender.clone();
-            std::thread::spawn({
-                let pool = pool.clone();
-                move || {
-                    while let Ok(tx) = transaction_receiver.recv() {
-                        let mut result = Ok(());
-                        let mut timings = Default::default();
-                        T::handle_transaction(&mut result, &mut timings, &bank, &tx, 0, &pool);
-                        result_sender.send((result, timings)).unwrap();
-                    }
-                }
-            });
-        }
-
         Self {
             id: thread_rng().gen::<SchedulerId>(),
             pool,
             context: Some(initial_context),
             result_with_timings: Mutex::default(),
-            transaction_sender,
-            result_receiver,
             _phantom: Default::default(),
         }
     }
@@ -208,17 +184,15 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
             SchedulingMode::BlockVerification => true,
         };
 
-        //let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
-        //let (result, timings) =
-        //    result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
+        let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
+        let (result, timings) =
+            result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
 
         // so, we're NOT scheduling at all; rather, just execute tx straight off.  we doesn't need
         // to solve inter-tx locking deps only in the case of single-thread fifo like this....
-        //if result.is_ok() || !fail_fast {
-        //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
-        self.transaction_sender.send(transaction).unwrap();
-        //self.result_receiver.recv().unwrap();
-        //}
+        if result.is_ok() || !fail_fast {
+            T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
+        }
     }
 
     fn schedule_termination(&mut self) {
@@ -332,24 +306,7 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
     }
 
     fn schedule_execution(&self, transaction: SanitizedTransaction, index: usize) {
-        let context = self.context.as_ref().expect("active context");
-
-        let fail_fast = match context.mode() {
-            // this should be false, for (upcoming) BlockGeneration variant.
-            SchedulingMode::BlockVerification => true,
-        };
-
-        //let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
-        //let (result, timings) =
-        //    result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
-
-        // so, we're NOT scheduling at all; rather, just execute tx straight off.  we doesn't need
-        // to solve inter-tx locking deps only in the case of single-thread fifo like this....
-        //if result.is_ok() || !fail_fast {
-        //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
         self.transaction_sender.send(transaction).unwrap();
-        //self.result_receiver.recv().unwrap();
-        //}
     }
 
     fn schedule_termination(&mut self) {
