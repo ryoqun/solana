@@ -66,7 +66,6 @@ impl solana_scheduler_pool::TransactionHandler for D2 {
         //std::hint::black_box(bank.clone());
         let mut i = 0;
         for _ in 1..10 {
-            std::hint::black_box((Arc::downgrade(bank)).upgrade().unwrap());
             i += bank.get_fee_for_message_with_lamports_per_signature(transaction.message(), 23)
         }
         std::hint::black_box(i);
@@ -74,7 +73,7 @@ impl solana_scheduler_pool::TransactionHandler for D2 {
 }
 
 #[bench]
-fn bench_pooled_scheduler1(bencher: &mut Bencher) {
+fn bench_pooled_scheduler_single_threaded(bencher: &mut Bencher) {
     solana_logger::setup();
 
     let GenesisConfigInfo {
@@ -145,7 +144,7 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_pooled_scheduler3(bencher: &mut Bencher) {
+fn bench_pooled_scheduler_no_arc_mutation(bencher: &mut Bencher) {
     solana_logger::setup();
 
     let GenesisConfigInfo {
