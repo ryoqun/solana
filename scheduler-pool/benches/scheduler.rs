@@ -46,8 +46,8 @@ impl solana_scheduler_pool::TransactionHandler for D {
     ) {
         //std::hint::black_box(bank.clone());
         let mut i = 0;
-        std::hint::black_box((Arc::downgrade(bank)).upgrade().unwrap());
         for _ in 1..10 {
+            std::hint::black_box((Arc::downgrade(bank)).upgrade().unwrap());
             i += bank.get_fee_for_message_with_lamports_per_signature(transaction.message(), i)
         }
         std::hint::black_box(i);
