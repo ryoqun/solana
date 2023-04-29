@@ -250,7 +250,7 @@ pub struct PooledScheduler2<T: TransactionHandler> {
     pool: Arc<SchedulerPool>,
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
-    transaction_sender: crossbeam_channel::Sender<SanitizedTransaction>,
+    transaction_sender: crossbeam_channel::Sender<(SanitizedTransaction, usize)>,
     result_receiver: crossbeam_channel::Receiver<ResultWithTimings>,
     _phantom: std::marker::PhantomData<T>,
 }
@@ -273,10 +273,10 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
             std::thread::spawn({
                 let pool = pool.clone();
                 move || {
-                    while let Ok(tx) = transaction_receiver.recv() {
+                    while let Ok((tx, idx)) = transaction_receiver.recv() {
                         let mut result = Ok(());
                         let mut timings = Default::default();
-                        T::handle_transaction(&mut result, &mut timings, &bank, &tx, 0, &pool);
+                        T::handle_transaction(&mut result, &mut timings, &bank, &tx, idx, &pool);
                         result_sender.send((result, timings)).unwrap();
                     }
                 }
