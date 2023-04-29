@@ -275,7 +275,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
 
         let lane_count = env::var("SOLANA_LANE_COUNT").ok()
             .and_then(|num_threads| num_threads.parse().ok())
-            .unwrap_or(8)
+            .unwrap_or(8);
 
         for _ in 0..lane_count {
             let bank = Arc::clone(initial_context.bank());
