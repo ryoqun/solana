@@ -73,7 +73,7 @@ impl solana_scheduler_pool::TransactionHandler for D2 {
 }
 
 #[bench]
-fn bench_pooled_scheduler_single_threaded(bencher: &mut Bencher) {
+fn bench_pooled_scheduler_single_threaded_arc_mutation(bencher: &mut Bencher) {
     solana_logger::setup();
 
     let GenesisConfigInfo {
@@ -107,7 +107,41 @@ fn bench_pooled_scheduler_single_threaded(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_pooled_scheduler2(bencher: &mut Bencher) {
+fn bench_pooled_scheduler_single_threaded_no_arc_mutation(bencher: &mut Bencher) {
+    solana_logger::setup();
+
+    let GenesisConfigInfo {
+        genesis_config,
+        mint_keypair,
+        ..
+    } = create_genesis_config(1_000_000_000);
+    let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
+    let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+    let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
+    let create_context = || SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
+
+    let mut scheduler = PooledScheduler::<D2>::spawn(pool, create_context());
+    let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+        &mint_keypair,
+        &solana_sdk::pubkey::new_rand(),
+        2,
+        genesis_config.hash(),
+    ));
+    bencher.iter(|| {
+        let tx_count = 20_000;
+        for _ in 0..tx_count {
+            scheduler.schedule_execution(tx0.clone(), 0);
+        }
+        assert_matches!(
+            scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+            Some((Ok(()), _))
+        );
+        scheduler.replace_context(create_context());
+    });
+}
+
+#[bench]
+fn bench_pooled_scheduler_arc_mutation(bencher: &mut Bencher) {
     solana_logger::setup();
 
     let GenesisConfigInfo {
