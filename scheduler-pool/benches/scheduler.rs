@@ -109,7 +109,6 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
     ));
     bencher.iter(|| {
         let tx_count = 20_000;
-        let t = scheduler.recv(tx_count);
 
         for _ in 0..tx_count {
             scheduler.schedule_execution(tx0.clone(), 0);
@@ -119,6 +118,7 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
             Some((Ok(()), _))
         );
         scheduler.replace_context(create_context());
+        let t = scheduler.recv(tx_count);
         t.join().unwrap();
     });
 }
