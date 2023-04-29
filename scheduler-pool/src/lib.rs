@@ -304,7 +304,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
     pub fn recv(&self, count: usize) -> std::thread::JoinHandle<()> {
         let result_receiver = self.result_receiver.clone();
 
-        std::thread::spawn(|| {
+        std::thread::spawn(move || {
             let mut count = 0;
             for _ in 0..count {
                 std::hint::black_box(result_receiver.recv().unwrap().0.unwrap());
