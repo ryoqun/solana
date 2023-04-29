@@ -280,8 +280,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
             std::thread::spawn({
                 let pool = pool.clone();
                 move || {
-                    while let Ok((tx, idx, b)) = transaction_receiver.recv() {
-                        std::hint::black_box(b);
+                    while let Ok((tx, idx)) = transaction_receiver.recv() {
                         let mut result = Ok(());
                         let mut timings = Default::default();
                         T::handle_transaction(&mut result, &mut timings, &bank, &tx, idx, &pool);
@@ -321,8 +320,7 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
     }
 
     fn schedule_execution(&self, transaction: SanitizedTransaction, index: usize) {
-        let b = Arc::clone(self.context.as_ref().unwrap().bank());
-        self.transaction_sender.send((transaction, index, b)).unwrap();
+        self.transaction_sender.send((transaction, index)).unwrap();
     }
 
     fn schedule_termination(&mut self) {
