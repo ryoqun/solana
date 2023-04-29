@@ -74,7 +74,8 @@ fn bench_pooled_scheduler1(bencher: &mut Bencher) {
         genesis_config.hash(),
     ));
     bencher.iter(|| {
-        for _ in 0..10_000 {
+        let tx_count = 20_000;
+        for _ in 0..tx_count {
             scheduler.schedule_execution(tx0.clone(), 0);
         }
         assert_matches!(
