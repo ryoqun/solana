@@ -302,10 +302,12 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
     }
 
     pub fn recv(&self, count: usize) {
-        let mut count = 0;
-        for _ in 0..count {
-            std::hint::black_box(self.result_receiver.recv().unwrap().0.unwrap());
-        }
+        std::thread::spawn(|| {
+            let mut count = 0;
+            for _ in 0..count {
+                std::hint::black_box(self.result_receiver.recv().unwrap().0.unwrap());
+            }
+        })
     }
 }
 impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler
