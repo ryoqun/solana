@@ -306,7 +306,7 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
     }
 
     fn schedule_execution(&self, transaction: SanitizedTransaction, index: usize) {
-        self.transaction_sender.send(transaction).unwrap();
+        self.transaction_sender.send((transaction, index)).unwrap();
     }
 
     fn schedule_termination(&mut self) {
