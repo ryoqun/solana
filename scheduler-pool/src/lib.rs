@@ -261,6 +261,11 @@ impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler2<T> {
     }
 }
 
+enum Flushable {
+    Payload((SanitizedTransaction, usize)),
+    Flush,
+}
+
 impl<T: TransactionHandler> PooledScheduler2<T> {
     pub fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
         let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
