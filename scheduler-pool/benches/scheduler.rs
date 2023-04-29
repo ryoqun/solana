@@ -107,7 +107,7 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
         genesis_config.hash(),
     ));
     bencher.iter(|| {
-        let tx_count = 10_000;
+        let tx_count = 50_000;
         let t = scheduler.recv(tx_count);
 
         for _ in 0..tx_count {
