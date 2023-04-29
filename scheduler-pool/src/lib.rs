@@ -301,7 +301,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
         }
     }
 
-    pub fn recv(&self, count: usize) {
+    pub fn recv(&self, count: usize) -> JoinHandle<()> {
         std::thread::spawn(|| {
             let mut count = 0;
             for _ in 0..count {
