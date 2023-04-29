@@ -305,7 +305,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
     pub fn recv(&self, count: usize) {
         let mut count = 0;
         for _ in 0..count {
-            std::hint::black_box(self.result_receiver.recv().unwrap().unwrap());
+            std::hint::black_box(self.result_receiver.recv().unwrap().0.unwrap());
         }
     }
 }
