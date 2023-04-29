@@ -23,7 +23,7 @@ use {
     solana_sdk::transaction::SanitizedTransaction,
     std::sync::{Arc, Mutex, Weak},
 };
-use solana_scheduler_pool::{SchedulerPool, PooledScheduler};
+use solana_scheduler_pool::{SchedulerPool, PooledScheduler, PooledScheduler2};
 
 use {
     assert_matches::assert_matches,
