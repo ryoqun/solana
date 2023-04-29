@@ -118,6 +118,6 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
             Some((Ok(()), _))
         );
         scheduler.replace_context(create_context());
-        t.join();
+        t.join().unwrap();
     });
 }
