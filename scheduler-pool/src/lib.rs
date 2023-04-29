@@ -1,3 +1,5 @@
+#![feature(trait_alias)]
+
 //! Transaction scheduling code.
 //!
 //! This crate implements two solana-runtime traits (`InstalledScheduler` and
@@ -41,12 +43,12 @@ pub struct SchedulerPool {
 }
 
 impl SchedulerPool {
-    pub fn new_dyn(
+    pub fn new(
         log_messages_bytes_limit: Option<usize>,
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-    ) -> InstalledSchedulerPoolArc {
+    ) -> Arc<Self> {
         Arc::new_cyclic(|weak_self| Self {
             schedulers: Mutex::<Vec<InstalledSchedulerBox>>::default(),
             log_messages_bytes_limit,
@@ -55,6 +57,20 @@ impl SchedulerPool {
             prioritization_fee_cache,
             weak_self: weak_self.clone(),
         })
+    }
+
+    pub fn new_dyn(
+        log_messages_bytes_limit: Option<usize>,
+        transaction_status_sender: Option<TransactionStatusSender>,
+        replay_vote_sender: Option<ReplayVoteSender>,
+        prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+    ) -> InstalledSchedulerPoolArc {
+        Self::new(
+            log_messages_bytes_limit,
+            transaction_status_sender,
+            replay_vote_sender,
+            prioritization_fee_cache,
+        )
     }
 
     pub fn self_arc(&self) -> Arc<Self> {
@@ -76,7 +92,7 @@ impl InstalledSchedulerPool for SchedulerPool {
             scheduler.replace_context(context);
             scheduler
         } else {
-            Box::new(PooledScheduler::spawn(self.self_arc(), context))
+            Box::new(PooledScheduler::<()>::spawn(self.self_arc(), context))
         }
     }
 
@@ -90,43 +106,65 @@ impl InstalledSchedulerPool for SchedulerPool {
     }
 }
 
+use solana_runtime::bank::Bank;
+
+pub trait TransactionHandler {
+    fn handle_transaction(result: &mut solana_sdk::transaction::Result<()>, timings: &mut ExecuteTimings, bank: &Arc<Bank>, transaction: &SanitizedTransaction, index: usize, pool: &SchedulerPool) {
+        let batch = bank
+            .prepare_sanitized_batch_without_locking(transaction.clone());
+        let batch_with_indexes = TransactionBatchWithIndexes {
+            batch,
+            transaction_indexes: vec![index],
+        };
+
+        *result = execute_batch(
+            &batch_with_indexes,
+            bank,
+            pool.transaction_status_sender.as_ref(),
+            pool.replay_vote_sender.as_ref(),
+            timings,
+            pool.log_messages_bytes_limit,
+            &pool.prioritization_fee_cache,
+        );
+    }
+}
+
+impl TransactionHandler for () {
+}
+
 // Currently, simplest possible implementation (i.e. single-threaded)
 // this will be replaced with more proper implementation...
 // not usable at all, especially for mainnet-beta
-#[derive(Debug)]
-struct PooledScheduler {
+pub struct PooledScheduler<T: TransactionHandler> {
     id: SchedulerId,
     pool: Arc<SchedulerPool>,
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
     transaction_sender: crossbeam_channel::Sender<SanitizedTransaction>,
     result_receiver: crossbeam_channel::Receiver<ResultWithTimings>,
+    _phantom: std::marker::PhantomData<T>,
 }
 
-impl PooledScheduler {
-    fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
+impl<T: TransactionHandler> std::fmt::Debug for PooledScheduler<T> {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { todo!() }
+}
+
+impl<T: TransactionHandler> PooledScheduler<T> {
+    pub fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
         let (transaction_sender, transaction_receiver) = crossbeam_channel::unbounded();
         let (result_sender, result_receiver) = crossbeam_channel::unbounded();
 
         for _ in 0..1 {
+            let bank = Arc::clone(initial_context.bank());
             let transaction_receiver = transaction_receiver.clone();
             let result_sender = result_sender.clone();
             std::thread::spawn({
-                let p1 = || panic!();
-                let p2 = || panic!();
                 let pool = pool.clone();
                 move || {
-                    while let Ok(_tx) = transaction_receiver.recv() {
+                    while let Ok(tx) = transaction_receiver.recv() {
+                        let mut result = Ok(());
                         let mut timings = Default::default();
-                        let result = execute_batch(
-                            p1(),
-                            p2(),
-                            pool.transaction_status_sender.as_ref(),
-                            pool.replay_vote_sender.as_ref(),
-                            &mut timings,
-                            pool.log_messages_bytes_limit,
-                            &pool.prioritization_fee_cache,
-                        );
+                        T::handle_transaction(&mut result, &mut timings, &bank, &tx, 0, &pool);
                         result_sender.send((result, timings)).unwrap();
                     }
                 }
@@ -140,10 +178,12 @@ impl PooledScheduler {
             result_with_timings: Mutex::default(),
             transaction_sender,
             result_receiver,
+            _phantom: Default::default(),
         }
     }
+
 }
-impl InstalledScheduler for PooledScheduler {
+impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledScheduler for PooledScheduler<T> {
     fn id(&self) -> SchedulerId {
         self.id
     }
@@ -152,39 +192,25 @@ impl InstalledScheduler for PooledScheduler {
         self.pool.clone()
     }
 
-    fn schedule_execution(&self, transaction: &SanitizedTransaction, index: usize) {
+    fn schedule_execution(&self, transaction: SanitizedTransaction, index: usize) {
         let context = self.context.as_ref().expect("active context");
-        let bank = context.bank();
-
-        let batch = bank
-            .prepare_sanitized_batch_without_locking(transaction.clone());
-        let batch_with_indexes = TransactionBatchWithIndexes {
-            batch,
-            transaction_indexes: vec![index],
-        };
 
         let fail_fast = match context.mode() {
             // this should be false, for (upcoming) BlockGeneration variant.
             SchedulingMode::BlockVerification => true,
         };
 
-        let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
-        let (result, timings) =
-            result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
+        //let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
+        //let (result, timings) =
+        //    result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
 
         // so, we're NOT scheduling at all; rather, just execute tx straight off.  we doesn't need
         // to solve inter-tx locking deps only in the case of single-thread fifo like this....
-        if result.is_ok() || !fail_fast {
-            *result = execute_batch(
-                &batch_with_indexes,
-                bank,
-                self.pool.transaction_status_sender.as_ref(),
-                self.pool.replay_vote_sender.as_ref(),
-                timings,
-                self.pool.log_messages_bytes_limit,
-                &self.pool.prioritization_fee_cache,
-            );
-        }
+        //if result.is_ok() || !fail_fast {
+            //T::handle_transaction(result, timings, context.bank(), &transaction, index, &self.pool);
+            self.transaction_sender.send(transaction).unwrap();
+            //self.result_receiver.recv().unwrap();
+        //}
     }
 
     fn schedule_termination(&mut self) {
@@ -211,6 +237,11 @@ impl InstalledScheduler for PooledScheduler {
         if keep_result_with_timings {
             None
         } else {
+            {
+        let result_with_timings = &mut *self.result_with_timings.lock().expect("not poisoned");
+        let (result, timings) =
+            result_with_timings.get_or_insert_with(|| (Ok(()), ExecuteTimings::default()));
+            }
             self.result_with_timings
                 .lock()
                 .expect("not poisoned")
@@ -418,7 +449,7 @@ mod tests {
 
         assert_eq!(bank.transaction_count(), 0);
         let scheduler = pool.take_from_pool(context);
-        scheduler.schedule_execution(tx0, 0);
+        scheduler.schedule_execution(tx0.clone(), 0);
         assert_eq!(bank.transaction_count(), 1);
         bank.install_scheduler(scheduler);
         assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
@@ -447,7 +478,7 @@ mod tests {
 
         assert_eq!(bank.transaction_count(), 0);
         let scheduler = pool.take_from_pool(context);
-        scheduler.schedule_execution(tx0, 0);
+        scheduler.schedule_execution(tx0.clone(), 0);
         assert_eq!(bank.transaction_count(), 0);
 
         let tx1 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
@@ -460,7 +491,7 @@ mod tests {
             bank.simulate_transaction_unchecked(tx1.clone()).result,
             Ok(_)
         );
-        scheduler.schedule_execution(tx1, 0);
+        scheduler.schedule_execution(tx1.clone(), 0);
         // transaction_count should remain same as scheduler should be bailing out.
         assert_eq!(bank.transaction_count(), 0);
 

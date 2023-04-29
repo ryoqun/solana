@@ -106,7 +106,7 @@ pub trait InstalledScheduler: Send + Sync + Debug {
     fn pool(&self) -> InstalledSchedulerPoolArc;
 
     // Calling this is illegal as soon as schedule_termiantion is called on &self.
-    fn schedule_execution(&self, sanitized_tx: &SanitizedTransaction, index: usize);
+    fn schedule_execution(&self, sanitized_tx: SanitizedTransaction, index: usize);
 
     // This optionally signals scheduling termination request to the scheduler.
     // This is subtle but important, to break circular dependency of Arc<Bank> => Scheduler =>
@@ -282,7 +282,7 @@ impl Bank {
         let scheduler = scheduler_guard.0.as_ref().expect("active scheduler");
 
         for (sanitized_transaction, &index) in transactions.iter().zip(transaction_indexes) {
-            scheduler.schedule_execution(sanitized_transaction, index);
+            scheduler.schedule_execution(sanitized_transaction.clone(), index);
         }
     }
 
