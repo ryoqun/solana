@@ -107,6 +107,7 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
         genesis_config.hash(),
     ));
     bencher.iter(|| {
+        let t = scheduler.recv(tx_count);
         let tx_count = 10_000;
         for _ in 0..tx_count {
             scheduler.schedule_execution(tx0.clone(), 0);
@@ -115,7 +116,7 @@ fn bench_pooled_scheduler2(bencher: &mut Bencher) {
             scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
             Some((Ok(()), _))
         );
-        scheduler.recv(tx_count);
         scheduler.replace_context(create_context());
+        t.join();
     });
 }
