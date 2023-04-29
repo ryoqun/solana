@@ -306,7 +306,7 @@ impl<T: TransactionHandler + std::marker::Send + std::marker::Sync> InstalledSch
     }
 
     fn schedule_execution(&self, transaction: SanitizedTransaction, index: usize) {
-        std::hint::black_box(Arc::clone(self.context.unwrap().bank()));
+        std::hint::black_box(Arc::clone(self.context.as_ref().unwrap().bank()));
         self.transaction_sender.send((transaction, index)).unwrap();
     }
 
