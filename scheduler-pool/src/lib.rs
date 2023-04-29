@@ -302,7 +302,7 @@ impl<T: TransactionHandler> PooledScheduler2<T> {
         }
     }
 
-    fn recv(&self, count: usize) {
+    pub fn recv(&self, count: usize) {
         let mut count = 0;
         for _ in 0..count {
             self.result_receiver.recv().unwrap();
