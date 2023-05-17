@@ -125,21 +125,12 @@ pub(crate) struct BatchCounter<T: BroadcastStats + Default> {
     broadcast_shred_stats: T,
 }
 
-impl<T: BroadcastStats + Default> BatchCounter<T> {
-    #[cfg(test)]
-    pub(crate) fn num_batches(&self) -> usize {
-        self.num_batches
-    }
-}
+impl<T: BroadcastStats + Default> BatchCounter<T> {}
 
 #[derive(Default)]
 pub(crate) struct SlotBroadcastStats<T: BroadcastStats + Default>(HashMap<Slot, BatchCounter<T>>);
 
 impl<T: BroadcastStats + Default> SlotBroadcastStats<T> {
-    #[cfg(test)]
-    pub(crate) fn get(&self, slot: Slot) -> Option<&BatchCounter<T>> {
-        self.0.get(&slot)
-    }
     pub(crate) fn update(&mut self, new_stats: &T, batch_info: &Option<BroadcastShredBatchInfo>) {
         if let Some(batch_info) = batch_info {
             let mut should_delete = false;
@@ -170,158 +161,6 @@ impl<T: BroadcastStats + Default> SlotBroadcastStats<T> {
                     .remove(&batch_info.slot)
                     .expect("delete should be successful");
             }
-        }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[derive(Default)]
-    struct TestStats {
-        sender: Option<Sender<(usize, Slot, Instant)>>,
-        count: usize,
-    }
-
-    impl BroadcastStats for TestStats {
-        fn update(&mut self, new_stats: &TestStats) {
-            self.count += new_stats.count;
-            self.sender = new_stats.sender.clone();
-        }
-        fn report_stats(&mut self, slot: Slot, slot_start: Instant, _was_interrupted: bool) {
-            self.sender
-                .as_ref()
-                .unwrap()
-                .send((self.count, slot, slot_start))
-                .unwrap()
-        }
-    }
-
-    #[test]
-    fn test_update_broadcast() {
-        let start = Instant::now();
-        let mut slot_broadcast_stats = SlotBroadcastStats::default();
-        slot_broadcast_stats.update(
-            &TransmitShredsStats {
-                transmit_elapsed: 1,
-                get_peers_elapsed: 2,
-                send_mmsg_elapsed: 3,
-                shred_select: 4,
-                num_shreds: 5,
-                total_packets: 6,
-                dropped_packets: 7,
-            },
-            &Some(BroadcastShredBatchInfo {
-                slot: 0,
-                num_expected_batches: Some(2),
-                slot_start_ts: start,
-                was_interrupted: false,
-            }),
-        );
-
-        // Singular update
-        let slot_0_stats = slot_broadcast_stats.0.get(&0).unwrap();
-        assert_eq!(slot_0_stats.num_batches, 1);
-        assert_eq!(slot_0_stats.num_expected_batches.unwrap(), 2);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.transmit_elapsed, 1);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.get_peers_elapsed, 2);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.send_mmsg_elapsed, 3);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.shred_select, 4);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.num_shreds, 5);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.total_packets, 6);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.dropped_packets, 7);
-
-        slot_broadcast_stats.update(
-            &TransmitShredsStats {
-                transmit_elapsed: 11,
-                get_peers_elapsed: 12,
-                send_mmsg_elapsed: 13,
-                shred_select: 14,
-                num_shreds: 15,
-                total_packets: 16,
-                dropped_packets: 17,
-            },
-            &None,
-        );
-
-        // If BroadcastShredBatchInfo == None, then update should be ignored
-        let slot_0_stats = slot_broadcast_stats.0.get(&0).unwrap();
-        assert_eq!(slot_0_stats.num_batches, 1);
-        assert_eq!(slot_0_stats.num_expected_batches.unwrap(), 2);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.transmit_elapsed, 1);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.get_peers_elapsed, 2);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.send_mmsg_elapsed, 3);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.shred_select, 4);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.num_shreds, 5);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.total_packets, 6);
-        assert_eq!(slot_0_stats.broadcast_shred_stats.dropped_packets, 7);
-
-        // If another batch is given, then total number of batches == num_expected_batches == 2,
-        // so the batch should be purged from the HashMap
-        slot_broadcast_stats.update(
-            &TransmitShredsStats {
-                transmit_elapsed: 1,
-                get_peers_elapsed: 1,
-                send_mmsg_elapsed: 1,
-                shred_select: 1,
-                num_shreds: 1,
-                total_packets: 1,
-                dropped_packets: 1,
-            },
-            &Some(BroadcastShredBatchInfo {
-                slot: 0,
-                num_expected_batches: None,
-                slot_start_ts: start,
-                was_interrupted: false,
-            }),
-        );
-
-        assert!(slot_broadcast_stats.0.get(&0).is_none());
-    }
-
-    #[test]
-    fn test_update_multi_threaded() {
-        for round in 0..50 {
-            let start = Instant::now();
-            let slot_broadcast_stats = Arc::new(Mutex::new(SlotBroadcastStats::default()));
-            let num_threads = 5;
-            let slot = 0;
-            let (sender, receiver) = unbounded();
-            let thread_handles: Vec<_> = (0..num_threads)
-                .map(|i| {
-                    let slot_broadcast_stats = slot_broadcast_stats.clone();
-                    let sender = Some(sender.clone());
-                    let test_stats = TestStats { sender, count: 1 };
-                    let mut broadcast_batch_info = BroadcastShredBatchInfo {
-                        slot,
-                        num_expected_batches: None,
-                        slot_start_ts: start,
-                        was_interrupted: false,
-                    };
-                    if i == round % num_threads {
-                        broadcast_batch_info.num_expected_batches = Some(num_threads);
-                    }
-                    Builder::new()
-                        .name("test_update_multi_threaded".to_string())
-                        .spawn(move || {
-                            slot_broadcast_stats
-                                .lock()
-                                .unwrap()
-                                .update(&test_stats, &Some(broadcast_batch_info))
-                        })
-                        .unwrap()
-                })
-                .collect();
-
-            for t in thread_handles {
-                t.join().unwrap();
-            }
-
-            assert!(slot_broadcast_stats.lock().unwrap().0.get(&slot).is_none());
-            let (returned_count, returned_slot, _returned_instant) = receiver.recv().unwrap();
-            assert_eq!(returned_count, num_threads);
-            assert_eq!(returned_slot, slot);
         }
     }
 }

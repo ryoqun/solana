@@ -16,7 +16,3 @@ mod hash;
 #[macro_use]
 extern crate solana_frozen_abi_macro;
 
-#[cfg(RUSTC_WITH_SPECIALIZATION)]
-#[cfg(test)]
-#[macro_use]
-extern crate serde_derive;

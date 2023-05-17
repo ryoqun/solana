@@ -1,6 +1,4 @@
 //! Cached data for hashing accounts
-#[cfg(test)]
-use crate::pubkey_bins::PubkeyBinCalculator24;
 use {
     crate::{accounts_hash::CalculateHashIntermediate, cache_hash_data_stats::CacheHashDataStats},
     memmap2::MmapMut,
@@ -35,30 +33,7 @@ impl CacheHashDataFile {
         self.get_slice(0)
     }
 
-    #[cfg(test)]
     /// Populate 'accumulator' from entire contents of the cache file.
-    pub(crate) fn load_all(
-        &self,
-        accumulator: &mut SavedType,
-        start_bin_index: usize,
-        bin_calculator: &PubkeyBinCalculator24,
-        stats: &mut CacheHashDataStats,
-    ) {
-        let mut m2 = Measure::start("decode");
-        let slices = self.get_cache_hash_data();
-        for d in slices {
-            let mut pubkey_to_bin_index = bin_calculator.bin_from_pubkey(&d.pubkey);
-            assert!(
-                pubkey_to_bin_index >= start_bin_index,
-                "{pubkey_to_bin_index}, {start_bin_index}"
-            ); // this would indicate we put a pubkey in too high of a bin
-            pubkey_to_bin_index -= start_bin_index;
-            accumulator[pubkey_to_bin_index].push(d.clone()); // may want to avoid clone here
-        }
-
-        m2.stop();
-        stats.decode_us += m2.as_us();
-    }
 
     /// get '&mut EntryType' from cache file [ix]
     fn get_mut(&mut self, ix: u64) -> &mut EntryType {
@@ -194,23 +169,7 @@ impl CacheHashData {
         }
     }
 
-    #[cfg(test)]
     /// load from 'file_name' into 'accumulator'
-    pub(crate) fn load(
-        &self,
-        file_name: impl AsRef<Path>,
-        accumulator: &mut SavedType,
-        start_bin_index: usize,
-        bin_calculator: &PubkeyBinCalculator24,
-    ) -> Result<(), std::io::Error> {
-        let mut m = Measure::start("overall");
-        let cache_file = self.load_map(file_name)?;
-        let mut stats = CacheHashDataStats::default();
-        cache_file.load_all(accumulator, start_bin_index, bin_calculator, &mut stats);
-        m.stop();
-        self.stats.lock().unwrap().load_us += m.as_us();
-        Ok(())
-    }
 
     /// map 'file_name' into memory
     pub(crate) fn load_map(
@@ -343,137 +302,5 @@ impl CacheHashData {
         stats.save_us += m.as_us();
         stats.saved_to_cache += 1;
         Ok(())
-    }
-}
-
-#[cfg(test)]
-pub mod tests {
-    use {super::*, rand::Rng};
-
-    #[test]
-    fn test_read_write() {
-        // generate sample data
-        // write to file
-        // read
-        // compare
-        use tempfile::TempDir;
-        let tmpdir = TempDir::new().unwrap();
-        let cache_dir = tmpdir.path().to_path_buf();
-        std::fs::create_dir_all(&cache_dir).unwrap();
-
-        for bins in [1, 2, 4] {
-            let bin_calculator = PubkeyBinCalculator24::new(bins);
-            let num_points = 5;
-            let (data, _total_points) = generate_test_data(num_points, bins, &bin_calculator);
-            for passes in [1, 2] {
-                let bins_per_pass = bins / passes;
-                if bins_per_pass == 0 {
-                    continue; // illegal test case
-                }
-                for pass in 0..passes {
-                    for flatten_data in [true, false] {
-                        let mut data_this_pass = if flatten_data {
-                            vec![vec![], vec![]]
-                        } else {
-                            vec![]
-                        };
-                        let start_bin_this_pass = pass * bins_per_pass;
-                        for bin in 0..bins_per_pass {
-                            let mut this_bin_data = data[bin + start_bin_this_pass].clone();
-                            if flatten_data {
-                                data_this_pass[0].append(&mut this_bin_data);
-                            } else {
-                                data_this_pass.push(this_bin_data);
-                            }
-                        }
-                        let cache = CacheHashData::new(cache_dir.clone());
-                        let file_name = PathBuf::from("test");
-                        cache.save(&file_name, &data_this_pass).unwrap();
-                        cache.get_cache_files();
-                        assert_eq!(
-                            cache
-                                .pre_existing_cache_files
-                                .lock()
-                                .unwrap()
-                                .iter()
-                                .collect::<Vec<_>>(),
-                            vec![&file_name],
-                        );
-                        let mut accum = (0..bins_per_pass).map(|_| vec![]).collect();
-                        cache
-                            .load(&file_name, &mut accum, start_bin_this_pass, &bin_calculator)
-                            .unwrap();
-                        if flatten_data {
-                            bin_data(
-                                &mut data_this_pass,
-                                &bin_calculator,
-                                bins_per_pass,
-                                start_bin_this_pass,
-                            );
-                        }
-                        assert_eq!(
-                            accum, data_this_pass,
-                            "bins: {bins}, start_bin_this_pass: {start_bin_this_pass}, pass: {pass}, flatten: {flatten_data}, passes: {passes}"
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    fn bin_data(
-        data: &mut SavedType,
-        bin_calculator: &PubkeyBinCalculator24,
-        bins: usize,
-        start_bin: usize,
-    ) {
-        let mut accum: SavedType = (0..bins).map(|_| vec![]).collect();
-        data.drain(..).for_each(|mut x| {
-            x.drain(..).for_each(|item| {
-                let bin = bin_calculator.bin_from_pubkey(&item.pubkey);
-                accum[bin - start_bin].push(item);
-            })
-        });
-        *data = accum;
-    }
-
-    fn generate_test_data(
-        count: usize,
-        bins: usize,
-        binner: &PubkeyBinCalculator24,
-    ) -> (SavedType, usize) {
-        let mut rng = rand::thread_rng();
-        let mut ct = 0;
-        (
-            (0..bins)
-                .map(|bin| {
-                    let rnd = rng.gen::<u64>() % (bins as u64);
-                    if rnd < count as u64 {
-                        (0..std::cmp::max(1, count / bins))
-                            .map(|_| {
-                                ct += 1;
-                                let mut pk;
-                                loop {
-                                    // expensive, but small numbers and for tests, so ok
-                                    pk = solana_sdk::pubkey::new_rand();
-                                    if binner.bin_from_pubkey(&pk) == bin {
-                                        break;
-                                    }
-                                }
-
-                                CalculateHashIntermediate::new(
-                                    solana_sdk::hash::new_rand(&mut rng),
-                                    ct as u64,
-                                    pk,
-                                )
-                            })
-                            .collect::<Vec<_>>()
-                    } else {
-                        vec![]
-                    }
-                })
-                .collect::<Vec<_>>(),
-            ct,
-        )
     }
 }

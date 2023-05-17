@@ -57,8 +57,6 @@ mod types;
 mod utils;
 
 // a number of test cases in accounts_db use this
-#[cfg(test)]
-pub(crate) use tests::reconstruct_accounts_db_via_serialization;
 pub(crate) use {
     storage::SerializedAppendVecId,
     types::{SerdeAccountsDeltaHash, SerdeAccountsHash, SerdeIncrementalAccountsHash},
@@ -199,14 +197,6 @@ trait TypeContext<'a>: PartialEq {
     fn serialize_bank_and_storage<S: serde::ser::Serializer>(
         serializer: S,
         serializable_bank: &SerializableBankAndStorage<'a, Self>,
-    ) -> std::result::Result<S::Ok, S::Error>
-    where
-        Self: std::marker::Sized;
-
-    #[cfg(test)]
-    fn serialize_bank_and_storage_without_extra_fields<S: serde::ser::Serializer>(
-        serializer: S,
-        serializable_bank: &SerializableBankAndStorageNoExtra<'a, Self>,
     ) -> std::result::Result<S::Ok, S::Error>
     where
         Self: std::marker::Sized;
@@ -406,28 +396,6 @@ where
     }
 }
 
-#[cfg(test)]
-pub(crate) fn bank_to_stream_no_extra_fields<W>(
-    serde_style: SerdeStyle,
-    stream: &mut BufWriter<W>,
-    bank: &Bank,
-    snapshot_storages: &[Vec<Arc<AccountStorageEntry>>],
-) -> Result<(), Error>
-where
-    W: Write,
-{
-    match serde_style {
-        SerdeStyle::Newer => bincode::serialize_into(
-            stream,
-            &SerializableBankAndStorageNoExtra::<newer::Context> {
-                bank,
-                snapshot_storages,
-                phantom: std::marker::PhantomData::default(),
-            },
-        ),
-    }
-}
-
 /// deserialize the bank from 'stream_reader'
 /// modify the accounts_hash
 /// reserialize the bank to 'stream_writer'
@@ -499,39 +467,6 @@ impl<'a, C: TypeContext<'a>> Serialize for SerializableBankAndStorage<'a, C> {
         S: serde::ser::Serializer,
     {
         C::serialize_bank_and_storage(serializer, self)
-    }
-}
-
-#[cfg(test)]
-struct SerializableBankAndStorageNoExtra<'a, C> {
-    bank: &'a Bank,
-    snapshot_storages: &'a [Vec<Arc<AccountStorageEntry>>],
-    phantom: std::marker::PhantomData<C>,
-}
-
-#[cfg(test)]
-impl<'a, C: TypeContext<'a>> Serialize for SerializableBankAndStorageNoExtra<'a, C> {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        C::serialize_bank_and_storage_without_extra_fields(serializer, self)
-    }
-}
-
-#[cfg(test)]
-impl<'a, C> From<SerializableBankAndStorageNoExtra<'a, C>> for SerializableBankAndStorage<'a, C> {
-    fn from(s: SerializableBankAndStorageNoExtra<'a, C>) -> SerializableBankAndStorage<'a, C> {
-        let SerializableBankAndStorageNoExtra {
-            bank,
-            snapshot_storages,
-            phantom,
-        } = s;
-        SerializableBankAndStorage {
-            bank,
-            snapshot_storages,
-            phantom,
-        }
     }
 }
 

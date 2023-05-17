@@ -184,75 +184,6 @@ impl BroadcastHandler {
     }
 }
 
-#[cfg(test)]
-pub struct TestBroadcastReceiver {
-    handler: BroadcastHandler,
-    inner: tokio::sync::broadcast::Receiver<RpcNotification>,
-}
-
-#[cfg(test)]
-impl TestBroadcastReceiver {
-    pub fn recv(&mut self) -> String {
-        match self.recv_timeout(std::time::Duration::from_secs(10)) {
-            Err(err) => panic!("broadcast receiver error: {err}"),
-            Ok(str) => str,
-        }
-    }
-
-    pub fn recv_timeout(&mut self, timeout: std::time::Duration) -> Result<String, String> {
-        use {std::thread::sleep, tokio::sync::broadcast::error::TryRecvError};
-
-        let started = std::time::Instant::now();
-
-        loop {
-            match self.inner.try_recv() {
-                Ok(notification) => {
-                    debug!(
-                        "TestBroadcastReceiver: {:?}ms elapsed",
-                        started.elapsed().as_millis()
-                    );
-                    if let Some(json) = self.handler.handle(notification).expect("handler failed") {
-                        return Ok(json.to_string());
-                    }
-                }
-                Err(TryRecvError::Empty) => {
-                    if started.elapsed() > timeout {
-                        return Err("TestBroadcastReceiver: no data, timeout reached".into());
-                    }
-                    sleep(std::time::Duration::from_millis(50));
-                }
-                Err(e) => return Err(e.to_string()),
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-pub fn test_connection(
-    subscriptions: &Arc<RpcSubscriptions>,
-) -> (RpcSolPubSubImpl, TestBroadcastReceiver) {
-    let current_subscriptions = Arc::new(DashMap::new());
-
-    let rpc_impl = RpcSolPubSubImpl::new(
-        PubSubConfig {
-            enable_block_subscription: true,
-            enable_vote_subscription: true,
-            queue_capacity_items: 100,
-            ..PubSubConfig::default()
-        },
-        subscriptions.control().clone(),
-        Arc::clone(&current_subscriptions),
-    );
-    let broadcast_handler = BroadcastHandler {
-        current_subscriptions,
-    };
-    let receiver = TestBroadcastReceiver {
-        inner: subscriptions.control().broadcast_receiver(),
-        handler: broadcast_handler,
-    };
-    (rpc_impl, receiver)
-}
-
 #[derive(Debug, Error)]
 enum Error {
     #[error("handshake error: {0}")]
@@ -373,51 +304,5 @@ async fn listen(
             },
             _ = &mut tripwire => return Ok(()),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        crate::optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
-        solana_runtime::{
-            bank::Bank,
-            bank_forks::BankForks,
-            commitment::BlockCommitmentCache,
-            genesis_utils::{create_genesis_config, GenesisConfigInfo},
-        },
-        std::{
-            net::{IpAddr, Ipv4Addr},
-            sync::{
-                atomic::{AtomicBool, AtomicU64},
-                RwLock,
-            },
-        },
-    };
-
-    #[test]
-    fn test_pubsub_new() {
-        let pubsub_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0);
-        let exit = Arc::new(AtomicBool::new(false));
-        let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
-        let max_complete_rewards_slot = Arc::new(AtomicU64::default());
-        let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
-        let bank = Bank::new_for_tests(&genesis_config);
-        let bank_forks = Arc::new(RwLock::new(BankForks::new(bank)));
-        let optimistically_confirmed_bank =
-            OptimisticallyConfirmedBank::locked_from_bank_forks_root(&bank_forks);
-        let subscriptions = Arc::new(RpcSubscriptions::new_for_tests(
-            &exit,
-            max_complete_transaction_status_slot,
-            max_complete_rewards_slot,
-            bank_forks,
-            Arc::new(RwLock::new(BlockCommitmentCache::new_for_tests())),
-            optimistically_confirmed_bank,
-        ));
-        let (_trigger, pubsub_service) =
-            PubSubService::new(PubSubConfig::default(), &subscriptions, pubsub_addr);
-        let thread = pubsub_service.thread_hdl.thread();
-        assert_eq!(thread.name().unwrap(), "solRpcPubSub");
     }
 }

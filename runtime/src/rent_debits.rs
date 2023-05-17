@@ -34,11 +34,6 @@ impl RentDebits {
             .unwrap_or_default()
     }
 
-    #[cfg(test)]
-    pub(crate) fn len(&self) -> usize {
-        self.0.len()
-    }
-
     pub fn insert(&mut self, address: &Pubkey, rent_collected: u64, post_balance: u64) {
         if rent_collected != 0 {
             self.0.insert(

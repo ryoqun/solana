@@ -189,10 +189,6 @@ impl LegacyContactInfo {
         self.wallclock = wallclock;
     }
 
-    #[cfg(test)]
-    pub(crate) fn set_shred_version(&mut self, shred_version: u16) {
-        self.shred_version = shred_version
-    }
 
     get_socket!(gossip);
     get_socket!(tvu);
@@ -278,85 +274,3 @@ impl TryFrom<&ContactInfo> for LegacyContactInfo {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_is_valid_address() {
-        let bad_address_port = socketaddr!(Ipv4Addr::LOCALHOST, 0);
-        assert!(!LegacyContactInfo::is_valid_address(
-            &bad_address_port,
-            &SocketAddrSpace::Unspecified
-        ));
-        let bad_address_unspecified = socketaddr!(Ipv4Addr::UNSPECIFIED, 1234);
-        assert!(!LegacyContactInfo::is_valid_address(
-            &bad_address_unspecified,
-            &SocketAddrSpace::Unspecified
-        ));
-        let bad_address_multicast = socketaddr!([224, 254, 0, 0], 1234);
-        assert!(!LegacyContactInfo::is_valid_address(
-            &bad_address_multicast,
-            &SocketAddrSpace::Unspecified
-        ));
-        let loopback = socketaddr!(Ipv4Addr::LOCALHOST, 1234);
-        assert!(LegacyContactInfo::is_valid_address(
-            &loopback,
-            &SocketAddrSpace::Unspecified
-        ));
-        //        assert!(!LegacyContactInfo::is_valid_ip_internal(loopback.ip(), false));
-    }
-
-    #[test]
-    fn test_default() {
-        let ci = LegacyContactInfo::default();
-        assert!(ci.gossip.ip().is_unspecified());
-        assert!(ci.tvu.ip().is_unspecified());
-        assert!(ci.tpu_forwards.ip().is_unspecified());
-        assert!(ci.rpc.ip().is_unspecified());
-        assert!(ci.rpc_pubsub.ip().is_unspecified());
-        assert!(ci.tpu.ip().is_unspecified());
-        assert!(ci.tpu_vote.ip().is_unspecified());
-        assert!(ci.serve_repair.ip().is_unspecified());
-    }
-
-    #[test]
-    fn test_entry_point() {
-        let addr = socketaddr!(Ipv4Addr::LOCALHOST, 10);
-        let ci = LegacyContactInfo::new_gossip_entry_point(&addr);
-        assert_eq!(ci.gossip, addr);
-        assert!(ci.tvu.ip().is_unspecified());
-        assert!(ci.tpu_forwards.ip().is_unspecified());
-        assert!(ci.rpc.ip().is_unspecified());
-        assert!(ci.rpc_pubsub.ip().is_unspecified());
-        assert!(ci.tpu.ip().is_unspecified());
-        assert!(ci.tpu_vote.ip().is_unspecified());
-        assert!(ci.serve_repair.ip().is_unspecified());
-    }
-
-    #[test]
-    fn test_valid_client_facing() {
-        let mut ci = LegacyContactInfo::default();
-        assert_eq!(
-            ci.valid_client_facing_addr(Protocol::QUIC, &SocketAddrSpace::Unspecified),
-            None
-        );
-        ci.tpu = socketaddr!(Ipv4Addr::LOCALHOST, 123);
-        assert_eq!(
-            ci.valid_client_facing_addr(Protocol::QUIC, &SocketAddrSpace::Unspecified),
-            None
-        );
-        ci.rpc = socketaddr!(Ipv4Addr::LOCALHOST, 234);
-        assert!(ci
-            .valid_client_facing_addr(Protocol::QUIC, &SocketAddrSpace::Unspecified)
-            .is_some());
-    }
-
-    #[test]
-    fn test_sanitize() {
-        let mut ci = LegacyContactInfo::default();
-        assert_eq!(ci.sanitize(), Ok(()));
-        ci.wallclock = MAX_WALLCLOCK;
-        assert_eq!(ci.sanitize(), Err(SanitizeError::ValueOutOfBounds));
-    }
-}

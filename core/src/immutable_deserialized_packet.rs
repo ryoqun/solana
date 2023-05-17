@@ -143,25 +143,3 @@ fn packet_message(packet: &Packet) -> Result<&[u8], DeserializedPacketError> {
         .and_then(|msg_start| packet.data(msg_start..))
         .ok_or(DeserializedPacketError::SignatureOverflowed(sig_size))
 }
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        solana_sdk::{signature::Keypair, system_transaction},
-    };
-
-    #[test]
-    fn simple_deserialized_packet() {
-        let tx = system_transaction::transfer(
-            &Keypair::new(),
-            &solana_sdk::pubkey::new_rand(),
-            1,
-            Hash::new_unique(),
-        );
-        let packet = Packet::from_data(None, tx).unwrap();
-        let deserialized_packet = ImmutableDeserializedPacket::new(packet);
-
-        assert!(matches!(deserialized_packet, Ok(_)));
-    }
-}

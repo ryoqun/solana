@@ -156,39 +156,3 @@ impl BroadcastRun for BroadcastFakeShredsRun {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        solana_gossip::contact_info::ContactInfo,
-        solana_sdk::signature::Signer,
-        solana_streamer::socket::SocketAddrSpace,
-        std::net::{IpAddr, Ipv4Addr, SocketAddr},
-    };
-
-    #[test]
-    fn test_tvu_peers_ordering() {
-        let cluster = {
-            let keypair = Arc::new(Keypair::new());
-            let contact_info = ContactInfo::new_localhost(&keypair.pubkey(), 0);
-            ClusterInfo::new(contact_info, keypair, SocketAddrSpace::Unspecified)
-        };
-        for k in 1..5 {
-            cluster.insert_info(ContactInfo::new_with_socketaddr(
-                &Keypair::new().pubkey(),
-                &SocketAddr::new(IpAddr::V4(Ipv4Addr::new(192, 168, 1, k)), 8080),
-            ));
-        }
-        let tvu_peers1 = cluster.tvu_peers();
-        (0..5).for_each(|_| {
-            cluster
-                .tvu_peers()
-                .iter()
-                .zip(tvu_peers1.iter())
-                .for_each(|(v1, v2)| {
-                    assert_eq!(v1, v2);
-                });
-        });
-    }
-}

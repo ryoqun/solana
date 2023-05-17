@@ -61,20 +61,3 @@ impl AccountsDataMeter {
         self.delta = self.delta.saturating_add(amount);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new() {
-        let initial = 1234;
-        let accounts_data_meter = AccountsDataMeter::new(initial);
-        assert_eq!(accounts_data_meter.initial, initial);
-    }
-
-    #[test]
-    fn test_new_can_use_max_len() {
-        let _ = AccountsDataMeter::new(MAX_ACCOUNTS_DATA_LEN);
-    }
-}

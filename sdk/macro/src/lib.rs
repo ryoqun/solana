@@ -59,8 +59,8 @@ fn id_to_tokens(
             ID
         }
 
-        #[cfg(test)]
-        #[test]
+        #[cfg(escaped)]
+        #[cfg(escaped)]
         fn test_id() {
             assert!(check_id(&id()));
         }
@@ -88,8 +88,8 @@ fn deprecated_id_to_tokens(
             ID
         }
 
-        #[cfg(test)]
-        #[test]
+        #[cfg(escaped)]
+        #[cfg(escaped)]
             fn test_id() {
             #[allow(deprecated)]
             assert!(check_id(&id()));

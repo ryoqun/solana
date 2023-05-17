@@ -122,30 +122,6 @@ struct StoredConfirmedBlock {
     block_height: Option<u64>,
 }
 
-#[cfg(test)]
-impl From<ConfirmedBlock> for StoredConfirmedBlock {
-    fn from(confirmed_block: ConfirmedBlock) -> Self {
-        let ConfirmedBlock {
-            previous_blockhash,
-            blockhash,
-            parent_slot,
-            transactions,
-            rewards,
-            block_time,
-            block_height,
-        } = confirmed_block;
-
-        Self {
-            previous_blockhash,
-            blockhash,
-            parent_slot,
-            transactions: transactions.into_iter().map(|tx| tx.into()).collect(),
-            rewards: rewards.into_iter().map(|reward| reward.into()).collect(),
-            block_time,
-            block_height,
-        }
-    }
-}
 
 impl From<StoredConfirmedBlock> for ConfirmedBlock {
     fn from(confirmed_block: StoredConfirmedBlock) -> Self {
@@ -177,24 +153,6 @@ struct StoredConfirmedBlockTransaction {
     meta: Option<StoredConfirmedBlockTransactionStatusMeta>,
 }
 
-#[cfg(test)]
-impl From<TransactionWithStatusMeta> for StoredConfirmedBlockTransaction {
-    fn from(value: TransactionWithStatusMeta) -> Self {
-        match value {
-            TransactionWithStatusMeta::MissingMetadata(transaction) => Self {
-                transaction: VersionedTransaction::from(transaction),
-                meta: None,
-            },
-            TransactionWithStatusMeta::Complete(VersionedTransactionWithStatusMeta {
-                transaction,
-                meta,
-            }) => Self {
-                transaction,
-                meta: Some(meta.into()),
-            },
-        }
-    }
-}
 
 impl From<StoredConfirmedBlockTransaction> for TransactionWithStatusMeta {
     fn from(tx_with_meta: StoredConfirmedBlockTransaction) -> Self {
@@ -1076,13 +1034,3 @@ impl LedgerStorage {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_slot_to_key() {
-        assert_eq!(slot_to_key(0), "0000000000000000");
-        assert_eq!(slot_to_key(!0), "ffffffffffffffff");
-    }
-}

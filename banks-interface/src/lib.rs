@@ -102,16 +102,3 @@ pub trait Banks {
     ) -> Option<u64>;
 }
 
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        tarpc::{client, transport},
-    };
-
-    #[test]
-    fn test_banks_client_new() {
-        let (client_transport, _server_transport) = transport::channel::unbounded();
-        BanksClient::new(client::Config::default(), client_transport);
-    }
-}

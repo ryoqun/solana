@@ -51,7 +51,6 @@ unsafe impl std::alloc::GlobalAlloc for BumpAllocator {
         // I'm a bump allocator, I don't free
     }
 }
-#[cfg(not(test))]
 #[global_allocator]
 static A: BumpAllocator = BumpAllocator;
 

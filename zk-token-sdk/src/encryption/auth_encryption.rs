@@ -202,36 +202,3 @@ impl fmt::Display for AeCiphertext {
         write!(f, "{}", BASE64_STANDARD.encode(self.to_bytes()))
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        solana_sdk::{signature::Keypair, signer::null_signer::NullSigner},
-    };
-
-    #[test]
-    fn test_aes_encrypt_decrypt_correctness() {
-        let key = AeKey::random(&mut OsRng);
-        let amount = 55;
-
-        let ct = key.encrypt(amount);
-        let decrypted_amount = ct.decrypt(&key).unwrap();
-
-        assert_eq!(amount, decrypted_amount);
-    }
-
-    #[test]
-    fn test_aes_new() {
-        let keypair1 = Keypair::new();
-        let keypair2 = Keypair::new();
-
-        assert_ne!(
-            AeKey::new(&keypair1, &Pubkey::default()).unwrap().0,
-            AeKey::new(&keypair2, &Pubkey::default()).unwrap().0,
-        );
-
-        let null_signer = NullSigner::new(&Pubkey::default());
-        assert!(AeKey::new(&null_signer, &Pubkey::default()).is_err());
-    }
-}

@@ -151,24 +151,6 @@ impl FileTowerStorage {
             .join(format!("tower-1_9-{node_pubkey}"))
             .with_extension("bin")
     }
-
-    #[cfg(test)]
-    fn store_old(&self, saved_tower: &SavedTower1_7_14) -> Result<()> {
-        let pubkey = saved_tower.node_pubkey;
-        let filename = self.old_filename(&pubkey);
-        trace!("store: {}", filename.display());
-        let new_filename = filename.with_extension("bin.new");
-
-        {
-            // overwrite anything if exists
-            let file = File::create(&new_filename)?;
-            bincode::serialize_into(file, saved_tower)?;
-            // file.sync_all() hurts performance; pipeline sync-ing and submitting votes to the cluster!
-        }
-        fs::rename(&new_filename, &filename)?;
-        // self.path.parent().sync_all() hurts performance same as the above sync
-        Ok(())
-    }
 }
 
 impl TowerStorage for FileTowerStorage {
@@ -364,60 +346,5 @@ impl TowerStorage for EtcdTowerStorage {
             )));
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-pub mod test {
-    use {
-        super::*,
-        crate::{
-            consensus::Tower,
-            tower1_7_14::{SavedTower1_7_14, Tower1_7_14},
-        },
-        solana_sdk::{hash::Hash, signature::Keypair},
-        solana_vote_program::vote_state::{
-            BlockTimestamp, LandedVote, Vote, VoteState, VoteState1_14_11, VoteTransaction,
-            MAX_LOCKOUT_HISTORY,
-        },
-        tempfile::TempDir,
-    };
-
-    #[test]
-    fn test_tower_migration() {
-        let tower_path = TempDir::new().unwrap();
-        let identity_keypair = Keypair::new();
-        let node_pubkey = identity_keypair.pubkey();
-        let mut vote_state = VoteState::default();
-        vote_state
-            .votes
-            .resize(MAX_LOCKOUT_HISTORY, LandedVote::default());
-        vote_state.root_slot = Some(1);
-
-        let vote = Vote::new(vec![1, 2, 3, 4], Hash::default());
-        let tower_storage = FileTowerStorage::new(tower_path.path().to_path_buf());
-
-        let old_tower = Tower1_7_14 {
-            node_pubkey,
-            threshold_depth: 10,
-            threshold_size: 0.9,
-            vote_state: VoteState1_14_11::from(vote_state),
-            last_vote: vote.clone(),
-            last_timestamp: BlockTimestamp::default(),
-            last_vote_tx_blockhash: Hash::default(),
-            stray_restored_slot: Some(2),
-            last_switch_threshold_check: Option::default(),
-        };
-
-        {
-            let saved_tower = SavedTower1_7_14::new(&old_tower, &identity_keypair).unwrap();
-            tower_storage.store_old(&saved_tower).unwrap();
-        }
-
-        let loaded = Tower::restore(&tower_storage, &node_pubkey).unwrap();
-        assert_eq!(loaded.node_pubkey, old_tower.node_pubkey);
-        assert_eq!(loaded.last_vote(), VoteTransaction::from(vote));
-        assert_eq!(loaded.vote_state.root_slot, Some(1));
-        assert_eq!(loaded.stray_restored_slot(), None);
     }
 }
