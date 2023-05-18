@@ -26,7 +26,7 @@ use {
     },
     solana_measure::{measure, measure_us},
     solana_metrics::poh_timing_point::{send_poh_timing_point, PohTimingSender, SlotPohTimingInfo},
-    solana_runtime::bank::Bank,
+    solana_runtime::{bank::Bank, installed_scheduler_pool::BankWithScheduler},
     solana_sdk::{
         clock::NUM_CONSECUTIVE_LEADER_SLOTS, hash::Hash, poh_config::PohConfig, pubkey::Pubkey,
         saturating_add_assign, transaction::VersionedTransaction,
@@ -256,7 +256,7 @@ impl PohRecorderBank {
 
 #[derive(Clone)]
 pub struct WorkingBank {
-    pub bank: Arc<Bank>,
+    pub bank: BankWithScheduler,
     pub start: Arc<Instant>,
     pub min_tick_height: u64,
     pub max_tick_height: u64,
@@ -376,12 +376,12 @@ impl PohRecorder {
     }
 
     pub fn bank(&self) -> Option<Arc<Bank>> {
-        self.working_bank.as_ref().map(|w| w.bank.clone())
+        self.working_bank.as_ref().map(|w| w.bank.bank_cloned())
     }
 
     pub fn bank_start(&self) -> Option<BankStart> {
         self.working_bank.as_ref().map(|w| BankStart {
-            working_bank: w.bank.clone(),
+            working_bank: w.bank.bank_cloned(),
             bank_creation_time: w.start.clone(),
         })
     }
@@ -573,9 +573,9 @@ impl PohRecorder {
         self.leader_last_tick_height = leader_last_tick_height;
     }
 
-    pub fn set_bank(&mut self, bank: &Arc<Bank>, track_transaction_indexes: bool) {
+    pub fn set_bank(&mut self, bank: BankWithScheduler, track_transaction_indexes: bool) {
         assert!(self.working_bank.is_none());
-        self.leader_bank_notifier.set_in_progress(bank);
+        self.leader_bank_notifier.set_in_progress(bank.bank());
         let working_bank = WorkingBank {
             bank: bank.clone(),
             start: Arc::new(Instant::now()),
@@ -595,7 +595,7 @@ impl PohRecorder {
                     "resetting poh due to hashes per tick change detected at {}",
                     working_bank.bank.slot()
                 );
-                self.reset_poh(working_bank.clone().bank, false);
+                self.reset_poh(working_bank.clone().bank.bank_cloned(), false);
             }
         }
         self.working_bank = Some(working_bank);
@@ -654,8 +654,12 @@ impl PohRecorder {
             );
 
             for tick in &self.tick_cache[..entry_count] {
-                working_bank.bank.register_tick(&tick.0.hash);
-                send_result = self.sender.send((working_bank.bank.clone(), tick.clone()));
+                working_bank.bank.scheduler(|scheduler| {
+                    working_bank.bank.register_tick(&tick.0.hash, scheduler)
+                });
+                send_result = self
+                    .sender
+                    .send((working_bank.bank.bank_cloned(), tick.clone()));
                 if send_result.is_err() {
                     break;
                 }
@@ -667,7 +671,7 @@ impl PohRecorder {
                 working_bank.max_tick_height,
                 working_bank.bank.slot()
             );
-            self.start_bank = working_bank.bank.clone();
+            self.start_bank = working_bank.bank.bank_cloned();
             let working_slot = self.start_slot();
             self.start_tick_height = working_slot * self.ticks_per_slot + 1;
             self.clear_bank();
@@ -877,7 +881,7 @@ impl PohRecorder {
                             hash: poh_entry.hash,
                             transactions,
                         };
-                        let bank_clone = working_bank.bank.clone();
+                        let bank_clone = working_bank.bank.bank_cloned();
                         self.sender.send((bank_clone, (entry, self.tick_height)))
                     },
                     "send_poh_entry",
@@ -1057,7 +1061,10 @@ pub fn create_test_recorder(
         &poh_config,
         exit.clone(),
     );
-    poh_recorder.set_bank(bank, false);
+    poh_recorder.set_bank(
+        BankWithScheduler::new_without_scheduler(bank.clone()),
+        false,
+    );
 
     let poh_recorder = Arc::new(RwLock::new(poh_recorder));
     let poh_service = PohService::new(

@@ -86,8 +86,6 @@ impl SchedulerPool {
 
 impl InstalledSchedulerPool for SchedulerPool {
     fn take_from_pool(&self, context: SchedulingContext) -> InstalledSchedulerBox {
-        assert!(!context.bank().with_scheduler());
-
         let mut schedulers = self.schedulers.lock().expect("not poisoned");
         // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
         // returned recently
@@ -214,22 +212,13 @@ impl<TH: ScheduledTransactionHandler<SEA>, SEA: ScheduleExecutionArg> InstalledS
         }
     }
 
-    fn schedule_termination(&mut self) {
-        drop::<Option<SchedulingContext>>(self.context.take());
-    }
-
     fn wait_for_termination(&mut self, wait_reason: &WaitReason) -> Option<ResultWithTimings> {
         let keep_result_with_timings = match wait_reason {
-            WaitReason::ReinitializedForRecentBlockhash => {
-                // rustfmt...
-                true
-            }
-            WaitReason::TerminatedToFreeze
-            | WaitReason::TerminatedFromBankDrop
-            | WaitReason::TerminatedInternallyByScheduler => false,
+            WaitReason::ReinitializedForRecentBlockhash => true,
+            WaitReason::TerminatedToFreeze | WaitReason::DroppedFromBankForks => false,
         };
 
-        self.schedule_termination();
+        drop::<Option<SchedulingContext>>(self.context.take());
 
         // current simplest form of this trait impl doesn't block the current thread materially
         // just with the following single mutex lock. Suppose more elaborated synchronization

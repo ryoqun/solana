@@ -32,6 +32,7 @@ use {
         commitment::VOTE_THRESHOLD_SIZE,
         cost_model::CostModel,
         epoch_accounts_hash::EpochAccountsHash,
+        installed_scheduler_pool::BankWithScheduler,
         prioritization_fee_cache::PrioritizationFeeCache,
         rent_debits::RentDebits,
         runtime_config::RuntimeConfig,
@@ -302,7 +303,7 @@ fn execute_batches_internal(
 }
 
 fn process_batches(
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     batches: &[TransactionBatchWithIndexes],
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
@@ -316,7 +317,7 @@ fn process_batches(
             batches.len()
         );
         rebatch_and_execute_batches(
-            bank,
+            bank.bank(),
             batches,
             transaction_status_sender,
             replay_vote_sender,
@@ -334,7 +335,7 @@ fn process_batches(
 }
 
 fn schedule_batches_for_execution(
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     batches: &[TransactionBatchWithIndexes],
 ) -> Result<()> {
     for TransactionBatchWithIndexes {
@@ -475,7 +476,7 @@ fn rebatch_and_execute_batches(
 /// This method is for use testing against a single Bank, and assumes `Bank::transaction_count()`
 /// represents the number of transactions executed in this Bank
 pub fn process_entries_for_tests(
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     entries: Vec<Entry>,
     randomize: bool,
     transaction_status_sender: Option<&TransactionStatusSender>,
@@ -523,7 +524,7 @@ pub fn process_entries_for_tests(
 
 // Note: If randomize is true this will shuffle entries' transactions in-place.
 fn process_entries(
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     entries: &mut [ReplayEntry],
     randomize: bool,
     transaction_status_sender: Option<&TransactionStatusSender>,
@@ -560,7 +561,7 @@ fn process_entries(
                     )?;
                     batches.clear();
                     for hash in &tick_hashes {
-                        bank.register_tick(hash);
+                        bank.scheduler(|scheduler| bank.register_tick(hash, scheduler));
                     }
                     tick_hashes.clear();
                 }
@@ -637,7 +638,7 @@ fn process_entries(
         prioritization_fee_cache,
     )?;
     for hash in tick_hashes {
-        bank.register_tick(hash);
+        bank.scheduler(|scheduler| bank.register_tick(hash, scheduler));
     }
     Ok(())
 }
@@ -782,11 +783,16 @@ pub(crate) fn process_blockstore_for_bank_0(
         accounts_update_notifier,
         exit,
     );
+    let bank0_slot = bank0.slot();
     let bank_forks = Arc::new(RwLock::new(BankForks::new(bank0)));
 
     info!("Processing ledger for slot 0...");
     process_bank_0(
-        &bank_forks.read().unwrap().root_bank(),
+        &bank_forks
+            .read()
+            .unwrap()
+            .get_with_scheduler(bank0_slot)
+            .unwrap(),
         blockstore,
         opts,
         &VerifyRecyclers::default(),
@@ -955,7 +961,7 @@ fn verify_ticks(
 
 fn confirm_full_slot(
     blockstore: &Blockstore,
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     opts: &ProcessOptions,
     recyclers: &VerifyRecyclers,
     progress: &mut ConfirmationProgress,
@@ -1114,7 +1120,7 @@ impl ConfirmationProgress {
 #[allow(clippy::too_many_arguments)]
 pub fn confirm_slot(
     blockstore: &Blockstore,
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     timing: &mut ConfirmationTiming,
     progress: &mut ConfirmationProgress,
     skip_verification: bool,
@@ -1157,7 +1163,7 @@ pub fn confirm_slot(
 
 #[allow(clippy::too_many_arguments)]
 fn confirm_slot_entries(
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     slot_entries_load_result: (Vec<Entry>, u64, bool),
     timing: &mut ConfirmationTiming,
     progress: &mut ConfirmationProgress,
@@ -1340,7 +1346,7 @@ fn confirm_slot_entries(
 
 // Special handling required for processing the entries in slot 0
 fn process_bank_0(
-    bank0: &Arc<Bank>,
+    bank0: &BankWithScheduler,
     blockstore: &Blockstore,
     opts: &ProcessOptions,
     recyclers: &VerifyRecyclers,
@@ -1366,7 +1372,7 @@ fn process_bank_0(
     if blockstore.is_primary_access() {
         blockstore.insert_bank_hash(bank0.slot(), bank0.hash(), false);
     }
-    cache_block_meta(bank0, cache_block_meta_sender);
+    cache_block_meta(bank0.bank(), cache_block_meta_sender);
 }
 
 // Given a bank, add its children to the pending slots queue if those children slots are
@@ -1539,7 +1545,7 @@ fn load_frozen_forks(
                             // If there's a cluster confirmed root greater than our last
                             // replayed root, then because the cluster confirmed root should
                             // be descended from our last root, it must exist in `all_banks`
-                            let cluster_root_bank = all_banks.get(&supermajority_root).unwrap();
+                            let cluster_root_bank = all_banks.get(&supermajority_root).unwrap().bank_cloned();
 
                             // cluster root must be a descendant of our root, otherwise something
                             // is drastically wrong
@@ -1573,7 +1579,7 @@ fn load_frozen_forks(
                         }
                     })
                 } else if blockstore.is_root(slot) {
-                    Some(&bank)
+                    Some(bank.bank_cloned())
                 } else {
                     None
                 }
@@ -1586,7 +1592,7 @@ fn load_frozen_forks(
                 let mut m = Measure::start("set_root");
                 root = new_root_bank.slot();
 
-                leader_schedule_cache.set_root(new_root_bank);
+                leader_schedule_cache.set_root(&new_root_bank);
                 let _ = bank_forks.write().unwrap().set_root(
                     root,
                     accounts_background_request_sender,
@@ -1625,7 +1631,7 @@ fn load_frozen_forks(
             }
 
             process_next_slots(
-                &bank,
+                bank.bank(),
                 &meta,
                 blockstore,
                 leader_schedule_cache,
@@ -1715,7 +1721,7 @@ fn supermajority_root_from_vote_accounts(
 // if failed to play the slot
 fn process_single_slot(
     blockstore: &Blockstore,
-    bank: &Arc<Bank>,
+    bank: &BankWithScheduler,
     opts: &ProcessOptions,
     recyclers: &VerifyRecyclers,
     progress: &mut ConfirmationProgress,
@@ -1759,7 +1765,7 @@ fn process_single_slot(
     if blockstore.is_primary_access() {
         blockstore.insert_bank_hash(bank.slot(), bank.hash(), false);
     }
-    cache_block_meta(bank, cache_block_meta_sender);
+    cache_block_meta(bank.bank(), cache_block_meta_sender);
 
     Ok(())
 }
