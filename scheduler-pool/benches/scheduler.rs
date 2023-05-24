@@ -74,11 +74,9 @@ impl<SEA: ScheduleExecutionArg + Clone, const MUTATE_ARC: bool> ScheduledTransac
             }
             // call random one of Bank's lightweight-and-very-multi-threaded-friendly methods which take a
             // transaction inside this artifical tight loop.
-            for tt in transaction_with_index {
-            tt.with_transaction_and_index(|transaction, _index| {
+            transaction_with_index.with_transaction_and_index(|transaction, _index| {
                 i += bank.get_fee_for_message_with_lamports_per_signature(transaction.message(), i)
             });
-            }
         }
         std::hint::black_box(i);
     }
