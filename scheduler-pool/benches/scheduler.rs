@@ -342,7 +342,7 @@ mod nonblocking {
         }
 
         fn context(&self) -> Option<&SchedulingContext> {
-            unimplemented!("not needed for this bench");
+            Some(&self.context)
         }
 
         fn replace_context(&mut self, context: SchedulingContext) {
