@@ -422,7 +422,7 @@ mod nonblocking {
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
                 _bank: &Arc<Bank>,
-                transaction_with_index: SEA::TransactionWithIndex<'_>,
+                transaction_with_index: &SEA::TransactionWithIndex<'_>,
                 _pool: &SchedulerPool,
             ) {
                 transaction_with_index.with_transaction_and_index(|transaction, _index| {
