@@ -638,17 +638,6 @@ fn execute_batches(
                         );
 
                         self.0.schedule_execution(&[Arc::new((pending_transactions[idx].clone(), idx))]);
-                        /*
-                        let _result = tx_executor_handle
-                            .schedule(BankTransactionExecutionRequest {
-                                bank: bank.clone(),
-                                tx: pending_transactions[idx].clone(),
-                                transaction_status_sender: transaction_status_sender.cloned(),
-                                replay_vote_sender: replay_vote_sender.cloned(),
-                                cost_capacity_meter: cost_capacity_meter.clone(),
-                            })
-                            .unwrap();
-                        */
                         // this idx can be scheduled and moved to processing
                         processing_states[idx] = State::Processing;
                     }
