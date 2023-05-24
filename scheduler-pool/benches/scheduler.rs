@@ -738,11 +738,12 @@ fn execute_batches(
             } = create_genesis_config(1_000_000_000);
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
             use solana_sdk::signer::keypair::Keypair;
+            let (kp1, kp2) = (Keypair::new(), Keypair::new());
 
             let create_tx_with_index = |index| {
                 let tx0 =
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                        &Keypair::new(),
+                        &kp1,
                         &solana_sdk::pubkey::new_rand(),
                         10, //thread_rng().gen_range(1, 10),
                         genesis_config.hash(),
