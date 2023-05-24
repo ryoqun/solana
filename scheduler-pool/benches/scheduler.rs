@@ -745,7 +745,7 @@ fn execute_batches(
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                         &mint_keypair,
                         &solana_sdk::pubkey::new_rand(),
-                        thread_rng().gen_range(1, 10),
+                        1000, //thread_rng().gen_range(1, 10),
                         genesis_config.hash(),
                     ));
                 TransactionWithIndexForBench::new((tx0, index))
@@ -759,10 +759,10 @@ fn execute_batches(
             let tx_lock_ignoring_scheduler = NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
             let tx_lock_adhering_scheduler = NonblockingSchedulerWithDepGraph(tx_lock_ignoring_scheduler, Default::default(), receiver);
             let mut scheduler = tx_lock_adhering_scheduler;
-            let scenario: &Vec<Step> = &((0..10)
+            let scenario: &Vec<Step> = &((0..1)
                 .flat_map(|_| {
                     [
-                        Step::Batch((0..20).map(create_tx_with_index).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index).collect()),
                         Step::Synchronize,
                     ]
                 })
