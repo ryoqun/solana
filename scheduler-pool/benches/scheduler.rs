@@ -408,6 +408,12 @@ mod thread_utilization { // tiling?
 
     #[bench]
     fn bench_txes_with_long_serialized_runs(bencher: &Bencher) {
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(1_000_000_000);
+
         let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
             &mint_keypair,
             &solana_sdk::pubkey::new_rand(),
