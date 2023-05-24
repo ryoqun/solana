@@ -408,6 +408,16 @@ mod thread_utilization { // tiling?
 
     #[bench]
     fn bench_txes_with_long_serialized_runs(bencher: &Bencher) {
+        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+        //let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
+        bencher.iter(|| {
+            black_box(tx0.clone());
+        });
     }
 
     #[bench]
