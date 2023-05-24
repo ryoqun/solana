@@ -145,7 +145,7 @@ mod blocking_ref {
         let mut scheduler = PooledScheduler::<
             _,
             DefaultScheduleExecutionArg,
-        >::spawn(pool, context.clone(), BenchFriendlyHandler<DefaultScheduleExecutionArg, false>::default());
+        >::spawn(pool, context.clone(), BenchFriendlyHandler::<DefaultScheduleExecutionArg, false>::default());
         let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
             &mint_keypair,
             &solana_sdk::pubkey::new_rand(),
