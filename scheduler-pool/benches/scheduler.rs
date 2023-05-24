@@ -571,6 +571,7 @@ use std::time::Instant;
 use solana_sdk::signature::Signature;
 use solana_runtime::vote_sender_types::ReplayVoteSender;
 use std::sync::RwLock;
+use nohash_hasher::IntSet;
 
 fn execute_batches(
     bank: &Arc<Bank>,
