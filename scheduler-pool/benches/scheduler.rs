@@ -463,7 +463,7 @@ mod nonblocking {
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler =
-                NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 10);
+                NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 10, SleepyHandler);
             let scenario: &Vec<Step> = &((0..10)
                 .flat_map(|_| {
                     [
