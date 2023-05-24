@@ -373,7 +373,7 @@ mod nonblocking {
     #[bench]
     fn bench_with_04_threads_without_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::spawn(pool, context, BenchFriendlyHandlerWithoutArcMutation)
+            NonblockingScheduler::spawn(pool, context, 4, BenchFriendlyHandlerWithoutArcMutation)
         });
     }
 
