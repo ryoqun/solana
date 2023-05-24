@@ -658,7 +658,7 @@ fn execute_batches(
             break;
         }
 
-        let mut first_error = Ok(());
+        let mut first_error: solana_sdk::transaction::Result<()> = Ok(());
 
         debug!("waiting for response...");
 
