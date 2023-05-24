@@ -448,7 +448,7 @@ mod nonblocking {
                     2,
                     genesis_config.hash(),
                 ));
-                TransactionWithIndexForBench::new((tx0, 0))
+                Some(TransactionWithIndexForBench::new((tx0, 0)))
             };
 
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
