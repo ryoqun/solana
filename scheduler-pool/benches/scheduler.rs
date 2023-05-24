@@ -449,7 +449,13 @@ mod nonblocking {
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             NonblockingScheduler::<SleepyHandler>::spawn(pool, context, 1);
             bencher.iter(|| {
-                std::hint::black_box(tx_with_index.clone());
+                //std::hint::black_box(tx_with_index.clone());
+                scheduler.schedule_execution(tx_with_index.clone());
+                assert_matches!(
+                    scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+                    Some((Ok(()), _))
+                );
+                scheduler.replace_context(context.clone());
             });
         }
 
