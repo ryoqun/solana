@@ -463,7 +463,7 @@ mod nonblocking {
                 }).collect()
             );
             bencher.iter(|| {
-                for step in &scenario {
+                for step in scenario {
                     match step {
                         Step::Batch(txes) => {
                             for tx in txes {
