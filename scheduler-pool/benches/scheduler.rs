@@ -743,7 +743,7 @@ fn execute_batches(
             let create_tx_with_index = |index| {
                 let tx0 =
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                        &solana_sdk::pubkey::new_rand(),
+                        &Keypair::new(),
                         &solana_sdk::pubkey::new_rand(),
                         10, //thread_rng().gen_range(1, 10),
                         genesis_config.hash(),
