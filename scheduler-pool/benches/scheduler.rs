@@ -404,6 +404,8 @@ mod nonblocking {
 }
 
 mod thread_utilization { // tiling?
+    use super::*;
+
     #[bench]
     fn bench_txes_with_long_serialized_runs(bencher: &Bencher) {
     }
