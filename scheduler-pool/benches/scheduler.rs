@@ -740,7 +740,7 @@ fn execute_batches(
             let (sender, receiver) = crossbeam_channel::unbounded();
             let handler2 = SleepyHandler2(sender);
             let mut scheduler =
-                NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
+                NonblockingSchedulerWithDepGraph(NonblockingScheduler::spawn(pool, context.clone(), 10, handler2));
         }
     }
 }
