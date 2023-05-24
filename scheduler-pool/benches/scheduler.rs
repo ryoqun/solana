@@ -455,7 +455,7 @@ mod nonblocking {
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
-            let scenario: &Vec<Step> = &((0..10).flat_map(|_| {
+            let scenario: Vec<Step> = ((0..10).flat_map(|_| {
                     &[
                         Step::Batch((0..20).map(tx_with_index).collect()),
                         Step::Synchronize,
@@ -463,7 +463,7 @@ mod nonblocking {
                 }).collect()
             );
             bencher.iter(|| {
-                for step in scenario {
+                for step in &scenario {
                     match step {
                         Step::Batch(txes) => {
                             for tx in txes {
