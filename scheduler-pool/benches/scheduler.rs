@@ -586,6 +586,7 @@ fn execute_batches(
     timings: &mut ExecuteTimings,
     //cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
     //tx_executor_handle: &BankTransactionExecutorHandle,
+    receiver: crossbeam_channel::Receiver<Signature>,
 ) -> Result<()> {
     if pending_transactions.is_empty() {
         return Ok(());
