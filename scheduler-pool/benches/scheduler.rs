@@ -456,7 +456,7 @@ mod nonblocking {
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             let scenario: Vec<Step> = ((0..10).flat_map(|_| {
-                    &[
+                    [
                         Step::Batch((0..20).map(tx_with_index).collect()),
                         Step::Synchronize,
                     ]
