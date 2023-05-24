@@ -773,6 +773,7 @@ fn execute_batches(
                     Some((Ok(()), _))
                 );
                 scheduler.replace_context(context.clone());
+            });
         }
     }
 }
