@@ -707,7 +707,7 @@ fn execute_batches(
                 eprintln!("aaa");
                 self.execute_batches(
                     &self.context().unwrap().bank(),
-                    &self.1.lock().unwrap(),
+                    &self.1.lock().unwrap().take(),
                     None,
                     None,
                     &self.2,
