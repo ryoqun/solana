@@ -427,6 +427,12 @@ mod nonblocking {
             }
         }
 
+        enum Step {
+            Execute,
+            // mimic periodic or contention-induced synchronization with this artificial blocking
+            Synchronize,
+        }
+
         #[bench]
         fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher) {
             let GenesisConfigInfo {
@@ -448,6 +454,10 @@ mod nonblocking {
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
+            let scenario = vec![
+                Execute,
+                Synchronize,
+            ];
             bencher.iter(|| {
                 //std::hint::black_box(tx_with_index.clone());
                 for _ in 0..10 {
