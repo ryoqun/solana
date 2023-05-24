@@ -582,7 +582,7 @@ use nohash_hasher::IntSet;
 
 fn execute_batches(
     bank: &Arc<Bank>,
-    pending_transactions: &[&SanitizedTransaction],
+    pending_transactions: &[SanitizedTransaction],
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     receiver: &crossbeam_channel::Receiver<Signature>,
@@ -710,6 +710,7 @@ fn execute_batches(
             fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings> {
                 execute_batches(
                     &self.context().unwrap().bank(),
+                    &self.1.lock().unwrap(),
                 );
 
                 self.0.wait_for_termination(reason)
