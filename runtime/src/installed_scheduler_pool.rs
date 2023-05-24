@@ -148,7 +148,7 @@ pub trait ScheduleExecutionArg: Send + Sync + Debug {
     type TransactionWithIndex<'tx>: WithTransactionAndIndex;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DefaultScheduleExecutionArg;
 
 impl ScheduleExecutionArg for DefaultScheduleExecutionArg {
