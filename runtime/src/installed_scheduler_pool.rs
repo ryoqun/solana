@@ -112,7 +112,7 @@ pub trait InstalledScheduler<SEA: ScheduleExecutionArg>: Send + Sync + Debug {
     fn pool(&self) -> InstalledSchedulerPoolArc;
 
     // Calling this is illegal as soon as schedule_termiantion is called on &self.
-    fn schedule_execution<'a>(&'a self, transaction_with_index: SEA::TransactionWithIndex<'a>);
+    fn schedule_execution<'a>(&'a self, transaction_with_index: &'a [SEA::TransactionWithIndex<'a>]);
 
     #[must_use]
     fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings>;
