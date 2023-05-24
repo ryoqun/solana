@@ -462,8 +462,8 @@ mod nonblocking {
                 for step in scenario {
                     match step {
                         Step::Execute(txes) => {
-                            for _ in 0..10 {
-                                scheduler.schedule_execution(tx_with_index.clone());
+                            for tx in txes {
+                                scheduler.schedule_execution(tx);
                             }
                         },
                         Step::Synchronize => {
