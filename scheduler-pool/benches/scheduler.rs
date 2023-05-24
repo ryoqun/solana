@@ -460,7 +460,7 @@ mod nonblocking {
         }
 
         #[bench]
-        fn bench_txes_with_random_execution_durations(bencher: &Bencher) {
+        fn bench_txes_with_random_execution_durations(_bencher: &Bencher) {
         }
     }
 }
