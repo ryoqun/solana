@@ -733,6 +733,7 @@ fn execute_batches(
                 ..
             } = create_genesis_config(1_000_000_000);
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
+            let synchronize = false;
 
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
