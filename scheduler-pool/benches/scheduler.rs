@@ -476,6 +476,11 @@ mod nonblocking {
                         },
                     }
                 }
+                assert_matches!(
+                    scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+                    Some((Ok(()), _))
+                );
+                scheduler.replace_context(context.clone());
             });
         }
 
