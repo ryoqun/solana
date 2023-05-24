@@ -401,7 +401,6 @@ mod nonblocking {
             NonblockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, 16)
         });
     }
-}
 
 mod thread_utilization { // tiling?
     use super::*;
@@ -453,4 +452,5 @@ mod thread_utilization { // tiling?
     #[bench]
     fn bench_txes_with_random_execution_durations(bencher: &Bencher) {
     }
+}
 }
