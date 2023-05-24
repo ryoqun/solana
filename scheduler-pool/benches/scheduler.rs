@@ -735,6 +735,17 @@ fn execute_batches(
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
             let synchronize = false;
 
+            let create_tx_with_index = |index| {
+                let tx0 =
+                    SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                        &mint_keypair,
+                        &solana_sdk::pubkey::new_rand(),
+                        thread_rng().gen_range(1, 10),
+                        genesis_config.hash(),
+                    ));
+                TransactionWithIndexForBench::new((tx0, index))
+            };
+
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
