@@ -454,7 +454,7 @@ mod nonblocking {
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
-            let scenario = vec![
+            let scenario = &vec![
                 Step::Execute(vec![tx_with_index.clone()]),
                 Step::Synchronize,
             ];
