@@ -460,7 +460,7 @@ mod nonblocking {
                         Step::Batch((0..20).map(tx_with_index).collect()),
                         Step::Synchronize,
                     ]
-                })
+                }).collect()
             );
             bencher.iter(|| {
                 for step in scenario {
