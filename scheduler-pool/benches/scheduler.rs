@@ -115,7 +115,7 @@ fn run_bench<
     let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
     bencher.iter(|| {
         for _ in 0..TX_COUNT {
-            scheduler.schedule_execution(tx_with_index.clone());
+            scheduler.schedule_execution(&[tx_with_index.clone()]);
         }
         assert_matches!(
             scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
