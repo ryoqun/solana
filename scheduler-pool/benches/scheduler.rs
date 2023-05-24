@@ -694,7 +694,7 @@ fn execute_batches(
         }
 
         #[derive(Debug)]
-        struct NonblockingSchedulerWithDepGraph(NonblockingScheduler<SleepyHandler2>);
+        struct NonblockingSchedulerWithDepGraph(NonblockingScheduler<SleepyHandler2>, Vec<SanitizedTransaction>);
 
         impl InstalledScheduler<ScheduleExecutionArgForBench> for NonblockingSchedulerWithDepGraph {
             fn id(&self) -> SchedulerId {
@@ -708,6 +708,7 @@ fn execute_batches(
             fn context<'a>(&'a self) -> Option<&'a SchedulingContext> {
                 self.0.context()
             }
+
             fn replace_context(&mut self, context: SchedulingContext) {
                 self.0.replace_context(context)
             }
