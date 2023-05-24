@@ -57,6 +57,7 @@ impl<SEA: ScheduleExecutionArg, const MUTATE_ARC: bool> ScheduledTransactionHand
     for BenchFriendlyHandler<SEA, MUTATE_ARC>
 {
     fn handle(
+        &self,
         _result: &mut Result<()>,
         _timings: &mut ExecuteTimings,
         bank: &Arc<Bank>,
@@ -416,6 +417,7 @@ mod nonblocking {
 
         impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler {
             fn handle(
+                &self,
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
                 _bank: &Arc<Bank>,
