@@ -707,7 +707,7 @@ fn execute_batches(
                     None,
                     None,
                     &self.2,
-                );
+                ).unwrap();
 
                 self.0.wait_for_termination(reason)
             }
