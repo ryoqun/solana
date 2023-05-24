@@ -53,7 +53,7 @@ struct BenchFriendlyHandler<SEA: ScheduleExecutionArg + Clone, const MUTATE_ARC:
     std::marker::PhantomData<SEA>,
 );
 
-impl<SEA: ScheduleExecutionArg, const MUTATE_ARC: bool> ScheduledTransactionHandler<SEA>
+impl<SEA: ScheduleExecutionArg + Clone, const MUTATE_ARC: bool> ScheduledTransactionHandler<SEA>
     for BenchFriendlyHandler<SEA, MUTATE_ARC>
 {
     fn handle(
