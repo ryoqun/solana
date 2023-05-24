@@ -415,7 +415,7 @@ mod nonblocking {
             fn handle(
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
-                bank: &Arc<Bank>,
+                _bank: &Arc<Bank>,
                 transaction_with_index: SEA::TransactionWithIndex<'_>,
                 _pool: &SchedulerPool,
             ) {
