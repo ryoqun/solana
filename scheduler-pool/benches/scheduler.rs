@@ -703,7 +703,7 @@ fn execute_batches(
 
             fn schedule_execution<'a>(&'a self, transaction_with_index: &'a [TransactionWithIndexForBench]) {
                 for t in transaction_with_index {
-                    self.1.lock().unwrap().push(t);
+                    self.1.lock().unwrap().push(t.0.clone());
                 }
             }
 
