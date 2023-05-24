@@ -769,7 +769,7 @@ fn execute_batches(
             let tx_lock_ignoring_scheduler = NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
             let tx_lock_adhering_scheduler = NonblockingSchedulerWithDepGraph(tx_lock_ignoring_scheduler, Default::default(), receiver);
             let mut scheduler = tx_lock_adhering_scheduler;
-            let scenario: &Vec<Step> = &((0..5)
+            let scenario: &Vec<Step> = &((0..1)
                 .flat_map(|_| {
                     [
                         Step::Batch((0..1).map(create_tx_with_index1).collect()),
