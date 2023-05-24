@@ -445,7 +445,7 @@ mod nonblocking {
                 let tx0 = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                     &mint_keypair,
                     &solana_sdk::pubkey::new_rand(),
-                    thread_rng().gen_range(1, 10);,
+                    thread_rng().gen_range(1, 10),
                     genesis_config.hash(),
                 ));
                 TransactionWithIndexForBench::new((tx0, index))
