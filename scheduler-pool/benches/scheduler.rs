@@ -284,6 +284,7 @@ mod nonblocking {
                 transaction_sender,
                 result_receiver,
                 lane_count,
+                context: initial_context,
                 _phantom: PhantomData::default(),
             }
         }
