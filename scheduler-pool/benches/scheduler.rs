@@ -726,7 +726,7 @@ fn execute_batches(
         }
 
         #[bench]
-        fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {
+        fn bench_txes_with_long_serialized_runs(bencher: &Bencher) {
             let GenesisConfigInfo {
                 genesis_config,
                 mint_keypair,
