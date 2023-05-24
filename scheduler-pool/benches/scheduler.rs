@@ -413,7 +413,7 @@ mod nonblocking {
             solana_sdk::system_instruction::{SystemInstruction, SystemInstruction::Transfer},
         };
 
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         struct SleepyHandler;
 
         impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler {
