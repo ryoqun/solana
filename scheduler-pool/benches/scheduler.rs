@@ -509,6 +509,200 @@ mod nonblocking {
             bench_txes_with_random_execution_durations(bencher, false);
         }
 
+// for each index, builds a transaction dependency graph of indices that need to execute before
+// the current one.
+// The returned Vec<HashSet<usize>> is a 1:1 mapping for the indices that need to be executed
+// before that index can be executed
+fn build_dependency_graph(tx_account_locks: &[TransactionAccountLocks]) -> Vec<IntSet<usize>> {
+    // build a map whose key is a pubkey + value is a sorted vector of all indices that
+    // lock that account
+    let mut indices_read_locking_account = HashMap::new();
+    let mut indicies_write_locking_account = HashMap::new();
+    tx_account_locks
+        .iter()
+        .enumerate()
+        .for_each(|(idx, tx_account_locks)| {
+            for account in &tx_account_locks.readonly {
+                indices_read_locking_account
+                    .entry(**account)
+                    .and_modify(|indices: &mut Vec<usize>| indices.push(idx))
+                    .or_insert_with(|| vec![idx]);
+            }
+            for account in &tx_account_locks.writable {
+                indicies_write_locking_account
+                    .entry(**account)
+                    .and_modify(|indices: &mut Vec<usize>| indices.push(idx))
+                    .or_insert_with(|| vec![idx]);
+            }
+        });
+
+    tx_account_locks
+        .iter()
+        .enumerate()
+        .map(|(idx, account_locks)| {
+            let mut dep_graph: IntSet<usize> = IntSet::default();
+
+            let readlock_conflict_accs = account_locks.writable.iter();
+            let writelock_conflict_accs = account_locks
+                .readonly
+                .iter()
+                .chain(account_locks.writable.iter());
+
+            for acc in readlock_conflict_accs {
+                if let Some(indices) = indices_read_locking_account.get(acc) {
+                    dep_graph.extend(indices.iter().take_while(|l_idx| **l_idx < idx));
+                }
+            }
+
+            for acc in writelock_conflict_accs {
+                if let Some(indices) = indicies_write_locking_account.get(acc) {
+                    dep_graph.extend(indices.iter().take_while(|l_idx| **l_idx < idx));
+                }
+            }
+            dep_graph
+        })
+        .collect()
+}
+
+fn execute_batches(
+    bank: &Arc<Bank>,
+    pending_transactions: &[&SanitizedTransaction],
+    entry_callback: Option<&ProcessCallback>,
+    transaction_status_sender: Option<&TransactionStatusSender>,
+    replay_vote_sender: Option<&ReplayVoteSender>,
+    timings: &mut ExecuteTimings,
+    cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
+    tx_executor_handle: &BankTransactionExecutorHandle,
+) -> Result<()> {
+    if pending_transactions.is_empty() {
+        return Ok(());
+    }
+
+    let mut tx_account_locks: Vec<_> = Vec::with_capacity(pending_transactions.len());
+    for tx in pending_transactions {
+        tx_account_locks.push(tx.get_account_locks(bank.get_transaction_account_lock_limit())?);
+    }
+
+    // the dependency graph contains the indices that must be executed (marked with State::Done) before they can be executed
+    let now = Instant::now();
+    let dependency_graph = build_dependency_graph(&tx_account_locks);
+    let dependency_graph_elapsed = now.elapsed();
+    info!(
+        "slot: {:?} dependency_graph_elapsed: {:?}",
+        bank.slot(),
+        dependency_graph_elapsed,
+    );
+
+    #[derive(Clone)]
+    enum State {
+        Blocked,
+        Processing,
+        Done,
+    }
+
+    let receiver = tx_executor_handle.response_receiver();
+
+    let mut processing_states: Vec<State> = vec![State::Blocked; dependency_graph.len()];
+    let mut signature_indices: HashMap<&Signature, usize> =
+        HashMap::with_capacity(dependency_graph.len());
+    signature_indices.extend(
+        pending_transactions
+            .iter()
+            .enumerate()
+            .map(|(idx, tx)| (tx.signature(), idx)),
+    );
+
+    let mut is_done = false;
+    while !is_done {
+        is_done = true;
+        for idx in 0..processing_states.len() {
+            match processing_states[idx] {
+                State::Blocked => {
+                    is_done = false;
+
+                    // if all the dependent txs are executed, this transaction can be scheduled for
+                    // execution.
+                    if dependency_graph[idx]
+                        .iter()
+                        .all(|idx| matches!(processing_states[*idx], State::Done))
+                    {
+                        debug!(
+                            "scheduling signature: {}",
+                            pending_transactions[idx].signature()
+                        );
+
+                        let _result = tx_executor_handle
+                            .schedule(BankTransactionExecutionRequest {
+                                bank: bank.clone(),
+                                tx: pending_transactions[idx].clone(),
+                                transaction_status_sender: transaction_status_sender.cloned(),
+                                replay_vote_sender: replay_vote_sender.cloned(),
+                                cost_capacity_meter: cost_capacity_meter.clone(),
+                            })
+                            .unwrap();
+                        // this idx can be scheduled and moved to processing
+                        processing_states[idx] = State::Processing;
+                    }
+                }
+                State::Processing => {
+                    is_done = false;
+                }
+                State::Done => {}
+            }
+        }
+
+        if is_done {
+            break;
+        }
+
+        let mut first_error = Ok(());
+
+        debug!("waiting for response...");
+
+        let mut executor_responses = vec![receiver.recv().unwrap()];
+        executor_responses.extend(receiver.try_iter());
+        for r in &executor_responses {
+            if let Some(entry_callback) = entry_callback {
+                entry_callback(bank);
+            }
+            timings.saturating_add_in_place(ExecuteTimingType::TotalBatchesLen, 1);
+            timings.saturating_add_in_place(ExecuteTimingType::NumExecuteBatches, 1);
+            timings.accumulate(&r.timings);
+
+            debug!("signature done: {:?}", r.signature);
+            processing_states[*signature_indices.get(&r.signature).unwrap()] = State::Done;
+
+            // set first error, but continue to mark the rest as done so loop below can break
+            // out on error correctly
+            if r.result.is_err() && first_error.is_ok() {
+                debug!("bank.commit_transaction error: {:?}", r.result);
+                first_error = r.result.clone();
+            }
+        }
+
+        if first_error.is_err() {
+            // wait for all processing txs to finish to aggregate stats and return first error
+            while processing_states
+                .iter()
+                .any(|state| matches!(state, State::Processing))
+            {
+                let response = receiver.recv().unwrap();
+                if let Some(entry_callback) = entry_callback {
+                    entry_callback(bank);
+                }
+                timings.saturating_add_in_place(ExecuteTimingType::TotalBatchesLen, 1);
+                timings.saturating_add_in_place(ExecuteTimingType::NumExecuteBatches, 1);
+                timings.accumulate(&response.timings);
+
+                processing_states[*signature_indices.get(&response.signature).unwrap()] =
+                    State::Done;
+            }
+            first_error?;
+        }
+    }
+    Ok(())
+}
+
         #[bench]
         fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {}
     }
