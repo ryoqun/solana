@@ -696,7 +696,7 @@ fn execute_batches(
                 .iter()
                 .any(|state| matches!(state, State::Processing))
             {
-                let response = receiver.recv().unwrap();
+                //let response = receiver.recv().unwrap();
                 /*
                 if let Some(entry_callback) = entry_callback {
                     entry_callback(bank);
