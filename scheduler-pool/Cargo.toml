@@ -19,9 +19,9 @@ solana-sdk = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
+bincode = { workspace = true }
 crossbeam-channel = { workspace = true }
 jemallocator = { workspace = true }
 log = { workspace = true }
-serde = { workspace = true }
 solana-logger = { workspace = true }
 solana-runtime = { workspace = true, features = ["test-in-workspace"] }
