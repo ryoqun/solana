@@ -444,7 +444,7 @@ mod tests {
 
         assert_eq!(bank.transaction_count(), 0);
         let scheduler = pool.take_from_pool(context);
-        scheduler.schedule_execution(&(tx0, 0));
+        scheduler.schedule_execution(&[&(tx0, 0)]);
         let bank = BankWithScheduler::new_for_test(bank, Some(scheduler));
         assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
         assert_eq!(bank.transaction_count(), 1);
