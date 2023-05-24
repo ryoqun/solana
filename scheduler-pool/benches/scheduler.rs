@@ -444,7 +444,7 @@ mod thread_utilization { // tiling?
         ));
         let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
 
-        NonblockingScheduler::<SleepyHandler>::spawn(pool, context, 1);
+        NonblockingScheduler::<SleepyHandler>::spawn(panic!(), panic!(), 1);
         bencher.iter(|| {
             std::hint::black_box(tx_with_index.clone());
         });
