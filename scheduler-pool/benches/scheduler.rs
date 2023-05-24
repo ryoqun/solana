@@ -405,6 +405,7 @@ mod nonblocking {
 
 mod thread_utilization { // tiling?
     use super::*;
+    use solana_sdk::system_instruction::SystemInstruction;
 
     #[derive(Debug)]
     struct SleepyHandler;
