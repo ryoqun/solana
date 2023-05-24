@@ -704,7 +704,7 @@ fn execute_batches(
             }
 
             fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings> {
-                eprintln!("aaa");
+                //eprintln!("aaa");
                 self.execute_batches(
                     &self.context().unwrap().bank(),
                     &std::mem::take(&mut *self.1.lock().unwrap()),
@@ -712,7 +712,7 @@ fn execute_batches(
                     None,
                     &self.2,
                 ).unwrap();
-                eprintln!("bbb");
+                //eprintln!("bbb");
 
                 self.0.wait_for_termination(reason)
             }
@@ -745,7 +745,7 @@ fn execute_batches(
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                         &mint_keypair,
                         &solana_sdk::pubkey::new_rand(),
-                        100, //thread_rng().gen_range(1, 10),
+                        10, //thread_rng().gen_range(1, 10),
                         genesis_config.hash(),
                     ));
                 TransactionWithIndexForBench::new((tx0, index))
@@ -759,7 +759,7 @@ fn execute_batches(
             let tx_lock_ignoring_scheduler = NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
             let tx_lock_adhering_scheduler = NonblockingSchedulerWithDepGraph(tx_lock_ignoring_scheduler, Default::default(), receiver);
             let mut scheduler = tx_lock_adhering_scheduler;
-            let scenario: &Vec<Step> = &((0..1)
+            let scenario: &Vec<Step> = &((0..5)
                 .flat_map(|_| {
                     [
                         Step::Batch((0..1).map(create_tx_with_index).collect()),
