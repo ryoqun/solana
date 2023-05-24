@@ -583,9 +583,6 @@ fn execute_batches(
     pending_transactions: &[&SanitizedTransaction],
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
-    timings: &mut ExecuteTimings,
-    //cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
-    //tx_executor_handle: &BankTransactionExecutorHandle,
     receiver: &crossbeam_channel::Receiver<Signature>,
 ) -> Result<()> {
     if pending_transactions.is_empty() {
@@ -606,8 +603,6 @@ fn execute_batches(
         Processing,
         Done,
     }
-
-    //let receiver = tx_executor_handle.response_receiver();
 
     let mut processing_states: Vec<State> = vec![State::Blocked; dependency_graph.len()];
     let mut signature_indices: HashMap<&Signature, usize> =
