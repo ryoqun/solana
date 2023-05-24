@@ -455,8 +455,8 @@ mod nonblocking {
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             let scenario = vec![
-                Execute,
-                Synchronize,
+                Step::Execute,
+                Step::Synchronize,
             ];
             bencher.iter(|| {
                 //std::hint::black_box(tx_with_index.clone());
