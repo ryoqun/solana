@@ -433,7 +433,7 @@ mod nonblocking {
             Synchronize,
         }
 
-        fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher, synchronize: bool) {
+        fn bench_txes_with_random_execution_durations(bencher: &mut Bencher, synchronize: bool) {
             let GenesisConfigInfo {
                 genesis_config,
                 mint_keypair,
@@ -490,17 +490,17 @@ mod nonblocking {
         }
 
         #[bench]
-        fn bench_txes_with_long_serialized_runs_with_interleaved_synchronization(bencher: &mut Bencher) {
-            bench_txes_with_long_serialized_runs(bencher, true);
+        fn bench_txes_with_random_execution_durations_with_interleaved_synchronization(bencher: &mut Bencher) {
+            bench_txes_with_random_execution_durations(bencher, true);
         }
 
         #[bench]
-        fn bench_txes_with_long_serialized_runs_without_interleaved_synchronization(bencher: &mut Bencher) {
-            bench_txes_with_long_serialized_runs(bencher, false);
+        fn bench_txes_with_random_execution_durations_without_interleaved_synchronization(bencher: &mut Bencher) {
+            bench_txes_with_random_execution_durations(bencher, false);
         }
 
         #[bench]
-        fn bench_txes_with_random_execution_durations(_bencher: &Bencher) {
+        fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {
         }
     }
 }
