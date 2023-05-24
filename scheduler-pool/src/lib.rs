@@ -486,7 +486,7 @@ mod tests {
             bank.simulate_transaction_unchecked(tx1.clone()).result,
             Ok(_)
         );
-        scheduler.schedule_execution(&(tx1, 0));
+        scheduler.schedule_execution(&[(tx1, 0)]);
         // transaction_count should remain same as scheduler should be bailing out.
         assert_eq!(bank.transaction_count(), 0);
 
