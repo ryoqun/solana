@@ -174,7 +174,7 @@ mod blocking {
     #[bench]
     fn bench_with_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            BlockingScheduler::<BenchFriendlyHandlerWithArcMutation>::spawn(pool, context)
+            BlockingScheduler::spawn(pool, context, BenchFriendlyHandlerWithArcMutation)
         });
     }
 
