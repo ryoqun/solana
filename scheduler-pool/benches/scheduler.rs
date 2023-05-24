@@ -458,9 +458,9 @@ mod nonblocking {
             let scenario = &vec![
                 Step::Batch((0..20).map(tx_with_index).collect()),
                 Step::Synchronize,
-                Step::Batch(vec![tx_with_index(); 20]),
+                Step::Batch((0..20).map(tx_with_index).collect()),
                 Step::Synchronize,
-                Step::Batch(vec![tx_with_index(); 20]),
+                Step::Batch((0..20).map(tx_with_index).collect()),
                 Step::Synchronize,
             ];
             bencher.iter(|| {
