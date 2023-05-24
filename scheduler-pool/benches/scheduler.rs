@@ -443,6 +443,7 @@ mod nonblocking {
             ));
             let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
 
+            let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             NonblockingScheduler::<SleepyHandler>::spawn(pool, context, 1);
