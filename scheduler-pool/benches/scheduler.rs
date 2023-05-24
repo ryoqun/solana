@@ -637,7 +637,7 @@ fn execute_batches(
                             pending_transactions[idx].signature()
                         );
 
-                        self.0.schedule_execution(&[Arc::new(pending_transactions[idx].clone(), index)]);
+                        self.0.schedule_execution(&[Arc::new((pending_transactions[idx].clone(), idx))]);
                         /*
                         let _result = tx_executor_handle
                             .schedule(BankTransactionExecutionRequest {
