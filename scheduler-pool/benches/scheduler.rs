@@ -592,14 +592,7 @@ fn execute_batches(
     }
 
     // the dependency graph contains the indices that must be executed (marked with State::Done) before they can be executed
-    let now = Instant::now();
     let dependency_graph = build_dependency_graph(&tx_account_locks);
-    let dependency_graph_elapsed = now.elapsed();
-    info!(
-        "slot: {:?} dependency_graph_elapsed: {:?}",
-        bank.slot(),
-        dependency_graph_elapsed,
-    );
 
     #[derive(Clone)]
     enum State {
