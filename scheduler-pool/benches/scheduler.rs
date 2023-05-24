@@ -684,10 +684,12 @@ fn execute_batches(
 
             // set first error, but continue to mark the rest as done so loop below can break
             // out on error correctly
+            /*
             if r.result.is_err() && first_error.is_ok() {
                 debug!("bank.commit_transaction error: {:?}", r.result);
                 first_error = r.result.clone();
             }
+            */
         }
 
         if first_error.is_err() {
