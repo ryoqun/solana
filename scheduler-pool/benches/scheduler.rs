@@ -637,6 +637,7 @@ fn execute_batches(
                             pending_transactions[idx].signature()
                         );
 
+                        self.0.schedule_execution(&[pending_transactions[idx].clone()]);
                         /*
                         let _result = tx_executor_handle
                             .schedule(BankTransactionExecutionRequest {
