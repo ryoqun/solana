@@ -421,8 +421,8 @@ mod nonblocking {
             ) {
                 transaction_with_index.with_transaction_and_index(|transaction, _index| {
                     let dummy_transfer: SystemInstruction = bincode::deserialize(&transaction.message().instructions()[0].data).unwrap();
-                    let Transfer{lamports: sleep_duration} = dummy_transfer else { panic!() };
-                    panic!("sleep {} secs", sleep_duration);
+                    let Transfer{lamports: sleep_ms} = dummy_transfer else { panic!() };
+                    std::thread::sleep(std::time::Duration::from_msecs(sleep_ms);
                 });
             }
         }
