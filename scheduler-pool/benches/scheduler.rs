@@ -441,14 +441,14 @@ mod nonblocking {
             } = create_genesis_config(1_000_000_000);
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
 
-            let tx_with_index = || {
+            let tx_with_index = |index| {
                 let tx0 = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                     &mint_keypair,
                     &solana_sdk::pubkey::new_rand(),
                     2,
                     genesis_config.hash(),
                 ));
-                TransactionWithIndexForBench::new((tx0, 0))
+                TransactionWithIndexForBench::new((tx0, index))
             };
 
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
