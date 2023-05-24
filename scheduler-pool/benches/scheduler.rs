@@ -49,7 +49,7 @@ impl ScheduleExecutionArg for ScheduleExecutionArgForBench {
 }
 
 #[derive(Debug, Default, Clone)]
-struct BenchFriendlyHandler<SEA: ScheduleExecutionArg, const MUTATE_ARC: bool>(
+struct BenchFriendlyHandler<SEA: ScheduleExecutionArg + Clone, const MUTATE_ARC: bool>(
     std::marker::PhantomData<SEA>,
 );
 
