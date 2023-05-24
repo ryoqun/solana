@@ -459,15 +459,22 @@ mod nonblocking {
                 Step::Synchronize,
             ];
             bencher.iter(|| {
-                //std::hint::black_box(tx_with_index.clone());
-                for _ in 0..10 {
-                    scheduler.schedule_execution(tx_with_index.clone());
+                for step in scenario {
+                    match step {
+                        Step::Execute(txes) => {
+                            for _ in 0..10 {
+                                scheduler.schedule_execution(tx_with_index.clone());
+                            }
+                        },
+                        Step::Synchronize => {
+                            assert_matches!(
+                                scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+                                Some((Ok(()), _))
+                            );
+                            scheduler.replace_context(context.clone());
+                        },
+                    }
                 }
-                assert_matches!(
-                    scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
-                    Some((Ok(()), _))
-                );
-                scheduler.replace_context(context.clone());
             });
         }
 
