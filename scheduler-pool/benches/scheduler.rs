@@ -478,7 +478,7 @@ mod nonblocking {
                     match step {
                         Step::Batch(txes) => {
                             for tx in txes {
-                                scheduler.schedule_execution(tx.clone());
+                                scheduler.schedule_execution(&[tx.clone()]);
                             }
                         }
                         Step::Synchronize => {
