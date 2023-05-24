@@ -740,10 +740,20 @@ fn execute_batches(
             use solana_sdk::signer::keypair::Keypair;
             let (kp1, kp2) = (Keypair::new(), Keypair::new());
 
-            let create_tx_with_index = |index| {
+            let create_tx_with_index1 = |index| {
                 let tx0 =
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                         &kp1,
+                        &solana_sdk::pubkey::new_rand(),
+                        10, //thread_rng().gen_range(1, 10),
+                        genesis_config.hash(),
+                    ));
+                TransactionWithIndexForBench::new((tx0, index))
+            };
+            let create_tx_with_index1 = |index| {
+                let tx0 =
+                    SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                        &kp2,
                         &solana_sdk::pubkey::new_rand(),
                         10, //thread_rng().gen_range(1, 10),
                         genesis_config.hash(),
@@ -762,8 +772,15 @@ fn execute_batches(
             let scenario: &Vec<Step> = &((0..5)
                 .flat_map(|_| {
                     [
-                        Step::Batch((0..1).map(create_tx_with_index).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index1).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index1).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index1).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index1).collect()),
                         Step::Synchronize,
+                        Step::Batch((0..1).map(create_tx_with_index2).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index2).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index2).collect()),
+                        Step::Batch((0..1).map(create_tx_with_index2).collect()),
                     ]
                 })
                 .collect());
