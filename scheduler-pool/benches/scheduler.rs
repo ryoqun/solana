@@ -419,7 +419,7 @@ mod thread_utilization { // tiling?
             _pool: &SchedulerPool,
         ) {
             transaction_with_index.with_transaction_and_index(|transaction, _index| {
-                bincode::deserialize(transaction.message().instructions()[0].data)
+                bincode::deserialize(&transaction.message().instructions()[0].data)
             });
         }
     }
