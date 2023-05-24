@@ -741,6 +741,38 @@ fn execute_batches(
             let handler2 = SleepyHandler2(sender);
             let tx_lock_ignoring_scheduler = NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
             let mut tx_lock_adhering_scheduler = NonblockingSchedulerWithDepGraph(tx_lock_ignoring_scheduler, Default::default(), receiver);
+            let scenario: &Vec<Step> = &((0..10)
+                .flat_map(|_| {
+                    [
+                        Step::Batch((0..20).map(create_tx_with_index).collect()),
+                        Step::Synchronize,
+                    ]
+                })
+                .collect());
+            bencher.iter(|| {
+                for step in scenario {
+                    match step {
+                        Step::Batch(txes) => {
+                            for tx in txes {
+                                scheduler.schedule_execution(&[tx.clone()]);
+                            }
+                        }
+                        Step::Synchronize => {
+                            if synchronize {
+                                assert_matches!(
+                                    scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+                                    Some((Ok(()), _))
+                                );
+                                scheduler.replace_context(context.clone());
+                            }
+                        }
+                    }
+                }
+                assert_matches!(
+                    scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+                    Some((Ok(()), _))
+                );
+                scheduler.replace_context(context.clone());
         }
     }
 }
