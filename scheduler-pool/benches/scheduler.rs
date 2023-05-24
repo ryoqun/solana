@@ -406,6 +406,23 @@ mod nonblocking {
 mod thread_utilization { // tiling?
     use super::*;
 
+    struct SleepyHandler;
+
+    impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler
+    {
+        fn handle(
+            _result: &mut Result<()>,
+            _timings: &mut ExecuteTimings,
+            bank: &Arc<Bank>,
+            transaction_with_index: SEA::TransactionWithIndex<'_>,
+            _pool: &SchedulerPool,
+        ) {
+            transaction_with_index.with_transaction_and_index(|transaction, _index| {
+                deserialize(transaction.message())
+            });
+        }
+    }
+
     #[bench]
     fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher) {
         let GenesisConfigInfo {
