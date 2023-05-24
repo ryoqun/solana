@@ -421,6 +421,7 @@ mod thread_utilization { // tiling?
         ) {
             transaction_with_index.with_transaction_and_index(|transaction, _index| {
                 let dummy_transfer: SystemInstruction = bincode::deserialize(&transaction.message().instructions()[0].data).unwrap();
+                let Transfer{lamports: sleep_duration} = dummy_transfer else { panic!() };
             });
         }
     }
