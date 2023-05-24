@@ -695,7 +695,7 @@ fn execute_batches(
 
         struct NonblockingSchedulerWithDepGraph(NonblockingScheduler<SleepyHandler2>);
 
-        impl InstalledScheduler for NonblockingSchedulerWithDepGraph {
+        impl InstalledScheduler<ScheduleExecutionArgForBench> for NonblockingSchedulerWithDepGraph {
         }
 
         #[bench]
