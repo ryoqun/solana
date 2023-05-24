@@ -607,7 +607,7 @@ fn execute_batches(
         Done,
     }
 
-    let receiver = tx_executor_handle.response_receiver();
+    //let receiver = tx_executor_handle.response_receiver();
 
     let mut processing_states: Vec<State> = vec![State::Blocked; dependency_graph.len()];
     let mut signature_indices: HashMap<&Signature, usize> =
