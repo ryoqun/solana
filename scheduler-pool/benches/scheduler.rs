@@ -569,6 +569,8 @@ use std::collections::HashMap;
 use solana_ledger::blockstore_processor::TransactionStatusSender;
 use std::time::Instant;
 use solana_sdk::signature::Signature;
+use solana_runtime::vote_sender_types::ReplayVoteSender;
+use std::sync::RwLock;
 
 fn execute_batches(
     bank: &Arc<Bank>,
