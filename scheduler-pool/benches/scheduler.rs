@@ -745,7 +745,7 @@ fn execute_batches(
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                         &mint_keypair,
                         &solana_sdk::pubkey::new_rand(),
-                        1000, //thread_rng().gen_range(1, 10),
+                        100, //thread_rng().gen_range(1, 10),
                         genesis_config.hash(),
                     ));
                 TransactionWithIndexForBench::new((tx0, index))
