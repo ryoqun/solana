@@ -298,10 +298,12 @@ mod nonblocking {
             self.pool.clone()
         }
 
-        fn schedule_execution(&self, transaction_with_index: TransactionWithIndexForBench) {
-            self.transaction_sender
-                .send(ChainedChannel::Payload(transaction_with_index))
-                .unwrap();
+        fn schedule_execution(&self, transaction_with_index: &[TransactionWithIndexForBench]) {
+            for tt in transaction_with_index {
+                self.transaction_sender
+                    .send(ChainedChannel::Payload(tt.clone()))
+                    .unwrap();
+            }
         }
 
         fn wait_for_termination(&mut self, _wait_reason: &WaitReason) -> Option<ResultWithTimings> {
