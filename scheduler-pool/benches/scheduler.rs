@@ -631,6 +631,7 @@ fn execute_batches(
                             pending_transactions[idx].signature()
                         );
 
+                        /*
                         let _result = tx_executor_handle
                             .schedule(BankTransactionExecutionRequest {
                                 bank: bank.clone(),
@@ -640,6 +641,7 @@ fn execute_batches(
                                 cost_capacity_meter: cost_capacity_meter.clone(),
                             })
                             .unwrap();
+                        */
                         // this idx can be scheduled and moved to processing
                         processing_states[idx] = State::Processing;
                     }
