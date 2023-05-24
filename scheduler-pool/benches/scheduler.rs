@@ -366,35 +366,35 @@ mod nonblocking {
     #[bench]
     fn bench_with_04_threads_with_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::<BenchFriendlyHandlerWithArcMutation>::spawn(pool, context, 4)
+            NonblockingScheduler::spawn(pool, context, 4, BenchFriendlyHandlerWithArcMutation)
         });
     }
 
     #[bench]
     fn bench_with_04_threads_without_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, 4)
+            NonblockingScheduler::spawn(pool, context, BenchFriendlyHandlerWithoutArcMutation)
         });
     }
 
     #[bench]
     fn bench_with_08_threads_with_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::<BenchFriendlyHandlerWithArcMutation>::spawn(pool, context, 8)
+            NonblockingScheduler::spawn(pool, context, 8, BenchFriendlyHandlerWithArcMutation)
         });
     }
 
     #[bench]
     fn bench_with_08_threads_without_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, 8)
+            NonblockingScheduler::spawn(pool, context, 8, BenchFriendlyHandlerWithoutArcMutation)
         });
     }
 
     #[bench]
     fn bench_with_16_threads_with_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::<BenchFriendlyHandlerWithArcMutation>::spawn(pool, context, 16)
+            NonblockingScheduler::spawn(pool, context, 16, BenchFriendlyHandlerWithArcMutation)
         });
     }
 
