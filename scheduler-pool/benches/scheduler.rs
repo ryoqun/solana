@@ -405,10 +405,10 @@ mod nonblocking {
 
 mod thread_utilization { // tiling?
     #[bench]
-    fn bench_txes_with_long_serialized_runs() {
+    fn bench_txes_with_long_serialized_runs(bencher: &Bencher) {
     }
 
     #[bench]
-    fn bench_txes_with_random_execution_durations() {
+    fn bench_txes_with_random_execution_durations(bencher: &Bencher) {
     }
 }
