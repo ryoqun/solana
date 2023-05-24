@@ -163,16 +163,18 @@ pub struct PooledScheduler<TH: ScheduledTransactionHandler<SEA>, SEA: ScheduleEx
     pool: Arc<SchedulerPool>,
     context: Option<SchedulingContext>,
     result_with_timings: Mutex<Option<ResultWithTimings>>,
+    handler: TH,
     _phantom: PhantomData<(TH, SEA)>,
 }
 
 impl<TH: ScheduledTransactionHandler<SEA>, SEA: ScheduleExecutionArg> PooledScheduler<TH, SEA> {
-    pub fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext) -> Self {
+    pub fn spawn(pool: Arc<SchedulerPool>, initial_context: SchedulingContext, handler: TH) -> Self {
         Self {
             id: thread_rng().gen::<SchedulerId>(),
             pool,
             context: Some(initial_context),
             result_with_timings: Mutex::default(),
+            handler,
             _phantom: PhantomData::default(),
         }
     }
