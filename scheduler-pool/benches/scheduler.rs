@@ -716,7 +716,7 @@ fn execute_batches(
     Ok(())
 }
 
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         struct SleepyHandler2(crossbeam_channel::Sender<Signature>);
 
         impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler2 {
