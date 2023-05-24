@@ -121,6 +121,17 @@ pub trait InstalledScheduler<SEA: ScheduleExecutionArg>: Send + Sync + Debug {
     fn replace_context(&mut self, context: SchedulingContext);
 }
 
+
+pub trait ScheduledTransactionHandler<SEA: ScheduleExecutionArg>: Send + Sync + Debug {
+    fn handle(
+        result: &mut Result<()>,
+        timings: &mut ExecuteTimings,
+        bank: &Arc<Bank>,
+        with_transaction_and_index: SEA::TransactionWithIndex<'_>,
+        pool: &SchedulerPool,
+    );
+}
+
 pub type InstalledSchedulerPoolArc = Arc<dyn InstalledSchedulerPool>;
 
 pub type SchedulerId = u64;

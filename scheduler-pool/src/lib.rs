@@ -111,16 +111,6 @@ impl InstalledSchedulerPool for SchedulerPool {
     }
 }
 
-pub trait ScheduledTransactionHandler<SEA: ScheduleExecutionArg>: Send + Sync + Debug {
-    fn handle(
-        result: &mut Result<()>,
-        timings: &mut ExecuteTimings,
-        bank: &Arc<Bank>,
-        with_transaction_and_index: SEA::TransactionWithIndex<'_>,
-        pool: &SchedulerPool,
-    );
-}
-
 #[derive(Debug)]
 struct DefaultTransactionHandler;
 
