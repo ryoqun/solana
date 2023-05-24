@@ -681,7 +681,7 @@ fn execute_batches(
                             .unwrap();
                     let Transfer{lamports: sleep_ms} = dummy_transfer else { panic!() };
                     std::thread::sleep(std::time::Duration::from_millis(sleep_ms));
-                    //self.0.send(transaction.signature().clone()).unwrap();
+                    self.0.send(transaction.signature().clone()).unwrap();
                 });
             }
         }
