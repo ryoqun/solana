@@ -668,7 +668,7 @@ fn execute_batches(
 
         debug!("waiting for response...");
 
-        let mut executor_responses: Vec<_> = receiver.recv().unwrap()];
+        let mut executor_responses: Vec<_> = vec![receiver.recv().unwrap()];
         executor_responses.extend(receiver.try_iter());
         for r in &executor_responses {
             /*
