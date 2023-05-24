@@ -351,6 +351,7 @@ mod nonblocking {
                     .send(ChainedChannel::NextContext(context.clone()))
                     .unwrap();
             }
+            self.context = context;
         }
     }
 
