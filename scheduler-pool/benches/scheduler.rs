@@ -428,7 +428,7 @@ mod nonblocking {
         }
 
         enum Step {
-            Execute,
+            Execute(Vec<TransactionWithIndexForBench>),
             // mimic periodic or contention-induced synchronization with this artificial blocking
             Synchronize,
         }
@@ -455,7 +455,7 @@ mod nonblocking {
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             let scenario = vec![
-                Step::Execute,
+                Step::Execute(vec![tx_with_index.clone()]),
                 Step::Synchronize,
             ];
             bencher.iter(|| {
