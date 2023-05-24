@@ -708,7 +708,7 @@ fn execute_batches(
             }
 
             fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings> {
-                panic!();
+                execute_batches();
             }
 
             fn pool(&self) -> InstalledSchedulerPoolArc {
