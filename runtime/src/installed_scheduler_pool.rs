@@ -291,7 +291,7 @@ impl BankWithScheduler {
         let scheduler = scheduler_guard.as_ref().unwrap();
 
         for (sanitized_transaction, &index) in transactions.iter().zip(transaction_indexes) {
-            scheduler.schedule_execution(&(sanitized_transaction, index));
+            scheduler.schedule_execution(&[&(sanitized_transaction, index)]);
         }
     }
 
