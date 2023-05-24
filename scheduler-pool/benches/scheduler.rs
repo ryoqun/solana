@@ -691,12 +691,14 @@ fn execute_batches(
                 .any(|state| matches!(state, State::Processing))
             {
                 let response = receiver.recv().unwrap();
+                /*
                 if let Some(entry_callback) = entry_callback {
                     entry_callback(bank);
                 }
                 timings.saturating_add_in_place(ExecuteTimingType::TotalBatchesLen, 1);
                 timings.saturating_add_in_place(ExecuteTimingType::NumExecuteBatches, 1);
                 timings.accumulate(&response.timings);
+                */
 
                 processing_states[*signature_indices.get(&response.signature).unwrap()] =
                     State::Done;
