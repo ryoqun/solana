@@ -48,7 +48,7 @@ impl ScheduleExecutionArg for ScheduleExecutionArgForBench {
     type TransactionWithIndex<'_tx> = TransactionWithIndexForBench;
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct BenchFriendlyHandler<SEA: ScheduleExecutionArg, const MUTATE_ARC: bool>(
     std::marker::PhantomData<SEA>,
 );
