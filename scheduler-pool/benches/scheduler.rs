@@ -239,6 +239,7 @@ mod nonblocking {
                 let mut result_sender = result_sender.clone();
                 std::thread::spawn({
                     let pool = pool.clone();
+                    let handler = handler.clone();
                     move || {
                         let mut result = Ok(());
                         let mut timings = ExecuteTimings::default();
