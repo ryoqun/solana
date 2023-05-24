@@ -707,7 +707,7 @@ fn execute_batches(
                 eprintln!("aaa");
                 self.execute_batches(
                     &self.context().unwrap().bank(),
-                    &std::mem::take(&mut self.1.lock().unwrap()),
+                    &std::mem::take(&mut *self.1.lock().unwrap()),
                     None,
                     None,
                     &self.2,
