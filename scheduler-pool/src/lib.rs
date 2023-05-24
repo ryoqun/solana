@@ -191,7 +191,7 @@ impl<TH: ScheduledTransactionHandler<SEA>, SEA: ScheduleExecutionArg> InstalledS
         self.pool.clone()
     }
 
-    fn schedule_execution(&self, with_transaction_and_index: SEA::TransactionWithIndex<'_>) {
+    fn schedule_execution(&self, with_transaction_and_index: &[SEA::TransactionWithIndex<'_>]) {
         let context = self.context.as_ref().expect("active context");
 
         let fail_fast = match context.mode() {
@@ -205,15 +205,19 @@ impl<TH: ScheduledTransactionHandler<SEA>, SEA: ScheduleExecutionArg> InstalledS
 
         // so, we're NOT scheduling at all; rather, just execute tx straight off.  we doesn't need
         // to solve inter-tx locking deps only in the case of single-thread fifo like this....
-        if result.is_ok() || !fail_fast {
-            TH::handle(
-                &self.handler,
-                result,
-                timings,
-                context.bank(),
-                with_transaction_and_index,
-                &self.pool,
-            );
+        for with_transaction_and_index2 in with_transaction_and_index {
+            if result.is_ok() || !fail_fast {
+                TH::handle(
+                    &self.handler,
+                    result,
+                    timings,
+                    context.bank(),
+                    with_transaction_and_index2,
+                    &self.pool,
+                );
+            } else {
+                break;
+            }
         }
     }
 
