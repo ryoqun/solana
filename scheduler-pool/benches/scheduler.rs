@@ -751,8 +751,10 @@ fn execute_batches(
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
+            let (sender, receiver) = crossbeam_channel::unbounded();
+            let handler2 = SleepyHandler2(sender);
             let mut scheduler =
-                NonblockingScheduler::spawn(pool, context.clone(), 10, SleepyHandler);
+                NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
         }
     }
 }
