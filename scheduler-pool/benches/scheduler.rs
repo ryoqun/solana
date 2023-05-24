@@ -450,7 +450,9 @@ mod nonblocking {
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 1);
             bencher.iter(|| {
                 //std::hint::black_box(tx_with_index.clone());
-                scheduler.schedule_execution(tx_with_index.clone());
+                for _ in 0..10 {
+                    scheduler.schedule_execution(tx_with_index.clone());
+                }
                 assert_matches!(
                     scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
                     Some((Ok(()), _))
