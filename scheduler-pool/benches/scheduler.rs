@@ -454,7 +454,7 @@ mod nonblocking {
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
-            let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
+            let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 10);
             let scenario: &Vec<Step> = &((0..10).flat_map(|_| {
                     [
                         Step::Batch((0..20).map(create_tx_with_index).collect()),
