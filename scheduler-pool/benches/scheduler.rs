@@ -664,54 +664,10 @@ fn execute_batches(
             break;
         }
 
-        let mut first_error: solana_sdk::transaction::Result<()> = Ok(());
-
-        debug!("waiting for response...");
-
         let mut executor_responses: Vec<_> = vec![receiver.recv().unwrap()];
         executor_responses.extend(receiver.try_iter());
         for r in &executor_responses {
-            /*
-            if let Some(entry_callback) = entry_callback {
-                entry_callback(bank);
-            }
-            timings.saturating_add_in_place(ExecuteTimingType::TotalBatchesLen, 1);
-            timings.saturating_add_in_place(ExecuteTimingType::NumExecuteBatches, 1);
-            timings.accumulate(&r.timings);
-            */
-
             processing_states[*signature_indices.get(r).unwrap()] = State::Done;
-
-            // set first error, but continue to mark the rest as done so loop below can break
-            // out on error correctly
-            /*
-            if r.result.is_err() && first_error.is_ok() {
-                debug!("bank.commit_transaction error: {:?}", r.result);
-                first_error = r.result.clone();
-            }
-            */
-        }
-
-        if first_error.is_err() {
-            // wait for all processing txs to finish to aggregate stats and return first error
-            while processing_states
-                .iter()
-                .any(|state| matches!(state, State::Processing))
-            {
-                //let response = receiver.recv().unwrap();
-                /*
-                if let Some(entry_callback) = entry_callback {
-                    entry_callback(bank);
-                }
-                timings.saturating_add_in_place(ExecuteTimingType::TotalBatchesLen, 1);
-                timings.saturating_add_in_place(ExecuteTimingType::NumExecuteBatches, 1);
-                timings.accumulate(&response.timings);
-                */
-
-                //processing_states[*signature_indices.get(panic!()/*&response.signature*/).unwrap()] =
-                //    State::Done;
-            }
-            first_error?;
         }
     }
     Ok(())
