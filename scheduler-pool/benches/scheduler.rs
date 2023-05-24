@@ -402,16 +402,17 @@ mod nonblocking {
         });
     }
 
-    mod thread_utilization { // tiling?
-        use super::*;
-        use solana_sdk::system_instruction::SystemInstruction;
-        use solana_sdk::system_instruction::SystemInstruction::Transfer;
+    mod thread_utilization {
+        // tiling?
+        use {
+            super::*,
+            solana_sdk::system_instruction::{SystemInstruction, SystemInstruction::Transfer},
+        };
 
         #[derive(Debug)]
         struct SleepyHandler;
 
-        impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler
-        {
+        impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler {
             fn handle(
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -420,7 +421,9 @@ mod nonblocking {
                 _pool: &SchedulerPool,
             ) {
                 transaction_with_index.with_transaction_and_index(|transaction, _index| {
-                    let dummy_transfer: SystemInstruction = bincode::deserialize(&transaction.message().instructions()[0].data).unwrap();
+                    let dummy_transfer: SystemInstruction =
+                        bincode::deserialize(&transaction.message().instructions()[0].data)
+                            .unwrap();
                     let Transfer{lamports: sleep_ms} = dummy_transfer else { panic!() };
                     std::thread::sleep(std::time::Duration::from_millis(sleep_ms));
                 });
@@ -442,26 +445,29 @@ mod nonblocking {
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
 
             let create_tx_with_index = |index| {
-                let tx0 = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                    &mint_keypair,
-                    &solana_sdk::pubkey::new_rand(),
-                    thread_rng().gen_range(1, 10),
-                    genesis_config.hash(),
-                ));
+                let tx0 =
+                    SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                        &mint_keypair,
+                        &solana_sdk::pubkey::new_rand(),
+                        thread_rng().gen_range(1, 10),
+                        genesis_config.hash(),
+                    ));
                 TransactionWithIndexForBench::new((tx0, index))
             };
 
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
-            let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 10);
-            let scenario: &Vec<Step> = &((0..10).flat_map(|_| {
+            let mut scheduler =
+                NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 10);
+            let scenario: &Vec<Step> = &((0..10)
+                .flat_map(|_| {
                     [
                         Step::Batch((0..20).map(create_tx_with_index).collect()),
                         Step::Synchronize,
                     ]
-                }).collect()
-            );
+                })
+                .collect());
             bencher.iter(|| {
                 for step in scenario {
                     match step {
@@ -469,7 +475,7 @@ mod nonblocking {
                             for tx in txes {
                                 scheduler.schedule_execution(tx.clone());
                             }
-                        },
+                        }
                         Step::Synchronize => {
                             if synchronize {
                                 assert_matches!(
@@ -478,7 +484,7 @@ mod nonblocking {
                                 );
                                 scheduler.replace_context(context.clone());
                             }
-                        },
+                        }
                     }
                 }
                 assert_matches!(
@@ -490,17 +496,20 @@ mod nonblocking {
         }
 
         #[bench]
-        fn bench_txes_with_random_execution_durations_with_interleaved_synchronization(bencher: &mut Bencher) {
+        fn bench_txes_with_random_execution_durations_with_interleaved_synchronization(
+            bencher: &mut Bencher,
+        ) {
             bench_txes_with_random_execution_durations(bencher, true);
         }
 
         #[bench]
-        fn bench_txes_with_random_execution_durations_without_interleaved_synchronization(bencher: &mut Bencher) {
+        fn bench_txes_with_random_execution_durations_without_interleaved_synchronization(
+            bencher: &mut Bencher,
+        ) {
             bench_txes_with_random_execution_durations(bencher, false);
         }
 
         #[bench]
-        fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {
-        }
+        fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {}
     }
 }
