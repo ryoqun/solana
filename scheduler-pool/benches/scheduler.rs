@@ -155,7 +155,7 @@ mod blocking_ref {
         let tx_with_index = &(tx0, 0);
         bencher.iter(|| {
             for _ in 0..TX_COUNT {
-                scheduler.schedule_execution(tx_with_index);
+                scheduler.schedule_execution(&[tx_with_index]);
             }
             assert_matches!(
                 scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
