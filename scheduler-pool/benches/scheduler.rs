@@ -456,6 +456,10 @@ mod nonblocking {
             let scenario = &vec![
                 Step::Execute(vec![tx_with_index.clone()]),
                 Step::Synchronize,
+                Step::Execute(vec![tx_with_index.clone()]),
+                Step::Synchronize,
+                Step::Execute(vec![tx_with_index.clone()]),
+                Step::Synchronize,
             ];
             bencher.iter(|| {
                 for step in scenario {
