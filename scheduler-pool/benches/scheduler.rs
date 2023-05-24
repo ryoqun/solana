@@ -700,6 +700,10 @@ fn execute_batches(
             fn id(&self) -> SchedulerId {
                 self.0.id()
             }
+
+            fn pool(&self) -> InstalledSchedulerPoolArc {
+                self.0.pool()
+            }
         }
 
         #[bench]
