@@ -711,6 +711,9 @@ fn execute_batches(
                 execute_batches(
                     &self.context().unwrap().bank(),
                     &self.1.lock().unwrap(),
+                    None,
+                    None,
+                    &self.2,
                 );
 
                 self.0.wait_for_termination(reason)
