@@ -680,7 +680,6 @@ fn execute_batches(
             timings.accumulate(&r.timings);
             */
 
-            debug!("signature done: {:?}", r.signature);
             processing_states[*signature_indices.get(&r.signature).unwrap()] = State::Done;
 
             // set first error, but continue to mark the rest as done so loop below can break
