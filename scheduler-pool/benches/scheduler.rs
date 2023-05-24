@@ -664,12 +664,14 @@ fn execute_batches(
         let mut executor_responses = vec![receiver.recv().unwrap()];
         executor_responses.extend(receiver.try_iter());
         for r in &executor_responses {
+            /*
             if let Some(entry_callback) = entry_callback {
                 entry_callback(bank);
             }
             timings.saturating_add_in_place(ExecuteTimingType::TotalBatchesLen, 1);
             timings.saturating_add_in_place(ExecuteTimingType::NumExecuteBatches, 1);
             timings.accumulate(&r.timings);
+            */
 
             debug!("signature done: {:?}", r.signature);
             processing_states[*signature_indices.get(&r.signature).unwrap()] = State::Done;
