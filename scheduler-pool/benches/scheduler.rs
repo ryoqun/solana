@@ -693,7 +693,7 @@ fn execute_batches(
             }
         }
 
-        struct NonblockingSchedulerWithDepGraph(NonblockingScheduler);
+        struct NonblockingSchedulerWithDepGraph(NonblockingScheduler<SleepyHandler2>);
 
         #[bench]
         fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {
