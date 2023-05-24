@@ -441,7 +441,7 @@ mod nonblocking {
             } = create_genesis_config(1_000_000_000);
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
 
-            let tx_with_index = |index| {
+            let create_tx_with_index = |index| {
                 let tx0 = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                     &mint_keypair,
                     &solana_sdk::pubkey::new_rand(),
@@ -457,7 +457,7 @@ mod nonblocking {
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             let scenario: &Vec<Step> = &((0..10).flat_map(|_| {
                     [
-                        Step::Batch((0..20).map(tx_with_index).collect()),
+                        Step::Batch((0..20).map(create_tx_with_index).collect()),
                         Step::Synchronize,
                     ]
                 }).collect()
