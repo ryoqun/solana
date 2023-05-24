@@ -401,7 +401,7 @@ mod nonblocking {
     #[bench]
     fn bench_with_16_threads_without_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            NonblockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, 16)
+            NonblockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, 16, BenchFriendlyHandlerWithoutArcMutation)
         });
     }
 
