@@ -739,8 +739,8 @@ fn execute_batches(
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let (sender, receiver) = crossbeam_channel::unbounded();
             let handler2 = SleepyHandler2(sender);
-            let lock_ignoring_scheduler = NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
-            let mut lock_adhering_scheduler = NonblockingSchedulerWithDepGraph(lock_ignoring_scheduler, Default::default(), receiver);
+            let tx_lock_ignoring_scheduler = NonblockingScheduler::spawn(pool, context.clone(), 10, handler2);
+            let mut tx_lock_adhering_scheduler = NonblockingSchedulerWithDepGraph(tx_lock_ignoring_scheduler, Default::default(), receiver);
         }
     }
 }
