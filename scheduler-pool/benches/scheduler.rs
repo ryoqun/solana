@@ -246,6 +246,7 @@ mod nonblocking {
                                 ChainedChannel::Payload(with_transaction_and_index) => {
                                     count += 1;
                                     H::handle(
+                                        &self.handler,
                                         &mut result,
                                         &mut timings,
                                         &bank,
