@@ -447,7 +447,7 @@ mod nonblocking {
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
             let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
-            let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 1);
+            let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             bencher.iter(|| {
                 //std::hint::black_box(tx_with_index.clone());
                 for _ in 0..10 {
