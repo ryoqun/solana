@@ -454,11 +454,11 @@ mod nonblocking {
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             let scenario = &vec![
-                Step::Execute(vec![tx_with_index.clone()]),
+                Step::Execute(vec![tx_with_index.clone(); 20]),
                 Step::Synchronize,
-                Step::Execute(vec![tx_with_index.clone()]),
+                Step::Execute(vec![tx_with_index.clone(); 20]),
                 Step::Synchronize,
-                Step::Execute(vec![tx_with_index.clone()]),
+                Step::Execute(vec![tx_with_index.clone(); 20]),
                 Step::Synchronize,
             ];
             bencher.iter(|| {
