@@ -463,7 +463,7 @@ mod nonblocking {
                     match step {
                         Step::Execute(txes) => {
                             for tx in txes {
-                                scheduler.schedule_execution(tx);
+                                scheduler.schedule_execution(tx.clone());
                             }
                         },
                         Step::Synchronize => {
