@@ -564,10 +564,13 @@ fn build_dependency_graph(tx_account_locks: &[TransactionAccountLocks]) -> Vec<I
         .collect()
 }
 
+use solana_sdk::transaction::TransactionAccountLocks;
+use std::collections::HashMap;
+use solana_ledger::blockstore_processor::TransactionStatusSender;
+
 fn execute_batches(
     bank: &Arc<Bank>,
     pending_transactions: &[&SanitizedTransaction],
-    entry_callback: Option<&ProcessCallback>,
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     timings: &mut ExecuteTimings,
