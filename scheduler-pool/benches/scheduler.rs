@@ -196,6 +196,7 @@ mod nonblocking {
         transaction_sender: crossbeam_channel::Sender<ChainedChannel>,
         result_receiver: crossbeam_channel::Receiver<(Result<()>, ExecuteTimings, usize)>,
         lane_count: usize,
+        context: SchedulingContext,
         _phantom: PhantomData<H>,
     }
 
