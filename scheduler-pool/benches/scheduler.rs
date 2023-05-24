@@ -586,7 +586,7 @@ fn execute_batches(
     timings: &mut ExecuteTimings,
     //cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
     //tx_executor_handle: &BankTransactionExecutorHandle,
-    receiver: crossbeam_channel::Receiver<Signature>,
+    receiver: &crossbeam_channel::Receiver<Signature>,
 ) -> Result<()> {
     if pending_transactions.is_empty() {
         return Ok(());
@@ -668,8 +668,8 @@ fn execute_batches(
 
         debug!("waiting for response...");
 
-        let mut executor_responses: Vec<usize> = vec![];//receiver.recv().unwrap()];
-        //executor_responses.extend(receiver.try_iter());
+        let mut executor_responses: Vec<_> = receiver.recv().unwrap()];
+        executor_responses.extend(receiver.try_iter());
         for r in &executor_responses {
             /*
             if let Some(entry_callback) = entry_callback {
@@ -680,7 +680,7 @@ fn execute_batches(
             timings.accumulate(&r.timings);
             */
 
-            //processing_states[*signature_indices.get(panic!()).unwrap()] = State::Done;
+            processing_states[*signature_indices.get(r).unwrap()] = State::Done;
 
             // set first error, but continue to mark the rest as done so loop below can break
             // out on error correctly
