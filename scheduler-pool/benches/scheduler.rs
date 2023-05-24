@@ -420,9 +420,9 @@ mod thread_utilization { // tiling?
             2,
             genesis_config.hash(),
         ));
-        //let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
+        let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
         bencher.iter(|| {
-            std::hint::black_box(tx0.clone());
+            std::hint::black_box(tx_with_index.clone());
         });
     }
 
