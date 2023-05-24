@@ -61,7 +61,7 @@ impl<SEA: ScheduleExecutionArg + Clone, const MUTATE_ARC: bool> ScheduledTransac
         _result: &mut Result<()>,
         _timings: &mut ExecuteTimings,
         bank: &Arc<Bank>,
-        transaction_with_index: SEA::TransactionWithIndex<'_>,
+        transaction_with_index: &SEA::TransactionWithIndex<'_>,
         _pool: &SchedulerPool,
     ) {
         //std::hint::black_box(bank.clone());
@@ -74,7 +74,7 @@ impl<SEA: ScheduleExecutionArg + Clone, const MUTATE_ARC: bool> ScheduledTransac
             }
             // call random one of Bank's lightweight-and-very-multi-threaded-friendly methods which take a
             // transaction inside this artifical tight loop.
-            transaction_with_index.with_transaction_and_index(|transaction, _index| {
+            transaction_with_index[0].with_transaction_and_index(|transaction, _index| {
                 i += bank.get_fee_for_message_with_lamports_per_signature(transaction.message(), i)
             });
         }
