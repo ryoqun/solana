@@ -180,7 +180,7 @@ mod blocking {
     #[bench]
     fn bench_without_arc_mutation(bencher: &mut Bencher) {
         run_bench(bencher, |pool, context| {
-            BlockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, BenchFriendlyHandlerWithoutArcMutation)
+            BlockingScheduler::<BenchFriendlyHandlerWithoutArcMutation>::spawn(pool, context, BenchFriendlyHandlerWithoutArcMutation::default())
         });
     }
 }
