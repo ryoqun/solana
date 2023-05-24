@@ -711,6 +711,27 @@ fn execute_batches(
     Ok(())
 }
 
+        #[derive(Debug)]
+        struct SleepyHandler2(crossbeam_channel::Sender<Signature>);
+
+        impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler2 {
+            fn handle(
+                _result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                _bank: &Arc<Bank>,
+                transaction_with_index: SEA::TransactionWithIndex<'_>,
+                _pool: &SchedulerPool,
+            ) {
+                transaction_with_index.with_transaction_and_index(|transaction, _index| {
+                    let dummy_transfer: SystemInstruction =
+                        bincode::deserialize(&transaction.message().instructions()[0].data)
+                            .unwrap();
+                    let Transfer{lamports: sleep_ms} = dummy_transfer else { panic!() };
+                    std::thread::sleep(std::time::Duration::from_millis(sleep_ms));
+                });
+            }
+        }
+
         #[bench]
         fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {}
     }
