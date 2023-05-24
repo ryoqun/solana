@@ -226,6 +226,7 @@ mod nonblocking {
             pool: Arc<SchedulerPool>,
             initial_context: SchedulingContext,
             lane_count: usize,
+            handler: H,
         ) -> Self {
             let (transaction_sender, transaction_receiver) =
                 crossbeam_channel::unbounded::<ChainedChannel>();
@@ -246,7 +247,7 @@ mod nonblocking {
                                 ChainedChannel::Payload(with_transaction_and_index) => {
                                     count += 1;
                                     H::handle(
-                                        &self.handler,
+                                        &handler,
                                         &mut result,
                                         &mut timings,
                                         &bank,
