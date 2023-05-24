@@ -37,7 +37,7 @@ use {
 
 const TX_COUNT: usize = 10_000;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ScheduleExecutionArgForBench;
 
 // use Arc-ed transaction for very cheap .clone() so that the consumer is never starved for
