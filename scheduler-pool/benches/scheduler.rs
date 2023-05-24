@@ -704,6 +704,13 @@ fn execute_batches(
             fn pool(&self) -> InstalledSchedulerPoolArc {
                 self.0.pool()
             }
+
+            fn context<'a>(&'a self) -> Option<&'a SchedulingContext> {
+                self.0.context()
+            }
+            fn replace_context(&mut self, context: SchedulingContext) {
+                self.0.replace_context(context)
+            }
         }
 
         #[bench]
