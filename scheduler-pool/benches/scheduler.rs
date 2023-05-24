@@ -416,7 +416,7 @@ mod thread_utilization { // tiling?
         ));
         //let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
         bencher.iter(|| {
-            black_box(tx0.clone());
+            std::hint::black_box(tx0.clone());
         });
     }
 
