@@ -434,6 +434,7 @@ mod nonblocking {
                 mint_keypair,
                 ..
             } = create_genesis_config(1_000_000_000);
+            let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
 
             let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                 &mint_keypair,
