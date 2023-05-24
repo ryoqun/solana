@@ -433,8 +433,7 @@ mod nonblocking {
             Synchronize,
         }
 
-        #[bench]
-        fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher) {
+        fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher, synchronize: bool) {
             let GenesisConfigInfo {
                 genesis_config,
                 mint_keypair,
@@ -467,15 +466,27 @@ mod nonblocking {
                             }
                         },
                         Step::Synchronize => {
-                            assert_matches!(
-                                scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
-                                Some((Ok(()), _))
-                            );
-                            scheduler.replace_context(context.clone());
+                            if synchronize {
+                                assert_matches!(
+                                    scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),
+                                    Some((Ok(()), _))
+                                );
+                                scheduler.replace_context(context.clone());
+                            }
                         },
                     }
                 }
             });
+        }
+
+        #[bench]
+        fn bench_txes_with_long_serialized_runs_with_interleaved_synchronization(bencher: &mut Bencher) {
+            bench_txes_with_long_serialized_runs(bencher, true);
+        }
+
+        #[bench]
+        fn bench_txes_with_long_serialized_runs_without_interleaved_synchronization(bencher: &mut Bencher) {
+            bench_txes_with_long_serialized_runs(bencher, false);
         }
 
         #[bench]
