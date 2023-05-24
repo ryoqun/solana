@@ -701,6 +701,9 @@ fn execute_batches(
                 self.0.id()
             }
 
+            fn schedule_execution<'a>(&'a self, transaction_with_index: &'a [SEA::TransactionWithIndex<'a>]) {
+            }
+
             fn pool(&self) -> InstalledSchedulerPoolArc {
                 self.0.pool()
             }
