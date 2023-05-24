@@ -143,9 +143,9 @@ mod blocking_ref {
         let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
 
         let mut scheduler = PooledScheduler::<
-            BenchFriendlyHandler<DefaultScheduleExecutionArg, false>,
+            _,
             DefaultScheduleExecutionArg,
-        >::spawn(pool, context.clone());
+        >::spawn(pool, context.clone(), BenchFriendlyHandler<DefaultScheduleExecutionArg, false>::default());
         let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
             &mint_keypair,
             &solana_sdk::pubkey::new_rand(),
