@@ -448,7 +448,7 @@ mod nonblocking {
                     2,
                     genesis_config.hash(),
                 ));
-                Some(TransactionWithIndexForBench::new((tx0, 0)))
+                TransactionWithIndexForBench::new((tx0, 0))
             };
 
             let _ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
@@ -456,7 +456,7 @@ mod nonblocking {
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler = NonblockingScheduler::<SleepyHandler>::spawn(pool, context.clone(), 4);
             let scenario = &vec![
-                Step::Batch(std::iter::from_fn(tx_with_index).repeat(20).collect()),
+                Step::Batch((0..20).map(tx_with_index).collect()),
                 Step::Synchronize,
                 Step::Batch(vec![tx_with_index(); 20]),
                 Step::Synchronize,
