@@ -22,5 +22,6 @@ assert_matches = { workspace = true }
 crossbeam-channel = { workspace = true }
 jemallocator = { workspace = true }
 log = { workspace = true }
+serde = { workspace = true }
 solana-logger = { workspace = true }
 solana-runtime = { workspace = true, features = ["test-in-workspace"] }
