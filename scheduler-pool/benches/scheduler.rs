@@ -406,6 +406,7 @@ mod nonblocking {
 mod thread_utilization { // tiling?
     use super::*;
 
+    #[derive(Debug)]
     struct SleepyHandler;
 
     impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler
