@@ -739,6 +739,7 @@ fn execute_batches(
             } = create_genesis_config(1_000_000_000);
             let bank = &Arc::new(Bank::new_for_tests(&genesis_config));
             let synchronize = false;
+            use solana_sdk::signer::keypair::Keypair;
 
             let create_tx_with_index = |index| {
                 let tx0 =
