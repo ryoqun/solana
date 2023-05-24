@@ -708,7 +708,9 @@ fn execute_batches(
             }
 
             fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings> {
-                execute_batches();
+                execute_batches(
+                    &self.context().unwrap().bank(),
+                );
             }
 
             fn pool(&self) -> InstalledSchedulerPoolArc {
