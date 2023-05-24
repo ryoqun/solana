@@ -750,7 +750,7 @@ fn execute_batches(
                     ));
                 TransactionWithIndexForBench::new((tx0, index))
             };
-            let create_tx_with_index1 = |index| {
+            let create_tx_with_index2 = |index| {
                 let tx0 =
                     SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                         &kp2,
