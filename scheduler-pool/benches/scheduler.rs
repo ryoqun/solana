@@ -580,7 +580,9 @@ use solana_runtime::vote_sender_types::ReplayVoteSender;
 use std::sync::RwLock;
 use nohash_hasher::IntSet;
 
+impl NonblockingSchedulerWithDepGraph {
 fn execute_batches(
+    &self,
     bank: &Arc<Bank>,
     pending_transactions: &[SanitizedTransaction],
     transaction_status_sender: Option<&TransactionStatusSender>,
@@ -669,6 +671,7 @@ fn execute_batches(
     }
     Ok(())
 }
+}
 
         #[derive(Debug, Clone)]
         struct SleepyHandler2(crossbeam_channel::Sender<Signature>);
@@ -708,7 +711,7 @@ fn execute_batches(
             }
 
             fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings> {
-                execute_batches(
+                self.execute_batches(
                     &self.context().unwrap().bank(),
                     &self.1.lock().unwrap(),
                     None,
