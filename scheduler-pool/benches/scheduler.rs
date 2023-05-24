@@ -402,55 +402,57 @@ mod nonblocking {
         });
     }
 
-mod thread_utilization { // tiling?
-    use super::*;
-    use solana_sdk::system_instruction::SystemInstruction;
-    use solana_sdk::system_instruction::SystemInstruction::Transfer;
+    mod thread_utilization { // tiling?
+        use super::*;
+        use solana_sdk::system_instruction::SystemInstruction;
+        use solana_sdk::system_instruction::SystemInstruction::Transfer;
 
-    #[derive(Debug)]
-    struct SleepyHandler;
+        #[derive(Debug)]
+        struct SleepyHandler;
 
-    impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler
-    {
-        fn handle(
-            _result: &mut Result<()>,
-            _timings: &mut ExecuteTimings,
-            bank: &Arc<Bank>,
-            transaction_with_index: SEA::TransactionWithIndex<'_>,
-            _pool: &SchedulerPool,
-        ) {
-            transaction_with_index.with_transaction_and_index(|transaction, _index| {
-                let dummy_transfer: SystemInstruction = bincode::deserialize(&transaction.message().instructions()[0].data).unwrap();
-                let Transfer{lamports: sleep_duration} = dummy_transfer else { panic!() };
-                panic!("sleep {} secs", sleep_duration);
+        impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler
+        {
+            fn handle(
+                _result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                bank: &Arc<Bank>,
+                transaction_with_index: SEA::TransactionWithIndex<'_>,
+                _pool: &SchedulerPool,
+            ) {
+                transaction_with_index.with_transaction_and_index(|transaction, _index| {
+                    let dummy_transfer: SystemInstruction = bincode::deserialize(&transaction.message().instructions()[0].data).unwrap();
+                    let Transfer{lamports: sleep_duration} = dummy_transfer else { panic!() };
+                    panic!("sleep {} secs", sleep_duration);
+                });
+            }
+        }
+
+        #[bench]
+        fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher) {
+            let GenesisConfigInfo {
+                genesis_config,
+                mint_keypair,
+                ..
+            } = create_genesis_config(1_000_000_000);
+
+            let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                &mint_keypair,
+                &solana_sdk::pubkey::new_rand(),
+                2,
+                genesis_config.hash(),
+            ));
+            let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
+
+            let pool = SchedulerPool::new(None, None, None, _ignored_prioritization_fee_cache);
+            let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
+            NonblockingScheduler::<SleepyHandler>::spawn(pool, context, 1);
+            bencher.iter(|| {
+                std::hint::black_box(tx_with_index.clone());
             });
         }
+
+        #[bench]
+        fn bench_txes_with_random_execution_durations(bencher: &Bencher) {
+        }
     }
-
-    #[bench]
-    fn bench_txes_with_long_serialized_runs(bencher: &mut Bencher) {
-        let GenesisConfigInfo {
-            genesis_config,
-            mint_keypair,
-            ..
-        } = create_genesis_config(1_000_000_000);
-
-        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-            &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
-            2,
-            genesis_config.hash(),
-        ));
-        let tx_with_index = TransactionWithIndexForBench::new((tx0.clone(), 0));
-
-        NonblockingScheduler::<SleepyHandler>::spawn(panic!(), panic!(), 1);
-        bencher.iter(|| {
-            std::hint::black_box(tx_with_index.clone());
-        });
-    }
-
-    #[bench]
-    fn bench_txes_with_random_execution_durations(bencher: &Bencher) {
-    }
-}
 }
