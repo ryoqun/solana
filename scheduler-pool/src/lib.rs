@@ -97,7 +97,7 @@ impl InstalledSchedulerPool for SchedulerPool {
             Box::new(PooledScheduler::<
                 DefaultTransactionHandler,
                 DefaultScheduleExecutionArg,
-            >::spawn(self.self_arc(), context))
+            >::spawn(self.self_arc(), context, DefaultTransactionHandler))
         }
     }
 
