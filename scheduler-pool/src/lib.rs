@@ -117,7 +117,7 @@ pub trait ScheduledTransactionHandler<SEA: ScheduleExecutionArg>: Send + Sync + 
         result: &mut Result<()>,
         timings: &mut ExecuteTimings,
         bank: &Arc<Bank>,
-        with_transaction_and_index: SEA::TransactionWithIndex<'_>,
+        with_transaction_and_index: &SEA::TransactionWithIndex<'_>,
         pool: &SchedulerPool,
     );
 }
@@ -131,7 +131,7 @@ impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for DefaultTran
         result: &mut Result<()>,
         timings: &mut ExecuteTimings,
         bank: &Arc<Bank>,
-        transaction_with_index: SEA::TransactionWithIndex<'_>,
+        transaction_with_index: &SEA::TransactionWithIndex<'_>,
         pool: &SchedulerPool,
     ) {
         transaction_with_index.with_transaction_and_index(move |transaction, index| {
