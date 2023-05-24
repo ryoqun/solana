@@ -711,6 +711,7 @@ fn execute_batches(
                 execute_batches(
                     &self.context().unwrap().bank(),
                 );
+                self.0.wait_for_termination()
             }
 
             fn pool(&self) -> InstalledSchedulerPoolArc {
