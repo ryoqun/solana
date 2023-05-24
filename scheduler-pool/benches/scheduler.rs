@@ -694,7 +694,7 @@ fn execute_batches(
         }
 
         #[derive(Debug)]
-        struct NonblockingSchedulerWithDepGraph(NonblockingScheduler<SleepyHandler2>, Vec<SanitizedTransaction>);
+        struct NonblockingSchedulerWithDepGraph(NonblockingScheduler<SleepyHandler2>, std::sync::Mutex<Vec<SanitizedTransaction>>);
 
         impl InstalledScheduler<ScheduleExecutionArgForBench> for NonblockingSchedulerWithDepGraph {
             fn id(&self) -> SchedulerId {
@@ -703,6 +703,7 @@ fn execute_batches(
 
             fn schedule_execution<'a>(&'a self, transaction_with_index: &'a [TransactionWithIndexForBench]) {
                 for t in transaction_with_index {
+                    self.1.lock().unwrap().push(t);
                 }
             }
 
