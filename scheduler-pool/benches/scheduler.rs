@@ -702,7 +702,7 @@ fn execute_batches(
                 timings.accumulate(&response.timings);
                 */
 
-                processing_states[*signature_indices.get(&response.signature).unwrap()] =
+                processing_states[*signature_indices.get(panic!()/*&response.signature*/).unwrap()] =
                     State::Done;
             }
             first_error?;
