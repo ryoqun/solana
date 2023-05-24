@@ -578,7 +578,7 @@ fn execute_batches(
     transaction_status_sender: Option<&TransactionStatusSender>,
     replay_vote_sender: Option<&ReplayVoteSender>,
     timings: &mut ExecuteTimings,
-    cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
+    //cost_capacity_meter: Arc<RwLock<BlockCostCapacityMeter>>,
     tx_executor_handle: &BankTransactionExecutorHandle,
 ) -> Result<()> {
     if pending_transactions.is_empty() {
