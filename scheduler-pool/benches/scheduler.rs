@@ -740,7 +740,7 @@ fn execute_batches(
         }
 
         #[bench]
-        fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {}
+        fn bench_txes_with_long_serialized_runs(_bencher: &Bencher) {
             let GenesisConfigInfo {
                 genesis_config,
                 mint_keypair,
@@ -753,5 +753,6 @@ fn execute_batches(
             let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let mut scheduler =
                 NonblockingScheduler::spawn(pool, context.clone(), 10, SleepyHandler);
+        }
     }
 }
