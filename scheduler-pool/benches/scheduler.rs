@@ -704,6 +704,7 @@ fn execute_batches(
             }
 
             fn wait_for_termination(&mut self, reason: &WaitReason) -> Option<ResultWithTimings> {
+                eprintln!("aaa");
                 self.execute_batches(
                     &self.context().unwrap().bank(),
                     &self.1.lock().unwrap(),
@@ -711,6 +712,7 @@ fn execute_batches(
                     None,
                     &self.2,
                 ).unwrap();
+                eprintln!("bbb");
 
                 self.0.wait_for_termination(reason)
             }
