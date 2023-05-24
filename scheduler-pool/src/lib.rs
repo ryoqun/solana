@@ -207,7 +207,7 @@ impl<TH: ScheduledTransactionHandler<SEA>, SEA: ScheduleExecutionArg> InstalledS
         // to solve inter-tx locking deps only in the case of single-thread fifo like this....
         if result.is_ok() || !fail_fast {
             TH::handle(
-                self.handler,
+                &self.handler,
                 result,
                 timings,
                 context.bank(),
