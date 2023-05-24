@@ -253,7 +253,7 @@ mod nonblocking {
                                         &mut result,
                                         &mut timings,
                                         &bank,
-                                        with_transaction_and_index,
+                                        &with_transaction_and_index,
                                         &pool,
                                     );
                                 }
