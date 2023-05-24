@@ -716,6 +716,7 @@ fn execute_batches(
 
         impl<SEA: ScheduleExecutionArg> ScheduledTransactionHandler<SEA> for SleepyHandler2 {
             fn handle(
+                &self,
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
                 _bank: &Arc<Bank>,
