@@ -1,0 +1,29 @@
+name: workflow-rustdoc-preview
+concurrency: preview-${{ github.ref }}
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+env:
+  CARGO_TERM_COLOR: always
+  RUSTDOCFLAGS: --enable-index-page -Z unstable-options
+jobs:
+  job-rustdoc-preview:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Rust
+      shell: bash
+      run: |
+        source ci/rust-version.sh stable
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        export OPENSSL_DIR="C:\Program Files\OpenSSL"
+        choco install protoc
+        export PROTOC="C:\ProgramData\chocolatey\lib\protoc\tools\bin\protoc.exe"
+        cargo check  --locked --workspace --all-targets --features dummy-for-ci-check
