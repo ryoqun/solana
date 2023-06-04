@@ -1,4 +1,4 @@
-name: workflow-rustdoc-preview
+name: workflow-windows-build
 concurrency: preview-${{ github.ref }}
 on:
   pull_request:
