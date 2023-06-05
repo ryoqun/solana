@@ -26,4 +26,4 @@ jobs:
         export OPENSSL_DIR="C:\Program Files\OpenSSL"
         choco install protoc --no-progress
         export PROTOC="C:\ProgramData\chocolatey\lib\protoc\tools\bin\protoc.exe"
-        cargo check  --locked --workspace --all-targets --features dummy-for-ci-check
+        cargo check  --locked --workspace --bins --features dummy-for-ci-check
