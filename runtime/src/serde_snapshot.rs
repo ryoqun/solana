@@ -10,15 +10,17 @@ use {
         accounts_hash::AccountsHash,
         accounts_index::AccountSecondaryIndexes,
         accounts_update_notifier_interface::AccountsUpdateNotifier,
-        bank::{Bank, BankFieldsToDeserialize, BankIncrementalSnapshotPersistence, BankRc},
+        bank::{Bank, BankFieldsToDeserialize, BankRc},
         blockhash_queue::BlockhashQueue,
-        builtins::Builtins,
+        builtins::BuiltinPrototype,
         epoch_accounts_hash::EpochAccountsHash,
         epoch_stakes::EpochStakes,
         rent_collector::RentCollector,
         runtime_config::RuntimeConfig,
         serde_snapshot::storage::SerializableAccountStorageEntry,
-        snapshot_utils::{self, StorageAndNextAppendVecId, BANK_SNAPSHOT_PRE_FILENAME_EXTENSION},
+        snapshot_utils::{
+            self, SnapshotError, StorageAndNextAppendVecId, BANK_SNAPSHOT_PRE_FILENAME_EXTENSION,
+        },
         stakes::Stakes,
     },
     bincode::{self, config::Options, Error},
@@ -84,6 +86,28 @@ pub struct AccountsDbFields<T>(
     #[serde(deserialize_with = "default_on_eof")]
     Vec<(Slot, Hash)>,
 );
+
+/// Incremental snapshots only calculate their accounts hash based on the
+/// account changes WITHIN the incremental slot range. So, we need to keep track
+/// of the full snapshot expected accounts hash results. We also need to keep
+/// track of the hash and capitalization specific to the incremental snapshot
+/// slot range. The capitalization we calculate for the incremental slot will
+/// NOT be consistent with the bank's capitalization. It is not feasible to
+/// calculate a capitalization delta that is correct given just incremental
+/// slots account data and the full snapshot's capitalization.
+#[derive(Serialize, Deserialize, AbiExample, Clone, Debug, Default, PartialEq, Eq)]
+pub struct BankIncrementalSnapshotPersistence {
+    /// slot of full snapshot
+    pub full_slot: Slot,
+    /// accounts hash from the full snapshot
+    pub full_hash: SerdeAccountsHash,
+    /// capitalization from the full snapshot
+    pub full_capitalization: u64,
+    /// hash of the accounts in the incremental snapshot slot range, including zero-lamport accounts
+    pub incremental_hash: SerdeIncrementalAccountsHash,
+    /// capitalization of the accounts in the incremental snapshot slot range
+    pub incremental_capitalization: u64,
+}
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize, PartialEq, Eq, AbiExample)]
 struct BankHashInfo {
@@ -331,14 +355,14 @@ pub(crate) fn bank_from_streams<R>(
     genesis_config: &GenesisConfig,
     runtime_config: &RuntimeConfig,
     debug_keys: Option<Arc<HashSet<Pubkey>>>,
-    additional_builtins: Option<&Builtins>,
+    additional_builtins: Option<&[BuiltinPrototype]>,
     account_secondary_indexes: AccountSecondaryIndexes,
     limit_load_slot_count_from_snapshot: Option<usize>,
     shrink_ratio: AccountShrinkThreshold,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
     accounts_update_notifier: Option<AccountsUpdateNotifier>,
-    exit: &Arc<AtomicBool>,
+    exit: Arc<AtomicBool>,
 ) -> std::result::Result<Bank, Error>
 where
     R: Read,
@@ -433,13 +457,14 @@ where
 /// write serialized bank to post file
 /// return true if pre file found
 pub fn reserialize_bank_with_new_accounts_hash(
-    bank_snapshots_dir: impl AsRef<Path>,
+    bank_snapshot_dir: impl AsRef<Path>,
     slot: Slot,
     accounts_hash: &AccountsHash,
     incremental_snapshot_persistence: Option<&BankIncrementalSnapshotPersistence>,
 ) -> bool {
-    let bank_post = snapshot_utils::get_bank_snapshots_dir(bank_snapshots_dir, slot);
-    let bank_post = bank_post.join(snapshot_utils::get_snapshot_file_name(slot));
+    let bank_post = bank_snapshot_dir
+        .as_ref()
+        .join(snapshot_utils::get_snapshot_file_name(slot));
     let bank_pre = bank_post.with_extension(BANK_SNAPSHOT_PRE_FILENAME_EXTENSION);
 
     let mut found = false;
@@ -540,14 +565,14 @@ fn reconstruct_bank_from_fields<E>(
     account_paths: &[PathBuf],
     storage_and_next_append_vec_id: StorageAndNextAppendVecId,
     debug_keys: Option<Arc<HashSet<Pubkey>>>,
-    additional_builtins: Option<&Builtins>,
+    additional_builtins: Option<&[BuiltinPrototype]>,
     account_secondary_indexes: AccountSecondaryIndexes,
     limit_load_slot_count_from_snapshot: Option<usize>,
     shrink_ratio: AccountShrinkThreshold,
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
     accounts_update_notifier: Option<AccountsUpdateNotifier>,
-    exit: &Arc<AtomicBool>,
+    exit: Arc<AtomicBool>,
 ) -> Result<Bank, Error>
 where
     E: SerializableStorage + std::marker::Sync,
@@ -603,7 +628,7 @@ pub(crate) fn reconstruct_single_storage(
     append_vec_path: &Path,
     current_len: usize,
     append_vec_id: AppendVecId,
-) -> io::Result<Arc<AccountStorageEntry>> {
+) -> Result<Arc<AccountStorageEntry>, SnapshotError> {
     let (accounts_file, num_accounts) = AccountsFile::new_from_file(append_vec_path, current_len)?;
     Ok(Arc::new(AccountStorageEntry::new_existing(
         *slot,
@@ -659,7 +684,7 @@ pub(crate) fn remap_and_reconstruct_single_storage(
     append_vec_path: &Path,
     next_append_vec_id: &AtomicAppendVecId,
     num_collisions: &AtomicUsize,
-) -> io::Result<Arc<AccountStorageEntry>> {
+) -> Result<Arc<AccountStorageEntry>, SnapshotError> {
     let (remapped_append_vec_id, remapped_append_vec_path) = remap_append_vec_file(
         slot,
         old_append_vec_id,
@@ -694,7 +719,7 @@ fn reconstruct_accountsdb_from_fields<E>(
     verify_index: bool,
     accounts_db_config: Option<AccountsDbConfig>,
     accounts_update_notifier: Option<AccountsUpdateNotifier>,
-    exit: &Arc<AtomicBool>,
+    exit: Arc<AtomicBool>,
     epoch_accounts_hash: Option<Hash>,
     capitalizations: (u64, Option<u64>),
     incremental_snapshot_persistence: Option<&BankIncrementalSnapshotPersistence>,
@@ -795,8 +820,8 @@ where
         snapshot_version,
         snapshot_slot,
         snapshot_bank_hash_info,
-        snapshot_historical_roots,
-        snapshot_historical_roots_with_hash,
+        _snapshot_historical_roots,
+        _snapshot_historical_roots_with_hash,
     ) = snapshot_accounts_db_fields.collapse_into()?;
 
     // Ensure all account paths exist
@@ -804,12 +829,6 @@ where
         std::fs::create_dir_all(path)
             .unwrap_or_else(|err| panic!("Failed to create directory {}: {}", path.display(), err));
     }
-
-    reconstruct_historical_roots(
-        &accounts_db,
-        snapshot_historical_roots,
-        snapshot_historical_roots_with_hash,
-    );
 
     let StorageAndNextAppendVecId {
         storage,
@@ -890,26 +909,4 @@ where
         Arc::try_unwrap(accounts_db).unwrap(),
         ReconstructedAccountsDbInfo { accounts_data_len },
     ))
-}
-
-/// populate 'historical_roots' from 'snapshot_historical_roots' and 'snapshot_historical_roots_with_hash'
-fn reconstruct_historical_roots(
-    accounts_db: &AccountsDb,
-    mut snapshot_historical_roots: Vec<Slot>,
-    snapshot_historical_roots_with_hash: Vec<(Slot, Hash)>,
-) {
-    // inflate 'historical_roots'
-    // inserting into 'historical_roots' needs to be in order
-    // combine the slots into 1 vec, then sort
-    // dups are ok
-    snapshot_historical_roots.extend(
-        snapshot_historical_roots_with_hash
-            .into_iter()
-            .map(|(root, _)| root),
-    );
-    snapshot_historical_roots.sort_unstable();
-    let mut roots_tracker = accounts_db.accounts_index.roots_tracker.write().unwrap();
-    snapshot_historical_roots.into_iter().for_each(|root| {
-        roots_tracker.historical_roots.insert(root);
-    });
 }

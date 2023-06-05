@@ -4,7 +4,6 @@ use {
         cli::{Config, InstructionPaddingConfig},
         perf_utils::{sample_txs, SampleStats},
         send_batch::*,
-        spl_convert::FromOtherSolana,
     },
     log::*,
     rand::distributions::{Distribution, Uniform},
@@ -46,7 +45,7 @@ const MAX_TX_QUEUE_AGE: u64 = (MAX_PROCESSING_AGE as f64 * DEFAULT_S_PER_SLOT) a
 // It also sets transaction's compute-unit to TRANSFER_TRANSACTION_COMPUTE_UNIT. Therefore the
 // max additional cost is `TRANSFER_TRANSACTION_COMPUTE_UNIT * MAX_COMPUTE_UNIT_PRICE / 1_000_000`
 const MAX_COMPUTE_UNIT_PRICE: u64 = 50;
-const TRANSFER_TRANSACTION_COMPUTE_UNIT: u32 = 200;
+const TRANSFER_TRANSACTION_COMPUTE_UNIT: u32 = 450;
 /// calculate maximum possible prioritization fee, if `use-randomized-compute-unit-price` is
 /// enabled, round to nearest lamports.
 pub fn max_lamports_for_prioritization(use_randomized_compute_unit_price: bool) -> u64 {
@@ -249,7 +248,7 @@ where
 
 fn create_sampler_thread<T>(
     client: &Arc<T>,
-    exit_signal: &Arc<AtomicBool>,
+    exit_signal: Arc<AtomicBool>,
     sample_period: u64,
     maxes: &Arc<RwLock<Vec<(String, SampleStats)>>>,
 ) -> JoinHandle<()>
@@ -257,13 +256,12 @@ where
     T: 'static + BenchTpsClient + Send + Sync + ?Sized,
 {
     info!("Sampling TPS every {} second...", sample_period);
-    let exit_signal = exit_signal.clone();
     let maxes = maxes.clone();
     let client = client.clone();
     Builder::new()
         .name("solana-client-sample".to_string())
         .spawn(move || {
-            sample_txs(&exit_signal, &maxes, sample_period, &client);
+            sample_txs(exit_signal, &maxes, sample_period, &client);
         })
         .unwrap()
 }
@@ -326,7 +324,7 @@ fn create_sender_threads<T>(
     thread_batch_sleep_ms: usize,
     total_tx_sent_count: &Arc<AtomicUsize>,
     threads: usize,
-    exit_signal: &Arc<AtomicBool>,
+    exit_signal: Arc<AtomicBool>,
     shared_tx_active_thread_count: &Arc<AtomicIsize>,
 ) -> Vec<JoinHandle<()>>
 where
@@ -408,7 +406,7 @@ where
     // collect the max transaction rate and total tx count seen
     let maxes = Arc::new(RwLock::new(Vec::new()));
     let sample_period = 1; // in seconds
-    let sample_thread = create_sampler_thread(&client, &exit_signal, sample_period, &maxes);
+    let sample_thread = create_sampler_thread(&client, exit_signal.clone(), sample_period, &maxes);
 
     let shared_txs: SharedTransactions = Arc::new(RwLock::new(VecDeque::new()));
 
@@ -440,7 +438,7 @@ where
         thread_batch_sleep_ms,
         &total_tx_sent_count,
         threads,
-        &exit_signal,
+        exit_signal.clone(),
         &shared_tx_active_thread_count,
     );
 
@@ -577,15 +575,13 @@ fn transfer_with_compute_unit_price_and_padding(
     let from_pubkey = from_keypair.pubkey();
     let transfer_instruction = system_instruction::transfer(&from_pubkey, to, lamports);
     let instruction = if let Some(instruction_padding_config) = instruction_padding_config {
-        FromOtherSolana::from(
-            wrap_instruction(
-                FromOtherSolana::from(instruction_padding_config.program_id),
-                FromOtherSolana::from(transfer_instruction),
-                vec![],
-                instruction_padding_config.data_size,
-            )
-            .expect("Could not create padded instruction"),
+        wrap_instruction(
+            instruction_padding_config.program_id,
+            transfer_instruction,
+            vec![],
+            instruction_padding_config.data_size,
         )
+        .expect("Could not create padded instruction")
     } else {
         transfer_instruction
     };
@@ -672,15 +668,13 @@ fn nonced_transfer_with_padding(
     let from_pubkey = from_keypair.pubkey();
     let transfer_instruction = system_instruction::transfer(&from_pubkey, to, lamports);
     let instruction = if let Some(instruction_padding_config) = instruction_padding_config {
-        FromOtherSolana::from(
-            wrap_instruction(
-                FromOtherSolana::from(instruction_padding_config.program_id),
-                FromOtherSolana::from(transfer_instruction),
-                vec![],
-                instruction_padding_config.data_size,
-            )
-            .expect("Could not create padded instruction"),
+        wrap_instruction(
+            instruction_padding_config.program_id,
+            transfer_instruction,
+            vec![],
+            instruction_padding_config.data_size,
         )
+        .expect("Could not create padded instruction")
     } else {
         transfer_instruction
     };
@@ -791,7 +785,7 @@ fn get_new_latest_blockhash<T: BenchTpsClient + ?Sized>(
 }
 
 fn poll_blockhash<T: BenchTpsClient + ?Sized>(
-    exit_signal: &Arc<AtomicBool>,
+    exit_signal: &AtomicBool,
     blockhash: &Arc<RwLock<Hash>>,
     client: &Arc<T>,
     id: &Pubkey,
@@ -841,7 +835,7 @@ fn poll_blockhash<T: BenchTpsClient + ?Sized>(
 }
 
 fn do_tx_transfers<T: BenchTpsClient + ?Sized>(
-    exit_signal: &Arc<AtomicBool>,
+    exit_signal: &AtomicBool,
     shared_txs: &SharedTransactions,
     shared_tx_thread_count: &Arc<AtomicIsize>,
     total_tx_sent_count: &Arc<AtomicUsize>,

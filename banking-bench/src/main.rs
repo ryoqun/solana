@@ -417,7 +417,7 @@ fn main() {
         );
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let (exit, poh_recorder, poh_service, signal_receiver) =
-            create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
+            create_test_recorder(&bank, blockstore.clone(), None, Some(leader_schedule_cache));
         let (banking_tracer, tracer_thread) =
             BankingTracer::new(matches.is_present("trace_banking").then_some((
                 &blockstore.banking_trace_path(),
@@ -437,8 +437,14 @@ fn main() {
         let cluster_info = Arc::new(cluster_info);
         let tpu_disable_quic = matches.is_present("tpu_disable_quic");
         let connection_cache = match tpu_disable_quic {
-            false => ConnectionCache::new(DEFAULT_TPU_CONNECTION_POOL_SIZE),
-            true => ConnectionCache::with_udp(DEFAULT_TPU_CONNECTION_POOL_SIZE),
+            false => ConnectionCache::new_quic(
+                "connection_cache_banking_bench_quic",
+                DEFAULT_TPU_CONNECTION_POOL_SIZE,
+            ),
+            true => ConnectionCache::with_udp(
+                "connection_cache_banking_bench_udp",
+                DEFAULT_TPU_CONNECTION_POOL_SIZE,
+            ),
         };
         let banking_stage = BankingStage::new_num_threads(
             &cluster_info,
@@ -538,7 +544,7 @@ fn main() {
                 );
 
                 assert!(poh_recorder.read().unwrap().bank().is_none());
-                poh_recorder.write().unwrap().set_bank(&bank, false);
+                poh_recorder.write().unwrap().set_bank(bank.clone(), false);
                 assert!(poh_recorder.read().unwrap().bank().is_some());
                 debug!(
                     "new_bank_time: {}us insert_time: {}us poh_time: {}us",

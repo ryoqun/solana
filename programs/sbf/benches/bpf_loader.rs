@@ -3,16 +3,18 @@
 #![allow(clippy::uninlined_format_args)]
 #![allow(clippy::integer_arithmetic)]
 
-use {solana_rbpf::memory_region::MemoryState, std::slice};
+use {
+    solana_rbpf::memory_region::MemoryState,
+    solana_sdk::feature_set::bpf_account_data_direct_mapping, std::slice,
+};
 
 extern crate test;
-#[macro_use]
-extern crate solana_bpf_loader_program;
 
 use {
     byteorder::{ByteOrder, LittleEndian, WriteBytesExt},
     solana_bpf_loader_program::{
-        create_vm, serialization::serialize_parameters, syscalls::create_loader,
+        create_vm, serialization::serialize_parameters,
+        syscalls::create_program_runtime_environment,
     },
     solana_measure::measure::Measure,
     solana_program_runtime::{compute_budget::ComputeBudget, invoke_context::InvokeContext},
@@ -20,8 +22,8 @@ use {
         ebpf::MM_INPUT_START,
         elf::Executable,
         memory_region::MemoryRegion,
-        verifier::RequisiteVerifier,
-        vm::{ContextObject, VerifiedExecutable},
+        verifier::{RequisiteVerifier, TautologyVerifier},
+        vm::ContextObject,
     },
     solana_runtime::{
         bank::Bank,
@@ -68,7 +70,7 @@ macro_rules! with_mock_invoke_context {
             index_in_caller: 2,
             index_in_callee: 0,
             is_signer: false,
-            is_writable: false,
+            is_writable: true,
         }];
         solana_program_runtime::with_mock_invoke_context!(
             $invoke_context,
@@ -88,16 +90,19 @@ macro_rules! with_mock_invoke_context {
 fn bench_program_create_executable(bencher: &mut Bencher) {
     let elf = load_program_from_file("bench_alu");
 
-    let loader = create_loader(
+    let program_runtime_environment = create_program_runtime_environment(
         &FeatureSet::default(),
         &ComputeBudget::default(),
         true,
-        true,
         false,
-    )
-    .unwrap();
+    );
+    let program_runtime_environment = Arc::new(program_runtime_environment.unwrap());
     bencher.iter(|| {
-        let _ = Executable::<InvokeContext>::from_elf(&elf, loader.clone()).unwrap();
+        let _ = Executable::<TautologyVerifier, InvokeContext>::from_elf(
+            &elf,
+            program_runtime_environment.clone(),
+        )
+        .unwrap();
     });
 }
 
@@ -113,19 +118,20 @@ fn bench_program_alu(bencher: &mut Bencher) {
     let elf = load_program_from_file("bench_alu");
     with_mock_invoke_context!(invoke_context, bpf_loader::id(), 10000001);
 
-    let loader = create_loader(
+    let program_runtime_environment = create_program_runtime_environment(
         &invoke_context.feature_set,
         &ComputeBudget::default(),
         true,
-        true,
         false,
+    );
+    let executable = Executable::<TautologyVerifier, InvokeContext>::from_elf(
+        &elf,
+        Arc::new(program_runtime_environment.unwrap()),
     )
     .unwrap();
-    let executable = Executable::<InvokeContext>::from_elf(&elf, loader).unwrap();
 
     let mut verified_executable =
-        VerifiedExecutable::<RequisiteVerifier, InvokeContext>::from_executable(executable)
-            .unwrap();
+        Executable::<RequisiteVerifier, InvokeContext>::verified(executable).unwrap();
 
     verified_executable.jit_compile().unwrap();
     create_vm!(
@@ -193,13 +199,14 @@ fn bench_program_execute_noop(bencher: &mut Bencher) {
         mint_keypair,
         ..
     } = create_genesis_config(50);
-    let mut bank = Bank::new_for_benches(&genesis_config);
-    let (name, id, entrypoint) = solana_bpf_loader_program!();
-    bank.add_builtin(&name, &id, entrypoint);
+    let bank = Bank::new_for_benches(&genesis_config);
     let bank = Arc::new(bank);
-    let bank_client = BankClient::new_shared(&bank);
+    let mut bank_client = BankClient::new_shared(&bank);
 
     let invoke_program_id = load_program(&bank_client, &bpf_loader::id(), &mint_keypair, "noop");
+    let bank = bank_client
+        .advance_slot(1, &Pubkey::default())
+        .expect("Failed to advance the slot");
 
     let mint_pubkey = mint_keypair.pubkey();
     let account_metas = vec![AccountMeta::new(mint_pubkey, true)];
@@ -227,19 +234,23 @@ fn bench_create_vm(bencher: &mut Bencher) {
     const BUDGET: u64 = 200_000;
     invoke_context.mock_set_remaining(BUDGET);
 
-    let loader = create_loader(
+    let direct_mapping = invoke_context
+        .feature_set
+        .is_active(&bpf_account_data_direct_mapping::id());
+    let program_runtime_environment = create_program_runtime_environment(
         &invoke_context.feature_set,
         &ComputeBudget::default(),
         true,
-        true,
         false,
+    );
+    let executable = Executable::<TautologyVerifier, InvokeContext>::from_elf(
+        &elf,
+        Arc::new(program_runtime_environment.unwrap()),
     )
     .unwrap();
-    let executable = Executable::<InvokeContext>::from_elf(&elf, loader).unwrap();
 
     let verified_executable =
-        VerifiedExecutable::<RequisiteVerifier, InvokeContext>::from_executable(executable)
-            .unwrap();
+        Executable::<RequisiteVerifier, InvokeContext>::verified(executable).unwrap();
 
     // Serialize account data
     let (_serialized, regions, account_lengths) = serialize_parameters(
@@ -248,7 +259,8 @@ fn bench_create_vm(bencher: &mut Bencher) {
             .transaction_context
             .get_current_instruction_context()
             .unwrap(),
-        true, // should_cap_ix_accounts
+        true,            // should_cap_ix_accounts
+        !direct_mapping, // copy_account_data
     )
     .unwrap();
 
@@ -271,6 +283,10 @@ fn bench_instruction_count_tuner(_bencher: &mut Bencher) {
     const BUDGET: u64 = 200_000;
     invoke_context.mock_set_remaining(BUDGET);
 
+    let direct_mapping = invoke_context
+        .feature_set
+        .is_active(&bpf_account_data_direct_mapping::id());
+
     // Serialize account data
     let (_serialized, regions, account_lengths) = serialize_parameters(
         invoke_context.transaction_context,
@@ -278,23 +294,25 @@ fn bench_instruction_count_tuner(_bencher: &mut Bencher) {
             .transaction_context
             .get_current_instruction_context()
             .unwrap(),
-        true, // should_cap_ix_accounts
+        true,            // should_cap_ix_accounts
+        !direct_mapping, // copy_account_data
     )
     .unwrap();
 
-    let loader = create_loader(
+    let program_runtime_environment = create_program_runtime_environment(
         &invoke_context.feature_set,
         &ComputeBudget::default(),
         true,
-        true,
         false,
+    );
+    let executable = Executable::<TautologyVerifier, InvokeContext>::from_elf(
+        &elf,
+        Arc::new(program_runtime_environment.unwrap()),
     )
     .unwrap();
-    let executable = Executable::<InvokeContext>::from_elf(&elf, loader).unwrap();
 
     let verified_executable =
-        VerifiedExecutable::<RequisiteVerifier, InvokeContext>::from_executable(executable)
-            .unwrap();
+        Executable::<RequisiteVerifier, InvokeContext>::verified(executable).unwrap();
 
     create_vm!(
         vm,

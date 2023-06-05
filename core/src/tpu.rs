@@ -15,11 +15,15 @@ use {
         sigverify::TransactionSigVerifier,
         sigverify_stage::SigVerifyStage,
         staked_nodes_updater_service::StakedNodesUpdaterService,
+        validator::GeneratorConfig,
     },
     crossbeam_channel::{unbounded, Receiver},
-    solana_client::connection_cache::ConnectionCache,
+    solana_client::connection_cache::{ConnectionCache, Protocol},
     solana_gossip::cluster_info::ClusterInfo,
-    solana_ledger::{blockstore::Blockstore, blockstore_processor::TransactionStatusSender},
+    solana_ledger::{
+        blockstore::Blockstore, blockstore_processor::TransactionStatusSender,
+        entry_notifier_service::EntryNotifierSender,
+    },
     solana_poh::poh_recorder::{PohRecorder, WorkingBankEntry},
     solana_rpc::{
         optimistically_confirmed_bank_tracker::BankNotificationSender,
@@ -33,7 +37,7 @@ use {
     solana_sdk::{pubkey::Pubkey, signature::Keypair},
     solana_streamer::{
         nonblocking::quic::DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
-        quic::{spawn_server, StreamStats, MAX_STAKED_CONNECTIONS, MAX_UNSTAKED_CONNECTIONS},
+        quic::{spawn_server, MAX_STAKED_CONNECTIONS, MAX_UNSTAKED_CONNECTIONS},
         streamer::StakedNodes,
     },
     std::{
@@ -80,9 +84,10 @@ impl Tpu {
         sockets: TpuSockets,
         subscriptions: &Arc<RpcSubscriptions>,
         transaction_status_sender: Option<TransactionStatusSender>,
+        _entry_notification_sender: Option<EntryNotifierSender>,
         blockstore: &Arc<Blockstore>,
         broadcast_type: &BroadcastStageType,
-        exit: &Arc<AtomicBool>,
+        exit: Arc<AtomicBool>,
         shred_version: u16,
         vote_tracker: Arc<VoteTracker>,
         bank_forks: Arc<RwLock<BankForks>>,
@@ -102,6 +107,7 @@ impl Tpu {
         tracer_thread_hdl: TracerThread,
         tpu_enable_udp: bool,
         prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
+        _generator_config: Option<GeneratorConfig>, /* vestigial code for replay invalidator */
     ) -> Self {
         let TpuSockets {
             transactions: transactions_sockets,
@@ -119,7 +125,7 @@ impl Tpu {
             transactions_sockets,
             tpu_forwards_sockets,
             tpu_vote_sockets,
-            exit,
+            exit.clone(),
             &packet_sender,
             &vote_packet_sender,
             &forwarded_packet_sender,
@@ -139,13 +145,13 @@ impl Tpu {
 
         let (non_vote_sender, non_vote_receiver) = banking_tracer.create_channel_non_vote();
 
-        let stats = Arc::new(StreamStats::default());
         let (_, tpu_quic_t) = spawn_server(
+            "quic_streamer_tpu",
             transactions_quic_sockets,
             keypair,
             cluster_info
                 .my_contact_info()
-                .tpu_quic()
+                .tpu(Protocol::QUIC)
                 .expect("Operator must spin up node with valid (QUIC) TPU address")
                 .ip(),
             packet_sender,
@@ -154,18 +160,18 @@ impl Tpu {
             staked_nodes.clone(),
             MAX_STAKED_CONNECTIONS,
             MAX_UNSTAKED_CONNECTIONS,
-            stats.clone(),
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             tpu_coalesce,
         )
         .unwrap();
 
         let (_, tpu_forwards_quic_t) = spawn_server(
+            "quic_streamer_tpu_forwards",
             transactions_forwards_quic_sockets,
             keypair,
             cluster_info
                 .my_contact_info()
-                .tpu_forwards_quic()
+                .tpu_forwards(Protocol::QUIC)
                 .expect("Operator must spin up node with valid (QUIC) TPU-forwards address")
                 .ip(),
             forwarded_packet_sender,
@@ -174,7 +180,6 @@ impl Tpu {
             staked_nodes.clone(),
             MAX_STAKED_CONNECTIONS.saturating_add(MAX_UNSTAKED_CONNECTIONS),
             0, // Prevent unstaked nodes from forwarding transactions
-            stats,
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             tpu_coalesce,
         )
@@ -229,7 +234,7 @@ impl Tpu {
             cluster_info.clone(),
             entry_receiver,
             retransmit_slots_receiver,
-            exit.clone(),
+            exit,
             blockstore.clone(),
             bank_forks,
             shred_version,

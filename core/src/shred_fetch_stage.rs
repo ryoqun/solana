@@ -88,7 +88,7 @@ impl ShredFetchStage {
             let should_drop_merkle_shreds =
                 |shred_slot| should_drop_merkle_shreds(shred_slot, &root_bank);
             let turbine_disabled = turbine_disabled.load(Ordering::Relaxed);
-            for packet in packet_batch.iter_mut() {
+            for packet in packet_batch.iter_mut().filter(|p| !p.meta().discard()) {
                 if turbine_disabled
                     || should_discard_shred(
                         packet,
@@ -114,7 +114,7 @@ impl ShredFetchStage {
     #[allow(clippy::too_many_arguments)]
     fn packet_modifier(
         sockets: Vec<Arc<UdpSocket>>,
-        exit: &Arc<AtomicBool>,
+        exit: Arc<AtomicBool>,
         sender: Sender<PacketBatch>,
         recycler: PacketBatchRecycler,
         bank_forks: Arc<RwLock<BankForks>>,
@@ -170,13 +170,13 @@ impl ShredFetchStage {
         bank_forks: Arc<RwLock<BankForks>>,
         cluster_info: Arc<ClusterInfo>,
         turbine_disabled: Arc<AtomicBool>,
-        exit: &Arc<AtomicBool>,
+        exit: Arc<AtomicBool>,
     ) -> Self {
         let recycler = PacketBatchRecycler::warmed(100, 1024);
 
         let (mut tvu_threads, tvu_filter) = Self::packet_modifier(
             sockets,
-            exit,
+            exit.clone(),
             sender.clone(),
             recycler.clone(),
             bank_forks.clone(),
@@ -189,7 +189,7 @@ impl ShredFetchStage {
 
         let (tvu_forwards_threads, fwd_thread_hdl) = Self::packet_modifier(
             forward_sockets,
-            exit,
+            exit.clone(),
             sender.clone(),
             recycler.clone(),
             bank_forks.clone(),

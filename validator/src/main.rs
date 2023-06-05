@@ -40,6 +40,7 @@ use {
             AccountIndex, AccountSecondaryIndexes, AccountSecondaryIndexesIncludeExclude,
             AccountsIndexConfig, IndexLimitMb,
         },
+        partitioned_rewards::TestPartitionedEpochRewards,
         runtime_config::RuntimeConfig,
         snapshot_config::{SnapshotConfig, SnapshotUsage},
         snapshot_utils::{
@@ -466,8 +467,8 @@ pub fn main() {
         ("authorized-voter", Some(authorized_voter_subcommand_matches)) => {
             match authorized_voter_subcommand_matches.subcommand() {
                 ("add", Some(subcommand_matches)) => {
-                    if let Some(authorized_voter_keypair) =
-                        value_t!(subcommand_matches, "authorized_voter_keypair", String).ok()
+                    if let Ok(authorized_voter_keypair) =
+                        value_t!(subcommand_matches, "authorized_voter_keypair", String)
                     {
                         let authorized_voter_keypair = fs::canonicalize(&authorized_voter_keypair)
                             .unwrap_or_else(|err| {
@@ -562,7 +563,7 @@ pub fn main() {
                     return;
                 }
                 ("unload", Some(subcommand_matches)) => {
-                    if let Some(name) = value_t!(subcommand_matches, "name", String).ok() {
+                    if let Ok(name) = value_t!(subcommand_matches, "name", String) {
                         let admin_client = admin_rpc_service::connect(&ledger_path);
                         admin_rpc_service::runtime()
                             .block_on(async {
@@ -577,7 +578,7 @@ pub fn main() {
                     return;
                 }
                 ("load", Some(subcommand_matches)) => {
-                    if let Some(config) = value_t!(subcommand_matches, "config", String).ok() {
+                    if let Ok(config) = value_t!(subcommand_matches, "config", String) {
                         let admin_client = admin_rpc_service::connect(&ledger_path);
                         let name = admin_rpc_service::runtime()
                             .block_on(async {
@@ -592,8 +593,8 @@ pub fn main() {
                     return;
                 }
                 ("reload", Some(subcommand_matches)) => {
-                    if let Some(name) = value_t!(subcommand_matches, "name", String).ok() {
-                        if let Some(config) = value_t!(subcommand_matches, "config", String).ok() {
+                    if let Ok(name) = value_t!(subcommand_matches, "name", String) {
+                        if let Ok(config) = value_t!(subcommand_matches, "config", String) {
                             let admin_client = admin_rpc_service::connect(&ledger_path);
                             admin_rpc_service::runtime()
                                 .block_on(async {
@@ -702,7 +703,7 @@ pub fn main() {
         ("set-identity", Some(subcommand_matches)) => {
             let require_tower = subcommand_matches.is_present("require_tower");
 
-            if let Some(identity_keypair) = value_t!(subcommand_matches, "identity", String).ok() {
+            if let Ok(identity_keypair) = value_t!(subcommand_matches, "identity", String) {
                 let identity_keypair = fs::canonicalize(&identity_keypair).unwrap_or_else(|err| {
                     println!("Unable to access path: {identity_keypair}: {err:?}");
                     exit(1);
@@ -835,30 +836,39 @@ pub fn main() {
                 _ => unreachable!(),
             }
         }
-        ("set-public-tpu-address", Some(subcommand_matches)) => {
-            let public_tpu_addr: SocketAddr = subcommand_matches
-                .value_of("public_tpu_addr")
-                .map(|public_tpu_addr| {
-                    solana_net_utils::parse_host_port(public_tpu_addr).unwrap_or_else(|err| {
-                        eprintln!("Failed to parse --set-public-tpu-address HOST:PORT {err}");
-                        exit(1);
+        ("set-public-address", Some(subcommand_matches)) => {
+            let parse_arg_addr = |arg_name: &str, arg_long: &str| -> Option<SocketAddr> {
+                subcommand_matches.value_of(arg_name).map(|host_port| {
+                        solana_net_utils::parse_host_port(host_port).unwrap_or_else(|err| {
+                            eprintln!("Failed to parse --{arg_long} address. It must be in the HOST:PORT format. {err}");
+                            exit(1);
+                        })
                     })
-                })
-                .unwrap();
+            };
+            let tpu_addr = parse_arg_addr("tpu_addr", "tpu");
+            let tpu_forwards_addr = parse_arg_addr("tpu_forwards_addr", "tpu-forwards");
 
-            let admin_client = admin_rpc_service::connect(&ledger_path);
-            admin_rpc_service::runtime()
-                .block_on(async move {
-                    admin_client
-                        .await?
-                        .set_public_tpu_address(public_tpu_addr)
-                        .await
-                })
-                .unwrap_or_else(|err| {
-                    println!("setPublicTpuAddress request failed: {err}");
-                    exit(1);
-                });
-
+            macro_rules! set_public_address {
+                ($public_addr:expr, $set_public_address:ident, $request:literal) => {
+                    if let Some(public_addr) = $public_addr {
+                        let admin_client = admin_rpc_service::connect(&ledger_path);
+                        admin_rpc_service::runtime()
+                            .block_on(async move {
+                                admin_client.await?.$set_public_address(public_addr).await
+                            })
+                            .unwrap_or_else(|err| {
+                                eprintln!("{} request failed: {err}", $request);
+                                exit(1);
+                            });
+                    }
+                };
+            }
+            set_public_address!(tpu_addr, set_public_tpu_address, "setPublicTpuAddress");
+            set_public_address!(
+                tpu_forwards_addr,
+                set_public_tpu_forwards_address,
+                "setPublicTpuForwardsAddress"
+            );
             return;
         }
         _ => unreachable!(),
@@ -1106,12 +1116,21 @@ pub fn main() {
         started_from_validator: true, // this is the only place this is set
         ..AccountsIndexConfig::default()
     };
-    if let Some(bins) = value_t!(matches, "accounts_index_bins", usize).ok() {
+    if let Ok(bins) = value_t!(matches, "accounts_index_bins", usize) {
         accounts_index_config.bins = Some(bins);
     }
 
+    let test_partitioned_epoch_rewards =
+        if matches.is_present("partitioned_epoch_rewards_compare_calculation") {
+            TestPartitionedEpochRewards::CompareResults
+        } else if matches.is_present("partitioned_epoch_rewards_force_enable_single_slot") {
+            TestPartitionedEpochRewards::ForcePartitionedEpochRewardsInOneBlock
+        } else {
+            TestPartitionedEpochRewards::None
+        };
+
     accounts_index_config.index_limit_mb =
-        if let Some(limit) = value_t!(matches, "accounts_index_memory_limit_mb", usize).ok() {
+        if let Ok(limit) = value_t!(matches, "accounts_index_memory_limit_mb", usize) {
             IndexLimitMb::Limit(limit)
         } else if matches.is_present("disable_accounts_disk_index") {
             IndexLimitMb::InMemOnly
@@ -1158,6 +1177,7 @@ pub fn main() {
             .is_present("accounts_db_create_ancient_storage_packed")
             .then_some(CreateAncientStorage::Pack)
             .unwrap_or_default(),
+        test_partitioned_epoch_rewards,
         ..AccountsDbConfig::default()
     };
 
@@ -1346,7 +1366,6 @@ pub fn main() {
         no_wait_for_vote_to_start_leader: matches.is_present("no_wait_for_vote_to_start_leader"),
         accounts_shrink_ratio,
         runtime_config: RuntimeConfig {
-            bpf_jit: !matches.is_present("no_bpf_jit"),
             log_messages_bytes_limit: value_of(&matches, "log_messages_bytes_limit"),
             ..RuntimeConfig::default()
         },
@@ -1381,16 +1400,6 @@ pub fn main() {
         values_t!(matches, "account_shrink_path", String)
             .map(|shrink_paths| shrink_paths.into_iter().map(PathBuf::from).collect())
             .ok();
-
-    // Create and canonicalize account paths to avoid issues with symlink creation
-    account_paths.iter().for_each(|account_path| {
-        fs::create_dir_all(account_path)
-            .and_then(|_| fs::canonicalize(account_path))
-            .unwrap_or_else(|err| {
-                eprintln!("Unable to access account path: {account_path:?}, err: {err:?}");
-                exit(1);
-            });
-    });
 
     let (account_run_paths, account_snapshot_paths) =
         create_all_accounts_run_and_snapshot_dirs(&account_paths).unwrap_or_else(|err| {
@@ -1604,10 +1613,6 @@ pub fn main() {
         ),
     };
 
-    if matches.is_present("halt_on_known_validators_accounts_hash_mismatch") {
-        validator_config.halt_on_known_validators_accounts_hash_mismatch = true;
-    }
-
     let public_rpc_addr = matches.value_of("public_rpc_addr").map(|addr| {
         solana_net_utils::parse_host_port(addr).unwrap_or_else(|e| {
             eprintln!("failed to parse public rpc address: {e}");
@@ -1709,6 +1714,16 @@ pub fn main() {
         })
     });
 
+    let public_tpu_forwards_addr =
+        matches
+            .value_of("public_tpu_forwards_addr")
+            .map(|public_tpu_forwards_addr| {
+                solana_net_utils::parse_host_port(public_tpu_forwards_addr).unwrap_or_else(|err| {
+                    eprintln!("Failed to parse --public-tpu-forwards-address: {err}");
+                    exit(1);
+                })
+            });
+
     let cluster_entrypoints = entrypoint_addrs
         .iter()
         .map(ContactInfo::new_gossip_entry_point)
@@ -1720,6 +1735,7 @@ pub fn main() {
         dynamic_port_range,
         bind_address,
         public_tpu_addr,
+        public_tpu_forwards_addr,
     );
 
     if restricted_repair_only_mode {

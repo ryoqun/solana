@@ -1,5 +1,6 @@
 #![allow(clippy::integer_arithmetic)]
 use {
+    base64::{prelude::BASE64_STANDARD, Engine},
     crossbeam_channel::Receiver,
     log::*,
     solana_cli_output::CliAccount,
@@ -14,6 +15,7 @@ use {
     },
     solana_gossip::{
         cluster_info::{ClusterInfo, Node},
+        contact_info::Protocol,
         gossip_service::discover_cluster,
         socketaddr,
     },
@@ -121,7 +123,6 @@ pub struct TestValidatorGenesis {
     pubsub_config: PubSubConfig,
     rpc_ports: Option<(u16, u16)>, // (JsonRpc, JsonRpcPubSub), None == random ports
     warp_slot: Option<Slot>,
-    no_bpf_jit: bool,
     accounts: HashMap<Pubkey, AccountSharedData>,
     #[allow(deprecated)]
     programs: Vec<ProgramInfo>,
@@ -156,7 +157,6 @@ impl Default for TestValidatorGenesis {
             pubsub_config: PubSubConfig::default(),
             rpc_ports: Option::<(u16, u16)>::default(),
             warp_slot: Option::<Slot>::default(),
-            no_bpf_jit: bool::default(),
             accounts: HashMap::<Pubkey, AccountSharedData>::default(),
             #[allow(deprecated)]
             programs: Vec::<ProgramInfo>::default(),
@@ -253,11 +253,6 @@ impl TestValidatorGenesis {
 
     pub fn warp_slot(&mut self, warp_slot: Slot) -> &mut Self {
         self.warp_slot = Some(warp_slot);
-        self
-    }
-
-    pub fn bpf_jit(&mut self, bpf_jit: bool) -> &mut Self {
-        self.no_bpf_jit = !bpf_jit;
         self
     }
 
@@ -477,7 +472,8 @@ impl TestValidatorGenesis {
             address,
             AccountSharedData::from(Account {
                 lamports,
-                data: base64::decode(data_base64)
+                data: BASE64_STANDARD
+                    .decode(data_base64)
                     .unwrap_or_else(|err| panic!("Failed to base64 decode: {err}")),
                 owner,
                 executable: false,
@@ -888,7 +884,7 @@ impl TestValidator {
         let vote_account_address = validator_vote_account.pubkey();
         let rpc_url = format!("http://{}", node.info.rpc().unwrap());
         let rpc_pubsub_url = format!("ws://{}/", node.info.rpc_pubsub().unwrap());
-        let tpu = node.info.tpu().unwrap();
+        let tpu = node.info.tpu(Protocol::UDP).unwrap();
         let gossip = node.info.gossip().unwrap();
 
         {
@@ -910,7 +906,6 @@ impl TestValidator {
         });
 
         let runtime_config = RuntimeConfig {
-            bpf_jit: !config.no_bpf_jit,
             compute_budget: config
                 .compute_unit_limit
                 .map(|compute_unit_limit| ComputeBudget {

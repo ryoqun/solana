@@ -58,6 +58,10 @@ pub fn last_vote_in_tower(tower_path: &Path, node_pubkey: &Pubkey) -> Option<(Sl
     restore_tower(tower_path, node_pubkey).map(|tower| tower.last_voted_slot_hash().unwrap())
 }
 
+pub fn last_root_in_tower(tower_path: &Path, node_pubkey: &Pubkey) -> Option<Slot> {
+    restore_tower(tower_path, node_pubkey).map(|tower| tower.root())
+}
+
 pub fn restore_tower(tower_path: &Path, node_pubkey: &Pubkey) -> Option<Tower> {
     let file_tower_storage = FileTowerStorage::new(tower_path.to_path_buf());
 
@@ -353,7 +357,7 @@ pub fn run_cluster_partition<C>(
     // Check epochs have correct number of slots
     info!("PARTITION_TEST sleeping until partition starting condition",);
     for node in &cluster_nodes {
-        let node_client = RpcClient::new_socket(node.rpc);
+        let node_client = RpcClient::new_socket(node.rpc().unwrap());
         let epoch_info = node_client.get_epoch_info().unwrap();
         assert_eq!(epoch_info.slots_in_epoch, slots_per_epoch);
     }

@@ -1,5 +1,7 @@
 use {
-    clap::{crate_description, crate_name, App, AppSettings, Arg, ArgMatches, SubCommand},
+    clap::{
+        crate_description, crate_name, App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand,
+    },
     log::warn,
     solana_clap_utils::{
         hidden_unless_forced,
@@ -379,6 +381,15 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                 .takes_value(true)
                 .validator(solana_net_utils::is_host_port)
                 .help("Specify TPU address to advertise in gossip [default: ask --entrypoint or localhost\
+                    when --entrypoint is not provided]"),
+        )
+        .arg(
+            Arg::with_name("public_tpu_forwards_addr")
+                .long("public-tpu-forwards-address")
+                .value_name("HOST:PORT")
+                .takes_value(true)
+                .validator(solana_net_utils::is_host_port)
+                .help("Specify TPU Forwards address to advertise in gossip [default: ask --entrypoint or localhost\
                     when --entrypoint is not provided]"),
         )
         .arg(
@@ -1082,14 +1093,6 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                 .help("Specify the configuration file for the Geyser plugin."),
         )
         .arg(
-            Arg::with_name("halt_on_known_validators_accounts_hash_mismatch")
-                .alias("halt-on-trusted-validators-accounts-hash-mismatch")
-                .long("halt-on-known-validators-accounts-hash-mismatch")
-                .requires("known_validators")
-                .takes_value(false)
-                .help("Abort the validator if a bank hash mismatch is detected within known validator set"),
-        )
-        .arg(
             Arg::with_name("snapshot_archive_format")
                 .long("snapshot-archive-format")
                 .alias("snapshot-compression") // Legacy name used by Solana v1.5.x and older
@@ -1122,12 +1125,6 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                 .help(
                     "Mode to recovery the ledger db write ahead log."
                 ),
-        )
-        .arg(
-            Arg::with_name("no_bpf_jit")
-                .long("no-bpf-jit")
-                .takes_value(false)
-                .help("Disable the just-in-time compiler and instead use the interpreter for SBF"),
         )
         .arg(
             Arg::with_name("poh_pinned_cpu_core")
@@ -1245,6 +1242,21 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                 .validator(is_pow2)
                 .takes_value(true)
                 .help("Number of bins to divide the accounts index into"),
+        )
+        .arg(
+            Arg::with_name("partitioned_epoch_rewards_compare_calculation")
+                .long("partitioned-epoch-rewards-compare-calculation")
+                .takes_value(false)
+                .help("Do normal epoch rewards distribution, but also calculate rewards using the partitioned rewards code path and compare the resulting vote and stake accounts")
+                .hidden(hidden_unless_forced())
+        )
+        .arg(
+            Arg::with_name("partitioned_epoch_rewards_force_enable_single_slot")
+                .long("partitioned-epoch-rewards-force-enable-single-slot")
+                .takes_value(false)
+                .help("Force the partitioned rewards distribution, but distribute all rewards in the first slot in the epoch. This should match consensus with the normal rewards distribution.")
+                .conflicts_with("partitioned_epoch_rewards_compare_calculation")
+                .hidden(hidden_unless_forced())
         )
         .arg(
             Arg::with_name("accounts_index_path")
@@ -1617,17 +1629,31 @@ pub fn app<'a>(version: &'a str, default_args: &'a DefaultArgs) -> App<'a, 'a> {
                          then this not a good time for a restart")
         ).
         subcommand(
-            SubCommand::with_name("set-public-tpu-address")
-                .about("Specify TPU address to advertise in gossip")
+            SubCommand::with_name("set-public-address")
+                .about("Specify addresses to advertise in gossip")
                 .arg(
-                    Arg::with_name("public_tpu_addr")
-                        .index(1)
+                    Arg::with_name("tpu_addr")
+                        .long("tpu")
                         .value_name("HOST:PORT")
                         .takes_value(true)
-                        .required(true)
                         .validator(solana_net_utils::is_host_port)
                         .help("TPU address to advertise in gossip")
-                ),
+                )
+                .arg(
+                    Arg::with_name("tpu_forwards_addr")
+                        .long("tpu-forwards")
+                        .value_name("HOST:PORT")
+                        .takes_value(true)
+                        .validator(solana_net_utils::is_host_port)
+                        .help("TPU Forwards address to advertise in gossip")
+                )
+                .group(
+                    ArgGroup::with_name("set_public_address_details")
+                        .args(&["tpu_addr", "tpu_forwards_addr"])
+                        .required(true)
+                        .multiple(true)
+                )
+                .after_help("Note: At least one arg must be used. Using multiple is ok"),
         );
 }
 
@@ -1691,10 +1717,6 @@ fn deprecated_arguments() -> Vec<DeprecatedArg> {
             .help("Enables faster starting of validators by skipping startup clean and shrink."),
         usage_warning: "Enabled by default",
     );
-    add_arg!(Arg::with_name("bpf_jit")
-        .long("bpf-jit")
-        .takes_value(false)
-        .conflicts_with("no_bpf_jit"));
     add_arg!(
         Arg::with_name("disable_quic_servers")
             .long("disable-quic-servers")
@@ -1716,6 +1738,14 @@ fn deprecated_arguments() -> Vec<DeprecatedArg> {
         Arg::with_name("enable_quic_servers")
             .long("enable-quic-servers"),
         usage_warning: "The quic server is now enabled by default.",
+    );
+    add_arg!(
+        Arg::with_name("halt_on_known_validators_accounts_hash_mismatch")
+            .alias("halt-on-trusted-validators-accounts-hash-mismatch")
+            .long("halt-on-known-validators-accounts-hash-mismatch")
+            .requires("known_validators")
+            .takes_value(false)
+            .help("Abort the validator if a bank hash mismatch is detected within known validator set"),
     );
     add_arg!(Arg::with_name("incremental_snapshots")
         .long("incremental-snapshots")
@@ -2133,6 +2163,12 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                 .help("Enable the unstable RPC PubSub `voteSubscribe` subscription"),
         )
         .arg(
+            Arg::with_name("rpc_pubsub_enable_block_subscription")
+                .long("rpc-pubsub-enable-block-subscription")
+                .takes_value(false)
+                .help("Enable the unstable RPC PubSub `blockSubscribe` subscription"),
+        )
+        .arg(
             Arg::with_name("bpf_program")
                 .long("bpf-program")
                 .value_names(&["ADDRESS_OR_KEYPAIR", "SBF_PROGRAM.SO"])
@@ -2197,12 +2233,6 @@ pub fn test_app<'a>(version: &'a str, default_args: &'a DefaultTestArgs) -> App<
                         (see also the `--account` flag). \
                         If the ledger already exists then this parameter is silently ignored",
                 ),
-        )
-        .arg(
-            Arg::with_name("no_bpf_jit")
-                .long("no-bpf-jit")
-                .takes_value(false)
-                .help("Disable the just-in-time compiler and instead use the interpreter for SBF. Windows always disables JIT."),
         )
         .arg(
             Arg::with_name("ticks_per_slot")
