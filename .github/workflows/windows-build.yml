@@ -24,6 +24,6 @@ jobs:
       shell: bash
       run: |
         export OPENSSL_DIR="C:\Program Files\OpenSSL"
-        choco install protoc
+        choco install protoc --no-progress
         export PROTOC="C:\ProgramData\chocolatey\lib\protoc\tools\bin\protoc.exe"
         cargo check  --locked --workspace --all-targets --features dummy-for-ci-check
