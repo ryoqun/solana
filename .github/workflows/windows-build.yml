@@ -11,7 +11,7 @@ env:
   CARGO_TERM_COLOR: always
   RUSTDOCFLAGS: --enable-index-page -Z unstable-options
 jobs:
-  job-rustdoc-preview:
+  job-cargo-check-on-windows:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v2
