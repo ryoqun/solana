@@ -510,8 +510,6 @@ impl CrdsGossipPull {
         }
         labels.len()
     }
-
-    /// For legacy tests
 }
 
 pub struct CrdsTimeouts<'a> {

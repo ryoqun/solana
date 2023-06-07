@@ -6,7 +6,6 @@ use {
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
     solana_perf::{
         packet::{to_packet_batches, PacketBatch},
-        test_tx::test_tx,
     },
     solana_sdk::{hash::Hash, slot_history::Slot},
     std::{
@@ -362,7 +361,7 @@ pub mod for_test {
     use super::*;
 
     pub fn sample_packet_batch() -> BankingPacketBatch {
-        BankingPacketBatch::new((to_packet_batches(&vec![test_tx(); 4], 10), None))
+        panic!();
     }
 
     pub fn drop_and_clean_temp_dir_unless_suppressed(temp_dir: TempDir) {
