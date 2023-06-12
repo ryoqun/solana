@@ -8,7 +8,7 @@ use {
     solana_measure::measure::Measure,
     solana_program_runtime::{
         ic_logger_msg, ic_msg,
-        invoke_context::{BpfAllocator, InvokeContext, SyscallContext},
+        invoke_context::{BpfAllocator, InvokeContext, SerializedAccountMetadata, SyscallContext},
         loaded_programs::{
             LoadProgramMetrics, LoadedProgram, LoadedProgramType, DELAY_VISIBILITY_SLOT_OFFSET,
         },
@@ -271,7 +271,7 @@ pub fn calculate_heap_cost(heap_size: u64, heap_cost: u64, enable_rounding_fix: 
 pub fn create_vm<'a, 'b>(
     program: &'a Executable<RequisiteVerifier, InvokeContext<'b>>,
     regions: Vec<MemoryRegion>,
-    orig_account_lengths: Vec<usize>,
+    accounts_metadata: Vec<SerializedAccountMetadata>,
     invoke_context: &'a mut InvokeContext<'b>,
     stack: &mut AlignedMemory<HOST_ALIGN>,
     heap: &mut AlignedMemory<HOST_ALIGN>,
@@ -305,7 +305,7 @@ pub fn create_vm<'a, 'b>(
     )?;
     invoke_context.set_syscall_context(SyscallContext {
         allocator: BpfAllocator::new(heap_size as u64),
-        orig_account_lengths,
+        accounts_metadata,
         trace_log: Vec::new(),
     })?;
     Ok(EbpfVm::new(
@@ -319,7 +319,7 @@ pub fn create_vm<'a, 'b>(
 /// Create the SBF virtual machine
 #[macro_export]
 macro_rules! create_vm {
-    ($vm:ident, $program:expr, $regions:expr, $orig_account_lengths:expr, $invoke_context:expr $(,)?) => {
+    ($vm:ident, $program:expr, $regions:expr, $accounts_metadata:expr, $invoke_context:expr $(,)?) => {
         let invoke_context = &*$invoke_context;
         let stack_size = $program.get_config().stack_size();
         let heap_size = invoke_context
@@ -348,7 +348,7 @@ macro_rules! create_vm {
             let vm = $crate::create_vm(
                 $program,
                 $regions,
-                $orig_account_lengths,
+                $accounts_metadata,
                 $invoke_context,
                 &mut stack,
                 &mut heap,
@@ -361,7 +361,7 @@ macro_rules! create_vm {
 
 #[macro_export]
 macro_rules! mock_create_vm {
-    ($vm:ident, $additional_regions:expr, $orig_account_lengths:expr, $invoke_context:expr $(,)?) => {
+    ($vm:ident, $additional_regions:expr, $accounts_metadata:expr, $invoke_context:expr $(,)?) => {
         let loader = std::sync::Arc::new(BuiltinProgram::new_loader(
             solana_rbpf::vm::Config::default(),
         ));
@@ -378,7 +378,7 @@ macro_rules! mock_create_vm {
             $vm,
             &verified_executable,
             $additional_regions,
-            $orig_account_lengths,
+            $accounts_metadata,
             $invoke_context,
         );
     };
@@ -1557,7 +1557,7 @@ fn execute<'a, 'b: 'a>(
         .is_active(&bpf_account_data_direct_mapping::id());
 
     let mut serialize_time = Measure::start("serialize");
-    let (parameter_bytes, regions, account_lengths) = serialization::serialize_parameters(
+    let (parameter_bytes, regions, accounts_metadata) = serialization::serialize_parameters(
         invoke_context.transaction_context,
         instruction_context,
         invoke_context
@@ -1590,7 +1590,7 @@ fn execute<'a, 'b: 'a>(
                 )
             },
             regions,
-            account_lengths,
+            accounts_metadata,
             invoke_context,
         );
         let mut vm = match vm {
@@ -1673,7 +1673,7 @@ fn execute<'a, 'b: 'a>(
                 .get_current_instruction_context()?,
             copy_account_data,
             parameter_bytes,
-            &invoke_context.get_syscall_context()?.orig_account_lengths,
+            &invoke_context.get_syscall_context()?.accounts_metadata,
         )
     }
 
