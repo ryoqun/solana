@@ -153,6 +153,7 @@ pub struct SyscallContext {
 #[derive(Debug, Clone)]
 pub struct SerializedAccountMetadata {
     pub original_data_len: usize,
+    pub vm_data_addr: u64,
 }
 
 pub struct InvokeContext<'a> {
