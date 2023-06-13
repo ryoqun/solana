@@ -78,12 +78,17 @@ impl Serializer {
         }
     }
 
-    fn write_account(&mut self, account: &mut BorrowedAccount<'_>) -> Result<(), InstructionError> {
-        if self.copy_account_data {
+    fn write_account(
+        &mut self,
+        account: &mut BorrowedAccount<'_>,
+    ) -> Result<u64, InstructionError> {
+        let vm_data_addr = if self.copy_account_data {
+            let vm_data_addr = self.vaddr.saturating_add(self.buffer.len() as u64);
             self.write_all(account.get_data());
+            vm_data_addr
         } else {
-            self.push_account_region(account)?;
-        }
+            self.push_account_region(account)?
+        };
 
         if self.aligned {
             let align_offset =
@@ -103,14 +108,15 @@ impl Serializer {
             }
         }
 
-        Ok(())
+        Ok(vm_data_addr)
     }
 
     fn push_account_region(
         &mut self,
         account: &mut BorrowedAccount<'_>,
-    ) -> Result<(), InstructionError> {
+    ) -> Result<u64, InstructionError> {
         self.push_region();
+        let vaddr = self.vaddr;
         let account_len = account.get_data().len();
         if account_len > 0 {
             let region = if account.can_data_be_changed().is_ok() {
@@ -137,7 +143,7 @@ impl Serializer {
             self.vaddr += region.len;
             self.regions.push(region);
         }
-        Ok(())
+        Ok(vaddr)
     }
 
     fn push_region(&mut self) {
@@ -315,19 +321,20 @@ fn serialize_parameters_unaligned(
                 s.write(position as u8);
             }
             SerializeAccount::Account(_, mut account) => {
-                accounts_metadata.push(SerializedAccountMetadata {
-                    original_data_len: account.get_data().len(),
-                });
                 s.write::<u8>(NON_DUP_MARKER);
                 s.write::<u8>(account.is_signer() as u8);
                 s.write::<u8>(account.is_writable() as u8);
                 s.write_all(account.get_key().as_ref());
                 s.write::<u64>(account.get_lamports().to_le());
                 s.write::<u64>((account.get_data().len() as u64).to_le());
-                s.write_account(&mut account)?;
+                let vm_data_addr = s.write_account(&mut account)?;
                 s.write_all(account.get_owner().as_ref());
                 s.write::<u8>(account.is_executable() as u8);
                 s.write::<u64>((account.get_rent_epoch()).to_le());
+                accounts_metadata.push(SerializedAccountMetadata {
+                    original_data_len: account.get_data().len(),
+                    vm_data_addr,
+                });
             }
         };
     }
@@ -444,9 +451,6 @@ fn serialize_parameters_aligned(
     for account in accounts {
         match account {
             SerializeAccount::Account(_, mut borrowed_account) => {
-                account_lengths.push(SerializedAccountMetadata {
-                    original_data_len: borrowed_account.get_data().len(),
-                });
                 s.write::<u8>(NON_DUP_MARKER);
                 s.write::<u8>(borrowed_account.is_signer() as u8);
                 s.write::<u8>(borrowed_account.is_writable() as u8);
@@ -456,8 +460,12 @@ fn serialize_parameters_aligned(
                 s.write_all(borrowed_account.get_owner().as_ref());
                 s.write::<u64>(borrowed_account.get_lamports().to_le());
                 s.write::<u64>((borrowed_account.get_data().len() as u64).to_le());
-                s.write_account(&mut borrowed_account)?;
+                let vm_data_addr = s.write_account(&mut borrowed_account)?;
                 s.write::<u64>((borrowed_account.get_rent_epoch()).to_le());
+                account_lengths.push(SerializedAccountMetadata {
+                    original_data_len: borrowed_account.get_data().len(),
+                    vm_data_addr,
+                });
             }
             SerializeAccount::Duplicate(position) => {
                 account_lengths.push(account_lengths.get(position as usize).unwrap().clone());
