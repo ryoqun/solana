@@ -123,8 +123,8 @@ pub enum SyscallError {
     },
     #[error("InvalidAttribute")]
     InvalidAttribute,
-    #[error("Account data pointer changed")]
-    AccountDataPointerChanged,
+    #[error("Invalid pointer")]
+    InvalidPointer,
 }
 
 type Error = Box<dyn std::error::Error>;
