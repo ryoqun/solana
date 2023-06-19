@@ -55,8 +55,12 @@ impl Serializer {
         self.buffer.fill_write(num, value)
     }
 
-    pub fn write<T: Pod>(&mut self, value: T) {
+    pub fn write<T: Pod>(&mut self, value: T) -> u64 {
         self.debug_assert_alignment::<T>();
+        let vaddr = self
+            .vaddr
+            .saturating_add(self.buffer.len() as u64)
+            .saturating_sub(self.region_start as u64);
         // Safety:
         // in serialize_parameters_(aligned|unaligned) first we compute the
         // required size then we write into the newly allocated buffer. There's
@@ -68,14 +72,22 @@ impl Serializer {
         unsafe {
             self.buffer.write_unchecked(value);
         }
+
+        vaddr
     }
 
-    fn write_all(&mut self, value: &[u8]) {
+    fn write_all(&mut self, value: &[u8]) -> u64 {
+        let vaddr = self
+            .vaddr
+            .saturating_add(self.buffer.len() as u64)
+            .saturating_sub(self.region_start as u64);
         // Safety:
         // see write() - the buffer is guaranteed to be large enough
         unsafe {
             self.buffer.write_all_unchecked(value);
         }
+
+        vaddr
     }
 
     fn write_account(
@@ -333,15 +345,18 @@ fn serialize_parameters_unaligned(
                 s.write::<u8>(NON_DUP_MARKER);
                 s.write::<u8>(account.is_signer() as u8);
                 s.write::<u8>(account.is_writable() as u8);
-                s.write_all(account.get_key().as_ref());
-                s.write::<u64>(account.get_lamports().to_le());
+                let vm_key_addr = s.write_all(account.get_key().as_ref());
+                let vm_lamports_addr = s.write::<u64>(account.get_lamports().to_le());
                 s.write::<u64>((account.get_data().len() as u64).to_le());
                 let vm_data_addr = s.write_account(&mut account)?;
-                s.write_all(account.get_owner().as_ref());
+                let vm_owner_addr = s.write_all(account.get_owner().as_ref());
                 s.write::<u8>(account.is_executable() as u8);
                 s.write::<u64>((account.get_rent_epoch()).to_le());
                 accounts_metadata.push(SerializedAccountMetadata {
                     original_data_len: account.get_data().len(),
+                    vm_key_addr,
+                    vm_lamports_addr,
+                    vm_owner_addr,
                     vm_data_addr,
                 });
             }
@@ -422,7 +437,7 @@ fn serialize_parameters_aligned(
     ),
     InstructionError,
 > {
-    let mut account_lengths = Vec::with_capacity(accounts.len());
+    let mut accounts_metadata = Vec::with_capacity(accounts.len());
     // Calculate size in order to alloc once
     let mut size = size_of::<u64>();
     for account in &accounts {
@@ -465,19 +480,22 @@ fn serialize_parameters_aligned(
                 s.write::<u8>(borrowed_account.is_writable() as u8);
                 s.write::<u8>(borrowed_account.is_executable() as u8);
                 s.write_all(&[0u8, 0, 0, 0]);
-                s.write_all(borrowed_account.get_key().as_ref());
-                s.write_all(borrowed_account.get_owner().as_ref());
-                s.write::<u64>(borrowed_account.get_lamports().to_le());
+                let vm_key_addr = s.write_all(borrowed_account.get_key().as_ref());
+                let vm_owner_addr = s.write_all(borrowed_account.get_owner().as_ref());
+                let vm_lamports_addr = s.write::<u64>(borrowed_account.get_lamports().to_le());
                 s.write::<u64>((borrowed_account.get_data().len() as u64).to_le());
                 let vm_data_addr = s.write_account(&mut borrowed_account)?;
                 s.write::<u64>((borrowed_account.get_rent_epoch()).to_le());
-                account_lengths.push(SerializedAccountMetadata {
+                accounts_metadata.push(SerializedAccountMetadata {
                     original_data_len: borrowed_account.get_data().len(),
+                    vm_key_addr,
+                    vm_owner_addr,
+                    vm_lamports_addr,
                     vm_data_addr,
                 });
             }
             SerializeAccount::Duplicate(position) => {
-                account_lengths.push(account_lengths.get(position as usize).unwrap().clone());
+                accounts_metadata.push(accounts_metadata.get(position as usize).unwrap().clone());
                 s.write::<u8>(position as u8);
                 s.write_all(&[0u8, 0, 0, 0, 0, 0, 0]);
             }
@@ -488,7 +506,7 @@ fn serialize_parameters_aligned(
     s.write_all(program_id.as_ref());
 
     let (mem, regions) = s.finish();
-    Ok((mem, regions, account_lengths))
+    Ok((mem, regions, accounts_metadata))
 }
 
 pub fn deserialize_parameters_aligned<I: IntoIterator<Item = usize>>(

@@ -14,6 +14,20 @@ use {
     std::{mem, ptr},
 };
 
+macro_rules! check_account_info_pointer {
+    ($ptr:expr, $expected:expr, $log:literal) => {
+        if $ptr != $expected {
+            log::debug!(
+                "Invalid account info pointer `{}': {:#x} != {:#x}",
+                $log,
+                $ptr,
+                $expected
+            );
+            return Err(SyscallError::InvalidPointer.into());
+        }
+    };
+}
+
 /// Host side representation of AccountInfo or SolAccountInfo passed to the CPI syscall.
 ///
 /// At the start of a CPI, this can be different from the data stored in the
@@ -52,6 +66,23 @@ impl<'a> CallerAccount<'a> {
         account_info: &AccountInfo,
         account_metadata: &SerializedAccountMetadata,
     ) -> Result<CallerAccount<'a>, Error> {
+        let direct_mapping = invoke_context
+            .feature_set
+            .is_active(&feature_set::bpf_account_data_direct_mapping::id());
+
+        if direct_mapping {
+            check_account_info_pointer!(
+                account_info.key as *const _ as u64,
+                account_metadata.vm_key_addr,
+                "key"
+            );
+            check_account_info_pointer!(
+                account_info.owner as *const _ as u64,
+                account_metadata.vm_owner_addr,
+                "owner"
+            );
+        }
+
         let original_data_len = account_metadata.original_data_len;
         // account_info points to host memory. The addresses used internally are
         // in vm space so they need to be translated.
@@ -62,8 +93,12 @@ impl<'a> CallerAccount<'a> {
                 account_info.lamports.as_ptr() as u64,
                 invoke_context.get_check_aligned(),
             )?;
+            if direct_mapping {
+                check_account_info_pointer!(*ptr, account_metadata.vm_lamports_addr, "lamports");
+            }
             translate_type_mut::<u64>(memory_mapping, *ptr, invoke_context.get_check_aligned())?
         };
+
         let owner = translate_type_mut::<Pubkey>(
             memory_mapping,
             account_info.owner as *const _ as u64,
@@ -71,27 +106,18 @@ impl<'a> CallerAccount<'a> {
         )?;
 
         let (serialized_data, vm_data_addr, ref_to_len_in_vm, serialized_len_ptr) = {
-            let direct_mapping = invoke_context
-                .feature_set
-                .is_active(&feature_set::bpf_account_data_direct_mapping::id());
-
             // Double translate data out of RefCell
             let data = *translate_type::<&[u8]>(
                 memory_mapping,
                 account_info.data.as_ptr() as *const _ as u64,
                 invoke_context.get_check_aligned(),
             )?;
-
-            if direct_mapping && data.as_ptr() as u64 != account_metadata.vm_data_addr {
-                // When direct mapping is enabled, we might need to update the
-                // account data memory region across CPI calls (see
-                // update_caller_account). Since the only way we have to
-                // retrieve the region is based on its vm address, we enforce vm
-                // addresses to be stable.
-                //
-                // An account can still be mutated and resized of course, but it must be
-                // done in place.
-                return Err(SyscallError::AccountDataPointerChanged.into());
+            if direct_mapping {
+                check_account_info_pointer!(
+                    data.as_ptr() as u64,
+                    account_metadata.vm_data_addr,
+                    "data"
+                );
             }
 
             consume_compute_meter(
@@ -176,10 +202,35 @@ impl<'a> CallerAccount<'a> {
         account_info: &SolAccountInfo,
         account_metadata: &SerializedAccountMetadata,
     ) -> Result<CallerAccount<'a>, Error> {
+        let direct_mapping = invoke_context
+            .feature_set
+            .is_active(&feature_set::bpf_account_data_direct_mapping::id());
+
+        if direct_mapping {
+            check_account_info_pointer!(account_info.key_addr, account_metadata.vm_key_addr, "key");
+
+            check_account_info_pointer!(
+                account_info.owner_addr,
+                account_metadata.vm_owner_addr,
+                "owner"
+            );
+
+            check_account_info_pointer!(
+                account_info.lamports_addr,
+                account_metadata.vm_lamports_addr,
+                "lamports"
+            );
+
+            check_account_info_pointer!(
+                account_info.data_addr,
+                account_metadata.vm_data_addr,
+                "data"
+            );
+        }
+
         let original_data_len = account_metadata.original_data_len;
         // account_info points to host memory. The addresses used internally are
         // in vm space so they need to be translated.
-
         let lamports = translate_type_mut::<u64>(
             memory_mapping,
             account_info.lamports_addr,
@@ -191,22 +242,6 @@ impl<'a> CallerAccount<'a> {
             invoke_context.get_check_aligned(),
         )?;
 
-        let direct_mapping = invoke_context
-            .feature_set
-            .is_active(&feature_set::bpf_account_data_direct_mapping::id());
-
-        let vm_data_addr = account_info.data_addr;
-        if direct_mapping && vm_data_addr != account_metadata.vm_data_addr {
-            // When direct mapping is enabled, we might need to update the
-            // account data memory region across CPI calls (see
-            // update_caller_account). Since the only way we have to
-            // retrieve the region is based on its vm address, we enforce vm
-            // addresses to be stable.
-            //
-            // An account can still be mutated and resized of course, but it must be
-            // done in place.
-            return Err(SyscallError::AccountDataPointerChanged.into());
-        }
         consume_compute_meter(
             invoke_context,
             account_info
@@ -220,7 +255,7 @@ impl<'a> CallerAccount<'a> {
         } else {
             translate_slice_mut::<u8>(
                 memory_mapping,
-                vm_data_addr,
+                account_info.data_addr,
                 account_info.data_len,
                 invoke_context.get_check_aligned(),
                 invoke_context.get_check_size(),
@@ -262,7 +297,7 @@ impl<'a> CallerAccount<'a> {
             owner,
             original_data_len,
             serialized_data,
-            vm_data_addr,
+            vm_data_addr: account_info.data_addr,
             ref_to_len_in_vm,
             serialized_len_ptr,
             executable: account_info.executable,
@@ -1601,7 +1636,8 @@ mod tests {
 
         let key = Pubkey::new_unique();
         let vm_addr = MM_INPUT_START;
-        let (_mem, region, vm_data_addr) = MockAccountInfo::new(key, &account).into_region(vm_addr);
+        let (_mem, region, account_metadata) =
+            MockAccountInfo::new(key, &account).into_region(vm_addr);
 
         let config = Config {
             aligned_memory_mapping: false,
@@ -1616,10 +1652,7 @@ mod tests {
             &memory_mapping,
             vm_addr,
             account_info,
-            &SerializedAccountMetadata {
-                original_data_len: account.data().len(),
-                vm_data_addr,
-            },
+            &account_metadata,
         )
         .unwrap();
         assert_eq!(*caller_account.lamports, account.lamports());
@@ -2366,7 +2399,8 @@ mod tests {
         let original_data_len = account.data().len();
 
         let vm_addr = MM_INPUT_START;
-        let (_mem, region, vm_data_addr) = MockAccountInfo::new(key, &account).into_region(vm_addr);
+        let (_mem, region, account_metadata) =
+            MockAccountInfo::new(key, &account).into_region(vm_addr);
 
         let config = Config {
             aligned_memory_mapping: false,
@@ -2384,15 +2418,7 @@ mod tests {
             &[1, 1]
         );
 
-        mock_create_vm!(
-            _vm,
-            Vec::new(),
-            vec![SerializedAccountMetadata {
-                original_data_len,
-                vm_data_addr
-            }],
-            &mut invoke_context
-        );
+        mock_create_vm!(_vm, Vec::new(), vec![account_metadata], &mut invoke_context);
 
         let accounts = SyscallInvokeSignedRust::translate_accounts(
             &[
@@ -2695,7 +2721,7 @@ mod tests {
             }
         }
 
-        fn into_region(self, vm_addr: u64) -> (Vec<u8>, MemoryRegion, u64) {
+        fn into_region(self, vm_addr: u64) -> (Vec<u8>, MemoryRegion, SerializedAccountMetadata) {
             let size = mem::size_of::<AccountInfo>()
                 + mem::size_of::<Pubkey>() * 2
                 + mem::size_of::<RcBox<RefCell<&mut u64>>>()
@@ -2756,7 +2782,17 @@ mod tests {
             }
 
             let region = MemoryRegion::new_writable(data.as_mut_slice(), vm_addr as u64);
-            (data, region, data_addr as u64)
+            (
+                data,
+                region,
+                SerializedAccountMetadata {
+                    original_data_len: self.data.len(),
+                    vm_key_addr: key_addr as u64,
+                    vm_lamports_addr: lamports_addr as u64,
+                    vm_owner_addr: owner_addr as u64,
+                    vm_data_addr: data_addr as u64,
+                },
+            )
         }
     }
 
