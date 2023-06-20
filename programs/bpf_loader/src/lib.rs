@@ -1547,7 +1547,14 @@ fn execute<'a, 'b: 'a>(
     let log_collector = invoke_context.get_log_collector();
     let transaction_context = &invoke_context.transaction_context;
     let instruction_context = transaction_context.get_current_instruction_context()?;
-    let program_id = *instruction_context.get_last_program_key(transaction_context)?;
+    let (program_id, is_loader_deprecated) = {
+        let program_account =
+            instruction_context.try_borrow_last_program_account(transaction_context)?;
+        (
+            *program_account.get_key(),
+            *program_account.get_owner() == bpf_loader_deprecated::id(),
+        )
+    };
     #[cfg(any(target_os = "windows", not(target_arch = "x86_64")))]
     let use_jit = false;
     #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
@@ -1570,11 +1577,23 @@ fn execute<'a, 'b: 'a>(
     // save the account addresses so in case of AccessViolation below we can
     // map to InstructionError::ReadonlyDataModified, which is easier to
     // diagnose from developers
-    let account_region_addrs = regions
+    let account_region_addrs = accounts_metadata
         .iter()
-        .map(|r| r.vm_addr..r.vm_addr.saturating_add(r.len))
+        .map(|m| {
+            let mut vm_end = m.vm_data_addr.saturating_add(m.original_data_len as u64);
+            if !is_loader_deprecated {
+                vm_end = vm_end.saturating_add(MAX_PERMITTED_DATA_INCREASE as u64)
+            }
+            (m.vm_data_addr..vm_end, m.is_writable)
+        })
         .collect::<Vec<_>>();
-    let addr_is_account_data = |addr: u64| account_region_addrs.iter().any(|r| r.contains(&addr));
+    let addr_is_account_data = |addr: u64| {
+        account_region_addrs
+            .iter()
+            .find(|(r, _)| r.contains(&addr))
+            .map(|(_, is_writable)| (true, *is_writable))
+            .unwrap_or((false, false))
+    };
 
     let mut create_vm_time = Measure::start("create_vm");
     let mut execute_time;
@@ -1646,11 +1665,23 @@ fn execute<'a, 'b: 'a>(
                         address,
                         _size,
                         _section_name,
-                    )) if addr_is_account_data(*address) => {
-                        // We can get here if direct_mapping is enabled and a program tries to
-                        // write to a readonly account. Map the error to ReadonlyDataModified so
-                        // it's easier for devs to diagnose what happened.
-                        Box::new(InstructionError::ReadonlyDataModified)
+                    )) => {
+                        let (is_account_data, is_writable) = addr_is_account_data(*address);
+                        if is_account_data {
+                            // We can get here if direct_mapping is enabled and
+                            // a program tries to write to a readonly region.
+                            // Map the error to ReadonlyDataModified if the
+                            // account !is_writable, and to
+                            // ExternalAccountDataModified if the executing
+                            // program doesn't own the account.
+                            Box::new(if is_writable {
+                                InstructionError::ExternalAccountDataModified
+                            } else {
+                                InstructionError::ReadonlyDataModified
+                            })
+                        } else {
+                            error
+                        }
                     }
                     _ => error,
                 };
