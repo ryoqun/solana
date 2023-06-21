@@ -14,18 +14,18 @@ use {
     std::{mem, ptr},
 };
 
-macro_rules! check_account_info_pointer {
-    ($ptr:expr, $expected:expr, $log:literal) => {
-        if $ptr != $expected {
-            log::debug!(
-                "Invalid account info pointer `{}': {:#x} != {:#x}",
-                $log,
-                $ptr,
-                $expected
-            );
-            return Err(SyscallError::InvalidPointer.into());
-        }
-    };
+fn check_vm_pointer_equality(actual: u64, expected: u64, log: &str) -> Result<(), Error> {
+    if actual == expected {
+        Ok(())
+    } else {
+        log::debug!(
+            "Invalid account info pointer `{}': {:#x} != {:#x}",
+            log,
+            actual,
+            expected
+        );
+        Err(SyscallError::InvalidPointer.into())
+    }
 }
 
 /// Host side representation of AccountInfo or SolAccountInfo passed to the CPI syscall.
@@ -71,16 +71,16 @@ impl<'a> CallerAccount<'a> {
             .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
         if direct_mapping {
-            check_account_info_pointer!(
+            check_vm_pointer_equality(
                 account_info.key as *const _ as u64,
                 account_metadata.vm_key_addr,
                 "key"
-            );
-            check_account_info_pointer!(
+            )?;
+            check_vm_pointer_equality(
                 account_info.owner as *const _ as u64,
                 account_metadata.vm_owner_addr,
                 "owner"
-            );
+            )?;
         }
 
         let original_data_len = account_metadata.original_data_len;
@@ -94,7 +94,7 @@ impl<'a> CallerAccount<'a> {
                 invoke_context.get_check_aligned(),
             )?;
             if direct_mapping {
-                check_account_info_pointer!(*ptr, account_metadata.vm_lamports_addr, "lamports");
+                check_vm_pointer_equality(*ptr, account_metadata.vm_lamports_addr, "lamports")?;
             }
             translate_type_mut::<u64>(memory_mapping, *ptr, invoke_context.get_check_aligned())?
         };
@@ -113,11 +113,11 @@ impl<'a> CallerAccount<'a> {
                 invoke_context.get_check_aligned(),
             )?;
             if direct_mapping {
-                check_account_info_pointer!(
+                check_vm_pointer_equality(
                     data.as_ptr() as u64,
                     account_metadata.vm_data_addr,
                     "data"
-                );
+                )?;
             }
 
             consume_compute_meter(
@@ -207,25 +207,25 @@ impl<'a> CallerAccount<'a> {
             .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
         if direct_mapping {
-            check_account_info_pointer!(account_info.key_addr, account_metadata.vm_key_addr, "key");
+            check_vm_pointer_equality(account_info.key_addr, account_metadata.vm_key_addr, "key")?;
 
-            check_account_info_pointer!(
+            check_vm_pointer_equality(
                 account_info.owner_addr,
                 account_metadata.vm_owner_addr,
                 "owner"
-            );
+            )?;
 
-            check_account_info_pointer!(
+            check_vm_pointer_equality(
                 account_info.lamports_addr,
                 account_metadata.vm_lamports_addr,
                 "lamports"
-            );
+            )?;
 
-            check_account_info_pointer!(
+            check_vm_pointer_equality(
                 account_info.data_addr,
                 account_metadata.vm_data_addr,
                 "data"
-            );
+            )?;
         }
 
         let original_data_len = account_metadata.original_data_len;
