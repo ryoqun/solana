@@ -29,7 +29,7 @@ use {
     std::{
         fmt::Debug,
         marker::PhantomData,
-        sync::{Arc, Mutex, Weak},
+        sync::{Arc, Mutex},
     },
 };
 
@@ -46,7 +46,6 @@ pub struct SchedulerPool<
     transaction_status_sender: Option<TransactionStatusSender>,
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-    weak_self: Weak<Self>,
     _phantom: PhantomData<(T, SEA, TH)>,
 }
 
@@ -68,13 +67,12 @@ impl<
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
     ) -> Arc<Self> {
-        Arc::new_cyclic(|weak_self| Self {
+        Arc::new(Self {
             schedulers: Mutex::<Vec<Box<dyn InstalledScheduler<SEA>>>>::default(),
             log_messages_bytes_limit,
             transaction_status_sender,
             replay_vote_sender,
             prioritization_fee_cache,
-            weak_self: weak_self.clone(),
             _phantom: PhantomData,
         })
     }
@@ -92,12 +90,6 @@ impl<
             prioritization_fee_cache,
         )
     }
-
-    pub fn self_arc(&self) -> Arc<Self> {
-        self.weak_self
-            .upgrade()
-            .expect("self-referencing Arc-ed pool")
-    }
 }
 
 impl<
@@ -106,7 +98,10 @@ impl<
         SEA: ScheduleExecutionArg,
     > InstalledSchedulerPool<SEA> for SchedulerPool<T, TH, SEA>
 {
-    fn take_from_pool(&self, context: SchedulingContext) -> Box<dyn InstalledScheduler<SEA>> {
+    fn take_from_pool(
+        self: Arc<Self>,
+        context: SchedulingContext,
+    ) -> Box<dyn InstalledScheduler<SEA>> {
         let mut schedulers = self.schedulers.lock().expect("not poisoned");
         // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
         // returned recently
@@ -115,7 +110,7 @@ impl<
             scheduler.replace_context(context);
             scheduler
         } else {
-            T::spawn_boxed(self.self_arc(), context, TH::create(self))
+            T::spawn_boxed(self.clone(), context, TH::create(&self))
         }
     }
 
@@ -365,9 +360,9 @@ mod tests {
         let bank = Arc::new(Bank::default_for_tests());
         let context = &SchedulingContext::new(SchedulingMode::BlockVerification, bank);
 
-        let mut scheduler1 = pool.take_from_pool(context.clone());
+        let mut scheduler1 = pool.clone().take_from_pool(context.clone());
         let scheduler_id1 = scheduler1.id();
-        let mut scheduler2 = pool.take_from_pool(context.clone());
+        let mut scheduler2 = pool.clone().take_from_pool(context.clone());
         let scheduler_id2 = scheduler2.id();
         assert_ne!(scheduler_id1, scheduler_id2);
 
@@ -382,7 +377,7 @@ mod tests {
         );
         pool.return_to_pool(scheduler2);
 
-        let scheduler3 = pool.take_from_pool(context.clone());
+        let scheduler3 = pool.clone().take_from_pool(context.clone());
         assert_eq!(scheduler_id2, scheduler3.id());
         let scheduler4 = pool.take_from_pool(context.clone());
         assert_eq!(scheduler_id1, scheduler4.id());
@@ -429,7 +424,7 @@ mod tests {
         let new_context =
             &SchedulingContext::new(SchedulingMode::BlockVerification, new_bank.clone());
 
-        let mut scheduler = pool.take_from_pool(old_context.clone());
+        let mut scheduler = pool.clone().take_from_pool(old_context.clone());
         let scheduler_id = scheduler.id();
         assert_matches!(
             scheduler.wait_for_termination(&WaitReason::TerminatedToFreeze),

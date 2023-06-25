@@ -46,7 +46,10 @@ use {
 // Send + Sync is needed to be a field of BankForks
 #[cfg_attr(any(test, feature = "test-in-workspace"), automock)]
 pub trait InstalledSchedulerPool<SEA: ScheduleExecutionArg>: Send + Sync + Debug {
-    fn take_from_pool(&self, context: SchedulingContext) -> Box<dyn InstalledScheduler<SEA>>;
+    fn take_from_pool(
+        self: Arc<Self>,
+        context: SchedulingContext,
+    ) -> Box<dyn InstalledScheduler<SEA>>;
     fn return_to_pool(&self, scheduler: Box<dyn InstalledScheduler<SEA>>);
 }
 
