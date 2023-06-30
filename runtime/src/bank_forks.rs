@@ -5,11 +5,16 @@ use {
         accounts_background_service::{AbsRequestSender, SnapshotRequest, SnapshotRequestType},
         bank::{Bank, SquashTiming},
         epoch_accounts_hash,
+        installed_scheduler_pool::{
+            BankWithScheduler, DefaultScheduleExecutionArg, InstalledSchedulerPoolArc,
+            SchedulingContext,
+        },
         snapshot_config::SnapshotConfig,
     },
     log::*,
     solana_measure::measure::Measure,
     solana_program_runtime::loaded_programs::{BlockRelation, ForkGraph, WorkingSlot},
+    solana_scheduler::SchedulingMode,
     solana_sdk::{clock::Slot, feature_set, hash::Hash, timing},
     std::{
         collections::{hash_map::Entry, HashMap, HashSet},
@@ -57,7 +62,7 @@ struct SetRootTimings {
 }
 
 pub struct BankForks {
-    banks: HashMap<Slot, Arc<Bank>>,
+    banks: HashMap<Slot, BankWithScheduler>,
     descendants: HashMap<Slot, HashSet<Slot>>,
     root: Arc<AtomicSlot>,
 
@@ -66,6 +71,7 @@ pub struct BankForks {
     pub accounts_hash_interval_slots: Slot,
     last_accounts_hash_slot: Slot,
     in_vote_only_mode: Arc<AtomicBool>,
+    pub(crate) scheduler_pool: Option<InstalledSchedulerPoolArc<DefaultScheduleExecutionArg>>,
 }
 
 impl Index<u64> for BankForks {
@@ -82,7 +88,10 @@ impl BankForks {
     }
 
     pub fn banks(&self) -> HashMap<Slot, Arc<Bank>> {
-        self.banks.clone()
+        self.banks
+            .iter()
+            .map(|(&k, b)| (k, b.clone_without_scheduler()))
+            .collect()
     }
 
     pub fn get_vote_only_mode_signal(&self) -> Arc<AtomicBool> {
@@ -118,7 +127,7 @@ impl BankForks {
         self.banks
             .iter()
             .filter(|(_, b)| b.is_frozen())
-            .map(|(k, b)| (*k, b.clone()))
+            .map(|(&k, b)| (k, b.clone_without_scheduler()))
             .collect()
     }
 
@@ -131,7 +140,11 @@ impl BankForks {
     }
 
     pub fn get(&self, bank_slot: Slot) -> Option<Arc<Bank>> {
-        self.banks.get(&bank_slot).cloned()
+        self.get_with_scheduler(bank_slot).map(|b| b.clone())
+    }
+
+    pub fn get_with_scheduler(&self, bank_slot: Slot) -> Option<BankWithScheduler> {
+        self.banks.get(&bank_slot).map(|b| b.clone_with_scheduler())
     }
 
     pub fn get_with_checked_hash(
@@ -158,10 +171,19 @@ impl BankForks {
 
         // Iterate through the heads of all the different forks
         for bank in initial_forks {
-            banks.insert(bank.slot(), bank.clone());
+            banks.insert(
+                bank.slot(),
+                BankWithScheduler::new_without_scheduler(bank.clone()),
+            );
             let parents = bank.parents();
             for parent in parents {
-                if banks.insert(parent.slot(), parent.clone()).is_some() {
+                if banks
+                    .insert(
+                        parent.slot(),
+                        BankWithScheduler::new_without_scheduler(parent.clone()),
+                    )
+                    .is_some()
+                {
                     // All ancestors have already been inserted by another fork
                     break;
                 }
@@ -182,12 +204,20 @@ impl BankForks {
             accounts_hash_interval_slots: std::u64::MAX,
             last_accounts_hash_slot: root,
             in_vote_only_mode: Arc::new(AtomicBool::new(false)),
+            scheduler_pool: None,
         }
     }
 
-    pub fn insert(&mut self, bank: Bank) -> Arc<Bank> {
+    pub fn insert(&mut self, bank: Bank) -> BankWithScheduler {
         let bank = Arc::new(bank);
-        let prev = self.banks.insert(bank.slot(), bank.clone());
+        let bank = if let Some(scheduler_pool) = &self.scheduler_pool {
+            let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
+            let scheduler = scheduler_pool.take_from_pool(context);
+            BankWithScheduler::new(bank, scheduler)
+        } else {
+            BankWithScheduler::new_without_scheduler(bank)
+        };
+        let prev = self.banks.insert(bank.slot(), bank.clone_with_scheduler());
         assert!(prev.is_none());
         let slot = bank.slot();
         self.descendants.entry(slot).or_default();
@@ -197,7 +227,7 @@ impl BankForks {
         bank
     }
 
-    pub fn remove(&mut self, slot: Slot) -> Option<Arc<Bank>> {
+    pub fn remove(&mut self, slot: Slot) -> Option<BankWithScheduler> {
         let bank = self.banks.remove(&slot)?;
         for parent in bank.proper_ancestors() {
             let mut entry = match self.descendants.entry(parent) {
@@ -227,6 +257,10 @@ impl BankForks {
         self[self.highest_slot()].clone()
     }
 
+    pub fn working_bank_with_scheduler(&self) -> &BankWithScheduler {
+        &self.banks[&self.highest_slot()]
+    }
+
     fn do_set_root_return_metrics(
         &mut self,
         root: Slot,
@@ -239,7 +273,7 @@ impl BankForks {
         // ensure atomic ordering correctness.
         self.root.store(root, Ordering::Release);
 
-        let root_bank = self
+        let root_bank = &**self
             .banks
             .get(&root)
             .expect("root bank didn't exist in bank_forks");
@@ -597,7 +631,7 @@ impl BankForks {
         let mut prune_remove_time = Measure::start("prune_slots");
         let removed_banks = prune_slots
             .into_iter()
-            .filter_map(|slot| self.remove(slot))
+            .filter_map(|slot| self.remove(slot).map(|b| b.clone()))
             .collect();
         prune_remove_time.stop();
 
@@ -688,7 +722,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let mut bank_forks = BankForks::new(bank);
         let child_bank = Bank::new_from_parent(&bank_forks[0u64], &Pubkey::default(), 1);
-        child_bank.register_tick(&Hash::default());
+        child_bank.register_default_tick_for_test();
         bank_forks.insert(child_bank);
         assert_eq!(bank_forks[1u64].tick_height(), 1);
         assert_eq!(bank_forks.working_bank().tick_height(), 1);
@@ -871,9 +905,10 @@ mod tests {
     #[test]
     fn test_bank_forks_with_set_root() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
-        let mut banks = vec![Arc::new(Bank::new_for_tests(&genesis_config))];
-        assert_eq!(banks[0].slot(), 0);
-        let mut bank_forks = BankForks::new_from_banks(&banks, 0);
+        let bank0 = Arc::new(Bank::new_for_tests(&genesis_config));
+        assert_eq!(bank0.slot(), 0);
+        let mut bank_forks = BankForks::new_from_banks(&[bank0], 0);
+        let mut banks = vec![bank_forks.get_with_scheduler(0).unwrap()];
         banks.push(bank_forks.insert(Bank::new_from_parent(&banks[0], &Pubkey::default(), 1)));
         banks.push(bank_forks.insert(Bank::new_from_parent(&banks[1], &Pubkey::default(), 2)));
         banks.push(bank_forks.insert(Bank::new_from_parent(&banks[0], &Pubkey::default(), 3)));
@@ -930,9 +965,10 @@ mod tests {
     #[test]
     fn test_bank_forks_with_highest_confirmed_root() {
         let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
-        let mut banks = vec![Arc::new(Bank::new_for_tests(&genesis_config))];
-        assert_eq!(banks[0].slot(), 0);
-        let mut bank_forks = BankForks::new_from_banks(&banks, 0);
+        let bank0 = Arc::new(Bank::new_for_tests(&genesis_config));
+        assert_eq!(bank0.slot(), 0);
+        let mut bank_forks = BankForks::new_from_banks(&[bank0], 0);
+        let mut banks = vec![bank_forks.get_with_scheduler(0).unwrap()];
         banks.push(bank_forks.insert(Bank::new_from_parent(&banks[0], &Pubkey::default(), 1)));
         banks.push(bank_forks.insert(Bank::new_from_parent(&banks[1], &Pubkey::default(), 2)));
         banks.push(bank_forks.insert(Bank::new_from_parent(&banks[0], &Pubkey::default(), 3)));

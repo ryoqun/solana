@@ -55,6 +55,7 @@ solana-rayon-threadlimit = { workspace = true }
 solana-rpc = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-runtime = { workspace = true }
+solana-scheduler-pool = { workspace = true }
 solana-sdk = { workspace = true }
 solana-send-transaction-service = { workspace = true }
 solana-streamer = { workspace = true }
@@ -76,7 +77,9 @@ raptorq = { workspace = true }
 serde_json = { workspace = true }
 serial_test = { workspace = true }
 solana-logger = { workspace = true }
+solana-poh = { workspace = true, features = ["test-in-workspace"] }
 solana-program-runtime = { workspace = true }
+solana-runtime = { workspace = true, features = ["test-in-workspace"] }
 solana-stake-program = { workspace = true }
 static_assertions = { workspace = true }
 systemstat = { workspace = true }

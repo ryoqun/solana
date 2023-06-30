@@ -60,6 +60,7 @@ use {
         epoch_accounts_hash::{self, EpochAccountsHash},
         epoch_stakes::{EpochStakes, NodeVoteAccounts},
         inline_spl_associated_token_account, inline_spl_token,
+        installed_scheduler_pool::{BankWithScheduler, InstalledSchedulerRwLock},
         message_processor::MessageProcessor,
         rent_collector::{CollectedInfo, RentCollector},
         rent_debits::RentDebits,
@@ -77,7 +78,7 @@ use {
         status_cache::{SlotDelta, StatusCache},
         storable_accounts::StorableAccounts,
         system_instruction_processor::{get_system_account_kind, SystemAccountKind},
-        transaction_batch::TransactionBatch,
+        transaction_batch::{IntoCowForSanitizedTransaction, TransactionBatch},
         transaction_error_metrics::TransactionErrorMetrics,
         vote_account::{VoteAccount, VoteAccountsHashMap},
     },
@@ -200,7 +201,7 @@ mod builtin_programs;
 mod metrics;
 mod sysvar_cache;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 mod transaction_account_state_info;
 
 pub const SECONDS_PER_YEAR: f64 = 365.25 * 24.0 * 60.0 * 60.0;
@@ -3672,7 +3673,15 @@ impl Bank {
     /// Register a new recent blockhash in the bank's recent blockhash queue. Called when a bank
     /// reaches its max tick height. Can be called by tests to get new blockhashes for transaction
     /// processing without advancing to a new bank slot.
-    pub fn register_recent_blockhash(&self, blockhash: &Hash) {
+    pub fn register_recent_blockhash(
+        &self,
+        blockhash: &Hash,
+        scheduler: &InstalledSchedulerRwLock,
+    ) {
+        // This is needed because recent_blockhash updates necessitate synchronizations for
+        // consistent tx check_age handling.
+        BankWithScheduler::wait_for_reusable_scheduler(self, scheduler);
+
         // Only acquire the write lock for the blockhash queue on block boundaries because
         // readers can starve this write lock acquisition and ticks would be slowed down too
         // much if the write lock is acquired for each tick.
@@ -3687,7 +3696,7 @@ impl Bank {
     ///
     /// This is NOT thread safe because if tick height is updated by two different threads, the
     /// block boundary condition could be missed.
-    pub fn register_tick(&self, hash: &Hash) {
+    pub fn register_tick(&self, hash: &Hash, scheduler: &InstalledSchedulerRwLock) {
         assert!(
             !self.freeze_started(),
             "register_tick() working on a bank that is already frozen or is undergoing freezing!"
@@ -3695,7 +3704,7 @@ impl Bank {
 
         inc_new_counter_debug!("bank-register_tick-registered", 1);
         if self.is_block_boundary(self.tick_height.load(Relaxed) + 1) {
-            self.register_recent_blockhash(hash);
+            self.register_recent_blockhash(hash, scheduler);
         }
 
         // ReplayStage will start computing the accounts delta hash when it
@@ -3704,6 +3713,26 @@ impl Bank {
         // committed before this tick height is incremented (like the blockhash
         // sysvar above)
         self.tick_height.fetch_add(1, Relaxed);
+    }
+
+    #[cfg(any(test, feature = "test-in-workspace"))]
+    pub fn register_tick_for_test(&self, hash: &Hash) {
+        self.register_tick(hash, &BankWithScheduler::no_scheduler_available())
+    }
+
+    #[cfg(any(test, feature = "test-in-workspace"))]
+    pub fn register_default_tick_for_test(&self) {
+        self.register_tick(
+            &Hash::default(),
+            &BankWithScheduler::no_scheduler_available(),
+        )
+    }
+
+    pub fn register_unique_tick(&self) {
+        self.register_tick(
+            &Hash::new_unique(),
+            &BankWithScheduler::no_scheduler_available(),
+        )
     }
 
     pub fn is_complete(&self) -> bool {
@@ -3809,17 +3838,17 @@ impl Bank {
         TransactionBatch::new(lock_results, self, Cow::Borrowed(transactions))
     }
 
-    /// Prepare a transaction batch without locking accounts for transaction simulation.
-    pub(crate) fn prepare_simulation_batch(
-        &self,
-        transaction: SanitizedTransaction,
-    ) -> TransactionBatch<'_, '_> {
+    pub fn prepare_sanitized_batch_without_locking<'a>(
+        &'a self,
+        transaction: impl IntoCowForSanitizedTransaction<'a>,
+    ) -> TransactionBatch<'a, 'a> {
         let tx_account_lock_limit = self.get_transaction_account_lock_limit();
         let lock_result = transaction
+            .borrow()
             .get_account_locks(tx_account_lock_limit)
             .map(|_| ());
-        let mut batch =
-            TransactionBatch::new(vec![lock_result], self, Cow::Owned(vec![transaction]));
+        let transaction = transaction.into_cow();
+        let mut batch = TransactionBatch::new(vec![lock_result], self, transaction);
         batch.set_needs_unlock(false);
         batch
     }
@@ -3843,7 +3872,7 @@ impl Bank {
         let account_keys = transaction.message().account_keys();
         let number_of_accounts = account_keys.len();
         let account_overrides = self.get_account_overrides_for_simulation(&account_keys);
-        let batch = self.prepare_simulation_batch(transaction);
+        let batch = self.prepare_sanitized_batch_without_locking(transaction);
         let mut timings = ExecuteTimings::default();
 
         let LoadAndExecuteTransactionsOutput {
@@ -7793,10 +7822,14 @@ impl Bank {
     }
 
     pub fn fill_bank_with_ticks_for_tests(&self) {
+        self.do_fill_bank_with_ticks_for_tests(&BankWithScheduler::no_scheduler_available());
+    }
+
+    pub(crate) fn do_fill_bank_with_ticks_for_tests(&self, scheduler: &InstalledSchedulerRwLock) {
         if self.tick_height.load(Relaxed) < self.max_tick_height {
             let last_blockhash = self.last_blockhash();
             while self.last_blockhash() == last_blockhash {
-                self.register_tick(&Hash::new_unique())
+                self.register_tick(&Hash::new_unique(), scheduler)
             }
         } else {
             warn!("Bank already reached max tick height, cannot fill it with more ticks");
@@ -8299,10 +8332,13 @@ impl Drop for Bank {
 pub mod test_utils {
     use {
         super::Bank,
+        crate::installed_scheduler_pool::BankWithScheduler,
         solana_sdk::{hash::hashv, pubkey::Pubkey},
         solana_vote_program::vote_state::{self, BlockTimestamp, VoteStateVersions},
+        std::sync::Arc,
     };
-    pub fn goto_end_of_slot(bank: &mut Bank) {
+
+    pub fn goto_end_of_slot(bank: &BankWithScheduler) {
         let mut tick_hash = bank.last_blockhash();
         loop {
             tick_hash = hashv(&[tick_hash.as_ref(), &[42]]);
@@ -8312,6 +8348,10 @@ pub mod test_utils {
                 return;
             }
         }
+    }
+
+    pub fn goto_end_of_slot_without_scheduler(bank: &Arc<Bank>) {
+        goto_end_of_slot(&BankWithScheduler::new_without_scheduler(bank.clone()))
     }
 
     pub fn update_vote_account_timestamp(

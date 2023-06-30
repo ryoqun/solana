@@ -40,7 +40,8 @@ use {
         block_error::BlockError,
         blockstore::Blockstore,
         blockstore_processor::{
-            self, BlockstoreProcessorError, ConfirmationProgress, TransactionStatusSender,
+            self, BlockstoreProcessorError, ConfirmationProgress, ExecuteBatchesInternalMetrics,
+            TransactionStatusSender,
         },
         leader_schedule_cache::LeaderScheduleCache,
         leader_schedule_utils::first_of_consecutive_leader_slots,
@@ -59,6 +60,7 @@ use {
         bank::{Bank, NewBankOptions},
         bank_forks::{BankForks, MAX_ROOT_DISTANCE_FOR_VOTE_ONLY},
         commitment::BlockCommitmentCache,
+        installed_scheduler_pool::BankWithScheduler,
         prioritization_fee_cache::PrioritizationFeeCache,
         vote_sender_types::ReplayVoteSender,
     },
@@ -1451,7 +1453,7 @@ impl ReplayStage {
                     let bank = w_bank_forks
                         .remove(*slot)
                         .expect("BankForks should not have been purged yet");
-                    ((*slot, bank.bank_id()), bank)
+                    ((*slot, bank.bank_id()), bank.clone())
                 })
                 .unzip()
         };
@@ -1863,14 +1865,14 @@ impl ReplayStage {
             poh_recorder
                 .write()
                 .unwrap()
-                .set_bank(&tpu_bank, track_transaction_indexes);
+                .set_bank(tpu_bank, track_transaction_indexes);
         } else {
             error!("{} No next leader found", my_pubkey);
         }
     }
 
     fn replay_blockstore_into_bank(
-        bank: &Arc<Bank>,
+        bank: &BankWithScheduler,
         blockstore: &Blockstore,
         replay_stats: &RwLock<ReplaySlotStats>,
         replay_progress: &RwLock<ConfirmationProgress>,
@@ -2437,7 +2439,11 @@ impl ReplayStage {
                         return replay_result;
                     }
 
-                    let bank = &bank_forks.read().unwrap().get(bank_slot).unwrap();
+                    let bank = &bank_forks
+                        .read()
+                        .unwrap()
+                        .get_with_scheduler(bank_slot)
+                        .unwrap();
                     let parent_slot = bank.parent_slot();
                     let (num_blocks_on_fork, num_dropped_blocks_on_fork) = {
                         let stats = progress_lock
@@ -2523,7 +2529,11 @@ impl ReplayStage {
             debug!("bank_slot {:?} is marked dead", bank_slot);
             replay_result.is_slot_dead = true;
         } else {
-            let bank = &bank_forks.read().unwrap().get(bank_slot).unwrap();
+            let bank = &bank_forks
+                .read()
+                .unwrap()
+                .get_with_scheduler(bank_slot)
+                .unwrap();
             let parent_slot = bank.parent_slot();
             let prev_leader_slot = progress.get_bank_prev_leader_slot(bank);
             let (num_blocks_on_fork, num_dropped_blocks_on_fork) = {
@@ -2604,12 +2614,15 @@ impl ReplayStage {
             }
 
             let bank_slot = replay_result.bank_slot;
-            let bank = &bank_forks.read().unwrap().get(bank_slot).unwrap();
+            let bank = &bank_forks
+                .read()
+                .unwrap()
+                .get_with_scheduler(bank_slot)
+                .unwrap();
             if let Some(replay_result) = &replay_result.replay_result {
                 match replay_result {
                     Ok(replay_tx_count) => tx_count += replay_tx_count,
                     Err(err) => {
-                        // Error means the slot needs to be marked as dead
                         Self::mark_dead_slot(
                             blockstore,
                             bank,
@@ -2625,8 +2638,7 @@ impl ReplayStage {
                             ancestor_hashes_replay_update_sender,
                             purge_repair_slot_counter,
                         );
-                        // If the bank was corrupted, don't try to run the below logic to check if the
-                        // bank is completed
+                        // don't try to run the below logic to check if the bank is completed
                         continue;
                     }
                 }
@@ -2640,6 +2652,40 @@ impl ReplayStage {
                     .expect("Bank fork progress entry missing for completed bank");
 
                 let replay_stats = bank_progress.replay_stats.clone();
+
+                if let Some((result, complete_execute_timings)) =
+                    bank.wait_for_completed_scheduler()
+                {
+                    let metrics = ExecuteBatchesInternalMetrics::new_with_timings_from_all_threads(
+                        complete_execute_timings,
+                    );
+                    replay_stats
+                        .write()
+                        .unwrap()
+                        .batch_execute
+                        .accumulate(metrics);
+
+                    if let Err(err) = result {
+                        Self::mark_dead_slot(
+                            blockstore,
+                            bank,
+                            bank_forks.read().unwrap().root(),
+                            &BlockstoreProcessorError::InvalidTransaction(err),
+                            rpc_subscriptions,
+                            duplicate_slots_tracker,
+                            gossip_duplicate_confirmed_slots,
+                            epoch_slots_frozen_slots,
+                            progress,
+                            heaviest_subtree_fork_choice,
+                            duplicate_slots_to_repair,
+                            ancestor_hashes_replay_update_sender,
+                            purge_repair_slot_counter,
+                        );
+                        // don't try to run the remaining normal processing for the completed bank
+                        continue;
+                    }
+                }
+
                 let r_replay_stats = replay_stats.read().unwrap();
                 let replay_progress = bank_progress.replay_progress.clone();
                 let r_replay_progress = replay_progress.read().unwrap();
@@ -2662,7 +2708,9 @@ impl ReplayStage {
                 );
                 // report cost tracker stats
                 cost_update_sender
-                    .send(CostUpdate::FrozenBank { bank: bank.clone() })
+                    .send(CostUpdate::FrozenBank {
+                        bank: bank.clone_without_scheduler(),
+                    })
                     .unwrap_or_else(|err| {
                         warn!("cost_update_sender failed sending bank stats: {:?}", err)
                     });
@@ -2701,7 +2749,7 @@ impl ReplayStage {
                 );
                 if let Some(sender) = bank_notification_sender {
                     sender
-                        .send(BankNotification::Frozen(bank.clone()))
+                        .send(BankNotification::Frozen(bank.clone_without_scheduler()))
                         .unwrap_or_else(|err| warn!("bank_notification_sender failed: {:?}", err));
                 }
                 blockstore_processor::cache_block_meta(bank, cache_block_meta_sender);
@@ -4406,8 +4454,7 @@ pub(crate) mod tests {
             assert!(bank0.is_frozen());
             assert_eq!(bank0.tick_height(), bank0.max_tick_height());
             let bank1 = Bank::new_from_parent(&bank0, &Pubkey::default(), 1);
-            bank_forks.write().unwrap().insert(bank1);
-            let bank1 = bank_forks.read().unwrap().get(1).unwrap();
+            let bank1 = bank_forks.write().unwrap().insert(bank1);
             let bank1_progress = progress
                 .entry(bank1.slot())
                 .or_insert_with(|| ForkProgress::new(bank1.last_blockhash(), None, None, 0, 0));
@@ -4494,7 +4541,7 @@ pub(crate) mod tests {
         genesis_config.ticks_per_slot = 4;
         let bank0 = Bank::new_for_tests(&genesis_config);
         for _ in 0..genesis_config.ticks_per_slot {
-            bank0.register_tick(&Hash::default());
+            bank0.register_default_tick_for_test();
         }
         bank0.freeze();
         let arc_bank0 = Arc::new(bank0);
@@ -4538,7 +4585,7 @@ pub(crate) mod tests {
                 &solana_sdk::pubkey::new_rand(),
             );
             for _ in 0..genesis_config.ticks_per_slot {
-                bank.register_tick(&Hash::default());
+                bank.register_default_tick_for_test();
             }
             bank_forks.write().unwrap().insert(bank);
             let arc_bank = bank_forks.read().unwrap().get(i).unwrap();
