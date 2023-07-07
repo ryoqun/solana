@@ -4118,34 +4118,49 @@ fn test_cpi_account_ownership_writability() {
             }
         );
 
-        // Similar to the test above where we try to make CPI write into account
-        // data. This variant is for when direct mapping is enabled.
-        let account = AccountSharedData::new(42, 0, &invoke_program_id);
-        bank.store_account(&account_keypair.pubkey(), &account);
-        let instruction_data = vec![TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE, 42, 42, 42];
-        let instruction = Instruction::new_with_bytes(
-            invoke_program_id,
-            &instruction_data,
-            account_metas.clone(),
-        );
-        let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-        if direct_mapping {
-            assert_eq!(
-                result.unwrap_err().unwrap(),
-                TransactionError::InstructionError(
-                    0,
-                    InstructionError::ExternalAccountDataModified
-                )
+        // We're going to try and make CPI write ref_to_len_in_vm into a 2nd
+        // account, so we add an extra one here.
+        let account2_keypair = Keypair::new();
+        let mut account_metas = account_metas.clone();
+        account_metas.push(AccountMeta::new(account2_keypair.pubkey(), false));
+
+        for target_account in [1, account_metas.len() as u8 - 1] {
+            // Similar to the test above where we try to make CPI write into account
+            // data. This variant is for when direct mapping is enabled.
+            let account = AccountSharedData::new(42, 0, &invoke_program_id);
+            bank.store_account(&account_keypair.pubkey(), &account);
+            let account = AccountSharedData::new(42, 0, &invoke_program_id);
+            bank.store_account(&account2_keypair.pubkey(), &account);
+            let instruction_data = vec![
+                TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE,
+                target_account,
+                42,
+                42,
+            ];
+            let instruction = Instruction::new_with_bytes(
+                invoke_program_id,
+                &instruction_data,
+                account_metas.clone(),
             );
-        } else {
-            // we expect this to succeed as after updating `ref_to_len_in_vm`,
-            // CPI will sync the actual account data between the callee and the
-            // caller, _always_ writing over the location pointed by
-            // `ref_to_len_in_vm`. To verify this, we check that the account
-            // data is in fact all zeroes like it is in the callee.
-            result.unwrap();
-            let account = bank.get_account(&account_keypair.pubkey()).unwrap();
-            assert_eq!(account.data(), vec![0; 40]);
+            let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
+            if direct_mapping {
+                assert_eq!(
+                    result.unwrap_err().unwrap(),
+                    TransactionError::InstructionError(
+                        0,
+                        InstructionError::ExternalAccountDataModified
+                    )
+                );
+            } else {
+                // we expect this to succeed as after updating `ref_to_len_in_vm`,
+                // CPI will sync the actual account data between the callee and the
+                // caller, _always_ writing over the location pointed by
+                // `ref_to_len_in_vm`. To verify this, we check that the account
+                // data is in fact all zeroes like it is in the callee.
+                result.unwrap();
+                let account = bank.get_account(&account_keypair.pubkey()).unwrap();
+                assert_eq!(account.data(), vec![0; 40]);
+            }
         }
     }
 }

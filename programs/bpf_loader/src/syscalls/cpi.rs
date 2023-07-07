@@ -346,6 +346,19 @@ impl<'a, 'b> CallerAccount<'a, 'b> {
             rent_epoch: account_info.rent_epoch,
         })
     }
+
+    fn realloc_region(
+        &self,
+        memory_mapping: &'b MemoryMapping<'_>,
+        is_loader_deprecated: bool,
+    ) -> Result<Option<&'a MemoryRegion>, Error> {
+        account_realloc_region(
+            memory_mapping,
+            self.vm_data_addr,
+            self.original_data_len,
+            is_loader_deprecated,
+        )
+    }
 }
 
 type TranslatedAccounts<'a, 'b> = Vec<(IndexOfAccount, Option<CallerAccount<'a, 'b>>)>;
@@ -1093,6 +1106,25 @@ fn cpi_common<S: SyscallInvokeSigned>(
         .feature_set
         .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
+    // When direct mapping is on, we must update all perms at once before doing
+    // account data updates. Otherwise, updating an account might write into
+    // another account whose perms we haven't updated yet. See
+    // TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE.
+    if direct_mapping {
+        for (index_in_caller, caller_account) in accounts.iter_mut() {
+            if let Some(caller_account) = caller_account {
+                let callee_account = instruction_context
+                    .try_borrow_instruction_account(transaction_context, *index_in_caller)?;
+                update_caller_account_perms(
+                    memory_mapping,
+                    caller_account,
+                    &callee_account,
+                    is_loader_deprecated,
+                )?;
+            }
+        }
+    }
+
     for (index_in_caller, caller_account) in accounts.iter_mut() {
         if let Some(caller_account) = caller_account {
             let mut callee_account = instruction_context
@@ -1224,6 +1256,72 @@ fn update_callee_account(
     Ok(())
 }
 
+fn update_caller_account_perms<'a>(
+    memory_mapping: &'a MemoryMapping,
+    caller_account: &CallerAccount,
+    callee_account: &BorrowedAccount<'_>,
+    is_loader_deprecated: bool,
+) -> Result<(Option<&'a MemoryRegion>, Option<&'a MemoryRegion>), Error> {
+    update_account_regions_perms(
+        memory_mapping,
+        caller_account.vm_data_addr,
+        caller_account.original_data_len,
+        callee_account,
+        is_loader_deprecated,
+    )
+}
+
+fn update_account_regions_perms<'a>(
+    memory_mapping: &'a MemoryMapping,
+    vm_data_addr: u64,
+    original_data_len: usize,
+    callee_account: &BorrowedAccount<'_>,
+    is_loader_deprecated: bool,
+) -> Result<(Option<&'a MemoryRegion>, Option<&'a MemoryRegion>), Error> {
+    let data_region = account_data_region(memory_mapping, vm_data_addr, original_data_len)?;
+    if let Some(region) = data_region {
+        match (
+            region.state.get(),
+            callee_account.can_data_be_changed().is_ok(),
+        ) {
+            (MemoryState::Readable, true) => {
+                // If the account is still shared it means it wasn't written to yet during this
+                // transaction. We map it as CoW and it'll be copied the first time something
+                // tries to write into it.
+                if callee_account.is_shared() {
+                    let index_in_transaction = callee_account.get_index_in_transaction();
+                    region
+                        .state
+                        .set(MemoryState::Cow(index_in_transaction as u64));
+                } else {
+                    region.state.set(MemoryState::Writable);
+                }
+            }
+
+            (MemoryState::Writable | MemoryState::Cow(_), false) => {
+                region.state.set(MemoryState::Readable);
+            }
+            _ => {}
+        }
+    }
+    let realloc_region = account_realloc_region(
+        memory_mapping,
+        vm_data_addr,
+        original_data_len,
+        is_loader_deprecated,
+    )?;
+    if let Some(region) = realloc_region {
+        region
+            .state
+            .set(if callee_account.can_data_be_changed().is_ok() {
+                MemoryState::Writable
+            } else {
+                MemoryState::Readable
+            });
+    }
+    Ok((data_region, realloc_region))
+}
+
 // Update the given account after executing CPI.
 //
 // caller_account and callee_account describe to the same account. At CPI exit
@@ -1244,7 +1342,11 @@ fn update_caller_account(
     *caller_account.owner = *callee_account.get_owner();
 
     if direct_mapping {
-        if caller_account.original_data_len > 0 {
+        if let Some(region) = account_data_region(
+            memory_mapping,
+            caller_account.vm_data_addr,
+            caller_account.original_data_len,
+        )? {
             // Since each instruction account is directly mapped in a memory region
             // with a *fixed* length, upon returning from CPI we must ensure that the
             // current capacity is at least the original length (what is mapped in
@@ -1255,12 +1357,6 @@ fn update_caller_account(
                 callee_account.reserve(min_capacity.saturating_sub(callee_account.capacity()))?
             }
 
-            // We can trust vm_data_addr to point to the correct region because we
-            // enforce that in CallerAccount::from_(sol_)account_info.
-            let region = memory_mapping.region(AccessType::Load, caller_account.vm_data_addr)?;
-            // vm_data_addr must always point to the beginning of the region
-            debug_assert_eq!(region.vm_addr, caller_account.vm_data_addr);
-
             // If an account's data pointer has changed - because of CoW or because
             // of using AccountSharedData directly (deprecated) - we must update the
             // corresponding MemoryRegion in the caller's address space. Address
@@ -1270,39 +1366,6 @@ fn update_caller_account(
             if region.host_addr.get() != callee_ptr {
                 region.host_addr.set(callee_ptr);
             }
-
-            match (
-                region.state.get(),
-                callee_account.can_data_be_changed().is_ok(),
-            ) {
-                (MemoryState::Readable, true) => {
-                    // If the account is still shared it means it wasn't written to yet during this
-                    // transaction. We map it as CoW and it'll be copied the first time something
-                    // tries to write into it.
-                    if callee_account.is_shared() {
-                        let index_in_transaction = callee_account.get_index_in_transaction();
-                        region
-                            .state
-                            .set(MemoryState::Cow(index_in_transaction as u64));
-                    } else {
-                        region.state.set(MemoryState::Writable);
-                    }
-                }
-
-                (MemoryState::Writable | MemoryState::Cow(_), false) => {
-                    region.state.set(MemoryState::Readable);
-                }
-                _ => {}
-            }
-        }
-        if !is_loader_deprecated {
-            realloc_region(caller_account, memory_mapping)?.state.set(
-                if callee_account.can_data_be_changed().is_ok() {
-                    MemoryState::Writable
-                } else {
-                    MemoryState::Readable
-                },
-            );
         }
     }
 
@@ -1368,9 +1431,14 @@ fn update_caller_account(
                 // or it must zero the account data, therefore making the
                 // zeroing we do here redundant.
                 if prev_len > caller_account.original_data_len {
+                    // If we get here and prev_len > original_data_len, then
+                    // we've already returned InvalidRealloc for the
+                    // bpf_loader_deprecated case.
                     debug_assert!(!is_loader_deprecated);
                     let _guard = {
-                        let realloc_region = realloc_region(caller_account, memory_mapping)?;
+                        let realloc_region = caller_account
+                            .realloc_region(memory_mapping, is_loader_deprecated)?
+                            .unwrap(); // unwrapping here is fine, we already asserted !is_loader_deprecated
                         let state = realloc_region.state.replace(MemoryState::Writable);
 
                         ReallocStateDropGuard {
@@ -1462,7 +1530,9 @@ fn update_caller_account(
             // Therefore we temporarily configure the realloc region as writable
             // then set it back to whatever state it had.
             let _guard = {
-                let realloc_region = realloc_region(caller_account, memory_mapping)?;
+                let realloc_region = caller_account
+                    .realloc_region(memory_mapping, is_loader_deprecated)?
+                    .unwrap(); // unwrapping here is fine, we asserted !is_loader_deprecated
                 let state = realloc_region.state.replace(MemoryState::Writable);
 
                 ReallocStateDropGuard {
@@ -1494,19 +1564,40 @@ fn update_caller_account(
     Ok(())
 }
 
-fn realloc_region<'a>(
-    caller_account: &CallerAccount<'_, '_>,
+fn account_data_region<'a>(
     memory_mapping: &'a MemoryMapping<'_>,
-) -> Result<&'a MemoryRegion, Error> {
-    let realloc_vm_addr = caller_account
-        .vm_data_addr
-        .saturating_add(caller_account.original_data_len as u64);
+    vm_data_addr: u64,
+    original_data_len: usize,
+) -> Result<Option<&'a MemoryRegion>, Error> {
+    if original_data_len > 0 {
+        // We can trust vm_data_addr to point to the correct region because we
+        // enforce that in CallerAccount::from_(sol_)account_info.
+        let region = memory_mapping.region(AccessType::Load, vm_data_addr)?;
+        // vm_data_addr must always point to the beginning of the region
+        debug_assert_eq!(region.vm_addr, vm_data_addr);
+        return Ok(Some(region));
+    }
+
+    Ok(None)
+}
+
+fn account_realloc_region<'a>(
+    memory_mapping: &'a MemoryMapping<'_>,
+    vm_data_addr: u64,
+    original_data_len: usize,
+    is_loader_deprecated: bool,
+) -> Result<Option<&'a MemoryRegion>, Error> {
+    if is_loader_deprecated {
+        return Ok(None);
+    }
+
+    let realloc_vm_addr = vm_data_addr.saturating_add(original_data_len as u64);
     let realloc_region = memory_mapping.region(AccessType::Load, realloc_vm_addr)?;
     debug_assert_eq!(realloc_region.vm_addr, realloc_vm_addr);
     debug_assert!((MAX_PERMITTED_DATA_INCREASE
         ..MAX_PERMITTED_DATA_INCREASE.saturating_add(BPF_ALIGN_OF_U128))
         .contains(&(realloc_region.len as usize)));
-    Ok(realloc_region)
+    Ok(Some(realloc_region))
 }
 
 struct ReallocStateDropGuard<'a> {
