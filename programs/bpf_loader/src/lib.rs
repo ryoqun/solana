@@ -1527,15 +1527,14 @@ fn execute<'a, 'b: 'a>(
             if !is_loader_deprecated {
                 vm_end = vm_end.saturating_add(MAX_PERMITTED_DATA_INCREASE as u64)
             }
-            (m.vm_data_addr..vm_end, m.is_writable)
+            (m.vm_data_addr..vm_end, m.is_writable, m.is_executable)
         })
         .collect::<Vec<_>>();
-    let addr_is_account_data = |addr: u64| {
+    let account_metadata = |addr: u64| {
         account_region_addrs
             .iter()
-            .find(|(r, _)| r.contains(&addr))
-            .map(|(_, is_writable)| (true, *is_writable))
-            .unwrap_or((false, false))
+            .find(|(r, _, _)| r.contains(&addr))
+            .map(|(_, is_writable, is_executable)| (*is_writable, *is_executable))
     };
 
     let mut create_vm_time = Measure::start("create_vm");
@@ -1597,15 +1596,16 @@ fn execute<'a, 'b: 'a>(
                         _size,
                         _section_name,
                     )) => {
-                        let (is_account_data, is_writable) = addr_is_account_data(*address);
-                        if is_account_data {
+                        if let Some((is_writable, is_executable)) = account_metadata(*address) {
                             // We can get here if direct_mapping is enabled and
                             // a program tries to write to a readonly region.
                             // Map the error to ReadonlyDataModified if the
                             // account !is_writable, and to
                             // ExternalAccountDataModified if the executing
                             // program doesn't own the account.
-                            Box::new(if is_writable {
+                            Box::new(if is_executable {
+                                InstructionError::ExecutableDataModified
+                            } else if is_writable {
                                 InstructionError::ExternalAccountDataModified
                             } else {
                                 InstructionError::ReadonlyDataModified
