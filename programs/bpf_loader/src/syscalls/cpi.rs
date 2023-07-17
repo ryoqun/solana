@@ -242,7 +242,7 @@ impl<'a, 'b> CallerAccount<'a, 'b> {
     // Create a CallerAccount given a SolAccountInfo.
     fn from_sol_account_info(
         invoke_context: &InvokeContext,
-        memory_mapping: &MemoryMapping,
+        memory_mapping: &'b MemoryMapping<'a>,
         vm_addr: u64,
         account_info: &SolAccountInfo,
         account_metadata: &SerializedAccountMetadata,
@@ -314,13 +314,22 @@ impl<'a, 'b> CallerAccount<'a, 'b> {
         let data_len_vm_addr = vm_addr
             .saturating_add(&account_info.data_len as *const u64 as u64)
             .saturating_sub(account_info as *const _ as *const u64 as u64);
-        let data_len_addr = translate(
-            memory_mapping,
-            AccessType::Store,
-            data_len_vm_addr,
-            size_of::<u64>() as u64,
-        )?;
-        let ref_to_len_in_vm = VmValue::Translated(unsafe { &mut *(data_len_addr as *mut u64) });
+
+        let ref_to_len_in_vm = if direct_mapping {
+            VmValue::VmAddress {
+                vm_addr: data_len_vm_addr,
+                memory_mapping,
+                check_aligned: invoke_context.get_check_aligned(),
+            }
+        } else {
+            let data_len_addr = translate(
+                memory_mapping,
+                AccessType::Store,
+                data_len_vm_addr,
+                size_of::<u64>() as u64,
+            )?;
+            VmValue::Translated(unsafe { &mut *(data_len_addr as *mut u64) })
+        };
 
         let ref_of_len_in_input_buffer =
             (account_info.data_addr as *mut u8 as u64).saturating_sub(8);
