@@ -1,6 +1,6 @@
 use {
     super::*,
-    crate::declare_syscall,
+    crate::{declare_syscall, serialization::account_data_region_memory_state},
     solana_program_runtime::invoke_context::SerializedAccountMetadata,
     solana_rbpf::memory_region::{MemoryRegion, MemoryState},
     solana_sdk::{
@@ -1292,29 +1292,9 @@ fn update_account_regions_perms<'a>(
 ) -> Result<(Option<&'a MemoryRegion>, Option<&'a MemoryRegion>), Error> {
     let data_region = account_data_region(memory_mapping, vm_data_addr, original_data_len)?;
     if let Some(region) = data_region {
-        match (
-            region.state.get(),
-            callee_account.can_data_be_changed().is_ok(),
-        ) {
-            (MemoryState::Readable, true) => {
-                // If the account is still shared it means it wasn't written to yet during this
-                // transaction. We map it as CoW and it'll be copied the first time something
-                // tries to write into it.
-                if callee_account.is_shared() {
-                    let index_in_transaction = callee_account.get_index_in_transaction();
-                    region
-                        .state
-                        .set(MemoryState::Cow(index_in_transaction as u64));
-                } else {
-                    region.state.set(MemoryState::Writable);
-                }
-            }
-
-            (MemoryState::Writable | MemoryState::Cow(_), false) => {
-                region.state.set(MemoryState::Readable);
-            }
-            _ => {}
-        }
+        region
+            .state
+            .set(account_data_region_memory_state(callee_account));
     }
     let realloc_region = account_realloc_region(
         memory_mapping,
