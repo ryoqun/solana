@@ -2992,8 +2992,6 @@ mod tests {
                     vm_lamports_addr: lamports_addr as u64,
                     vm_owner_addr: owner_addr as u64,
                     vm_data_addr: data_addr as u64,
-                    is_writable: self.is_writable,
-                    is_executable: false,
                 },
             )
         }

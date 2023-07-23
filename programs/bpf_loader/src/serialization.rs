@@ -359,8 +359,6 @@ fn serialize_parameters_unaligned(
                     vm_lamports_addr,
                     vm_owner_addr,
                     vm_data_addr,
-                    is_writable: account.is_writable(),
-                    is_executable: account.is_executable(),
                 });
             }
         };
@@ -495,8 +493,6 @@ fn serialize_parameters_aligned(
                     vm_owner_addr,
                     vm_lamports_addr,
                     vm_data_addr,
-                    is_writable: borrowed_account.is_writable(),
-                    is_executable: borrowed_account.is_executable(),
                 });
             }
             SerializeAccount::Duplicate(position) => {
