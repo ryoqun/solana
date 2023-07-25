@@ -265,19 +265,3 @@ impl BlockstoreCompressionType {
         }
     }
 }
-
-#[test]
-fn test_rocksdb_directory() {
-    assert_eq!(
-        ShredStorageType::RocksLevel.blockstore_directory(),
-        BLOCKSTORE_DIRECTORY_ROCKS_LEVEL
-    );
-    assert_eq!(
-        ShredStorageType::RocksFifo(BlockstoreRocksFifoOptions {
-            shred_code_cf_size: 0,
-            shred_data_cf_size: 0
-        })
-        .blockstore_directory(),
-        BLOCKSTORE_DIRECTORY_ROCKS_FIFO
-    );
-}

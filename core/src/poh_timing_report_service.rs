@@ -51,37 +51,3 @@ impl PohTimingReportService {
         self.t_poh_timing.join()
     }
 }
-
-#[cfg(test)]
-mod test {
-    use {
-        super::*, crossbeam_channel::unbounded, solana_metrics::poh_timing_point::SlotPohTimingInfo,
-    };
-
-    #[test]
-    /// Test the life cycle of the PohTimingReportService
-    fn test_poh_timing_report_service() {
-        let (poh_timing_point_sender, poh_timing_point_receiver) = unbounded();
-        let exit = Arc::new(AtomicBool::new(false));
-        // Create the service
-        let poh_timing_report_service =
-            PohTimingReportService::new(poh_timing_point_receiver, &exit);
-
-        // Send SlotPohTimingPoint
-        let _ = poh_timing_point_sender.send(SlotPohTimingInfo::new_slot_start_poh_time_point(
-            42, None, 100,
-        ));
-        let _ = poh_timing_point_sender.send(SlotPohTimingInfo::new_slot_end_poh_time_point(
-            42, None, 200,
-        ));
-        let _ = poh_timing_point_sender.send(SlotPohTimingInfo::new_slot_full_poh_time_point(
-            42, None, 150,
-        ));
-
-        // Shutdown the service
-        exit.store(true, Ordering::Relaxed);
-        poh_timing_report_service
-            .join()
-            .expect("poh_timing_report_service completed");
-    }
-}

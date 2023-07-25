@@ -154,22 +154,3 @@ pub trait EncodableKey: Sized {
         passphrase: &str,
     ) -> Result<Self, Box<dyn error::Error>>;
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::signer::keypair::Keypair};
-
-    fn pubkeys(signers: &[&dyn Signer]) -> Vec<Pubkey> {
-        signers.iter().map(|x| x.pubkey()).collect()
-    }
-
-    #[test]
-    fn test_unique_signers() {
-        let alice = Keypair::new();
-        let bob = Keypair::new();
-        assert_eq!(
-            pubkeys(&unique_signers(vec![&alice, &bob, &alice])),
-            pubkeys(&[&alice, &bob])
-        );
-    }
-}

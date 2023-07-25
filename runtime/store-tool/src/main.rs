@@ -68,5 +68,3 @@ fn is_account_zeroed(account: &StoredAccountMeta) -> bool {
         && account.clone_account() == AccountSharedData::default()
 }
 
-#[cfg(test)]
-pub mod test {}

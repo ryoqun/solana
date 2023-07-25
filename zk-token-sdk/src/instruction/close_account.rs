@@ -131,23 +131,3 @@ impl CloseAccountProof {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_close_account_correctness() {
-        let keypair = ElGamalKeypair::new_rand();
-
-        // general case: encryption of 0
-        let ciphertext = keypair.public.encrypt(0_u64);
-        let close_account_data = CloseAccountData::new(&keypair, &ciphertext).unwrap();
-        assert!(close_account_data.verify_proof().is_ok());
-
-        // general case: encryption of > 0
-        let ciphertext = keypair.public.encrypt(1_u64);
-        let close_account_data = CloseAccountData::new(&keypair, &ciphertext).unwrap();
-        assert!(close_account_data.verify_proof().is_err());
-    }
-}

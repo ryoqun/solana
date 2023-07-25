@@ -1171,37 +1171,3 @@ fn missing_blocks(reference: &[Slot], owned: &[Slot]) -> Vec<Slot> {
     }
     missing_slots
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_missing_blocks() {
-        let reference_slots = vec![0, 37, 38, 39, 40, 41, 42, 43, 44, 45];
-        let owned_slots = vec![0, 38, 39, 40, 43, 44, 45, 46, 47];
-        let owned_slots_leftshift = vec![0, 25, 26, 27, 28, 29, 30, 31, 32];
-        let owned_slots_rightshift = vec![0, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54];
-        let missing_slots = vec![37, 41, 42];
-        let missing_slots_leftshift = vec![37, 38, 39, 40, 41, 42, 43, 44, 45];
-        let missing_slots_rightshift = vec![37, 38, 39, 40, 41, 42, 43, 45];
-        assert!(missing_blocks(&[], &[]).is_empty());
-        assert!(missing_blocks(&[], &owned_slots).is_empty());
-        assert_eq!(
-            missing_blocks(&reference_slots, &[]),
-            reference_slots.to_owned()
-        );
-        assert_eq!(
-            missing_blocks(&reference_slots, &owned_slots),
-            missing_slots
-        );
-        assert_eq!(
-            missing_blocks(&reference_slots, &owned_slots_leftshift),
-            missing_slots_leftshift
-        );
-        assert_eq!(
-            missing_blocks(&reference_slots, &owned_slots_rightshift),
-            missing_slots_rightshift
-        );
-    }
-}

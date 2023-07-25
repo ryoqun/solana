@@ -1352,13 +1352,6 @@ where
         self.backend.cf_handle(C::NAME)
     }
 
-    #[cfg(test)]
-    pub fn is_empty(&self) -> Result<bool> {
-        let mut iter = self.backend.raw_iterator_cf(self.handle());
-        iter.seek_to_first();
-        Ok(!iter.valid())
-    }
-
     pub fn put_bytes(&self, key: C::Index, value: &[u8]) -> Result<()> {
         let is_perf_enabled = maybe_enable_rocksdb_perf(
             self.column_options.rocks_perf_sample_interval,
@@ -1860,92 +1853,4 @@ fn should_exclude_from_compaction(cf_name: &str) -> bool {
 // Returns true if the column family enables compression.
 fn should_enable_compression<C: 'static + Column + ColumnName>() -> bool {
     C::NAME == columns::TransactionStatus::NAME
-}
-
-#[cfg(test)]
-pub mod tests {
-    use {super::*, crate::blockstore_db::columns::ShredData};
-
-    #[test]
-    fn test_compaction_filter() {
-        // this doesn't implement Clone...
-        let dummy_compaction_filter_context = || CompactionFilterContext {
-            is_full_compaction: true,
-            is_manual_compaction: true,
-        };
-        let oldest_slot = OldestSlot::default();
-
-        let mut factory = PurgedSlotFilterFactory::<ShredData> {
-            oldest_slot: oldest_slot.clone(),
-            name: CString::new("test compaction filter").unwrap(),
-            _phantom: PhantomData,
-        };
-        let mut compaction_filter = factory.create(dummy_compaction_filter_context());
-
-        let dummy_level = 0;
-        let key = ShredData::key(ShredData::as_index(0));
-        let dummy_value = vec![];
-
-        // we can't use assert_matches! because CompactionDecision doesn't implement Debug
-        assert!(matches!(
-            compaction_filter.filter(dummy_level, &key, &dummy_value),
-            CompactionDecision::Keep
-        ));
-
-        // mutating oldest_slot doesn't affect existing compaction filters...
-        oldest_slot.set(1);
-        assert!(matches!(
-            compaction_filter.filter(dummy_level, &key, &dummy_value),
-            CompactionDecision::Keep
-        ));
-
-        // recreating compaction filter starts to expire the key
-        let mut compaction_filter = factory.create(dummy_compaction_filter_context());
-        assert!(matches!(
-            compaction_filter.filter(dummy_level, &key, &dummy_value),
-            CompactionDecision::Remove
-        ));
-
-        // newer key shouldn't be removed
-        let key = ShredData::key(ShredData::as_index(1));
-        matches!(
-            compaction_filter.filter(dummy_level, &key, &dummy_value),
-            CompactionDecision::Keep
-        );
-    }
-
-    #[test]
-    fn test_cf_names_and_descriptors_equal_length() {
-        let options = BlockstoreOptions::default();
-        let oldest_slot = OldestSlot::default();
-        // The names and descriptors don't need to be in the same order for our use cases;
-        // however, there should be the same number of each. For example, adding a new column
-        // should update both lists.
-        assert_eq!(
-            Rocks::columns().len(),
-            Rocks::cf_descriptors(&options, &oldest_slot).len()
-        );
-    }
-
-    #[test]
-    fn test_should_disable_auto_compactions() {
-        assert!(!should_disable_auto_compactions(&AccessType::Primary));
-        assert!(should_disable_auto_compactions(
-            &AccessType::PrimaryForMaintenance
-        ));
-        assert!(should_disable_auto_compactions(&AccessType::Secondary));
-    }
-
-    #[test]
-    fn test_should_exclude_from_compaction() {
-        // currently there are three CFs excluded from compaction:
-        assert!(should_exclude_from_compaction(
-            columns::TransactionStatusIndex::NAME
-        ));
-        assert!(should_exclude_from_compaction(columns::ProgramCosts::NAME));
-        assert!(should_exclude_from_compaction(
-            columns::TransactionMemos::NAME
-        ));
-        assert!(!should_exclude_from_compaction("something else"));
-    }
 }

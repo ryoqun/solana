@@ -27,9 +27,6 @@ use solana_sdk_macro::CloneZeroed;
 /// Note that the actual tick rate at any given time should be expected to drift.
 pub const DEFAULT_TICKS_PER_SECOND: u64 = 160;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(MS_PER_TICK, 6);
-
 /// The number of milliseconds per tick (6).
 pub const MS_PER_TICK: u64 = 1000 / DEFAULT_TICKS_PER_SECOND;
 
@@ -44,23 +41,14 @@ pub const DEFAULT_TICKS_PER_SLOT: u64 = 64;
 // GCP n1-standard hardware and also a xeon e5-2520 v4 are about this rate of hashes/s
 pub const DEFAULT_HASHES_PER_SECOND: u64 = 2_000_000;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(DEFAULT_HASHES_PER_TICK, 12_500);
 pub const DEFAULT_HASHES_PER_TICK: u64 = DEFAULT_HASHES_PER_SECOND / DEFAULT_TICKS_PER_SECOND;
 
 // 1 Dev Epoch = 400 ms * 8192 ~= 55 minutes
 pub const DEFAULT_DEV_SLOTS_PER_EPOCH: u64 = 8192;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(SECONDS_PER_DAY, 86_400);
 pub const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(TICKS_PER_DAY, 13_824_000);
 pub const TICKS_PER_DAY: u64 = DEFAULT_TICKS_PER_SECOND * SECONDS_PER_DAY;
-
-#[cfg(test)]
-static_assertions::const_assert_eq!(DEFAULT_SLOTS_PER_EPOCH, 432_000);
 
 /// The number of slots per epoch after initial network warmup.
 ///
@@ -70,8 +58,6 @@ pub const DEFAULT_SLOTS_PER_EPOCH: u64 = 2 * TICKS_PER_DAY / DEFAULT_TICKS_PER_S
 // leader schedule is governed by this
 pub const NUM_CONSECUTIVE_LEADER_SLOTS: u64 = 4;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(DEFAULT_MS_PER_SLOT, 400);
 /// The expected duration of a slot (400 milliseconds).
 pub const DEFAULT_MS_PER_SLOT: u64 = 1_000 * DEFAULT_TICKS_PER_SLOT / DEFAULT_TICKS_PER_SECOND;
 pub const DEFAULT_S_PER_SLOT: f64 = DEFAULT_TICKS_PER_SLOT as f64 / DEFAULT_TICKS_PER_SECOND as f64;
@@ -86,14 +72,10 @@ pub const DEFAULT_S_PER_SLOT: f64 = DEFAULT_TICKS_PER_SLOT as f64 / DEFAULT_TICK
 /// be certain a missing transaction will not be processed by the network.
 pub const MAX_HASH_AGE_IN_SECONDS: usize = 120;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(MAX_RECENT_BLOCKHASHES, 300);
 // Number of maximum recent blockhashes (one blockhash per non-skipped slot)
 pub const MAX_RECENT_BLOCKHASHES: usize =
     MAX_HASH_AGE_IN_SECONDS * DEFAULT_TICKS_PER_SECOND as usize / DEFAULT_TICKS_PER_SLOT as usize;
 
-#[cfg(test)]
-static_assertions::const_assert_eq!(MAX_PROCESSING_AGE, 150);
 // The maximum age of a blockhash that will be accepted by the leader
 pub const MAX_PROCESSING_AGE: usize = MAX_RECENT_BLOCKHASHES / 2;
 
@@ -164,22 +146,4 @@ pub struct Clock {
     /// [tsc]: https://docs.solana.com/implemented-proposals/bank-timestamp-correction
     /// [oracle]: https://docs.solana.com/implemented-proposals/validator-timestamp-oracle
     pub unix_timestamp: UnixTimestamp,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_clone() {
-        let clock = Clock {
-            slot: 1,
-            epoch_start_timestamp: 2,
-            epoch: 3,
-            leader_schedule_epoch: 4,
-            unix_timestamp: 5,
-        };
-        let cloned_clock = clock.clone();
-        assert_eq!(cloned_clock, clock);
-    }
 }

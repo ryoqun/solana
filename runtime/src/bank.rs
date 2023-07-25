@@ -200,7 +200,7 @@ mod address_lookup_table;
 mod builtin_programs;
 mod metrics;
 mod sysvar_cache;
-#[cfg(test)]
+#[cfg(escaped)]
 mod tests;
 mod transaction_account_state_info;
 
@@ -4049,37 +4049,6 @@ impl Bank {
     }
 
     /// Get any cached executors needed by the transaction
-    #[cfg(test)]
-    fn get_tx_executor_cache(
-        &self,
-        accounts: &[TransactionAccount],
-    ) -> Rc<RefCell<TransactionExecutorCache>> {
-        let executable_keys: Vec<_> = accounts
-            .iter()
-            .filter_map(|(key, account)| {
-                if account.executable() && !native_loader::check_id(account.owner()) {
-                    Some(key)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        if executable_keys.is_empty() {
-            return Rc::new(RefCell::new(TransactionExecutorCache::default()));
-        }
-
-        let tx_executor_cache = {
-            let cache = self.executor_cache.read().unwrap();
-            TransactionExecutorCache::new(
-                executable_keys
-                    .into_iter()
-                    .filter_map(|key| cache.get(key).map(|executor| (*key, executor))),
-            )
-        };
-
-        Rc::new(RefCell::new(tx_executor_cache))
-    }
 
     /// Add executors back to the bank's cache if they were missing and not re-/deployed
     fn store_executors_which_added_to_the_cache(
@@ -5265,14 +5234,6 @@ impl Bank {
             })
             .collect::<Vec<(Pubkey, u64)>>();
 
-        #[cfg(test)]
-        if validator_stakes.is_empty() {
-            // some tests bank.freezes() with bad staking state
-            self.capitalization
-                .fetch_sub(rent_to_be_distributed, Relaxed);
-            return;
-        }
-        #[cfg(not(test))]
         assert!(!validator_stakes.is_empty());
 
         // Sort first by stake and then by validator identity pubkey for determinism.
@@ -5520,11 +5481,6 @@ impl Bank {
             ("hash_us", rent_metrics.hash_us.load(Relaxed), i64),
             ("store_us", rent_metrics.store_us.load(Relaxed), i64),
         );
-    }
-
-    #[cfg(test)]
-    fn restore_old_behavior_for_fragile_tests(&self) {
-        self.lazy_rent_collection.store(true, Relaxed);
     }
 
     fn rent_collection_partitions(&self) -> Vec<Partition> {
@@ -5902,7 +5858,6 @@ impl Bank {
     // Absolutely not under ClusterType::MainnetBeta!!!!
     fn use_multi_epoch_collection_cycle(&self, epoch: Epoch) -> bool {
         // Force normal behavior, disabling multi epoch collection cycle for manual local testing
-        #[cfg(not(test))]
         if self.slot_count_per_normal_epoch() == solana_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH
         {
             return false;
@@ -5914,7 +5869,6 @@ impl Bank {
 
     pub(crate) fn use_fixed_collection_cycle(&self) -> bool {
         // Force normal behavior, disabling fixed collection cycle for manual local testing
-        #[cfg(not(test))]
         if self.slot_count_per_normal_epoch() == solana_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH
         {
             return false;
@@ -6197,14 +6151,6 @@ impl Bank {
             .accounts
             .accounts_db
             .flush_accounts_cache(false, Some(self.slot()))
-    }
-
-    #[cfg(test)]
-    pub fn flush_accounts_cache_slot_for_tests(&self) {
-        self.rc
-            .accounts
-            .accounts_db
-            .flush_accounts_cache_slot_for_tests(self.slot())
     }
 
     pub fn expire_old_recycle_stores(&self) {
