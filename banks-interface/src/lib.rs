@@ -101,4 +101,3 @@ pub trait Banks {
         message: Message,
     ) -> Option<u64>;
 }
-

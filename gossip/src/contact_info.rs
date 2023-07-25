@@ -236,7 +236,6 @@ impl ContactInfo {
     remove_socket!(remove_tvu, SOCKET_TAG_TVU);
     remove_socket!(remove_tvu_forwards, SOCKET_TAG_TVU_FORWARDS);
 
-
     // Adds given IP address to self.addrs returning respective index.
     fn push_addr(&mut self, addr: IpAddr) -> Result<u8, Error> {
         match self.addrs.iter().position(|k| k == &addr) {
@@ -510,4 +509,3 @@ pub(crate) fn get_quic_socket(socket: &SocketAddr) -> Result<SocketAddr, Error> 
             .ok_or_else(|| Error::InvalidPort(socket.port()))?,
     ))
 }
-

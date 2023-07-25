@@ -202,4 +202,3 @@ fn should_consume_slot(
         .entry(slot)
         .or_insert_with(|| blockstore.has_duplicate_shreds_in_slot(slot))
 }
-

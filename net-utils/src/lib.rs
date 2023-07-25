@@ -577,4 +577,3 @@ pub fn find_available_port_in_range(ip_addr: IpAddr, range: PortRange) -> io::Re
         tries_left -= 1;
     }
 }
-

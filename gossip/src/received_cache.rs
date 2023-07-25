@@ -54,7 +54,6 @@ impl ReceivedCache {
         .into_iter()
         .flatten()
     }
-
 }
 
 impl ReceivedCacheEntry {
@@ -115,4 +114,3 @@ impl ReceivedCacheEntry {
             .map(|(node, _stake)| node)
     }
 }
-

@@ -195,8 +195,7 @@ pub(crate) struct PruneData {
     wallclock: u64,
 }
 
-impl PruneData {
-}
+impl PruneData {}
 
 impl Sanitize for PruneData {
     fn sanitize(&self) -> Result<(), SanitizeError> {
@@ -3183,4 +3182,3 @@ fn filter_on_shred_version(
         }
     }
 }
-

@@ -781,4 +781,3 @@ fn main() {
 
     run_dos(&nodes, 0, client, cmd_params);
 }
-

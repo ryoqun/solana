@@ -129,4 +129,3 @@ macro_rules! version {
         &*format!("{:?}", $crate::Version::default())
     };
 }
-

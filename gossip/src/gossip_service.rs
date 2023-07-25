@@ -328,4 +328,3 @@ pub fn make_gossip_node(
     );
     (gossip_service, ip_echo, cluster_info)
 }
-

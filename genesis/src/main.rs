@@ -700,4 +700,3 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     println!("{genesis_config}");
     Ok(())
 }
-

@@ -203,4 +203,3 @@ fn slice_data(data: &[u8], data_slice_config: Option<UiDataSliceConfig>) -> &[u8
         data
     }
 }
-

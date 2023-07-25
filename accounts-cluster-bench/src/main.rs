@@ -700,4 +700,3 @@ fn main() {
         matches.is_present("reclaim_accounts"),
     );
 }
-

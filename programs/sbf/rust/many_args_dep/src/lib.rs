@@ -49,4 +49,3 @@ pub fn many_args_sret(
         group3: u128::from(arg7) + u128::from(arg8) + u128::from(arg9),
     }
 }
-

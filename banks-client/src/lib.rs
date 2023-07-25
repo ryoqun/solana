@@ -524,4 +524,3 @@ pub async fn start_tcp_client<T: ToSocketAddrs>(addr: T) -> Result<BanksClient, 
         inner: TarpcClient::new(client::Config::default(), transport).spawn(),
     })
 }
-

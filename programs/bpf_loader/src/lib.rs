@@ -1635,4 +1635,3 @@ fn execute<'a, 'b: 'a>(
 
     execute_or_deserialize_result
 }
-

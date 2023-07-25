@@ -253,4 +253,3 @@ impl Sanitize for DuplicateShred {
         self.from.sanitize()
     }
 }
-

@@ -420,4 +420,3 @@ pub(crate) fn maybe_ping_gossip_addresses<R: Rng + CryptoRng>(
         })
         .collect()
 }
-

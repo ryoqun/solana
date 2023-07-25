@@ -172,4 +172,3 @@ fn get_stake_bucket(stake: Option<&u64>) -> usize {
     let bucket = u64::BITS - stake.leading_zeros();
     (bucket as usize).min(NUM_PUSH_ACTIVE_SET_ENTRIES - 1)
 }
-

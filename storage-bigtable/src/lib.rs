@@ -122,7 +122,6 @@ struct StoredConfirmedBlock {
     block_height: Option<u64>,
 }
 
-
 impl From<StoredConfirmedBlock> for ConfirmedBlock {
     fn from(confirmed_block: StoredConfirmedBlock) -> Self {
         let StoredConfirmedBlock {
@@ -152,7 +151,6 @@ struct StoredConfirmedBlockTransaction {
     transaction: VersionedTransaction,
     meta: Option<StoredConfirmedBlockTransactionStatusMeta>,
 }
-
 
 impl From<StoredConfirmedBlockTransaction> for TransactionWithStatusMeta {
     fn from(tx_with_meta: StoredConfirmedBlockTransaction) -> Self {
@@ -1033,4 +1031,3 @@ impl LedgerStorage {
         Ok(())
     }
 }
-

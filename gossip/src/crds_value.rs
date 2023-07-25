@@ -697,4 +697,3 @@ pub(crate) fn sanitize_wallclock(wallclock: u64) -> Result<(), SanitizeError> {
         Ok(())
     }
 }
-

@@ -67,4 +67,3 @@ impl_crds_entry!(
     CrdsData::SnapshotHashes(snapshot_hashes),
     snapshot_hashes
 );
-

@@ -630,4 +630,3 @@ fn main() {
         batch_sleep_ms,
     );
 }
-

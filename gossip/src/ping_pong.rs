@@ -247,4 +247,3 @@ impl PingCache {
         self.pongs.put((node, socket), now);
     }
 }
-

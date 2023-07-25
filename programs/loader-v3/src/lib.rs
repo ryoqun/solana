@@ -617,4 +617,3 @@ pub fn process_instruction_inner(
     }
     .map(|_| 0)
 }
-

@@ -1320,4 +1320,3 @@ impl From<TransactionReturnData> for UiTransactionReturnData {
 pub enum UiReturnDataEncoding {
     Base64,
 }
-

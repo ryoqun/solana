@@ -179,7 +179,6 @@ impl LegacyContactInfo {
         self.wallclock = wallclock;
     }
 
-
     get_socket!(gossip);
     get_socket!(tvu);
     get_socket!(tvu_forwards);
@@ -258,4 +257,3 @@ impl TryFrom<&ContactInfo> for LegacyContactInfo {
         })
     }
 }
-

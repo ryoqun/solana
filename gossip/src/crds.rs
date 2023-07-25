@@ -408,7 +408,6 @@ impl Crds {
         self.table.is_empty()
     }
 
-
     pub(crate) fn par_values(&self) -> ParValues<'_, CrdsValueLabel, VersionedCrdsValue> {
         self.table.par_values()
     }
@@ -710,4 +709,3 @@ impl CrdsStats {
         }
     }
 }
-

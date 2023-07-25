@@ -63,7 +63,7 @@ impl ComputeBudgetInstruction {
 
     /// Serialize Instruction using borsh, this is only used in runtime::cost_model::tests but compilation
     /// can't be restricted as it's used across packages
-    // #[rustfmt::skip]
+    // #[cfg(rustfmt_escaped_skip)]
     pub fn pack(self) -> Result<Vec<u8>, std::io::Error> {
         self.try_to_vec()
     }

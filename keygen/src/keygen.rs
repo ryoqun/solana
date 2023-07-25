@@ -40,7 +40,6 @@ mod smallest_length_44_public_key {
     use solana_sdk::{pubkey, pubkey::Pubkey};
 
     pub(super) static PUBKEY: Pubkey = pubkey!("21111111111111111111111111111111111111111111");
-
 }
 
 const NO_PASSPHRASE: &str = "";
@@ -885,4 +884,3 @@ fn do_main(matches: &ArgMatches) -> Result<(), Box<dyn error::Error>> {
 
     Ok(())
 }
-

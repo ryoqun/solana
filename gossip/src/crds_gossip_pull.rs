@@ -83,7 +83,6 @@ impl solana_sdk::sanitize::Sanitize for CrdsFilter {
 }
 
 impl CrdsFilter {
-
     fn compute_mask(seed: u64, mask_bits: u32) -> u64 {
         assert!(seed <= 2u64.pow(mask_bits));
         let seed: u64 = seed.checked_shl(64 - mask_bits).unwrap_or(0x0);
@@ -554,4 +553,3 @@ impl<'a> Index<&Pubkey> for CrdsTimeouts<'a> {
         }
     }
 }
-
