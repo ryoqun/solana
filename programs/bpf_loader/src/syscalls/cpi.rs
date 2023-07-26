@@ -1,6 +1,8 @@
 use {
     super::*,
     crate::{declare_syscall, serialization::account_data_region_memory_state},
+    log::debug,
+    scopeguard::defer,
     solana_program_runtime::invoke_context::SerializedAccountMetadata,
     solana_rbpf::memory_region::{MemoryRegion, MemoryState},
     solana_sdk::{
@@ -20,11 +22,9 @@ fn check_account_info_pointer(
     field: &str,
 ) -> Result<(), Error> {
     if vm_addr != expected_vm_addr {
-        log::debug!(
+        debug!(
             "Invalid account info pointer `{}': {:#x} != {:#x}",
-            field,
-            vm_addr,
-            expected_vm_addr
+            field, vm_addr, expected_vm_addr
         );
         return Err(SyscallError::InvalidPointer.into());
     }
@@ -1268,29 +1268,19 @@ fn update_callee_account(
     Ok(())
 }
 
-fn update_caller_account_perms<'a>(
-    memory_mapping: &'a MemoryMapping,
+fn update_caller_account_perms(
+    memory_mapping: &MemoryMapping,
     caller_account: &CallerAccount,
     callee_account: &BorrowedAccount<'_>,
     is_loader_deprecated: bool,
-) -> Result<(Option<&'a MemoryRegion>, Option<&'a MemoryRegion>), Error> {
-    update_account_regions_perms(
-        memory_mapping,
-        caller_account.vm_data_addr,
-        caller_account.original_data_len,
-        callee_account,
-        is_loader_deprecated,
-    )
-}
+) -> Result<(), Error> {
+    let CallerAccount {
+        original_data_len,
+        vm_data_addr,
+        ..
+    } = caller_account;
 
-fn update_account_regions_perms<'a>(
-    memory_mapping: &'a MemoryMapping,
-    vm_data_addr: u64,
-    original_data_len: usize,
-    callee_account: &BorrowedAccount<'_>,
-    is_loader_deprecated: bool,
-) -> Result<(Option<&'a MemoryRegion>, Option<&'a MemoryRegion>), Error> {
-    let data_region = account_data_region(memory_mapping, vm_data_addr, original_data_len)?;
+    let data_region = account_data_region(memory_mapping, *vm_data_addr, *original_data_len)?;
     if let Some(region) = data_region {
         region
             .state
@@ -1298,8 +1288,8 @@ fn update_account_regions_perms<'a>(
     }
     let realloc_region = account_realloc_region(
         memory_mapping,
-        vm_data_addr,
-        original_data_len,
+        *vm_data_addr,
+        *original_data_len,
         is_loader_deprecated,
     )?;
     if let Some(region) = realloc_region {
@@ -1311,7 +1301,8 @@ fn update_account_regions_perms<'a>(
                 MemoryState::Readable
             });
     }
-    Ok((data_region, realloc_region))
+
+    Ok(())
 }
 
 // Update the given account after executing CPI.
@@ -1444,20 +1435,19 @@ fn update_caller_account(
                     // we've already returned InvalidRealloc for the
                     // bpf_loader_deprecated case.
                     debug_assert!(!is_loader_deprecated);
-                    let _guard = {
-                        let realloc_region = caller_account
-                            .realloc_region(memory_mapping, is_loader_deprecated)?
-                            .unwrap(); // unwrapping here is fine, we already asserted !is_loader_deprecated
-                        let state = realloc_region.state.replace(MemoryState::Writable);
 
-                        ReallocStateDropGuard {
-                            realloc_region,
-                            state,
-                        }
-                    };
-                    // We need to zero the unused space in the realloc region,
-                    // starting after the last byte of the new data which might
-                    // be > original_data_len.
+                    // Temporarily configure the realloc region as writable then set it back to
+                    // whatever state it had.
+                    let realloc_region = caller_account
+                        .realloc_region(memory_mapping, is_loader_deprecated)?
+                        .unwrap(); // unwrapping here is fine, we already asserted !is_loader_deprecated
+                    let original_state = realloc_region.state.replace(MemoryState::Writable);
+                    defer!(
+                        realloc_region.state.set(original_state);
+                    );
+
+                    // We need to zero the unused space in the realloc region, starting after the
+                    // last byte of the new data which might be > original_data_len.
                     let dirty_realloc_start = caller_account.original_data_len.max(post_len);
                     // and we want to zero up to the old length
                     let dirty_realloc_len = prev_len.saturating_sub(dirty_realloc_start);
@@ -1538,17 +1528,13 @@ fn update_caller_account(
             //
             // Therefore we temporarily configure the realloc region as writable
             // then set it back to whatever state it had.
-            let _guard = {
-                let realloc_region = caller_account
-                    .realloc_region(memory_mapping, is_loader_deprecated)?
-                    .unwrap(); // unwrapping here is fine, we asserted !is_loader_deprecated
-                let state = realloc_region.state.replace(MemoryState::Writable);
-
-                ReallocStateDropGuard {
-                    realloc_region,
-                    state,
-                }
-            };
+            let realloc_region = caller_account
+                .realloc_region(memory_mapping, is_loader_deprecated)?
+                .unwrap(); // unwrapping here is fine, we asserted !is_loader_deprecated
+            let original_state = realloc_region.state.replace(MemoryState::Writable);
+            defer!(
+                realloc_region.state.set(original_state);
+            );
 
             translate_slice_mut::<u8>(
                 memory_mapping,
@@ -1578,16 +1564,16 @@ fn account_data_region<'a>(
     vm_data_addr: u64,
     original_data_len: usize,
 ) -> Result<Option<&'a MemoryRegion>, Error> {
-    if original_data_len > 0 {
-        // We can trust vm_data_addr to point to the correct region because we
-        // enforce that in CallerAccount::from_(sol_)account_info.
-        let region = memory_mapping.region(AccessType::Load, vm_data_addr)?;
-        // vm_data_addr must always point to the beginning of the region
-        debug_assert_eq!(region.vm_addr, vm_data_addr);
-        return Ok(Some(region));
+    if original_data_len == 0 {
+        return Ok(None);
     }
 
-    Ok(None)
+    // We can trust vm_data_addr to point to the correct region because we
+    // enforce that in CallerAccount::from_(sol_)account_info.
+    let data_region = memory_mapping.region(AccessType::Load, vm_data_addr)?;
+    // vm_data_addr must always point to the beginning of the region
+    debug_assert_eq!(data_region.vm_addr, vm_data_addr);
+    Ok(Some(data_region))
 }
 
 fn account_realloc_region<'a>(
@@ -1606,18 +1592,8 @@ fn account_realloc_region<'a>(
     debug_assert!((MAX_PERMITTED_DATA_INCREASE
         ..MAX_PERMITTED_DATA_INCREASE.saturating_add(BPF_ALIGN_OF_U128))
         .contains(&(realloc_region.len as usize)));
+    debug_assert!(!matches!(realloc_region.state.get(), MemoryState::Cow(_)));
     Ok(Some(realloc_region))
-}
-
-struct ReallocStateDropGuard<'a> {
-    realloc_region: &'a MemoryRegion,
-    state: MemoryState,
-}
-
-impl<'a> Drop for ReallocStateDropGuard<'a> {
-    fn drop(&mut self) {
-        self.realloc_region.state.set(self.state);
-    }
 }
 
 #[allow(clippy::indexing_slicing)]
