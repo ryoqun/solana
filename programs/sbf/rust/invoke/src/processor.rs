@@ -871,7 +871,7 @@ fn process_instruction(
                 // serialized len like we do in the other test.
                 value: unsafe { RefCell::new(slice::from_raw_parts_mut(
                     account.data.borrow_mut().as_mut_ptr(),
-                    0,
+                    target_len,
                 )) },
             };
             let rc_box2 = RcBox {
