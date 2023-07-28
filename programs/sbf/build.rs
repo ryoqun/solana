@@ -64,9 +64,9 @@ fn main() {
 
         let rust_programs = [
             "invoke",
-            "invoked",
+            //"invoked",
             "realloc",
-            "realloc_invoke",
+            //"realloc_invoke",
         ];
         for program in rust_programs.iter() {
             println!("cargo:warning=(not a warning) Building Rust-based on-chain programs: solana_sbf_rust_{program}");
