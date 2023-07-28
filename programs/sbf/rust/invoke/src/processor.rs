@@ -948,7 +948,7 @@ fn process_instruction(
             .unwrap();
             msg!("cpi success!");
 
-            unsafe { *serialized_len_ptr = rc_box_size as u64 };
+            unsafe { *serialized_len_ptr = 38 as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
             // hack to avoid dropping the RcBox, which is supposed to be on the
             // heap but we put it into account data. If we don't do this,
