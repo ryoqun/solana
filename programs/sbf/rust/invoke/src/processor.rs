@@ -936,7 +936,8 @@ fn process_instruction(
                     *realloc_program_id,
                     &[
                         (accounts[ARGUMENT_INDEX].key, true, false),
-                        (target_account.key, true, false),
+                        (accounts[ARGUMENT_INDEX].key, true, false),
+                        //(target_account.key, true, false),
                         (realloc_program_id, false, false),
                         (invoke_program_id, false, false),
                     ],
