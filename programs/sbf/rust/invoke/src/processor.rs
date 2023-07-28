@@ -888,6 +888,7 @@ fn process_instruction(
                 );
             }
             */
+            msg!("ptr: {:p}", rc_box);
             unsafe {
                 std::ptr::write(
                     &account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
