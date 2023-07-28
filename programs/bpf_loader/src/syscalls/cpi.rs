@@ -1148,7 +1148,7 @@ fn cpi_common<S: SyscallInvokeSigned>(
         }
     }
 
-    warn!("update_caller_account loop start!")
+    warn!("update_caller_account loop start!");
     for (index_in_caller, caller_account) in accounts.iter_mut() {
         if let Some(caller_account) = caller_account {
             let mut callee_account = instruction_context
