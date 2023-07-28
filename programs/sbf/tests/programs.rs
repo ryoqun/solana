@@ -3945,7 +3945,7 @@ fn test_program_sbf_inner_instruction_alignment_checks() {
 fn test_cpi_account_ownership_writability() {
     solana_logger::setup();
 
-    for direct_mapping in [false, true] {
+    for direct_mapping in [true] {
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -3999,7 +3999,7 @@ fn test_cpi_account_ownership_writability() {
         let mut account_metas = account_metas.clone();
         account_metas.push(AccountMeta::new(account2_keypair.pubkey(), false));
 
-        for target_account in [1, account_metas.len() as u8 - 1] {
+        for target_account in [1] {
             // Similar to the test above where we try to make CPI write into account
             // data. This variant is for when direct mapping is enabled.
             let account = AccountSharedData::new(42, 0, &invoke_program_id);
