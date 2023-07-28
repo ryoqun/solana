@@ -233,6 +233,7 @@ pub fn create_vm<'a, 'b>(
                 // MAX_PERMITTED_DATA_INCREASE bytes here.
                 account.reserve(MAX_PERMITTED_DATA_INCREASE);
             }
+            warn!("cow {index_in_instruction}");
             Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
         })),
     )?;
