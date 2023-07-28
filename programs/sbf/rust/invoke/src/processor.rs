@@ -946,6 +946,7 @@ fn process_instruction(
                 accounts,
             )
             .unwrap();
+            msg!("cpi success!");
 
             unsafe { *serialized_len_ptr = rc_box_size as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
