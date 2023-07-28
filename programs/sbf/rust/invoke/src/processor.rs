@@ -880,14 +880,12 @@ fn process_instruction(
             // Place a RcBox<RefCell<&mut [u8]>> in the account data. This
             // allows us to test having CallerAccount::ref_to_len_in_vm in an
             // account region.
-            /*
             unsafe {
                 std::ptr::write(
                     &account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
-                    Rc::from_raw(((&rc_box as usize) + mem::size_of::<usize>() * 2) as *mut _),
+                    Rc::from_raw(((&rc_box as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
-            */
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
