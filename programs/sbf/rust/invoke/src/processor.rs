@@ -856,29 +856,21 @@ fn process_instruction(
             target_account.realloc(0, false).unwrap();
             target_account.assign(realloc_program_id);
 
-            let rc_box_addr =
-                target_account.data.borrow_mut().as_mut_ptr() as *mut RcBox<RefCell<&mut [u8]>>;
-            let rc_box_size = mem::size_of::<RcBox<RefCell<&mut [u8]>>>();
-            unsafe {
-                std::ptr::write(
-                    rc_box_addr,
-                    RcBox {
-                        strong: 1,
-                        weak: 0,
-                        // The difference with
-                        // TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE_MOVING_DATA_POINTER
-                        // is that we don't move the data pointer past the
-                        // RcBox. This is needed to avoid the "Invalid account
-                        // info pointer" check when direct mapping is enabled.
-                        // This also means we don't need to update the
-                        // serialized len like we do in the other test.
-                        value: RefCell::new(slice::from_raw_parts_mut(
-                            account.data.borrow_mut().as_mut_ptr(),
-                            0,
-                        )),
-                    },
-                );
-            }
+            let rc_box = RcBox {
+                strong: 1,
+                weak: 0,
+                // The difference with
+                // TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE_MOVING_DATA_POINTER
+                // is that we don't move the data pointer past the
+                // RcBox. This is needed to avoid the "Invalid account
+                // info pointer" check when direct mapping is enabled.
+                // This also means we don't need to update the
+                // serialized len like we do in the other test.
+                value: RefCell::new(slice::from_raw_parts_mut(
+                    account.data.borrow_mut().as_mut_ptr(),
+                    0,
+                )),
+            };
 
             let serialized_len_ptr =
                 unsafe { account.data.borrow_mut().as_mut_ptr().offset(-8) as *mut u64 };
@@ -890,13 +882,13 @@ fn process_instruction(
             unsafe {
                 std::ptr::write(
                     &account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
-                    Rc::from_raw(((rc_box_addr as usize) + mem::size_of::<usize>() * 2) as *mut _),
+                    Rc::from_raw(((&rc_box as usize) + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
-                    Rc::from_raw(((rc_box_addr as usize) + mem::size_of::<usize>() * 2) as *mut _),
+                    Rc::from_raw(((&rc_box as usize) + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
 
