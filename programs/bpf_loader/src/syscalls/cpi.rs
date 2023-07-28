@@ -1494,7 +1494,7 @@ fn update_caller_account(
             )?;
         }
         // this is the len field in the AccountInfo::data slice
-        log::warn!("update: {:?}!", caller_account.ref_to_len_in_vm);
+        log::warn!("update: {:?}!", caller_account.ref_to_len_in_vm.debug());
         *caller_account.ref_to_len_in_vm.get_mut()? = post_len as u64;
 
         // this is the len field in the serialized parameters
