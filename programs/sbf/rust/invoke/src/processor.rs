@@ -929,6 +929,12 @@ fn process_instruction(
                     Rc::new(RefCell::new(&mut [])),
                 );
             }
+            unsafe {
+                std::ptr::write(
+                    &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
+                    Rc::new(RefCell::new(&mut [])),
+                );
+            }
         }
         TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER => {
             msg!("TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER");
