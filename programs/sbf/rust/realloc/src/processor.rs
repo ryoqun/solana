@@ -34,6 +34,7 @@ fn process_instruction(
             msg!("realloc to {}", new_len - 2);
             account.realloc(new_len - 2, false)?;
             msg!("realloc2 to {}", new_len);
+            account2.data.borrow_mut().unwrap()[2] = 3;
             account2.realloc(new_len, false)?;
             //assert_eq!(new_len, account.data_len());
         }
