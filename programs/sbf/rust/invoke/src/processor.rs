@@ -853,8 +853,8 @@ fn process_instruction(
             let invoke_program_id = accounts[INVOKE_PROGRAM_INDEX].key;
             account.realloc(0, false).unwrap();
             account.assign(realloc_program_id);
-            target_account.realloc(50, false).unwrap();
-            msg!("target realloc to {}", 50);
+            //target_account.realloc(50, false).unwrap();
+            //msg!("target realloc to {}", 50);
             target_account.assign(realloc_program_id);
 
             let rc_box = RcBox {
