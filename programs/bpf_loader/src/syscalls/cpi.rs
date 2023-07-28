@@ -1194,6 +1194,8 @@ fn update_callee_account(
     if direct_mapping {
         let prev_len = callee_account.get_data().len();
         let post_len = *caller_account.ref_to_len_in_vm.get()? as usize;
+        log::warn!("update_callee_account() begin! {prev_len} {post_len}");
+        defer!(log::warn!("update_callee_account() end!"));
         match callee_account
             .can_data_be_resized(post_len)
             .and_then(|_| callee_account.can_data_be_changed())
