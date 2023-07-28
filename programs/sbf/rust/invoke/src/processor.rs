@@ -854,7 +854,7 @@ fn process_instruction(
             account.realloc(0, false).unwrap();
             account.assign(realloc_program_id);
             //target_account.realloc(50, false).unwrap();
-            //msg!("target realloc to {}", 50);
+            msg!("target realloc to {}", target_account.data.len());
             target_account.assign(realloc_program_id);
 
             let rc_box = RcBox {
