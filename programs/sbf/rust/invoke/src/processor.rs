@@ -888,7 +888,7 @@ fn process_instruction(
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
-                    Rc::from_raw(((&rc_box as usize) + mem::size_of::<usize>() * 2) as *mut _),
+                    Rc::from_raw(((&rc_box.as_ptr() as usize) + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
 
