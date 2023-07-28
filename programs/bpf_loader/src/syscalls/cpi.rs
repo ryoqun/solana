@@ -1334,8 +1334,6 @@ fn update_caller_account(
     callee_account: &mut BorrowedAccount<'_>,
     direct_mapping: bool,
 ) -> Result<(), Error> {
-    log::warn!("update_caller_account() begin!");
-    defer!(log::warn!("update_caller_account() end!"));
     *caller_account.lamports = callee_account.get_lamports();
     *caller_account.owner = *callee_account.get_owner();
 
@@ -1373,7 +1371,8 @@ fn update_caller_account(
     let prev_len = *caller_account.ref_to_len_in_vm.get()? as usize;
     let post_len = callee_account.get_data().len();
     let realloc_bytes_used = post_len.saturating_sub(caller_account.original_data_len);
-    log::warn!("update_caller_account() {prev_len} {post_len} {realloc_bytes_used}!");
+    log::warn!("update_caller_account() begin! {prev_len} {post_len} {realloc_bytes_used}!");
+    defer!(log::warn!("update_caller_account() end!"));
     if prev_len != post_len {
         let max_increase = if direct_mapping && !invoke_context.get_check_aligned() {
             0
