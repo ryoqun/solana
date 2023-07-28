@@ -47,7 +47,7 @@ impl<'a, 'b, T> VmValue<'a, 'b, T> {
                 vm_addr,
                 memory_mapping,
                 check_aligned,
-            } => format!("VmValue::VmAddress: {vm_addr}"),
+            } => format!("VmValue::VmAddress: {vm_addr:x}"),
             VmValue::Translated(addr) => format!("VmValue::Translated: {addr:p}"),
         }
     }
