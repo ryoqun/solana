@@ -1335,7 +1335,7 @@ fn update_caller_account(
     direct_mapping: bool,
 ) -> Result<(), Error> {
     log::warn!("update_caller_account() begin!");
-    defer!(warn!("update_caller_account() end!"));
+    defer!(log::warn!("update_caller_account() end!"));
     *caller_account.lamports = callee_account.get_lamports();
     *caller_account.owner = *callee_account.get_owner();
 
