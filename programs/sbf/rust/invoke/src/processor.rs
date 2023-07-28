@@ -916,7 +916,7 @@ fn process_instruction(
             .unwrap();
 
             unsafe { *serialized_len_ptr = rc_box_size as u64 };
-            unsafe { *serialized_len_ptr2 = rc_box_size as u64 + 1};
+            unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
             // hack to avoid dropping the RcBox, which is supposed to be on the
             // heap but we put it into account data. If we don't do this,
             // dropping the Rc will cause
