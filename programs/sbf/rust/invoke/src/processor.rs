@@ -866,10 +866,10 @@ fn process_instruction(
                 // info pointer" check when direct mapping is enabled.
                 // This also means we don't need to update the
                 // serialized len like we do in the other test.
-                value: RefCell::new(slice::from_raw_parts_mut(
+                value: unsafe { RefCell::new(slice::from_raw_parts_mut(
                     account.data.borrow_mut().as_mut_ptr(),
                     0,
-                )),
+                )) },
             };
             let rc_box_size = mem::size_of::<RcBox<RefCell<&mut [u8]>>>();
 
