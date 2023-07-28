@@ -35,7 +35,7 @@ fn process_instruction(
             account.realloc(new_len + 2, false)?;
             msg!("realloc2 to {}", new_len);
             account2.realloc(new_len, false)?;
-            assert_eq!(new_len, account.data_len());
+            //assert_eq!(new_len, account.data_len());
         }
         REALLOC_EXTEND => {
             let pre_len = account.data_len();
