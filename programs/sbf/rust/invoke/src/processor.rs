@@ -871,6 +871,7 @@ fn process_instruction(
                     0,
                 )),
             };
+            let rc_box_size = mem::size_of::<RcBox<RefCell<&mut [u8]>>>();
 
             let serialized_len_ptr =
                 unsafe { account.data.borrow_mut().as_mut_ptr().offset(-8) as *mut u64 };
