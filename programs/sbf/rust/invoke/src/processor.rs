@@ -882,6 +882,8 @@ fn process_instruction(
 
             let serialized_len_ptr =
                 unsafe { account.data.borrow_mut().as_mut_ptr().offset(-8) as *mut u64 };
+            let serialized_len_ptr2 =
+                unsafe { target_account.data.borrow_mut().as_mut_ptr().offset(-8) as *mut u64 };
             // Place a RcBox<RefCell<&mut [u8]>> in the account data. This
             // allows us to test having CallerAccount::ref_to_len_in_vm in an
             // account region.
