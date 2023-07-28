@@ -1149,6 +1149,7 @@ fn cpi_common<S: SyscallInvokeSigned>(
     }
 
     log::warn!("update_caller_account loop start!");
+    defer!(log::warn!("update_caller_account loop end!"));
     for (index_in_caller, caller_account) in accounts.iter_mut() {
         if let Some(caller_account) = caller_account {
             let mut callee_account = instruction_context
@@ -1163,7 +1164,6 @@ fn cpi_common<S: SyscallInvokeSigned>(
             )?;
         }
     }
-    log::warn!("update_caller_account loop end!");
 
     Ok(SUCCESS)
 }
