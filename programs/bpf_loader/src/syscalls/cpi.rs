@@ -22,7 +22,7 @@ fn check_account_info_pointer(
     field: &str,
 ) -> Result<(), Error> {
     if vm_addr != expected_vm_addr {
-        debug!(
+        log::warn!(
             "Invalid account info pointer `{}': {:#x} != {:#x}",
             field, vm_addr, expected_vm_addr
         );
