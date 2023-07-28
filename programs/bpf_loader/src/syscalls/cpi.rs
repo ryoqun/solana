@@ -1373,6 +1373,7 @@ fn update_caller_account(
     let prev_len = *caller_account.ref_to_len_in_vm.get()? as usize;
     let post_len = callee_account.get_data().len();
     let realloc_bytes_used = post_len.saturating_sub(caller_account.original_data_len);
+    log::warn!("update_caller_account() {prev_len} {post_len} {realloc_bytes_used}!");
     if prev_len != post_len {
         let max_increase = if direct_mapping && !invoke_context.get_check_aligned() {
             0
