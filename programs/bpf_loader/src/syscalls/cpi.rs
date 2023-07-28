@@ -1148,6 +1148,7 @@ fn cpi_common<S: SyscallInvokeSigned>(
         }
     }
 
+    warn!("update_caller_account loop start!")
     for (index_in_caller, caller_account) in accounts.iter_mut() {
         if let Some(caller_account) = caller_account {
             let mut callee_account = instruction_context
@@ -1162,6 +1163,7 @@ fn cpi_common<S: SyscallInvokeSigned>(
             )?;
         }
     }
+    warn!("update_caller_account loop end!")
 
     Ok(SUCCESS)
 }
@@ -1332,6 +1334,8 @@ fn update_caller_account(
     callee_account: &mut BorrowedAccount<'_>,
     direct_mapping: bool,
 ) -> Result<(), Error> {
+    log::warn!("update_caller_account() begin!");
+    defer!(warn!("update_caller_account() end!"));
     *caller_account.lamports = callee_account.get_lamports();
     *caller_account.owner = *callee_account.get_owner();
 
