@@ -31,6 +31,7 @@ fn check_account_info_pointer(
     Ok(())
 }
 
+#[derive(Debug)]
 enum VmValue<'a, 'b, T> {
     VmAddress {
         vm_addr: u64,
