@@ -31,8 +31,8 @@ fn process_instruction(
         REALLOC => {
             let (bytes, _) = instruction_data[2..].split_at(std::mem::size_of::<usize>());
             let new_len = usize::from_le_bytes(bytes.try_into().unwrap());
-            msg!("realloc to {}", new_len);
-            account.realloc(new_len, false)?;
+            msg!("realloc to {}", new_len + 2);
+            account.realloc(new_len + 2, false)?;
             msg!("realloc2 to {}", new_len);
             account2.realloc(new_len, false)?;
             assert_eq!(new_len, account.data_len());
