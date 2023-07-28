@@ -871,6 +871,21 @@ fn process_instruction(
                     0,
                 )) },
             };
+            let rc_box2 = RcBox {
+                strong: 1,
+                weak: 0,
+                // The difference with
+                // TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE_MOVING_DATA_POINTER
+                // is that we don't move the data pointer past the
+                // RcBox. This is needed to avoid the "Invalid account
+                // info pointer" check when direct mapping is enabled.
+                // This also means we don't need to update the
+                // serialized len like we do in the other test.
+                value: unsafe { RefCell::new(slice::from_raw_parts_mut(
+                    target_account.data.borrow_mut().as_mut_ptr(),
+                    0,
+                )) },
+            };
             let rc_box_size = mem::size_of::<RcBox<RefCell<&mut [u8]>>>();
 
             let serialized_len_ptr =
@@ -892,7 +907,7 @@ fn process_instruction(
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
-                    Rc::from_raw(((&rc_box as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
+                    Rc::from_raw(((&rc_box2 as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
             /*
