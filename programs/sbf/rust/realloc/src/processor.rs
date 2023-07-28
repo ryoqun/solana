@@ -33,6 +33,7 @@ fn process_instruction(
             let new_len = usize::from_le_bytes(bytes.try_into().unwrap());
             msg!("realloc to {}", new_len);
             account.realloc(new_len, false)?;
+            msg!("realloc2 to {}", new_len);
             account2.realloc(new_len, false)?;
             assert_eq!(new_len, account.data_len());
         }
