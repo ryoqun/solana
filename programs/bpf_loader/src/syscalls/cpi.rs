@@ -31,7 +31,6 @@ fn check_account_info_pointer(
     Ok(())
 }
 
-#[derive(Debug)]
 enum VmValue<'a, 'b, T> {
     VmAddress {
         vm_addr: u64,
@@ -42,6 +41,17 @@ enum VmValue<'a, 'b, T> {
 }
 
 impl<'a, 'b, T> VmValue<'a, 'b, T> {
+    fn debug(&self) -> String {
+        match self {
+            VmValue::VmAddress {
+                vm_addr,
+                memory_mapping,
+                check_aligned,
+            } => format!("VmValue::VmAddress: {vm_ddr:p}"),
+            VmValue::Translated(addr) => format!("VmValue::Translated: {addr:p}"),
+        }
+    }
+
     fn get(&self) -> Result<&T, Error> {
         match self {
             VmValue::VmAddress {
