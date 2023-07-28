@@ -854,7 +854,8 @@ fn process_instruction(
             account.realloc(0, false).unwrap();
             account.assign(realloc_program_id);
             //target_account.realloc(50, false).unwrap();
-            msg!("target realloc to {}", target_account.data.borrow().len());
+            let target_len = target_account.data.borrow().len();
+            msg!("target realloc to {}", target_len);
             target_account.data.borrow_mut()[2] = 3;
             target_account.assign(realloc_program_id);
 
@@ -885,7 +886,7 @@ fn process_instruction(
                 // serialized len like we do in the other test.
                 value: unsafe { RefCell::new(slice::from_raw_parts_mut(
                     target_account.data.borrow_mut().as_mut_ptr(),
-                    0,
+                    target_len,
                 )) },
             };
             let rc_box_size = mem::size_of::<RcBox<RefCell<&mut [u8]>>>();
