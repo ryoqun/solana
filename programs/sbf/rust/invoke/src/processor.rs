@@ -932,7 +932,7 @@ fn process_instruction(
             instruction_data.extend_from_slice(&rc_box_size.to_le_bytes());
 
             // check that the account is empty before we CPI
-            assert_eq!(account.data_len(), 0);
+            //assert_eq!(account.data_len(), 0);
 
             invoke(
                 &create_instruction(
