@@ -234,9 +234,10 @@ pub fn create_vm<'a, 'b>(
                 // See BorrowedAccount::make_data_mut() as to why we reserve extra
                 // MAX_PERMITTED_DATA_INCREASE bytes here.
                 account.reserve(MAX_PERMITTED_DATA_INCREASE);
-                account
+                let ptr = account
                     .spare_data_capacity_mut()
-                    .fill(0x77);
+                    .as_mut_ptr();
+                unsafe { ptr::write_bytes(dst, 0, spare_len) };
             }
             log::warn!("cow {index_in_transaction} new capacity: {}", account.capacity());
             Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
