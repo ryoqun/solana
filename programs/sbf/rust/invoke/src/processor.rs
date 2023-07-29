@@ -957,6 +957,8 @@ fn process_instruction(
             msg!("CPI SUCCESS!");
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("len: {}", account.data.borrow().len());
+            msg!("len: {}", target_account.data.borrow().len());
 
             unsafe { *serialized_len_ptr = 40 as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
