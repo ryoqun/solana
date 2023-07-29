@@ -234,7 +234,7 @@ pub fn create_vm<'a, 'b>(
                 // See BorrowedAccount::make_data_mut() as to why we reserve extra
                 // MAX_PERMITTED_DATA_INCREASE bytes here.
                 account.reserve(MAX_PERMITTED_DATA_INCREASE);
-                let ptr = account
+                let dst = account
                     .spare_data_capacity_mut()
                     .as_mut_ptr();
                 unsafe { std::ptr::write_bytes(dst, 0, spare_len) };
