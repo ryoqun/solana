@@ -1352,9 +1352,9 @@ fn update_caller_account(
             // memory), so that the account's memory region never points to an
             // invalid address.
             let min_capacity = caller_account.original_data_len;
+            log::warn!("callee_capacity: {} < min_capacity: {} => {}", callee_account.capacity(), min_capacity, callee_account.capacity() < min_capacity);
             if callee_account.capacity() < min_capacity {
                 callee_account.reserve(min_capacity.saturating_sub(callee_account.capacity()))?;
-                log::warn!("callee_capacity: {} < min_capacity: {}", callee_account.capacity(), min_capacity);
                 zero_all_spare_capacity = true;
             }
 
@@ -1364,8 +1364,8 @@ fn update_caller_account(
             // spaces are fixed so we don't need to update the MemoryRegion's
             // length.
             let callee_ptr = callee_account.get_data().as_ptr() as u64;
+            log::warn!("region.host_addr: {}, callee_ptr: {} => {}", region.host_addr.get(), callee_ptr, region.host_addr.get() != callee_ptr);
             if region.host_addr.get() != callee_ptr {
-                log::warn!("region.host_addr: {}, callee_ptr: {}", region.host_addr.get(), callee_ptr);
                 region.host_addr.set(callee_ptr);
                 zero_all_spare_capacity = true;
             }
