@@ -1354,6 +1354,7 @@ fn update_caller_account(
             let min_capacity = caller_account.original_data_len;
             if callee_account.capacity() < min_capacity {
                 callee_account.reserve(min_capacity.saturating_sub(callee_account.capacity()))?;
+                log::warn!("callee_capacity: {} < min_capacity: {}", callee_account.capacity(), min_capacity);
                 zero_all_spare_capacity = true;
             }
 
