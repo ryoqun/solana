@@ -949,7 +949,7 @@ fn process_instruction(
             )
             .unwrap();
             msg!("CPI SUCCESS!");
-            msg!("spare2: {:x?}", unsafe { std::mem::transmute::<_, Option<&[u8]>>(account.data.borrow().as_ptr()?.get(..50))});
+            msg!("spare2: {:x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr()) });
 
             unsafe { *serialized_len_ptr = 42 as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
