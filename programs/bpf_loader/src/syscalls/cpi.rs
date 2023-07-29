@@ -1430,7 +1430,7 @@ fn update_caller_account(
                     // Safety: we check bounds above
                     unsafe { ptr::write_bytes(dst, 0, spare_len) };
                 }
-                log::warn!("spare2: {:?x}", unsafe { std::mem::transmute::<_, Option<&[u8]>>(callee_account.spare_data_capacity_mut()?.get(..50))});
+                log::warn!("spare2: {:x?}", unsafe { std::mem::transmute::<_, Option<&[u8]>>(callee_account.spare_data_capacity_mut()?.get(..50))});
 
                 // Here we zero the realloc region.
                 //
