@@ -237,7 +237,7 @@ pub fn create_vm<'a, 'b>(
                 let ptr = account
                     .spare_data_capacity_mut()
                     .as_mut_ptr();
-                unsafe { ptr::write_bytes(dst, 0, spare_len) };
+                unsafe { std::ptr::write_bytes(dst, 0, spare_len) };
             }
             log::warn!("cow {index_in_transaction} new capacity: {}", account.capacity());
             Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
