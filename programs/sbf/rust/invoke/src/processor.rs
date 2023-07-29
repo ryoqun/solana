@@ -948,7 +948,8 @@ fn process_instruction(
                 accounts,
             )
             .unwrap();
-            msg!("cpi success!");
+            msg!("CPI SUCCESS!");
+            msg!("spare2: {:x?}", unsafe { std::mem::transmute::<_, Option<&[u8]>>(account.data.borrow().spare_data_capacity_mut()?.get(..50))});
 
             unsafe { *serialized_len_ptr = 42 as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
