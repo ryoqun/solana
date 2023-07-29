@@ -235,7 +235,7 @@ pub fn create_vm<'a, 'b>(
                 // MAX_PERMITTED_DATA_INCREASE bytes here.
                 account.reserve(MAX_PERMITTED_DATA_INCREASE);
                 account
-                    .spare_data_capacity_mut()?
+                    .spare_data_capacity_mut()
                     .fill(0x77);
             }
             log::warn!("cow {index_in_transaction} new capacity: {}", account.capacity());
