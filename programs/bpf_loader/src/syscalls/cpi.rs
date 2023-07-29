@@ -1420,6 +1420,7 @@ fn update_caller_account(
                     prev_len
                 }
                 .saturating_sub(post_len);
+                log::warn!("spare: {}", callee_account.spare_data_capacity()?.get(..50));
                 if spare_len > 0 {
                     let dst = callee_account
                         .spare_data_capacity_mut()?
