@@ -851,11 +851,11 @@ fn process_instruction(
             let target_account = &accounts[target_account_index];
             let realloc_program_id = accounts[REALLOC_PROGRAM_INDEX].key;
             let invoke_program_id = accounts[INVOKE_PROGRAM_INDEX].key;
-            account.realloc(0, false).unwrap();
+            //account.realloc(0, false).unwrap();
             account.assign(realloc_program_id);
             //target_account.realloc(50, false).unwrap();
             let target_len = target_account.data.borrow().len();
-            msg!("target realloc to {}", target_len);
+            //msg!("target realloc to {}", target_len);
             //target_account.data.borrow_mut()[2] = 0;
             target_account.assign(realloc_program_id);
 
@@ -913,14 +913,12 @@ fn process_instruction(
                     Rc::from_raw(((&rc_box as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
-            /*
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
                     Rc::from_raw(((&rc_box as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
-            */
             /*
             unsafe {
                 std::ptr::write(
