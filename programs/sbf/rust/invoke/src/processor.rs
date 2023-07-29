@@ -954,7 +954,7 @@ fn process_instruction(
             msg!("data+spare: {:x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
 
-            unsafe { *serialized_len_ptr = 42 as u64 };
+            unsafe { *serialized_len_ptr = 40 as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
             // hack to avoid dropping the RcBox, which is supposed to be on the
             // heap but we put it into account data. If we don't do this,
