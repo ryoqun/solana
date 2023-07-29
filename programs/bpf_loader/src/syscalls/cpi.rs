@@ -1365,6 +1365,7 @@ fn update_caller_account(
             // length.
             let callee_ptr = callee_account.get_data().as_ptr() as u64;
             if region.host_addr.get() != callee_ptr {
+                log::warn!("region.host_addr: {}, callee_ptr: {}", region.host_addr.get(), callee_ptr);
                 region.host_addr.set(callee_ptr);
                 zero_all_spare_capacity = true;
             }
