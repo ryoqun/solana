@@ -1193,7 +1193,7 @@ fn update_callee_account(
 
     let prev_len = callee_account.get_data().len();
     let post_len = *caller_account.ref_to_len_in_vm.get()? as usize;
-    log::warn!("update_callee_account() begin! {prev_len} {post_len} {direct_mapping} {}", caller_account.ref_to_len_in_vm.debug());
+    log::warn!("update_callee_account() begin! prev_len: {prev_len} post_len: {post_len} {direct_mapping} {}", caller_account.ref_to_len_in_vm.debug());
     defer!(log::warn!("update_callee_account() end!"));
     if direct_mapping {
         match callee_account
