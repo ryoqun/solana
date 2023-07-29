@@ -907,7 +907,6 @@ fn process_instruction(
             }
             */
             msg!("ptr: {:p}", &rc_box);
-            /*
             unsafe {
                 std::ptr::write(
                     &account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
@@ -920,7 +919,6 @@ fn process_instruction(
                     Rc::from_raw(((&rc_box as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
-            */
             /*
             unsafe {
                 std::ptr::write(
