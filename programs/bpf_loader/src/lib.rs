@@ -229,7 +229,7 @@ pub fn create_vm<'a, 'b>(
                 .map_err(|_| ())?;
 
             use solana_sdk::account::ReadableAccount;
-            log::warn!("cow {index_in_transaction} is_shared: {} len: {}, capacity: {}", account.is_shared(), account.data().len(), account.data().capacity());
+            log::warn!("cow {index_in_transaction} is_shared: {} len: {}, capacity: {}", account.is_shared(), account.data().len(), account.capacity());
             if account.is_shared() {
                 // See BorrowedAccount::make_data_mut() as to why we reserve extra
                 // MAX_PERMITTED_DATA_INCREASE bytes here.
