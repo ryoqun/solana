@@ -936,8 +936,8 @@ fn process_instruction(
             // check that the account is empty before we CPI
             //assert_eq!(account.data_len(), 0);
 
-            msg!("data+spare: {:x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
             invoke(
                 &create_instruction(
                     *realloc_program_id,
@@ -953,8 +953,8 @@ fn process_instruction(
             )
             .unwrap();
             msg!("CPI SUCCESS!");
-            msg!("data+spare: {:x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
 
             unsafe { *serialized_len_ptr = 40 as u64 };
             unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
