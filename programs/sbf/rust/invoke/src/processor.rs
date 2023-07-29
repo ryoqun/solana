@@ -856,7 +856,7 @@ fn process_instruction(
             //target_account.realloc(50, false).unwrap();
             let target_len = target_account.data.borrow().len();
             msg!("target realloc to {}", target_len);
-            target_account.data.borrow_mut()[2] = 3;
+            target_account.data.borrow_mut()[2] = 0;
             target_account.assign(realloc_program_id);
 
             let rc_box = RcBox {
