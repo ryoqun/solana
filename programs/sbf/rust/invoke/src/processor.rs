@@ -934,6 +934,7 @@ fn process_instruction(
             // check that the account is empty before we CPI
             //assert_eq!(account.data_len(), 0);
 
+            msg!("spare3: {:x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             invoke(
                 &create_instruction(
                     *realloc_program_id,
