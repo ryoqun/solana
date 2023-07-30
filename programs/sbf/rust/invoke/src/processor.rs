@@ -859,6 +859,8 @@ fn process_instruction(
             //target_account.data.borrow_mut()[2] = 0;
             target_account.assign(realloc_program_id);
 
+            let rc_box_addr =
+                account.data.borrow_mut().as_mut_ptr() as *mut RcBox<RefCell<&mut [u8]>>;
             let rc_box = RcBox {
                 strong: 1,
                 weak: 0,
@@ -874,6 +876,13 @@ fn process_instruction(
                     target_len,
                 )) },
             };
+            unsafe {
+                std::ptr::write(
+                    rc_box_addr,
+                    rc_box,
+                )
+            };
+
             let rc_box2 = RcBox {
                 strong: 1,
                 weak: 0,
