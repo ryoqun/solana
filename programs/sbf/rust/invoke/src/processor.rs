@@ -915,7 +915,7 @@ fn process_instruction(
                 );
             }
             */
-            msg!("ptr: {:p}", &rc_box);
+            //msg!("ptr: {:p}", &rc_box);
             /*
             unsafe {
                 std::ptr::write(
