@@ -860,11 +860,11 @@ fn process_instruction(
             //target_account.assign(realloc_program_id);
             let orig_target_account_data = target_account.data.clone();
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
+            //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
             msg!("len: {}", account.data.borrow().len());
-            msg!("len: {}", target_account.data.borrow().len());
-            msg!("len: {}", orig_target_account_data.borrow().len());
+            //msg!("len: {}", target_account.data.borrow().len());
+            //msg!("len: {}", orig_target_account_data.borrow().len());
 
             let rc_box_addr =
                 account.data.borrow_mut().as_mut_ptr() as *mut RcBox<RefCell<&mut [u8]>>;
@@ -972,11 +972,11 @@ fn process_instruction(
             .unwrap();
             msg!("CPI SUCCESS!");
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
+            //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
             msg!("len: {}", account.data.borrow().len());
-            msg!("len: {}", target_account.data.borrow().len());
-            msg!("len: {}", orig_target_account_data.borrow().len());
+            //msg!("len: {}", target_account.data.borrow().len());
+            //msg!("len: {}", orig_target_account_data.borrow().len());
 
             //unsafe { *serialized_len_ptr = 40 as u64 };
             //unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
