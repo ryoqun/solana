@@ -26,7 +26,7 @@ fn check_account_info_pointer(
             "Invalid account info pointer `{}': {:#x} != {:#x}",
             field, vm_addr, expected_vm_addr
         );
-        //return Err(SyscallError::InvalidPointer.into());
+        return Err(SyscallError::InvalidPointer.into());
     }
     Ok(())
 }
