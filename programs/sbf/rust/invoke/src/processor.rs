@@ -915,7 +915,7 @@ fn process_instruction(
                 );
             }
             */
-            let orig_data = target_account.data.clone();
+            let orig_target_account_data = target_account.data.clone();
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
@@ -939,6 +939,7 @@ fn process_instruction(
 
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
             msg!("len: {}", account.data.borrow().len());
             msg!("len: {}", target_account.data.borrow().len());
             invoke(
