@@ -789,7 +789,7 @@ impl<'a> BorrowedAccount<'a> {
             }
             // and only if the data is zero-initialized or empty
             if !is_zeroed(self.get_data()) {
-                //return Err(InstructionError::ModifiedProgramId);
+                return Err(InstructionError::ModifiedProgramId);
             }
             // don't touch the account if the owner does not change
             if self.get_owner().to_bytes() == pubkey {
