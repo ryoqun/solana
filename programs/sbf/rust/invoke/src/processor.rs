@@ -883,12 +883,12 @@ fn process_instruction(
                     target_len,
                 )) },
             };
-            unsafe {
+            /*unsafe {
                 std::ptr::write(
                     rc_box_addr,
                     rc_box,
                 )
-            };
+            };*/
 
             let rc_box2 = RcBox {
                 strong: 1,
