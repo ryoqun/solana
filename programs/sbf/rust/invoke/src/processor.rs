@@ -933,7 +933,7 @@ fn process_instruction(
             }
             */
 
-            let mut instruction_data = vec![SELF_CPI, 0, 0];
+            let mut instruction_data = vec![SELF_CPI, 0, 0, 0];
             //let mut instruction_data = vec![REALLOC, 0];
             //instruction_data.extend_from_slice(&rc_box_size.to_le_bytes());
 
