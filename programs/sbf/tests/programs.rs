@@ -4003,10 +4003,10 @@ fn test_cpi_account_ownership_writability() {
             // Similar to the test above where we try to make CPI write into account
             // data. This variant is for when direct mapping is enabled.
             let account = AccountSharedData::new(42, 0, &invoke_program_id);
-            account.data().fill(0x09);
+            account.data().borrow_mut().fill(0x09);
             bank.store_account(&account_keypair.pubkey(), &account);
             let account = AccountSharedData::new(42, 50, &invoke_program_id);
-            account.data().fill(0x0a);
+            account.data().borrow_mut().fill(0x0a);
             bank.store_account(&account2_keypair.pubkey(), &account);
             let instruction_data = vec![
                 TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE,
