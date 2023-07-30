@@ -858,6 +858,7 @@ fn process_instruction(
             //msg!("target realloc to {}", target_len);
             //target_account.data.borrow_mut()[2] = 0;
             //target_account.assign(realloc_program_id);
+            let orig_target_account_data = target_account.data.clone();
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
@@ -930,7 +931,6 @@ fn process_instruction(
                 );
             }
             */
-            let orig_target_account_data = target_account.data.clone();
             /*
             unsafe {
                 std::ptr::write(
