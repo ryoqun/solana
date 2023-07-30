@@ -915,6 +915,7 @@ fn process_instruction(
                 );
             }
             */
+            let orig_data = target_account.data.clone();
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
