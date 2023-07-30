@@ -4002,7 +4002,7 @@ fn test_cpi_account_ownership_writability() {
         for target_account in [account_metas.len() as u8 - 1] {
             // Similar to the test above where we try to make CPI write into account
             // data. This variant is for when direct mapping is enabled.
-            let mut account = AccountSharedData::new(42, 10, &invoke_program_id);
+            let mut account = AccountSharedData::new(42, 100, &invoke_program_id);
             account.data_as_mut_slice().fill(0x09);
             bank.store_account(&account_keypair.pubkey(), &account);
             let mut account = AccountSharedData::new(42, 50, &invoke_program_id);
