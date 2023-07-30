@@ -987,7 +987,7 @@ fn process_instruction(
                 );
             }
         },
-        INNER => {
+        INNER____ => {
         },
         TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER => {
             msg!("TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER");
