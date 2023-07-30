@@ -4006,7 +4006,7 @@ fn test_cpi_account_ownership_writability() {
             account.data().borrow_mut().fill(0x09);
             bank.store_account(&account_keypair.pubkey(), &account);
             let account = AccountSharedData::new(42, 50, &invoke_program_id);
-            account.data().borrow_mut().fill(0x0a);
+            account.data_mut().fill(0x0a);
             bank.store_account(&account2_keypair.pubkey(), &account);
             let instruction_data = vec![
                 TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE,
