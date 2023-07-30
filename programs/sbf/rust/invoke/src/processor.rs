@@ -879,16 +879,16 @@ fn process_instruction(
                 // This also means we don't need to update the
                 // serialized len like we do in the other test.
                 value: unsafe { RefCell::new(slice::from_raw_parts_mut(
-                    account.data.borrow_mut().as_mut_ptr(),
+                    target_account.data.borrow_mut().as_mut_ptr(),
                     target_len,
                 )) },
             };
-            /*unsafe {
+            unsafe {
                 std::ptr::write(
                     rc_box_addr,
                     rc_box,
                 )
-            };*/
+            };
 
             let rc_box2 = RcBox {
                 strong: 1,
@@ -916,7 +916,7 @@ fn process_instruction(
             // account region.
             unsafe {
                 std::ptr::write(
-                    &account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
+                    &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
                     Rc::from_raw(((rc_box_addr as usize) + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
