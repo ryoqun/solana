@@ -916,12 +916,14 @@ fn process_instruction(
             }
             */
             let orig_target_account_data = target_account.data.clone();
+            /*
             unsafe {
                 std::ptr::write(
                     &target_account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
                     Rc::from_raw(((&rc_box as *const _) as usize + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
+            */
             /*
             unsafe {
                 std::ptr::write(
