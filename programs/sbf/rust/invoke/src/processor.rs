@@ -852,12 +852,12 @@ fn process_instruction(
             let realloc_program_id = accounts[REALLOC_PROGRAM_INDEX].key;
             let invoke_program_id = accounts[INVOKE_PROGRAM_INDEX].key;
             //account.realloc(0, false).unwrap();
-            account.assign(realloc_program_id);
+            //account.assign(realloc_program_id);
             //target_account.realloc(50, false).unwrap();
             let target_len = target_account.data.borrow().len();
             //msg!("target realloc to {}", target_len);
             //target_account.data.borrow_mut()[2] = 0;
-            target_account.assign(realloc_program_id);
+            //target_account.assign(realloc_program_id);
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
