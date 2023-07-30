@@ -1610,11 +1610,11 @@ fn account_realloc_region<'a>(
 
     let realloc_vm_addr = vm_data_addr.saturating_add(original_data_len as u64);
     let realloc_region = memory_mapping.region(AccessType::Load, realloc_vm_addr)?;
-    //debug_assert_eq!(realloc_region.vm_addr, realloc_vm_addr);
-    //debug_assert!((MAX_PERMITTED_DATA_INCREASE
-    //    ..MAX_PERMITTED_DATA_INCREASE.saturating_add(BPF_ALIGN_OF_U128))
-    //    .contains(&(realloc_region.len as usize)));
-    //debug_assert!(!matches!(realloc_region.state.get(), MemoryState::Cow(_)));
+    debug_assert_eq!(realloc_region.vm_addr, realloc_vm_addr);
+    debug_assert!((MAX_PERMITTED_DATA_INCREASE
+        ..MAX_PERMITTED_DATA_INCREASE.saturating_add(BPF_ALIGN_OF_U128))
+        .contains(&(realloc_region.len as usize)));
+    debug_assert!(!matches!(realloc_region.state.get(), MemoryState::Cow(_)));
     Ok(Some(realloc_region))
 }
 
