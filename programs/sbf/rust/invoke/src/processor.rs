@@ -858,6 +858,12 @@ fn process_instruction(
             //msg!("target realloc to {}", target_len);
             //target_account.data.borrow_mut()[2] = 0;
             target_account.assign(realloc_program_id);
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
+            msg!("len: {}", account.data.borrow().len());
+            msg!("len: {}", target_account.data.borrow().len());
+            msg!("len: {}", orig_target_account_data.borrow().len());
 
             let rc_box_addr =
                 account.data.borrow_mut().as_mut_ptr() as *mut RcBox<RefCell<&mut [u8]>>;
@@ -949,12 +955,6 @@ fn process_instruction(
             // check that the account is empty before we CPI
             //assert_eq!(account.data_len(), 0);
 
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
-            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
-            msg!("len: {}", account.data.borrow().len());
-            msg!("len: {}", target_account.data.borrow().len());
-            msg!("len: {}", orig_target_account_data.borrow().len());
             invoke(
                 &create_instruction(
                     *program_id,
