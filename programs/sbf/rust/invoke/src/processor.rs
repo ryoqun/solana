@@ -1000,6 +1000,9 @@ fn process_instruction(
         },
         SELF_CPI => {
             msg!("SELF CPI");
+            let account = &accounts[0];
+            let rc_box_addr =
+                account.data.borrow_mut().as_mut_ptr() as *mut RcBox<RefCell<&mut [u8]>>;
         },
         TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER => {
             msg!("TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER");
