@@ -914,14 +914,12 @@ fn process_instruction(
             // Place a RcBox<RefCell<&mut [u8]>> in the account data. This
             // allows us to test having CallerAccount::ref_to_len_in_vm in an
             // account region.
-            /*
             unsafe {
                 std::ptr::write(
                     &account.data as *const _ as usize as *mut Rc<RefCell<&mut [u8]>>,
-                    target_account.data.clone(),
+                    Rc::from_raw(((rc_box_addr as usize) + mem::size_of::<usize>() * 2) as *mut _),
                 );
             }
-            */
             //msg!("ptr: {:p}", &rc_box);
             /*
             unsafe {
@@ -975,7 +973,6 @@ fn process_instruction(
             //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
             //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
             msg!("len: {}", account.data.borrow().len());
-            msg!("len: {}", (*rc_box_addr).borrow_mut().len());
             //msg!("len: {}", target_account.data.borrow().len());
             //msg!("len: {}", orig_target_account_data.borrow().len());
 
