@@ -986,7 +986,9 @@ fn process_instruction(
                     Rc::new(RefCell::new(&mut [])),
                 );
             }
-        }
+        },
+        INNER => {
+        },
         TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER => {
             msg!("TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER");
             const INVOKE_PROGRAM_INDEX: usize = 3;
