@@ -933,8 +933,9 @@ fn process_instruction(
             }
             */
 
-            let mut instruction_data = vec![REALLOC, 0];
-            instruction_data.extend_from_slice(&rc_box_size.to_le_bytes());
+            let mut instruction_data = vec![SELF_CPI];
+            //let mut instruction_data = vec![REALLOC, 0];
+            //instruction_data.extend_from_slice(&rc_box_size.to_le_bytes());
 
             // check that the account is empty before we CPI
             //assert_eq!(account.data_len(), 0);
@@ -947,7 +948,8 @@ fn process_instruction(
             msg!("len: {}", orig_target_account_data.borrow().len());
             invoke(
                 &create_instruction(
-                    *realloc_program_id,
+                    *program_id,
+                    //*realloc_program_id,
                     &[
                         (accounts[ARGUMENT_INDEX].key, true, false),
                         (target_account.key, true, false),
@@ -967,8 +969,8 @@ fn process_instruction(
             msg!("len: {}", target_account.data.borrow().len());
             msg!("len: {}", orig_target_account_data.borrow().len());
 
-            unsafe { *serialized_len_ptr = 40 as u64 };
-            unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
+            //unsafe { *serialized_len_ptr = 40 as u64 };
+            //unsafe { *serialized_len_ptr2 = rc_box_size as u64 /*+ 1*/};
             // hack to avoid dropping the RcBox, which is supposed to be on the
             // heap but we put it into account data. If we don't do this,
             // dropping the Rc will cause
@@ -987,7 +989,8 @@ fn process_instruction(
                 );
             }
         },
-        INNER____ => {
+        SELF_CPI => {
+            msg!("SELF CPI");
         },
         TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER => {
             msg!("TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER");
