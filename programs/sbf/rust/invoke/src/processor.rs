@@ -1000,7 +1000,8 @@ fn process_instruction(
             msg!("SELF CPI");
             let account = &accounts[0];
             msg!("self-cpi-pre: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            account.data.borrow_mut()[32] = 0x99;
+            //account.data.borrow_mut()[32] = 0x99;
+            account.data.borrow_mut()[32] = 0x5;
             msg!("self-cpi-post: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             let target_account = &accounts[1];
             target_account.data.borrow_mut()[0] = 0x88;
