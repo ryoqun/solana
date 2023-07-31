@@ -860,7 +860,7 @@ fn process_instruction(
             //target_account.assign(realloc_program_id);
             let orig_target_account_data = target_account.data.clone();
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
             //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
             msg!("len: {}", account.data.borrow().len());
             //msg!("len: {}", target_account.data.borrow().len());
@@ -999,10 +999,10 @@ fn process_instruction(
         SELF_CPI => {
             msg!("SELF CPI");
             let account = &accounts[0];
-            msg!("self-cpi-pre: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
+            //msg!("self-cpi-pre: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             //account.data.borrow_mut()[32] = 0x99;
             account.data.borrow_mut()[32] = 0x5;
-            msg!("self-cpi-post: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
+            //msg!("self-cpi-post: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             let target_account = &accounts[1];
             target_account.data.borrow_mut()[0] = 0x88;
             target_account.realloc(5, false).unwrap();
