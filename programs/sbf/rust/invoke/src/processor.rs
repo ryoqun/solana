@@ -1002,8 +1002,9 @@ fn process_instruction(
             msg!("self-cpi-pre: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
             account.data.borrow_mut()[32] = 0x99;
             msg!("self-cpi-post: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            let account = &accounts[1];
-            account.data.borrow_mut()[0] = 0x88;
+            let target_account = &accounts[1];
+            target_account.data.borrow_mut()[0] = 0x88;
+            target_account.realloc(5, false).unwrap();
         },
         TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER => {
             msg!("TEST_ALLOW_WRITE_AFTER_OWNERSHIP_CHANGE_TO_CALLER");
