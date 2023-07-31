@@ -970,7 +970,7 @@ fn process_instruction(
             .unwrap();
             msg!("CPI SUCCESS!");
             msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(account.data.borrow().as_ptr(), 100) });
-            //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
+            msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(target_account.data.borrow().as_ptr(), 100) });
             //msg!("data+spare: {:02x?}", unsafe { slice::from_raw_parts(orig_target_account_data.borrow().as_ptr(), 100) });
             msg!("len: {}", account.data.borrow().len());
             //msg!("len: {}", target_account.data.borrow().len());
