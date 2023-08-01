@@ -228,11 +228,22 @@ pub fn create_vm<'a, 'b>(
                 .touch(index_in_transaction as IndexOfAccount)
                 .map_err(|_| ())?;
 
+            use solana_sdk::account::ReadableAccount;
+            log::warn!("cow {index_in_transaction} is_shared: {} len: {}, capacity: {}", account.is_shared(), account.data().len(), account.capacity());
             if account.is_shared() {
                 // See BorrowedAccount::make_data_mut() as to why we reserve extra
                 // MAX_PERMITTED_DATA_INCREASE bytes here.
                 account.reserve(MAX_PERMITTED_DATA_INCREASE);
+                let dst = account
+                    .spare_data_capacity_mut();
+                let mut r = 0x77;
+                for d in dst {
+                    d.write(r);
+                    r = r.wrapping_add(1);
+                }
+                //unsafe { std::ptr::write_bytes(dst, 0x77, 200) };
             }
+            log::warn!("cow {index_in_transaction} new capacity: {}", account.capacity());
             Ok(account.data_as_mut_slice().as_mut_ptr() as u64)
         })),
     )?;

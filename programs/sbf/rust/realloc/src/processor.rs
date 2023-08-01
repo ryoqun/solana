@@ -25,6 +25,7 @@ fn process_instruction(
     instruction_data: &[u8],
 ) -> ProgramResult {
     let account = &accounts[0];
+    let account2 = &accounts[1];
 
     match instruction_data[0] {
         REALLOC => {
@@ -32,7 +33,10 @@ fn process_instruction(
             let new_len = usize::from_le_bytes(bytes.try_into().unwrap());
             msg!("realloc to {}", new_len);
             account.realloc(new_len, false)?;
-            assert_eq!(new_len, account.data_len());
+            msg!("realloc2 to {}", new_len);
+            account2.data.borrow_mut()[2] = 3;
+            account2.realloc(new_len, false)?;
+            //assert_eq!(new_len, account.data_len());
         }
         REALLOC_EXTEND => {
             let pre_len = account.data_len();

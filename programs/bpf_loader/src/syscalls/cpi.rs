@@ -22,7 +22,7 @@ fn check_account_info_pointer(
     field: &str,
 ) -> Result<(), Error> {
     if vm_addr != expected_vm_addr {
-        debug!(
+        log::warn!(
             "Invalid account info pointer `{}': {:#x} != {:#x}",
             field, vm_addr, expected_vm_addr
         );
@@ -41,6 +41,17 @@ enum VmValue<'a, 'b, T> {
 }
 
 impl<'a, 'b, T> VmValue<'a, 'b, T> {
+    fn debug(&self) -> String {
+        match self {
+            VmValue::VmAddress {
+                vm_addr,
+                memory_mapping,
+                check_aligned,
+            } => format!("VmValue::VmAddress: {vm_addr:x}"),
+            VmValue::Translated(addr) => format!("VmValue::Translated: {addr:p}"),
+        }
+    }
+
     fn get(&self) -> Result<&T, Error> {
         match self {
             VmValue::VmAddress {
@@ -1137,6 +1148,8 @@ fn cpi_common<S: SyscallInvokeSigned>(
         }
     }
 
+    log::warn!("update_caller_account loop start!");
+    defer!(log::warn!("update_caller_account loop end!"));
     for (index_in_caller, caller_account) in accounts.iter_mut() {
         if let Some(caller_account) = caller_account {
             let mut callee_account = instruction_context
@@ -1178,9 +1191,11 @@ fn update_callee_account(
         callee_account.set_lamports(*caller_account.lamports)?;
     }
 
+    let prev_len = callee_account.get_data().len();
+    let post_len = *caller_account.ref_to_len_in_vm.get()? as usize;
+    log::warn!("update_callee_account() begin! prev_len: {prev_len} post_len: {post_len} direct_mapping: {direct_mapping} {}", caller_account.ref_to_len_in_vm.debug());
+    defer!(log::warn!("update_callee_account() end!"));
     if direct_mapping {
-        let prev_len = callee_account.get_data().len();
-        let post_len = *caller_account.ref_to_len_in_vm.get()? as usize;
         match callee_account
             .can_data_be_resized(post_len)
             .and_then(|_| callee_account.can_data_be_changed())
@@ -1337,6 +1352,7 @@ fn update_caller_account(
             // memory), so that the account's memory region never points to an
             // invalid address.
             let min_capacity = caller_account.original_data_len;
+            log::warn!("callee_capacity: {} < min_capacity: {} => {}", callee_account.capacity(), min_capacity, callee_account.capacity() < min_capacity);
             if callee_account.capacity() < min_capacity {
                 callee_account.reserve(min_capacity.saturating_sub(callee_account.capacity()))?;
                 zero_all_spare_capacity = true;
@@ -1348,6 +1364,7 @@ fn update_caller_account(
             // spaces are fixed so we don't need to update the MemoryRegion's
             // length.
             let callee_ptr = callee_account.get_data().as_ptr() as u64;
+            log::warn!("region.host_addr: {}, callee_ptr: {} => {}", region.host_addr.get(), callee_ptr, region.host_addr.get() != callee_ptr);
             if region.host_addr.get() != callee_ptr {
                 region.host_addr.set(callee_ptr);
                 zero_all_spare_capacity = true;
@@ -1358,6 +1375,8 @@ fn update_caller_account(
     let prev_len = *caller_account.ref_to_len_in_vm.get()? as usize;
     let post_len = callee_account.get_data().len();
     let realloc_bytes_used = post_len.saturating_sub(caller_account.original_data_len);
+    log::warn!("update_caller_account() begin! prev_len: {prev_len} post_len: {post_len} realloc_bytes_used: {realloc_bytes_used} zero_all_spare_capacity: {zero_all_spare_capacity}! original_data_len: {}", caller_account.original_data_len);
+    defer!(log::warn!("update_caller_account() end!"));
     if prev_len != post_len {
         let max_increase = if direct_mapping && !invoke_context.get_check_aligned() {
             0
@@ -1401,6 +1420,7 @@ fn update_caller_account(
                     prev_len
                 }
                 .saturating_sub(post_len);
+                log::warn!("spare1: {:02x?}", unsafe { std::mem::transmute::<_, Option<&[u8]>>(callee_account.spare_data_capacity_mut()?.get(..50))});
                 if spare_len > 0 {
                     let dst = callee_account
                         .spare_data_capacity_mut()?
@@ -1408,8 +1428,9 @@ fn update_caller_account(
                         .ok_or_else(|| Box::new(InstructionError::AccountDataTooSmall))?
                         .as_mut_ptr();
                     // Safety: we check bounds above
-                    unsafe { ptr::write_bytes(dst, 0, spare_len) };
+                    unsafe { ptr::write_bytes(dst, 0x11, spare_len) };
                 }
+                log::warn!("spare2: {:02x?}", unsafe { std::mem::transmute::<_, Option<&[u8]>>(callee_account.spare_data_capacity_mut()?.get(..50))});
 
                 // Here we zero the realloc region.
                 //
@@ -1483,6 +1504,7 @@ fn update_caller_account(
             )?;
         }
         // this is the len field in the AccountInfo::data slice
+        log::warn!("update: direct_mapping: {:?} {:?} len change: {prev_len} => {post_len}!", direct_mapping, caller_account.ref_to_len_in_vm.debug());
         *caller_account.ref_to_len_in_vm.get_mut()? = post_len as u64;
 
         // this is the len field in the serialized parameters

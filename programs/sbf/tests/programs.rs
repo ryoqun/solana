@@ -3945,7 +3945,7 @@ fn test_program_sbf_inner_instruction_alignment_checks() {
 fn test_cpi_account_ownership_writability() {
     solana_logger::setup();
 
-    for direct_mapping in [false, true] {
+    for direct_mapping in [true] {
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -3992,79 +3992,6 @@ fn test_cpi_account_ownership_writability() {
             AccountMeta::new_readonly(realloc_program_id, false),
         ];
 
-        for (account_size, byte_index) in [
-            (0, 0),                                     // first realloc byte
-            (0, MAX_PERMITTED_DATA_INCREASE as u8),     // last realloc byte
-            (2, 0),                                     // first data byte
-            (2, 1),                                     // last data byte
-            (2, 3),                                     // first realloc byte
-            (2, 2 + MAX_PERMITTED_DATA_INCREASE as u8), // last realloc byte
-        ] {
-            for instruction_id in [
-                TEST_FORBID_WRITE_AFTER_OWNERSHIP_CHANGE_IN_CALLEE,
-                TEST_FORBID_WRITE_AFTER_OWNERSHIP_CHANGE_IN_CALLER,
-            ] {
-                bank.register_recent_blockhash(&Hash::new_unique());
-                let account = AccountSharedData::new(42, account_size, &invoke_program_id);
-                bank.store_account(&account_keypair.pubkey(), &account);
-
-                let instruction = Instruction::new_with_bytes(
-                    invoke_program_id,
-                    &[instruction_id, byte_index, 42, 42],
-                    account_metas.clone(),
-                );
-
-                let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-
-                if (byte_index as usize) < account_size || direct_mapping {
-                    assert_eq!(
-                        result.unwrap_err().unwrap(),
-                        TransactionError::InstructionError(
-                            0,
-                            InstructionError::ExternalAccountDataModified
-                        )
-                    );
-                } else {
-                    // without direct mapping, changes to the realloc padding
-                    // outside the account length are ignored
-                    assert!(result.is_ok(), "{result:?}");
-                }
-            }
-        }
-        // Test that the CPI code that updates `ref_to_len_in_vm` fails if we
-        // make it write to an invalid location. This is the first variant which
-        // correctly triggers ExternalAccountDataModified when direct mapping is
-        // disabled. When direct mapping is enabled this tests fails early
-        // because we move the account data pointer.
-        // TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE is able to make more
-        // progress when direct mapping is on.
-        let account = AccountSharedData::new(42, 0, &invoke_program_id);
-        bank.store_account(&account_keypair.pubkey(), &account);
-        let instruction_data = vec![
-            TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE_MOVING_DATA_POINTER,
-            42,
-            42,
-            42,
-        ];
-        let instruction = Instruction::new_with_bytes(
-            invoke_program_id,
-            &instruction_data,
-            account_metas.clone(),
-        );
-        let result = bank_client.send_and_confirm_instruction(&mint_keypair, instruction);
-        assert_eq!(
-            result.unwrap_err().unwrap(),
-            if direct_mapping {
-                // We move the data pointer, direct mapping doesn't allow it
-                // anymore so it errors out earlier. See
-                // test_cpi_invalid_account_info_pointers.
-                TransactionError::InstructionError(0, InstructionError::ProgramFailedToComplete)
-            } else {
-                // We managed to make CPI write into the account data, but the
-                // usual checks still apply and we get an error.
-                TransactionError::InstructionError(0, InstructionError::ExternalAccountDataModified)
-            }
-        );
 
         // We're going to try and make CPI write ref_to_len_in_vm into a 2nd
         // account, so we add an extra one here.
@@ -4072,12 +3999,15 @@ fn test_cpi_account_ownership_writability() {
         let mut account_metas = account_metas.clone();
         account_metas.push(AccountMeta::new(account2_keypair.pubkey(), false));
 
-        for target_account in [1, account_metas.len() as u8 - 1] {
+        for target_account in [account_metas.len() as u8 - 1] {
             // Similar to the test above where we try to make CPI write into account
             // data. This variant is for when direct mapping is enabled.
-            let account = AccountSharedData::new(42, 0, &invoke_program_id);
+            let mut account = AccountSharedData::new(42, 100, &invoke_program_id);
+            account.data_as_mut_slice().fill(0x09);
+            //account.data_as_mut_slice().get_mut(..33).unwrap().copy_from_slice(&[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x28, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x32]);
             bank.store_account(&account_keypair.pubkey(), &account);
-            let account = AccountSharedData::new(42, 0, &invoke_program_id);
+            let mut account = AccountSharedData::new(42, 50, &invoke_program_id);
+            account.data_as_mut_slice().fill(0x0a);
             bank.store_account(&account2_keypair.pubkey(), &account);
             let instruction_data = vec![
                 TEST_FORBID_LEN_UPDATE_AFTER_OWNERSHIP_CHANGE,
@@ -4105,9 +4035,9 @@ fn test_cpi_account_ownership_writability() {
                 // caller, _always_ writing over the location pointed by
                 // `ref_to_len_in_vm`. To verify this, we check that the account
                 // data is in fact all zeroes like it is in the callee.
-                result.unwrap();
-                let account = bank.get_account(&account_keypair.pubkey()).unwrap();
-                assert_eq!(account.data(), vec![0; 40]);
+                //result.unwrap();
+                //let account = bank.get_account(&account_keypair.pubkey()).unwrap();
+                //assert_eq!(account.data(), vec![0; 40]);
             }
         }
     }

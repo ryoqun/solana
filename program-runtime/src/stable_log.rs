@@ -22,12 +22,13 @@ pub fn program_invoke(
     program_id: &Pubkey,
     invoke_depth: usize,
 ) {
-    ic_logger_msg!(
+    /*ic_logger_msg!(
         log_collector,
         "Program {} invoke [{}]",
         program_id,
         invoke_depth
     );
+    */
 }
 
 /// Log a message from the program itself.
@@ -91,7 +92,7 @@ pub fn program_return(
 /// "Program <address> success"
 /// ```
 pub fn program_success(log_collector: &Option<Rc<RefCell<LogCollector>>>, program_id: &Pubkey) {
-    ic_logger_msg!(log_collector, "Program {} success", program_id);
+    //ic_logger_msg!(log_collector, "Program {} success", program_id);
 }
 
 /// Log program execution failure
