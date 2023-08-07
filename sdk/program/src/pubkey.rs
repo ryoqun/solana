@@ -90,7 +90,6 @@ impl From<u64> for PubkeyError {
     Serialize,
     Zeroable,
 )]
-#[cfg_attr(test, derive(Arbitrary))]
 pub struct Pubkey(pub(crate) [u8; 32]);
 
 impl crate::sanitize::Sanitize for Pubkey {}

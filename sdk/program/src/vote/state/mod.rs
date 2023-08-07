@@ -76,7 +76,6 @@ impl Vote {
 
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
 #[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Copy, Clone)]
-#[cfg_attr(test, derive(Arbitrary))]
 pub struct Lockout {
     slot: Slot,
     confirmation_count: u32,
@@ -125,7 +124,6 @@ impl Lockout {
 
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
 #[derive(Serialize, Default, Deserialize, Debug, PartialEq, Eq, Copy, Clone)]
-#[cfg_attr(test, derive(Arbitrary))]
 pub struct LandedVote {
     // Latency is the difference in slot number between the slot that was voted on (lockout.slot) and the slot in
     // which the vote that added this Lockout landed.  For votes which were cast before versions of the validator
@@ -307,7 +305,6 @@ pub struct VoteAuthorizeCheckedWithSeedArgs {
 
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[cfg_attr(test, derive(Arbitrary))]
 pub struct BlockTimestamp {
     pub slot: Slot,
     pub timestamp: UnixTimestamp,
@@ -369,7 +366,6 @@ impl<I> CircBuf<I> {
     derive(AbiExample)
 )]
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[cfg_attr(test, derive(Arbitrary))]
 pub struct VoteState {
     /// the node that votes in this account
     pub node_pubkey: Pubkey,

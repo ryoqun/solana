@@ -9,7 +9,6 @@ const DEFAULT_PRIOR_VOTERS_OFFSET: usize = 82;
     derive(AbiExample)
 )]
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Eq, Clone)]
-#[cfg_attr(test, derive(Arbitrary))]
 pub struct VoteState1_14_11 {
     /// the node that votes in this account
     pub node_pubkey: Pubkey,
