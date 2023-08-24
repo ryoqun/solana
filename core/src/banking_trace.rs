@@ -358,7 +358,7 @@ impl TracedSender {
 pub mod for_test {
     use {
         super::*,
-        solana_perf::{packet::to_packet_batches, test_tx::test_tx},
+        solana_perf::{packet::to_packet_batches},
         tempfile::TempDir,
     };
 
