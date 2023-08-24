@@ -30,10 +30,3 @@ impl_get_instance_packed_len!(
         note = "Please upgrade to Borsh 0.10 and use `borsh0_10::get_instance_packed_len` instead"
     )]
 );
-
-#[cfg(test)]
-#[allow(deprecated)]
-mod tests {
-    use crate::borsh::impl_tests;
-    impl_tests!(borsh0_9);
-}

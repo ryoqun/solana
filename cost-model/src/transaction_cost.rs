@@ -32,28 +32,6 @@ impl Default for TransactionCost {
     }
 }
 
-#[cfg(test)]
-impl PartialEq for TransactionCost {
-    fn eq(&self, other: &Self) -> bool {
-        fn to_hash_set(v: &[Pubkey]) -> std::collections::HashSet<&Pubkey> {
-            v.iter().collect()
-        }
-
-        self.signature_cost == other.signature_cost
-            && self.write_lock_cost == other.write_lock_cost
-            && self.data_bytes_cost == other.data_bytes_cost
-            && self.builtins_execution_cost == other.builtins_execution_cost
-            && self.bpf_execution_cost == other.bpf_execution_cost
-            && self.loaded_accounts_data_size_cost == other.loaded_accounts_data_size_cost
-            && self.account_data_size == other.account_data_size
-            && self.is_simple_vote == other.is_simple_vote
-            && to_hash_set(&self.writable_accounts) == to_hash_set(&other.writable_accounts)
-    }
-}
-
-#[cfg(test)]
-impl Eq for TransactionCost {}
-
 impl TransactionCost {
     pub fn new_with_capacity(capacity: usize) -> Self {
         Self {

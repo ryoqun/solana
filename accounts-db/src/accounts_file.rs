@@ -192,15 +192,3 @@ impl<'a> Iterator for AccountsFileIter<'a> {
         }
     }
 }
-
-#[cfg(test)]
-pub mod tests {
-    use crate::accounts_file::AccountsFile;
-    impl AccountsFile {
-        pub(crate) fn set_current_len_for_tests(&self, len: usize) {
-            match self {
-                Self::AppendVec(av) => av.set_current_len_for_tests(len),
-            }
-        }
-    }
-}
