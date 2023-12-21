@@ -1,0 +1,30 @@
+name: workflow-rustdoc-preview
+concurrency: preview-${{ github.ref }}
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+env:
+  CARGO_TERM_COLOR: always
+  RUSTDOCFLAGS: --enable-index-page -Z unstable-options
+jobs:
+  job-rustdoc-preview:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: step-rustup
+      uses: dtolnay/rust-toolchain@nightly
+    - name: step-apt
+      run: sudo apt install libssl-dev libudev-dev pkg-config zlib1g-dev llvm clang cmake make libprotobuf-dev protobuf-compiler
+    - name: step-cargo
+      run: cargo doc --no-deps --document-private-items --workspace
+    - name: step-git
+      uses: rossjrw/pr-preview-action@v1.4.0
+      with:
+        source-dir: ./target/doc/
+        deploy-repository: ryoqun/solana-rustdoc-preview
+        umbrella-dir: .
+        token: ${{ secrets.RUSTDOC_PREVIEW_REPO_TOKEN }}

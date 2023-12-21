@@ -1,0 +1,31 @@
+name: workflow-windows-build
+concurrency: preview-${{ github.ref }}
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+env:
+  CARGO_TERM_COLOR: always
+  RUSTDOCFLAGS: --enable-index-page -Z unstable-options
+jobs:
+  job-cargo-check-on-windows:
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Rust
+      shell: bash
+      run: |
+        source ci/rust-version.sh stable
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        export OPENSSL_DIR="C:\Program Files\OpenSSL"
+        choco install protoc --no-progress
+        export PROTOC="C:\ProgramData\chocolatey\lib\protoc\tools\bin\protoc.exe"
+        #cargo  --config 'patch.crates-io.ntapi.git="https://github.com/solana-labs/ntapi"' --config 'patch.crates-io.ntapi.rev="97ede981a1777883ff86d142b75024b023f04fad"' install  --locked spl-token-cli
+        cargo tree
+        cargo check  --locked --workspace --bins --features dummy-for-ci-check
