@@ -177,6 +177,7 @@ console_error_panic_hook = "0.1.7"
 console_log = "0.2.2"
 const_format = "0.2.32"
 core_affinity = "0.5.10"
+cpu-time = "1.0.0"
 criterion = "0.5.1"
 criterion-stats = "0.3.0"
 crossbeam-channel = "0.5.9"
@@ -267,6 +268,7 @@ predicates = "2.1"
 pretty-hex = "0.3.0"
 prio-graph = "0.2.0"
 proc-macro2 = "1.0.70"
+procfs = "0.16.0"
 proptest = "1.4"
 prost = "0.11.9"
 prost-build = "0.11.9"
@@ -288,6 +290,7 @@ reqwest = { version = "0.11.22", default-features = false }
 rolling-file = "0.2.0"
 rpassword = "7.3"
 rustc_version = "0.4"
+rustix = "0.38.21"
 rustls = { version = "0.21.10", default-features = false, features = ["quic"] }
 rustversion = "1.0.14"
 scopeguard = "1.2.0"
@@ -436,6 +439,8 @@ zstd = "0.11.2"
 [patch.crates-io]
 # for details, see https://github.com/solana-labs/crossbeam/commit/fd279d707025f0e60951e429bf778b4813d1b6bf
 crossbeam-epoch = { git = "https://github.com/solana-labs/crossbeam", rev = "fd279d707025f0e60951e429bf778b4813d1b6bf" }
+
+crossbeam-channel = { git = "https://github.com/ryoqun/crossbeam", rev = "37e3580f5b44ac38fa1aec1cedf34f461eeb483b" }
 
 # We include the following crates as our dependencies above from crates.io:
 #

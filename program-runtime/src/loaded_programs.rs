@@ -605,6 +605,10 @@ impl LoadedProgramsForTxBatch {
             self.replenish(*key, entry.clone());
         })
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 pub enum LoadedProgramMatchCriteria {
@@ -630,6 +634,10 @@ impl<FG: ForkGraph> LoadedPrograms<FG> {
 
     pub fn set_fork_graph(&mut self, fork_graph: Arc<RwLock<FG>>) {
         self.fork_graph = Some(fork_graph);
+    }
+
+    pub fn unset_fork_graph(&mut self) {
+        self.fork_graph = None;
     }
 
     /// Returns the current environments depending on the given epoch
