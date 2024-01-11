@@ -146,7 +146,7 @@ fn bench_execute_batch(
             ).unwrap();
         }
     });
-    eprintln!("{:?}", timing);
+    //eprintln!("{:?}", timing);
 }
 
 #[bench]
