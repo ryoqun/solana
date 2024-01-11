@@ -5088,7 +5088,7 @@ impl Bank {
         let mut execution_time = Measure::start("execution_time");
         let mut signature_count: u64 = 0;
 
-        let execution_results: Vec<TransactionExecutionResult> = loaded_transactions
+        let execution_results: Vec<_> = loaded_transactions
             .iter_mut()
             .zip(sanitized_txs.iter())
             .map(|(accs, tx)| match accs {
