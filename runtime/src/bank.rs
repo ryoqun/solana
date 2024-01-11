@@ -4993,6 +4993,7 @@ impl Bank {
         ));
 
         let mut load_time = Measure::start("accounts_load");
+        /*
         let mut loaded_transactions = load_accounts(
             &self.rc.accounts.accounts_db,
             &self.ancestors,
@@ -5060,6 +5061,7 @@ impl Bank {
                 }
             })
             .collect();
+            */
 
         execution_time.stop();
     }
