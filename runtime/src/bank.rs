@@ -5548,8 +5548,9 @@ impl Bank {
             lamports_per_signature,
         );
         */
-        let rent_debits = self.collect_rent(&execution_results, loaded_txs);
+        let rent_debits = vec![]; //self.collect_rent(&execution_results, loaded_txs);
 
+        /*
         // Cached vote and stake accounts are synchronized with accounts-db
         // after each transaction.
         let mut update_stakes_cache_time = Measure::start("update_stakes_cache_time");
@@ -5609,11 +5610,12 @@ impl Bank {
             ExecuteTimingType::UpdateTransactionStatuses,
             update_transaction_statuses_time.as_us(),
         );
+        */
 
         TransactionResults {
-            fee_collection_results,
-            execution_results,
-            rent_debits,
+            fee_collection_results: vec![],
+            execution_results: vec![],
+            rent_debits: vec![],
         }
     }
 
