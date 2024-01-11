@@ -5353,7 +5353,7 @@ impl Bank {
                         .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
                 )
             } else {
-                return (Err(TransactionError::BlockhashNotFound), None);
+                panic!();
             };
 
             // load transactions
