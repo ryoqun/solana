@@ -5219,6 +5219,7 @@ impl Bank {
 
         execution_time.stop();
 
+        /*
         const SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE: u8 = 90;
         self.loaded_programs_cache
             .write()
@@ -5227,6 +5228,7 @@ impl Bank {
                 Percentage::from(SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE),
                 self.slot(),
             );
+        */
 
         debug!(
             "check: {}us load: {}us execute: {}us txs_len={}",
