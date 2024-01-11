@@ -113,11 +113,12 @@ fn bench_execute_batch(
         prioritization_fee_cache,
     } = setup(apply_cost_tracker_during_replay);
     let transactions = create_transactions(&bank, 2_usize.pow(20));
+    let bank2 = bank.clone()
     let batches: Vec<_> = transactions
         .chunks(batch_size)
         .map(|txs| {
             let mut batch =
-                TransactionBatch::new(vec![Ok(()); txs.len()], &bank, Cow::Borrowed(txs));
+                TransactionBatch::new(vec![Ok(()); txs.len()], &bank2, Cow::Borrowed(txs));
             batch.set_needs_unlock(false);
             TransactionBatchWithIndexes {
                 batch,
