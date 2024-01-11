@@ -5151,8 +5151,9 @@ impl Bank {
         log_messages_bytes_limit: Option<usize>,
     ) {
         let sanitized_txs = batch.sanitized_transactions();
-
+        let mut error_counters = TransactionErrorMetrics::default();
         for sanitized_tx in sanitized_txs {
+            let hash_queue = self.blockhash_queue.read().unwrap();
             let last_blockhash = hash_queue.last_hash();
             let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
             self.check_transaction_age(
@@ -5167,6 +5168,21 @@ impl Bank {
             {
                 panic!();
             }
+            let mut program_accounts_map = self.filter_executable_program_accounts(
+                &self.ancestors,
+                sanitized_txs,
+                &mut [],
+                PROGRAM_OWNERS,
+                &hash_queue,
+            );
+            let native_loader = native_loader::id();
+            for builtin_program in self.builtin_programs.iter() {
+                program_accounts_map.insert(*builtin_program, (&native_loader, 0));
+            }
+
+            let programs_loaded_for_tx_batch = Rc::new(RefCell::new(
+                3 //self.replenish_program_cache(&program_accounts_map),
+            ));
             let lamports_per_signature = hash_queue.get_lamports_per_signature(sanitized_tx.message().recent_blockhash());
             let fee = if let Some(lamports_per_signature) = lamports_per_signature {
                 self.fee_structure.calculate_fee(
