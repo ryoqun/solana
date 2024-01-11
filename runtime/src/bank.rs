@@ -5358,7 +5358,7 @@ impl Bank {
                 &self.ancestors,
                 sanitized_tx,
                 fee,
-                error_counters,
+                &mut error_counters,
                 &self.rent_collector,
                 &self.feature_set,
                 account_overrides,
