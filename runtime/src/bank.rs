@@ -5336,7 +5336,7 @@ impl Bank {
             let nonce = None;
             let lamports_per_signature = hash_queue.get_lamports_per_signature(sanitized_tx.message().recent_blockhash());
             let fee = if let Some(lamports_per_signature) = lamports_per_signature {
-                fee_structure.calculate_fee(
+                self.fee_structure.calculate_fee(
                     sanitized_tx.message(),
                     lamports_per_signature,
                     &process_compute_budget_instructions(
@@ -5344,7 +5344,7 @@ impl Bank {
                     )
                     .unwrap_or_default()
                     .into(),
-                    feature_set
+                    self.feature_set
                         .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
                 )
             } else {
@@ -5367,7 +5367,7 @@ impl Bank {
                 should_collect_rent,
             ) {
                 Ok(loaded_transaction) => loaded_transaction,
-                Err(e) => panic!();
+                Err(e) => panic!(),
             };
         }
     }
