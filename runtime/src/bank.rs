@@ -5116,7 +5116,7 @@ impl Bank {
                             maybe_compute_budget.unwrap()
                         };
 
-                    let result = self.execute_loaded_transaction(
+                    self.execute_loaded_transaction(
                         tx,
                         loaded_transaction,
                         compute_budget,
@@ -5129,22 +5129,6 @@ impl Bank {
                         log_messages_bytes_limit,
                         &programs_loaded_for_tx_batch.borrow(),
                     );
-
-                    if let TransactionExecutionResult::Executed {
-                        details,
-                        programs_modified_by_tx,
-                    } = &result
-                    {
-                        // Update batch specific cache of the loaded programs with the modifications
-                        // made by the transaction, if it executed successfully.
-                        if details.status.is_ok() {
-                            programs_loaded_for_tx_batch
-                                .borrow_mut()
-                                .merge(programs_modified_by_tx);
-                        }
-                    }
-
-                    result
                 }
             })
             .collect();
@@ -5233,6 +5217,28 @@ impl Bank {
                 Ok(loaded_transaction) => loaded_transaction,
                 Err(e) => panic!(),
             };
+
+            let compute_budget =
+                if let Some(compute_budget) = self.runtime_config.compute_budget {
+                    compute_budget
+                } else {
+                    let mut compute_budget_process_transaction_time =
+                        Measure::start("compute_budget_process_transaction_time");
+                    let maybe_compute_budget = ComputeBudget::try_from_instructions(
+                        tx.message().program_instructions_iter(),
+                    );
+                    compute_budget_process_transaction_time.stop();
+                    saturating_add_assign!(
+                        timings
+                            .execute_accessories
+                            .compute_budget_process_transaction_us,
+                        compute_budget_process_transaction_time.as_us()
+                    );
+                    if let Err(err) = maybe_compute_budget {
+                        return TransactionExecutionResult::NotExecuted(err);
+                    }
+                    maybe_compute_budget.unwrap()
+                };
         }
     }
 
