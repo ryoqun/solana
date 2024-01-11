@@ -5264,7 +5264,7 @@ impl Bank {
 
             let is_vote = tx.is_simple_vote_transaction();
 
-            if execution_result.was_executed() // Skip log collection for unprocessed transactions
+            if false && execution_result.was_executed() // Skip log collection for unprocessed transactions
                 && transaction_log_collector_config.filter != TransactionLogCollectorFilter::None
             {
                 let mut filtered_mentioned_addresses = Vec::new();
