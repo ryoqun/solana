@@ -5379,7 +5379,7 @@ impl Bank {
         timings: &mut ExecuteTimings,
         account_overrides: Option<&AccountOverrides>,
         log_messages_bytes_limit: Option<usize>,
-    ) -> LoadAndExecuteTransactionsOutput {
+    ) {
         let sanitized_txs = batch.sanitized_transactions();
         let mut error_counters = TransactionErrorMetrics::default();
         for sanitized_tx in sanitized_txs {
@@ -5394,7 +5394,6 @@ impl Bank {
                 &mut error_counters,
             ).0.unwrap();           
         }
-        todo!();
     }
 
     /// The maximum allowed size, in bytes, of the accounts data
