@@ -150,21 +150,36 @@ fn bench_execute_batch(
 }
 
 #[bench]
-fn bench_execute_batch_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_01_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 1, false);
 }
 
 #[bench]
-fn bench_execute_batch_tx2_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_02_tx2_batch_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 2, false);
 }
 
 #[bench]
-fn bench_execute_batch_half_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_04_tx4_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch(bencher, 4, false);
+}
+
+#[bench]
+fn bench_execute_batch_08_tx8_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch(bencher, 8, false);
+}
+
+#[bench]
+fn bench_execute_batch_16_tx8_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch(bencher, 16, false);
+}
+
+#[bench]
+fn bench_execute_batch_32_half_batch_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 32, false);
 }
 
 #[bench]
-fn bench_execute_batch_full_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_64_full_batch_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 64, false);
 }
