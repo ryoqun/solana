@@ -112,7 +112,7 @@ fn bench_execute_batch(
         bank,
         prioritization_fee_cache,
     } = setup(apply_cost_tracker_during_replay);
-    let transactions = create_transactions(&bank, 64_usize.pow(8));
+    let transactions = create_transactions(&bank, 64_usize.pow(2));
     let bank2 = bank.clone();
     let batches: Vec<_> = transactions
         .chunks(batch_size)
