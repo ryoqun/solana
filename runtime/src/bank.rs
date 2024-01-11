@@ -5363,7 +5363,7 @@ impl Bank {
                 &self.feature_set,
                 account_overrides,
                 self.get_reward_interval(),
-                &program_account_map,
+                &program_accounts_map,
                 &programs_loaded_for_tx_batch.borrow(),
                 self.should_collect_rent(),
             ) {
