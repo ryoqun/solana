@@ -5391,7 +5391,7 @@ impl Bank {
                 max_age,
                 &next_durable_nonce,
                 &hash_queue,
-                error_counters,
+                &mut error_counters,
             ).0.unwrap();           
         }
         todo!();
