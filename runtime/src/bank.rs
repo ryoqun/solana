@@ -5240,7 +5240,7 @@ impl Bank {
                     maybe_compute_budget.unwrap()
                 };
             self.execute_loaded_transaction(
-                tx,
+                sanitized_tx,
                 &mut loaded_transaction,
                 compute_budget,
                 nonce.as_ref().map(DurableNonceFee::from),
