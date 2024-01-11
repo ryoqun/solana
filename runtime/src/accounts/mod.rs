@@ -343,10 +343,6 @@ pub(super) fn load_transaction_accounts(
                 return Err(TransactionError::ProgramAccountNotFound);
             }
 
-            if !(is_builtin(program_account) || is_executable(program_account, feature_set)) {
-                error_counters.invalid_program_for_execution += 1;
-                return Err(TransactionError::InvalidProgramForExecution);
-            }
             account_indices.insert(0, program_index as IndexOfAccount);
             let owner_id = program_account.owner();
             if native_loader::check_id(owner_id) {
