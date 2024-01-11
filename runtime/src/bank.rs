@@ -5241,7 +5241,7 @@ impl Bank {
                 };
             self.execute_loaded_transaction(
                 tx,
-                loaded_transaction,
+                &mut loaded_transaction,
                 compute_budget,
                 nonce.as_ref().map(DurableNonceFee::from),
                 enable_cpi_recording,
