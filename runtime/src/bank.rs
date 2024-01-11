@@ -5504,6 +5504,7 @@ impl Bank {
         counts: CommitTransactionCounts,
         timings: &mut ExecuteTimings,
     ) -> TransactionResults {
+        /*
         assert!(
             !self.freeze_started(),
             "commit_transactions() working on a bank that is already frozen or is undergoing freezing!"
@@ -5537,7 +5538,6 @@ impl Bank {
 
         let mut write_time = Measure::start("write_time");
         let durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
-        /*
         self.rc.accounts.store_cached(
             self.slot(),
             sanitized_txs,
