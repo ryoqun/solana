@@ -207,6 +207,16 @@ fn bench_execute_batch_00000_unbatched_disable_tx_cost_update(bencher: &mut Benc
 }
 
 #[bench]
+fn bench_execute_batch_00004_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 4, false);
+}
+
+#[bench]
+fn bench_execute_batch_00064_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 64, false);
+}
+
+#[bench]
 fn bench_execute_batch_02_tx2_batch_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 2, false);
 }
