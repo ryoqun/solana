@@ -6356,18 +6356,7 @@ impl Bank {
 
     #[must_use]
     fn process_transaction_batch(&self, batch: &TransactionBatch) -> Vec<Result<()>> {
-        self.load_execute_and_commit_transactions(
-            batch,
-            MAX_PROCESSING_AGE,
-            false,
-            false,
-            false,
-            false,
-            &mut ExecuteTimings::default(),
-            None,
-        )
-        .0
-        .fee_collection_results
+        todo!();
     }
 
     /// Create, sign, and process a Transaction from `keypair` to `to` of
