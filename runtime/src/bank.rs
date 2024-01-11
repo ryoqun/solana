@@ -5107,7 +5107,7 @@ impl Bank {
             }
 
             let programs_loaded_for_tx_batch = Rc::new(RefCell::new(
-                3 //self.replenish_program_cache(&program_accounts_map),
+                self.replenish_program_cache(&program_accounts_map),
             ));
             let lamports_per_signature = hash_queue.get_lamports_per_signature(sanitized_tx.message().recent_blockhash());
             let fee = if let Some(lamports_per_signature) = lamports_per_signature {
