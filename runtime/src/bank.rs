@@ -5061,9 +5061,9 @@ impl Bank {
                 }
             })
             .collect();
-            */
 
         execution_time.stop();
+        */
     }
 
     #[allow(clippy::type_complexity)]
