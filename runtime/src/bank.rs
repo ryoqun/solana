@@ -6294,22 +6294,14 @@ impl Bank {
         enable_return_data_recording: bool,
         timings: &mut ExecuteTimings,
         log_messages_bytes_limit: Option<usize>,
-    ) -> (TransactionResults, TransactionBalancesSet) {
+    ) {
         let pre_balances = if collect_balances {
             self.collect_balances(batch)
         } else {
             vec![]
         };
 
-        let LoadAndExecuteTransactionsOutput {
-            mut loaded_transactions,
-            execution_results,
-            executed_transactions_count,
-            executed_non_vote_transactions_count,
-            executed_with_successful_result_count,
-            signature_count,
-            ..
-        } = self.load_and_execute_transactions(
+        self.load_and_execute_transactions(
             batch,
             max_age,
             enable_cpi_recording,
@@ -6319,34 +6311,6 @@ impl Bank {
             None,
             log_messages_bytes_limit,
         );
-
-        let (last_blockhash, lamports_per_signature) =
-            self.last_blockhash_and_lamports_per_signature();
-        let results = self.commit_transactions(
-            batch.sanitized_transactions(),
-            &mut loaded_transactions,
-            execution_results,
-            last_blockhash,
-            lamports_per_signature,
-            CommitTransactionCounts {
-                committed_transactions_count: executed_transactions_count as u64,
-                committed_non_vote_transactions_count: executed_non_vote_transactions_count as u64,
-                committed_with_failure_result_count: executed_transactions_count
-                    .saturating_sub(executed_with_successful_result_count)
-                    as u64,
-                signature_count,
-            },
-            timings,
-        );
-        let post_balances = if collect_balances {
-            self.collect_balances(batch)
-        } else {
-            vec![]
-        };
-        (
-            results,
-            TransactionBalancesSet::new(pre_balances, post_balances),
-        )
     }
 
     /// Process a Transaction. This is used for unit tests and simply calls the vector
