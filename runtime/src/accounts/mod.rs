@@ -106,7 +106,7 @@ pub(super) fn load_accounts(
                     Err(e) => return (Err(e), None),
                 };
 
-                (Ok(loaded_transaction), nonce)
+                (Ok(loaded_transaction), None)
             }
             (_, (Err(e), _nonce)) => (Err(e), None),
         })
