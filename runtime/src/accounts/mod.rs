@@ -106,21 +106,6 @@ pub(super) fn load_accounts(
                     Err(e) => return (Err(e), None),
                 };
 
-                // Update nonce with fee-subtracted accounts
-                let nonce = if let Some(nonce) = nonce {
-                    match NonceFull::from_partial(
-                        nonce,
-                        tx.message(),
-                        &loaded_transaction.accounts,
-                        &loaded_transaction.rent_debits,
-                    ) {
-                        Ok(nonce) => Some(nonce),
-                        Err(e) => return (Err(e), None),
-                    }
-                } else {
-                    None
-                };
-
                 (Ok(loaded_transaction), nonce)
             }
             (_, (Err(e), _nonce)) => (Err(e), None),
