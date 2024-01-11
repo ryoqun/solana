@@ -5111,7 +5111,7 @@ impl Bank {
                                 compute_budget_process_transaction_time.as_us()
                             );
                             if let Err(err) = maybe_compute_budget {
-                                return TransactionExecutionResult::NotExecuted(err);
+                                panic!();
                             }
                             maybe_compute_budget.unwrap()
                         };
