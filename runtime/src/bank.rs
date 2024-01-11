@@ -5313,6 +5313,7 @@ impl Bank {
                 &hash_queue,
                 &mut error_counters,
             ).0.unwrap();           
+            std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
 
