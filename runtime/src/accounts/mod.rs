@@ -70,12 +70,7 @@ pub(super) fn load_accounts(
         .zip(lock_results)
         .map(|etx| match etx {
             (tx, (Ok(()), nonce)) => {
-                let lamports_per_signature = nonce
-                    .as_ref()
-                    .map(|nonce| nonce.lamports_per_signature())
-                    .unwrap_or_else(|| {
-                        hash_queue.get_lamports_per_signature(tx.message().recent_blockhash())
-                    });
+                let lamports_per_signature = hash_queue.get_lamports_per_signature(tx.message().recent_blockhash());
                 let fee = if let Some(lamports_per_signature) = lamports_per_signature {
                     fee_structure.calculate_fee(
                         tx.message(),
