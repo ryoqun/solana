@@ -5150,21 +5150,6 @@ impl Bank {
         account_overrides: Option<&AccountOverrides>,
         log_messages_bytes_limit: Option<usize>,
     ) {
-            let hash_queue = self.blockhash_queue.read().unwrap();
-        let sanitized_txs = batch.sanitized_transactions();
-        let mut error_counters = TransactionErrorMetrics::default();
-        let mut program_accounts_map = self.filter_executable_program_accounts(
-            &self.ancestors,
-            sanitized_txs,
-            &mut [],
-            PROGRAM_OWNERS,
-            &hash_queue,
-        );
-        let native_loader = native_loader::id();
-        for builtin_program in self.builtin_programs.iter() {
-            program_accounts_map.insert(*builtin_program, (&native_loader, 0));
-        }
-
         let programs_loaded_for_tx_batch = Rc::new(RefCell::new(
             self.replenish_program_cache(&program_accounts_map),
         ));
@@ -6204,6 +6189,21 @@ impl Bank {
         } else {
             vec![]
         };
+        let hash_queue = self.blockhash_queue.read().unwrap();
+        let sanitized_txs = batch.sanitized_transactions();
+        let mut error_counters = TransactionErrorMetrics::default();
+        let mut program_accounts_map = self.filter_executable_program_accounts(
+            &self.ancestors,
+            sanitized_txs,
+            &mut [],
+            PROGRAM_OWNERS,
+            &hash_queue,
+        );
+        let native_loader = native_loader::id();
+        for builtin_program in self.builtin_programs.iter() {
+            program_accounts_map.insert(*builtin_program, (&native_loader, 0));
+        }
+
 
         self.load_and_execute_transactions2(
             batch,
