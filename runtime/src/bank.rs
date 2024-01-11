@@ -5318,6 +5318,21 @@ impl Bank {
             {
                 panic!();
             }
+            let mut program_accounts_map = self.filter_executable_program_accounts(
+                &self.ancestors,
+                sanitized_txs,
+                &mut check_results,
+                PROGRAM_OWNERS,
+                &hash_queue,
+            );
+            let native_loader = native_loader::id();
+            for builtin_program in self.builtin_programs.iter() {
+                program_accounts_map.insert(*builtin_program, (&native_loader, 0));
+            }
+
+            let programs_loaded_for_tx_batch = Rc::new(RefCell::new(
+                self.replenish_program_cache(&program_accounts_map),
+            ));
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
