@@ -5333,7 +5333,46 @@ impl Bank {
             let programs_loaded_for_tx_batch = Rc::new(RefCell::new(
                 self.replenish_program_cache(&program_accounts_map),
             ));
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            let lamports_per_signature = nonce
+                .as_ref()
+                .map(|nonce| nonce.lamports_per_signature())
+                .unwrap_or_else(|| {
+                    hash_queue.get_lamports_per_signature(tx.message().recent_blockhash())
+                });
+            let fee = if let Some(lamports_per_signature) = lamports_per_signature {
+                fee_structure.calculate_fee(
+                    tx.message(),
+                    lamports_per_signature,
+                    &process_compute_budget_instructions(
+                        tx.message().program_instructions_iter(),
+                    )
+                    .unwrap_or_default()
+                    .into(),
+                    feature_set
+                        .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()),
+                )
+            } else {
+                return (Err(TransactionError::BlockhashNotFound), None);
+            };
+
+            // load transactions
+            let loaded_transaction = match load_transaction_accounts(
+                accounts_db,
+                ancestors,
+                tx,
+                fee,
+                error_counters,
+                rent_collector,
+                feature_set,
+                account_overrides,
+                in_reward_interval,
+                program_accounts,
+                loaded_programs,
+                should_collect_rent,
+            ) {
+                Ok(loaded_transaction) => loaded_transaction,
+                Err(e) => return (Err(e), None),
+            };
         }
     }
 
