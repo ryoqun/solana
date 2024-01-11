@@ -4993,7 +4993,6 @@ impl Bank {
         ));
 
         let mut load_time = Measure::start("accounts_load");
-        /*
         let mut loaded_transactions = load_accounts(
             &self.rc.accounts.accounts_db,
             &self.ancestors,
@@ -5063,7 +5062,6 @@ impl Bank {
             .collect();
 
         execution_time.stop();
-        */
     }
 
     #[allow(clippy::type_complexity)]
@@ -5130,7 +5128,6 @@ impl Bank {
 
             // load transactions
             use crate::accounts::load_transaction_accounts;
-            /*
             let mut loaded_transaction = match load_transaction_accounts(
                 &self.rc.accounts.accounts_db,
                 &self.ancestors,
@@ -5148,7 +5145,6 @@ impl Bank {
                 Ok(loaded_transaction) => loaded_transaction,
                 Err(e) => panic!(),
             };
-            */
 
             let compute_budget =
                 if let Some(compute_budget) = self.runtime_config.compute_budget {
