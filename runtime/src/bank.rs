@@ -5353,8 +5353,8 @@ impl Bank {
 
             // load transactions
             let loaded_transaction = match load_transaction_accounts(
-                accounts_db,
-                ancestors,
+                self.accounts_db,
+                self.ancestors,
                 sanitized_tx,
                 fee,
                 error_counters,
