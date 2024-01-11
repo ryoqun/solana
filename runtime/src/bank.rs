@@ -5385,6 +5385,13 @@ impl Bank {
             let hash_queue = self.blockhash_queue.read().unwrap();
             let last_blockhash = hash_queue.last_hash();
             let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
+            self.check_transaction_age(
+                sanitized_tx.borrow(),
+                max_age,
+                &next_durable_nonce,
+                &hash_queue,
+                error_counters,
+            ).unwrap();           
         }
         todo!();
     }
