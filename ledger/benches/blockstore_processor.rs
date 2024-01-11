@@ -129,19 +129,17 @@ fn bench_execute_batch(
     let mut batches_iter = batches.into_iter();
 
     let mut timing = ExecuteTimings::default();
-    bencher.iter({
-        move || {
-            let batch = batches_iter.next().unwrap();
-            execute_batch(
-                &batch,
-                &bank,
-                None,
-                None,
-                &mut timing,
-                None,
-                &prioritization_fee_cache,
-            )
-        }
+    bencher.iter(|| {
+        let batch = batches_iter.next().unwrap();
+        execute_batch(
+            &batch,
+            &bank,
+            None,
+            None,
+            &mut timing,
+            None,
+            &prioritization_fee_cache,
+        )
     });
 }
 
