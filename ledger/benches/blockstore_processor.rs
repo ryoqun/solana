@@ -129,7 +129,7 @@ fn bench_execute_batch(
     let mut batches_iter = batches.into_iter();
 
     let mut timing = ExecuteTimings::default();
-    for _ in 0..64 {
+    for _ in 0..(64*64/batch_size) {
         let batch = batches_iter.next().unwrap();
         execute_batch(
             &batch,
