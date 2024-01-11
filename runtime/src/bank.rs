@@ -5355,12 +5355,12 @@ impl Bank {
             use crate::accounts::load_transaction_accounts;
             let loaded_transaction = match load_transaction_accounts(
                 self.rc.accounts.accounts_db,
-                self.ancestors,
+                &self.ancestors,
                 sanitized_tx,
                 fee,
                 error_counters,
-                self.rent_collector,
-                self.feature_set,
+                &self.rent_collector,
+                &self.feature_set,
                 account_overrides,
                 in_reward_interval,
                 program_accounts,
