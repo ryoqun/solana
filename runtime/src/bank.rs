@@ -5382,6 +5382,9 @@ impl Bank {
     ) -> LoadAndExecuteTransactionsOutput {
         let sanitized_txs = batch.sanitized_transactions();
         for sanitized_tx in sanitized_txs {
+            let hash_queue = self.blockhash_queue.read().unwrap();
+            let last_blockhash = hash_queue.last_hash();
+            let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
         }
         todo!();
     }
