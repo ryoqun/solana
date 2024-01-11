@@ -5381,6 +5381,7 @@ impl Bank {
         log_messages_bytes_limit: Option<usize>,
     ) -> LoadAndExecuteTransactionsOutput {
         let sanitized_txs = batch.sanitized_transactions();
+        let mut error_counters = TransactionErrorMetrics::default();
         for sanitized_tx in sanitized_txs {
             let hash_queue = self.blockhash_queue.read().unwrap();
             let last_blockhash = hash_queue.last_hash();
