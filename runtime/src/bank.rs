@@ -5239,6 +5239,19 @@ impl Bank {
                     }
                     maybe_compute_budget.unwrap()
                 };
+            self.execute_loaded_transaction(
+                tx,
+                loaded_transaction,
+                compute_budget,
+                nonce.as_ref().map(DurableNonceFee::from),
+                enable_cpi_recording,
+                enable_log_recording,
+                enable_return_data_recording,
+                timings,
+                &mut error_counters,
+                log_messages_bytes_limit,
+                &programs_loaded_for_tx_batch.borrow(),
+            )
         }
     }
 
