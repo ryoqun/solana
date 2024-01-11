@@ -5241,6 +5241,7 @@ impl Bank {
                     }
                     maybe_compute_budget.unwrap()
                 };
+            /*
             self.execute_loaded_transaction(
                 sanitized_tx,
                 &mut loaded_transaction,
@@ -5254,6 +5255,7 @@ impl Bank {
                 log_messages_bytes_limit,
                 &programs_loaded_for_tx_batch.borrow(),
             );
+            */
         }
     }
 
