@@ -5353,6 +5353,7 @@ impl Bank {
 
             // load transactions
             use crate::accounts::load_transaction_accounts;
+            let in_reward_interval = self.get_reward_interval() == RewardInterval::InsideInterval;
             let loaded_transaction = match load_transaction_accounts(
                 &self.rc.accounts.accounts_db,
                 &self.ancestors,
