@@ -5225,7 +5225,7 @@ impl Bank {
                     let mut compute_budget_process_transaction_time =
                         Measure::start("compute_budget_process_transaction_time");
                     let maybe_compute_budget = ComputeBudget::try_from_instructions(
-                        tx.message().program_instructions_iter(),
+                        sanitized_tx.message().program_instructions_iter(),
                     );
                     compute_budget_process_transaction_time.stop();
                     saturating_add_assign!(
