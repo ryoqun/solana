@@ -23,6 +23,7 @@ use {
     std::{borrow::Cow, sync::Arc},
     test::Bencher,
 };
+use solana_ledger::blockstore_processor::execute_batch2;
 
 extern crate test;
 
