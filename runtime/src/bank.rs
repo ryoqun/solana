@@ -5092,7 +5092,7 @@ impl Bank {
             .iter_mut()
             .zip(sanitized_txs.iter())
             .map(|(accs, tx)| match accs {
-                (Err(e), _nonce) => TransactionExecutionResult::NotExecuted(e.clone()),
+                (Err(e), _nonce) => todo!(),
                 (Ok(loaded_transaction), nonce) => {
                     let compute_budget =
                         if let Some(compute_budget) = self.runtime_config.compute_budget {
