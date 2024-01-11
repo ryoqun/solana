@@ -5321,7 +5321,7 @@ impl Bank {
             let mut program_accounts_map = self.filter_executable_program_accounts(
                 &self.ancestors,
                 sanitized_txs,
-                &mut check_results,
+                &mut [],
                 PROGRAM_OWNERS,
                 &hash_queue,
             );
