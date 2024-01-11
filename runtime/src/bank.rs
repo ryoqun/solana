@@ -5368,6 +5368,24 @@ impl Bank {
         }
     }
 
+    #[allow(clippy::type_complexity)]
+    pub fn load_and_execute_transactions2(
+        &self,
+        batch: &TransactionBatch,
+        max_age: usize,
+        enable_cpi_recording: bool,
+        enable_log_recording: bool,
+        enable_return_data_recording: bool,
+        timings: &mut ExecuteTimings,
+        account_overrides: Option<&AccountOverrides>,
+        log_messages_bytes_limit: Option<usize>,
+    ) -> LoadAndExecuteTransactionsOutput {
+        let sanitized_txs = batch.sanitized_transactions();
+        for sanitized_tx in sanitized_txs {
+        }
+        todo!();
+    }
+
     /// The maximum allowed size, in bytes, of the accounts data
     pub fn accounts_data_size_limit(&self) -> u64 {
         MAX_ACCOUNTS_DATA_LEN
