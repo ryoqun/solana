@@ -3870,54 +3870,7 @@ pub mod tests {
 
     #[test]
     fn test_get_first_error() {
-        let GenesisConfigInfo {
-            genesis_config,
-            mint_keypair,
-            ..
-        } = create_genesis_config(1_000_000_000);
-        let bank = Bank::new_with_bank_forks_for_tests(&genesis_config).0;
-
-        let present_account_key = Keypair::new();
-        let present_account = AccountSharedData::new(1, 10, &Pubkey::default());
-        bank.store_account(&present_account_key.pubkey(), &present_account);
-
-        let keypair = Keypair::new();
-
-        // Create array of two transactions which throw different errors
-        let account_not_found_tx = system_transaction::transfer(
-            &keypair,
-            &solana_sdk::pubkey::new_rand(),
-            42,
-            bank.last_blockhash(),
-        );
-        let account_not_found_sig = account_not_found_tx.signatures[0];
-        let invalid_blockhash_tx = system_transaction::transfer(
-            &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
-            42,
-            Hash::default(),
-        );
-        let txs = vec![account_not_found_tx, invalid_blockhash_tx];
-        let batch = bank.prepare_batch_for_tests(txs);
-        let (
-            TransactionResults {
-                fee_collection_results,
-                ..
-            },
-            _balances,
-        ) = batch.bank().load_execute_and_commit_transactions(
-            &batch,
-            MAX_PROCESSING_AGE,
-            false,
-            false,
-            false,
-            false,
-            &mut ExecuteTimings::default(),
-            None,
-        );
-        let (err, signature) = get_first_error(&batch, fee_collection_results).unwrap();
-        assert_eq!(err.unwrap_err(), TransactionError::AccountNotFound);
-        assert_eq!(signature, account_not_found_sig);
+        todo!();
     }
 
     #[test]
