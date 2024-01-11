@@ -5353,7 +5353,6 @@ impl Bank {
 
             // load transactions
             use crate::accounts::load_transaction_accounts;
-            let in_reward_interval = self.get_reward_interval() == RewardInterval::InsideInterval;
             let loaded_transaction = match load_transaction_accounts(
                 &self.rc.accounts.accounts_db,
                 &self.ancestors,
@@ -5363,7 +5362,7 @@ impl Bank {
                 &self.rent_collector,
                 &self.feature_set,
                 account_overrides,
-                in_reward_interval,
+                self.get_reward_interval(),
                 program_accounts,
                 loaded_programs,
                 should_collect_rent,
