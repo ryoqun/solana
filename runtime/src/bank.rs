@@ -5118,7 +5118,7 @@ impl Bank {
         );
         check_time.stop();
 
-        let mut program_accounts_map = self.filter_executable_program_accounts(
+        let mut program_accounts_map: usize = self.filter_executable_program_accounts(
             &self.ancestors,
             sanitized_txs,
             &mut check_results,
