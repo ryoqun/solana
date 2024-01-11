@@ -5364,8 +5364,8 @@ impl Bank {
                 account_overrides,
                 self.get_reward_interval(),
                 program_account_map,
-                loaded_programs,
-                should_collect_rent,
+                programs_loaded_for_tx_batch.borrow(),
+                self.should_collect_rent(),
             ) {
                 Ok(loaded_transaction) => loaded_transaction,
                 Err(e) => panic!(),
