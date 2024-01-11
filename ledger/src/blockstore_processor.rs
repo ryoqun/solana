@@ -157,7 +157,7 @@ pub fn execute_batch(
         vec![]
     };
 
-    let (tx_results, balances) = batch.bank().load_execute_and_commit_transactions(
+    batch.bank().load_execute_and_commit_transactions(
         batch,
         MAX_PROCESSING_AGE,
         transaction_status_sender.is_some(),
@@ -168,51 +168,7 @@ pub fn execute_batch(
         log_messages_bytes_limit,
     );
 
-    bank_utils::find_and_send_votes(
-        batch.sanitized_transactions(),
-        &tx_results,
-        replay_vote_sender,
-    );
-
-    let TransactionResults {
-        fee_collection_results,
-        execution_results,
-        rent_debits,
-        ..
-    } = tx_results;
-
-    let executed_transactions = execution_results
-        .iter()
-        .zip(batch.sanitized_transactions())
-        .filter_map(|(execution_result, tx)| execution_result.was_executed().then_some(tx))
-        .collect_vec();
-
-    if let Some(transaction_status_sender) = transaction_status_sender {
-        let transactions = batch.sanitized_transactions().to_vec();
-        let post_token_balances = if record_token_balances {
-            collect_token_balances(bank, batch, &mut mint_decimals)
-        } else {
-            vec![]
-        };
-
-        let token_balances =
-            TransactionTokenBalancesSet::new(pre_token_balances, post_token_balances);
-
-        transaction_status_sender.send_transaction_status_batch(
-            bank.clone(),
-            transactions,
-            execution_results,
-            balances,
-            token_balances,
-            rent_debits,
-            transaction_indexes.to_vec(),
-        );
-    }
-
-    prioritization_fee_cache.update(bank, executed_transactions.into_iter());
-
-    let first_err = get_first_error(batch, fee_collection_results);
-    first_err.map(|(result, _)| result).unwrap_or(Ok(()))
+    Ok(());
 }
 
 #[derive(Default)]
