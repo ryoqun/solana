@@ -5243,7 +5243,7 @@ impl Bank {
                 sanitized_tx,
                 &mut loaded_transaction,
                 compute_budget,
-                nonce.as_ref().map(DurableNonceFee::from),
+                None.as_ref().map(DurableNonceFee::from),
                 enable_cpi_recording,
                 enable_log_recording,
                 enable_return_data_recording,
