@@ -6329,30 +6329,7 @@ impl Bank {
         &self,
         tx: impl Into<VersionedTransaction>,
     ) -> TransactionExecutionResult {
-        let txs = vec![tx.into()];
-        let batch = match self.prepare_entry_batch(txs) {
-            Ok(batch) => batch,
-            Err(err) => return TransactionExecutionResult::NotExecuted(err),
-        };
-
-        let (
-            TransactionResults {
-                mut execution_results,
-                ..
-            },
-            ..,
-        ) = self.load_execute_and_commit_transactions(
-            &batch,
-            MAX_PROCESSING_AGE,
-            false, // collect_balances
-            false, // enable_cpi_recording
-            true,  // enable_log_recording
-            true,  // enable_return_data_recording
-            &mut ExecuteTimings::default(),
-            Some(1000 * 1000),
-        );
-
-        execution_results.remove(0)
+        todo!();
     }
 
     /// Process multiple transaction in a single batch. This is used for benches and unit tests.
