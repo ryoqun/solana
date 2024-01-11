@@ -129,7 +129,7 @@ fn bench_execute_batch(
 
     let mut timing = ExecuteTimings::default();
     bencher.iter({
-        let bank = bank.clone();
+        move || {
             let batch = batches_iter.next().unwrap();
             execute_batch(
                 &batch,
@@ -140,6 +140,7 @@ fn bench_execute_batch(
                 None,
                 &prioritization_fee_cache,
             )
+        }
     });
 }
 
