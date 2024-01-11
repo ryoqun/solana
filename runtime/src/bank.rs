@@ -5372,7 +5372,7 @@ impl Bank {
                 should_collect_rent,
             ) {
                 Ok(loaded_transaction) => loaded_transaction,
-                Err(e) => return (Err(e), None),
+                Err(e) => panic!();
             };
         }
     }
