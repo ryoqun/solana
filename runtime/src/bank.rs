@@ -5548,7 +5548,7 @@ impl Bank {
             lamports_per_signature,
         );
         */
-        let rent_debits = vec![]; //self.collect_rent(&execution_results, loaded_txs);
+        //let rent_debits = self.collect_rent(&execution_results, loaded_txs);
 
         /*
         // Cached vote and stake accounts are synchronized with accounts-db
