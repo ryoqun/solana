@@ -5118,13 +5118,13 @@ impl Bank {
         );
         check_time.stop();
 
-        let mut program_accounts_map: usize = self.filter_executable_program_accounts(
+        let mut program_accounts_map = Default::default(); /*self.filter_executable_program_accounts(
             &self.ancestors,
             sanitized_txs,
             &mut check_results,
             PROGRAM_OWNERS,
             &self.blockhash_queue.read().unwrap(),
-        );
+        );*/
         let native_loader = native_loader::id();
         for builtin_program in self.builtin_programs.iter() {
             program_accounts_map.insert(*builtin_program, (&native_loader, 0));
