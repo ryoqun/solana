@@ -5150,6 +5150,7 @@ impl Bank {
         account_overrides: Option<&AccountOverrides>,
         log_messages_bytes_limit: Option<usize>,
     ) {
+            let hash_queue = self.blockhash_queue.read().unwrap();
         let sanitized_txs = batch.sanitized_transactions();
         let mut error_counters = TransactionErrorMetrics::default();
         let mut program_accounts_map = self.filter_executable_program_accounts(
@@ -5167,8 +5168,8 @@ impl Bank {
         let programs_loaded_for_tx_batch = Rc::new(RefCell::new(
             self.replenish_program_cache(&program_accounts_map),
         ));
+
         for sanitized_tx in sanitized_txs {
-            let hash_queue = self.blockhash_queue.read().unwrap();
             let last_blockhash = hash_queue.last_hash();
             let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
             self.check_transaction_age(
