@@ -171,6 +171,43 @@ pub fn execute_batch(
     Ok(())
 }
 
+pub fn execute_batch2(
+    batch: &TransactionBatchWithIndexes,
+    bank: &Arc<Bank>,
+    transaction_status_sender: Option<&TransactionStatusSender>,
+    replay_vote_sender: Option<&ReplayVoteSender>,
+    timings: &mut ExecuteTimings,
+    log_messages_bytes_limit: Option<usize>,
+    prioritization_fee_cache: &PrioritizationFeeCache,
+) -> Result<()> {
+    let TransactionBatchWithIndexes {
+        batch,
+        transaction_indexes,
+    } = batch;
+    let record_token_balances = transaction_status_sender.is_some();
+
+    let mut mint_decimals: HashMap<Pubkey, u8> = HashMap::new();
+
+    let pre_token_balances = if record_token_balances {
+        collect_token_balances(bank, batch, &mut mint_decimals)
+    } else {
+        vec![]
+    };
+
+    batch.bank().load_execute_and_commit_transactions2(
+        batch,
+        MAX_PROCESSING_AGE,
+        transaction_status_sender.is_some(),
+        transaction_status_sender.is_some(),
+        transaction_status_sender.is_some(),
+        transaction_status_sender.is_some(),
+        timings,
+        log_messages_bytes_limit,
+    );
+
+    Ok(())
+}
+
 #[derive(Default)]
 pub struct ExecuteBatchesInternalMetrics {
     execution_timings_per_thread: HashMap<usize, ThreadExecuteTimings>,

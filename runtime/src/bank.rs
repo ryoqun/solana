@@ -6243,6 +6243,36 @@ impl Bank {
         );
     }
 
+    #[must_use]
+    pub fn load_execute_and_commit_transactions2(
+        &self,
+        batch: &TransactionBatch,
+        max_age: usize,
+        collect_balances: bool,
+        enable_cpi_recording: bool,
+        enable_log_recording: bool,
+        enable_return_data_recording: bool,
+        timings: &mut ExecuteTimings,
+        log_messages_bytes_limit: Option<usize>,
+    ) {
+        let pre_balances = if collect_balances {
+            self.collect_balances(batch)
+        } else {
+            vec![]
+        };
+
+        self.load_and_execute_transactions2(
+            batch,
+            max_age,
+            enable_cpi_recording,
+            enable_log_recording,
+            enable_return_data_recording,
+            timings,
+            None,
+            log_messages_bytes_limit,
+        );
+    }
+
     /// Process a Transaction. This is used for unit tests and simply calls the vector
     /// Bank::process_transactions method.
     pub fn process_transaction(&self, tx: &Transaction) -> Result<()> {

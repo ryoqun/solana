@@ -149,9 +149,60 @@ fn bench_execute_batch(
     //eprintln!("{:?}", timing);
 }
 
+fn bench_execute_batch2(
+    bencher: &mut Bencher,
+    batch_size: usize,
+    apply_cost_tracker_during_replay: bool,
+) {
+    let BenchFrame {
+        bank,
+        prioritization_fee_cache,
+    } = setup(apply_cost_tracker_during_replay);
+    let transactions = create_transactions(&bank, 2_usize.pow(20));
+    let bank2 = bank.clone();
+    let batches: Vec<_> = transactions
+        .chunks(batch_size)
+        .map(|txs| {
+            let mut batch =
+                TransactionBatch::new(vec![Ok(()); txs.len()], &bank2, Cow::Borrowed(txs));
+            batch.set_needs_unlock(false);
+            TransactionBatchWithIndexes {
+                batch,
+                transaction_indexes: (0..batch_size).collect(),
+            }
+        })
+        .collect();
+    let mut batches_iter = batches.into_iter();
+
+    let mut timing = ExecuteTimings::default();
+    //eprintln!("profile me!: {}", std::process::id());
+    //std::thread::sleep(std::time::Duration::from_secs(10));
+
+    bencher.iter(|| {
+        for _ in 0..(64/batch_size) {
+            let batch = batches_iter.next().unwrap();
+            execute_batch2(
+                &batch,
+                &bank,
+                None,
+                None,
+                &mut timing,
+                None,
+                &prioritization_fee_cache,
+            ).unwrap();
+        }
+    });
+    //eprintln!("{:?}", timing);
+}
+
 #[bench]
 fn bench_execute_batch_01_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 1, false);
+}
+
+#[bench]
+fn bench_execute_batch_00000_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 1, false);
 }
 
 #[bench]
