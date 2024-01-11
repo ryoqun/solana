@@ -168,7 +168,7 @@ pub fn execute_batch(
         log_messages_bytes_limit,
     );
 
-    Ok(());
+    Ok(())
 }
 
 #[derive(Default)]
