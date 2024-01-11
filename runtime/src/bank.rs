@@ -6192,7 +6192,7 @@ impl Bank {
         let mut error_counters = TransactionErrorMetrics::default();
         let mut program_accounts_map = self.filter_executable_program_accounts(
             &self.ancestors,
-            sanitized_txs,
+            &[],
             &mut [],
             PROGRAM_OWNERS,
             &hash_queue,
