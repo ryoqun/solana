@@ -5015,6 +5015,7 @@ impl Bank {
         hash_queue: &BlockhashQueue,
     ) -> HashMap<Pubkey, (&'a Pubkey, u64)> {
         let mut result: HashMap<Pubkey, (&'a Pubkey, u64)> = HashMap::new();
+        return result;
         lock_results.iter_mut().zip(txs).for_each(|etx| {
             if let ((Ok(()), nonce), tx) = etx {
                 if nonce
@@ -5118,13 +5119,13 @@ impl Bank {
         );
         check_time.stop();
 
-        let mut program_accounts_map = Default::default(); /*self.filter_executable_program_accounts(
+        let mut program_accounts_map = self.filter_executable_program_accounts(
             &self.ancestors,
             sanitized_txs,
             &mut check_results,
             PROGRAM_OWNERS,
             &self.blockhash_queue.read().unwrap(),
-        );*/
+        );
         let native_loader = native_loader::id();
         for builtin_program in self.builtin_programs.iter() {
             program_accounts_map.insert(*builtin_program, (&native_loader, 0));
