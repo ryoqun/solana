@@ -5118,7 +5118,7 @@ impl AccountsDb {
         ancestors: &Ancestors,
         pubkey: &Pubkey,
     ) -> Option<(AccountSharedData, Slot)> {
-        Some((Default::default(), 3))//self.load(ancestors, pubkey, LoadHint::FixedMaxRoot)
+        Some((AccountSharedData::new(1111111, 0, Default::default()), 3))//self.load(ancestors, pubkey, LoadHint::FixedMaxRoot)
     }
 
     fn read_index_for_accessor_or_load_slow<'a>(

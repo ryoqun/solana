@@ -5141,10 +5141,7 @@ impl Bank {
                 &program_accounts_map,
                 &programs_loaded_for_tx_batch.borrow(),
                 self.should_collect_rent(),
-            ) {
-                Ok(loaded_transaction) => loaded_transaction,
-                Err(e) => panic!(),
-            };
+            ).unwrap();
 
             let compute_budget =
                 if let Some(compute_budget) = self.runtime_config.compute_budget {
