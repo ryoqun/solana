@@ -150,23 +150,13 @@ fn bench_execute_batch(
 }
 
 #[bench]
-fn bench_execute_batch_unbatched(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 1, true);
-}
-
-#[bench]
-fn bench_execute_batch_half_batch(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 32, true);
-}
-
-#[bench]
-fn bench_execute_batch_full_batch(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 64, true);
-}
-
-#[bench]
 fn bench_execute_batch_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 1, false);
+}
+
+#[bench]
+fn bench_execute_batch_tx2_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+    bench_execute_batch(bencher, 2, false);
 }
 
 #[bench]
