@@ -5313,6 +5313,11 @@ impl Bank {
                 &hash_queue,
                 &mut error_counters,
             ).0.unwrap();           
+            let rcache = self.status_cache.read().unwrap();
+            if self.is_transaction_already_processed(sanitized_tx, &rcache)
+            {
+                panic!();
+            }
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
