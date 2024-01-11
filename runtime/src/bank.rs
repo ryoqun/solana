@@ -4262,77 +4262,7 @@ impl Bank {
         transaction: &SanitizedTransaction,
         enable_cpi_recording: bool,
     ) -> TransactionSimulationResult {
-        let account_keys = transaction.message().account_keys();
-        let number_of_accounts = account_keys.len();
-        let account_overrides = self.get_account_overrides_for_simulation(&account_keys);
-        let batch = self.prepare_unlocked_batch_from_single_tx(transaction);
-        let mut timings = ExecuteTimings::default();
-
-        let LoadAndExecuteTransactionsOutput {
-            loaded_transactions,
-            mut execution_results,
-            ..
-        } = self.load_and_execute_transactions(
-            &batch,
-            // After simulation, transactions will need to be forwarded to the leader
-            // for processing. During forwarding, the transaction could expire if the
-            // delay is not accounted for.
-            MAX_PROCESSING_AGE - MAX_TRANSACTION_FORWARDING_DELAY,
-            enable_cpi_recording,
-            true,
-            true,
-            &mut timings,
-            Some(&account_overrides),
-            None,
-        );
-
-        let post_simulation_accounts = loaded_transactions
-            .into_iter()
-            .next()
-            .unwrap()
-            .0
-            .ok()
-            .map(|loaded_transaction| {
-                loaded_transaction
-                    .accounts
-                    .into_iter()
-                    .take(number_of_accounts)
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-
-        let units_consumed =
-            timings
-                .details
-                .per_program_timings
-                .iter()
-                .fold(0, |acc: u64, (_, program_timing)| {
-                    acc.saturating_add(program_timing.accumulated_units)
-                        .saturating_add(program_timing.total_errored_units)
-                });
-
-        debug!("simulate_transaction: {:?}", timings);
-
-        let execution_result = execution_results.pop().unwrap();
-        let flattened_result = execution_result.flattened_result();
-        let (logs, return_data, inner_instructions) = match execution_result {
-            TransactionExecutionResult::Executed { details, .. } => (
-                details.log_messages,
-                details.return_data,
-                details.inner_instructions,
-            ),
-            TransactionExecutionResult::NotExecuted(_) => (None, None, None),
-        };
-        let logs = logs.unwrap_or_default();
-
-        TransactionSimulationResult {
-            result: flattened_result,
-            logs,
-            post_simulation_accounts,
-            units_consumed,
-            return_data,
-            inner_instructions,
-        }
+        todo!();
     }
 
     fn get_account_overrides_for_simulation(&self, account_keys: &AccountKeys) -> AccountOverrides {
