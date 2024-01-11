@@ -5074,7 +5074,7 @@ impl Bank {
         debug!("processing transactions: {}", sanitized_txs.len());
         let mut error_counters = TransactionErrorMetrics::default();
 
-        let retryable_transaction_indexes: Vec<_> = batch
+        let retryable_transaction_indexes: Vec<_> = vec![]; /*batch
             .lock_results()
             .iter()
             .enumerate()
@@ -5109,6 +5109,7 @@ impl Bank {
                 Ok(_) => None,
             })
             .collect();
+        */
 
         let mut check_time = Measure::start("check_transactions");
         let mut check_results = self.check_transactions(
