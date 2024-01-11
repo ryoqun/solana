@@ -5149,6 +5149,10 @@ impl Bank {
         timings: &mut ExecuteTimings,
         account_overrides: Option<&AccountOverrides>,
         log_messages_bytes_limit: Option<usize>,
+        hash_queue: usize,
+        error_counters: usize,
+        program_accounts_map: usize,
+        programs_loaded_for_tx_batch: usize,
     ) {
         let sanitized_txs = batch.sanitized_transactions();
 
@@ -6214,6 +6218,10 @@ impl Bank {
             timings,
             None,
             log_messages_bytes_limit,
+            hash_queue,
+            error_counters,
+            program_accounts_map,
+            programs_loaded_for_tx_batch,
         );
     }
 
