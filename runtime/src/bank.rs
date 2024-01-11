@@ -5128,7 +5128,7 @@ impl Bank {
                         &mut error_counters,
                         log_messages_bytes_limit,
                         &programs_loaded_for_tx_batch.borrow(),
-                    );
+                    )
                 }
             })
             .collect();
