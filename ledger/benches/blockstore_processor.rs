@@ -112,7 +112,7 @@ fn bench_execute_batch(
         bank,
         prioritization_fee_cache,
     } = setup(apply_cost_tracker_during_replay);
-    let transactions = create_transactions(&bank, 64_usize.pow(2));
+    let transactions = create_transactions(&bank, 2_usize.pow(20));
     let bank2 = bank.clone();
     let batches: Vec<_> = transactions
         .chunks(batch_size)
@@ -129,7 +129,7 @@ fn bench_execute_batch(
     let mut batches_iter = batches.into_iter();
 
     let mut timing = ExecuteTimings::default();
-    for _ in 0..(64*64/batch_size) {
+    bencher.iter(|| {
         let batch = batches_iter.next().unwrap();
         execute_batch(
             &batch,
@@ -139,8 +139,8 @@ fn bench_execute_batch(
             &mut timing,
             None,
             &prioritization_fee_cache,
-        ).unwrap();
-    }
+        )
+    });
 }
 
 #[bench]
