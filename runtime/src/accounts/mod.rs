@@ -134,7 +134,7 @@ pub(super) fn load_accounts(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn load_transaction_accounts(
+pub(super) fn load_transaction_accounts(
     accounts_db: &AccountsDb,
     ancestors: &Ancestors,
     tx: &SanitizedTransaction,
