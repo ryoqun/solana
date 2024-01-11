@@ -5069,7 +5069,7 @@ impl Bank {
         timings: &mut ExecuteTimings,
         account_overrides: Option<&AccountOverrides>,
         log_messages_bytes_limit: Option<usize>,
-    ) -> LoadAndExecuteTransactionsOutput {
+    ) {
         let sanitized_txs = batch.sanitized_transactions();
         debug!("processing transactions: {}", sanitized_txs.len());
         let mut error_counters = TransactionErrorMetrics::default();
@@ -5355,16 +5355,6 @@ impl Bank {
                 *err_count,
                 *err_count + executed_with_successful_result_count
             );
-        }
-        LoadAndExecuteTransactionsOutput {
-            loaded_transactions,
-            execution_results,
-            retryable_transaction_indexes,
-            executed_transactions_count,
-            executed_non_vote_transactions_count,
-            executed_with_successful_result_count,
-            signature_count,
-            error_counters,
         }
     }
 
