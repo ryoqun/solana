@@ -361,27 +361,6 @@ pub(super) fn load_transaction_accounts(
                 builtins_start_index.saturating_add(owner_index)
             } else {
                 let owner_index = accounts.len();
-                if let Some((owner_account, _)) =
-                    accounts_db.load_with_fixed_root(ancestors, owner_id)
-                {
-                    if !native_loader::check_id(owner_account.owner())
-                        || !(is_builtin(&owner_account)
-                            || is_executable(&owner_account, feature_set))
-                    {
-                        error_counters.invalid_program_for_execution += 1;
-                        return Err(TransactionError::InvalidProgramForExecution);
-                    }
-                    accumulate_and_check_loaded_account_data_size(
-                        &mut accumulated_accounts_data_size,
-                        owner_account.data().len(),
-                        requested_loaded_accounts_data_size_limit,
-                        error_counters,
-                    )?;
-                    accounts.push((*owner_id, owner_account));
-                } else {
-                    error_counters.account_not_found += 1;
-                    return Err(TransactionError::ProgramAccountNotFound);
-                }
                 owner_index
             };
             account_indices.insert(0, program_index as IndexOfAccount);
