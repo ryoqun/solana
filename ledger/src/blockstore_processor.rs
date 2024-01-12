@@ -166,7 +166,7 @@ pub fn execute_batch(
         transaction_status_sender.is_some(),
         timings,
         log_messages_bytes_limit,
-    ).unwrap();
+    );
 
     Ok(())
 }
