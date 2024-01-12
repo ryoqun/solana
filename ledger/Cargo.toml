@@ -33,7 +33,7 @@ rand = { workspace = true }
 rand_chacha = { workspace = true }
 rayon = { workspace = true }
 reed-solomon-erasure = { workspace = true, features = ["simd-accel"] }
-rustix = { version = "0.38.28", features = ["threads"] }
+rustix = { version = "0.38.28", features = ["thread"] }
 scopeguard = { workspace = true }
 serde = { workspace = true }
 serde_bytes = { workspace = true }
