@@ -180,7 +180,7 @@ fn bench_execute_batch2(
     eprintln!("profile me!: {}", std::process::id());
     std::thread::sleep(std::time::Duration::from_secs(10));
 
-    bencher.iter(|| {
+    for _ in 0..100 {
         for _ in 0..(64/batch_size) {
             let batch = batches_iter.next().unwrap();
             execute_batch2(
@@ -193,7 +193,7 @@ fn bench_execute_batch2(
                 &prioritization_fee_cache,
             ).unwrap();
         }
-    });
+    }
     //eprintln!("{:?}", timing);
 }
 
