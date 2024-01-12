@@ -134,13 +134,13 @@ fn bench_execute_batch(
 
     std::thread::scope(move |scope| {
         scope.spawn(move || {
-            eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
+            //std::thread::sleep(std::time::Duration::from_secs(10));
             bencher.iter(|| {
             //for _ in 0..3 {
             //let now = std::time::Instant::now();
-            let iteration_count = 100;
-            for _ in 0..iteration_count {
+            //let iteration_count_for_profiling = 100;
+            //for _ in 0..iteration_count_for_profiling {
                 for _ in 0..(64/batch_size) {
                     execute_batch(
                         &batch,
@@ -152,7 +152,7 @@ fn bench_execute_batch(
                         &prioritization_fee_cache,
                     ).unwrap();
                 }
-            }
+            //}
             });
             //dbg!(now.elapsed());
             //}
@@ -192,13 +192,13 @@ fn bench_execute_batch2(
 
     std::thread::scope(move |scope| {
         scope.spawn(move || {
-            eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
+            //std::thread::sleep(std::time::Duration::from_secs(10));
             bencher.iter(|| {
             //for _ in 0..3 {
             //let now = std::time::Instant::now();
-            let iteration_count = 100;
-            for _ in 0..iteration_count {
+            //let iteration_count_for_profiling = 100;
+            //for _ in 0..iteration_count_for_profiling {
                 for _ in 0..(64/batch_size) {
                     execute_batch2(
                         &batch,
@@ -210,7 +210,7 @@ fn bench_execute_batch2(
                         &prioritization_fee_cache,
                     ).unwrap();
                 }
-            }
+            //}
             });
             //dbg!(now.elapsed());
             //}
