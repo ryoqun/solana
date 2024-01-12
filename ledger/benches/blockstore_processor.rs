@@ -133,9 +133,10 @@ fn bench_execute_batch(
 
     std::thread::scope(move |scope| {
         scope.spawn(move || {
-            eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
-            std::thread::sleep(std::time::Duration::from_secs(10));
-            for _ in 0..100 {
+            //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
+            //std::thread::sleep(std::time::Duration::from_secs(10));
+            bencher.iter(|| {
+            //for _ in 0..100 {
                 for _ in 0..(64/batch_size) {
                     let batch = batches_iter.next().unwrap();
                     execute_batch(
@@ -148,7 +149,8 @@ fn bench_execute_batch(
                         &prioritization_fee_cache,
                     ).unwrap();
                 }
-            }
+            //}
+            });
         });
     });
     drop(batches);
