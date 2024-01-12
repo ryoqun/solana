@@ -137,6 +137,7 @@ fn bench_execute_batch(
             //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
             //std::thread::sleep(std::time::Duration::from_secs(10));
             //bencher.iter(|| {
+            for _ in 0..3 {
             let now = std::time::Instant::now();
             //let iteration_count = 100;
             //for _ in 0..iteration_count {
@@ -154,6 +155,7 @@ fn bench_execute_batch(
             //}
             //});
             dbg!(now.elapsed());
+            }
         });
     });
     drop(batches);
@@ -193,6 +195,7 @@ fn bench_execute_batch2(
             //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
             //std::thread::sleep(std::time::Duration::from_secs(10));
             //bencher.iter(|| {
+            for _ in 0..3 {
             let now = std::time::Instant::now();
             //let iteration_count = 100;
             //for _ in 0..iteration_count {
@@ -210,6 +213,7 @@ fn bench_execute_batch2(
             //}
             //});
             dbg!(now.elapsed());
+            }
         });
     });
     drop(batches);
