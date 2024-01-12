@@ -127,7 +127,7 @@ fn bench_execute_batch(
             }
         })
         .collect();
-    let mut batches_iter = batches.into_iter();
+    let mut batches_iter = batches.iter();
 
     let mut timing = ExecuteTimings::default();
 
