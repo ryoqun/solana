@@ -113,7 +113,7 @@ fn bench_execute_batch(
         bank,
         prioritization_fee_cache,
     } = setup(apply_cost_tracker_during_replay);
-    let transactions = create_transactions(&bank, 2_usize.pow(21));
+    let transactions = create_transactions(&bank, 2_usize.pow(19));
     let bank2 = bank.clone();
     let batches: Vec<_> = transactions
         .chunks(batch_size)
@@ -130,16 +130,17 @@ fn bench_execute_batch(
     let mut batches_iter = batches.iter();
 
     let mut timing = ExecuteTimings::default();
+    let batch = batches_iter.next().unwrap();
 
     std::thread::scope(move |scope| {
         scope.spawn(move || {
-            eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
+            //std::thread::sleep(std::time::Duration::from_secs(10));
             //bencher.iter(|| {
-            let iteration_count = 40;
-            for _ in 0..iteration_count {
+            let now = std::time::Instant::now();
+            //let iteration_count = 100;
+            //for _ in 0..iteration_count {
                 for _ in 0..(64/batch_size) {
-                    let batch = batches_iter.next().unwrap();
                     execute_batch(
                         &batch,
                         &bank,
@@ -150,8 +151,9 @@ fn bench_execute_batch(
                         &prioritization_fee_cache,
                     ).unwrap();
                 }
-            }
+            //}
             //});
+            dbg!(now.elapsed());
         });
     });
     drop(batches);
@@ -167,7 +169,7 @@ fn bench_execute_batch2(
         bank,
         prioritization_fee_cache,
     } = setup(apply_cost_tracker_during_replay);
-    let transactions = create_transactions(&bank, 2_usize.pow(21));
+    let transactions = create_transactions(&bank, 2_usize.pow(19));
     let bank2 = bank.clone();
     let batches: Vec<_> = transactions
         .chunks(batch_size)
@@ -184,16 +186,17 @@ fn bench_execute_batch2(
     let mut batches_iter = batches.iter();
 
     let mut timing = ExecuteTimings::default();
+    let batch = batches_iter.next().unwrap();
 
     std::thread::scope(move |scope| {
         scope.spawn(move || {
-            eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            //eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
+            //std::thread::sleep(std::time::Duration::from_secs(10));
             //bencher.iter(|| {
-            let iteration_count = 40;
-            for _ in 0..iteration_count {
+            let now = std::time::Instant::now();
+            //let iteration_count = 100;
+            //for _ in 0..iteration_count {
                 for _ in 0..(64/batch_size) {
-                    let batch = batches_iter.next().unwrap();
                     execute_batch2(
                         &batch,
                         &bank,
@@ -204,8 +207,9 @@ fn bench_execute_batch2(
                         &prioritization_fee_cache,
                     ).unwrap();
                 }
-            }
+            //}
             //});
+            dbg!(now.elapsed());
         });
     });
     drop(batches);
