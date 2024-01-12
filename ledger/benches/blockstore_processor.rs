@@ -181,7 +181,7 @@ fn bench_execute_batch2(
     std::thread::sleep(std::time::Duration::from_secs(10));
 
     std::thread::scope(move |scope| {
-        scope.spawn(|| {
+        scope.spawn(move || {
         for _ in 0..100 {
             for _ in 0..(64/batch_size) {
                 let batch = batches_iter.next().unwrap();
