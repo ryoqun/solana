@@ -180,20 +180,22 @@ fn bench_execute_batch2(
     eprintln!("profile me!: {}", std::process::id());
     std::thread::sleep(std::time::Duration::from_secs(10));
 
-    for _ in 0..100 {
-        for _ in 0..(64/batch_size) {
-            let batch = batches_iter.next().unwrap();
-            execute_batch2(
-                &batch,
-                &bank,
-                None,
-                None,
-                &mut timing,
-                None,
-                &prioritization_fee_cache,
-            ).unwrap();
+    std::thread::spawn(|| {
+        for _ in 0..100 {
+            for _ in 0..(64/batch_size) {
+                let batch = batches_iter.next().unwrap();
+                execute_batch2(
+                    &batch,
+                    &bank,
+                    None,
+                    None,
+                    &mut timing,
+                    None,
+                    &prioritization_fee_cache,
+                ).unwrap();
+            }
         }
-    }
+    });
     //eprintln!("{:?}", timing);
 }
 
