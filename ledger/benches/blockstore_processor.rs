@@ -130,23 +130,28 @@ fn bench_execute_batch(
     let mut batches_iter = batches.into_iter();
 
     let mut timing = ExecuteTimings::default();
-    eprintln!("profile me!: {}", std::process::id());
-    std::thread::sleep(std::time::Duration::from_secs(10));
 
-    for _ in 0..100 {
-        for _ in 0..(64/batch_size) {
-            let batch = batches_iter.next().unwrap();
-            execute_batch(
-                &batch,
-                &bank,
-                None,
-                None,
-                &mut timing,
-                None,
-                &prioritization_fee_cache,
-            ).unwrap();
-        }
-    };
+    std::thread::scope(move |scope| {
+        scope.spawn(move || {
+            eprintln!("profile me!: {}", rustix::thread::gettid().as_raw_nonzero().get());
+            std::thread::sleep(std::time::Duration::from_secs(10));
+            for _ in 0..100 {
+                for _ in 0..(64/batch_size) {
+                    let batch = batches_iter.next().unwrap();
+                    execute_batch(
+                        &batch,
+                        &bank,
+                        None,
+                        None,
+                        &mut timing,
+                        None,
+                        &prioritization_fee_cache,
+                    ).unwrap();
+                }
+            }
+        });
+    });
+    drop(batches);
     //eprintln!("{:?}", timing);
 }
 
@@ -176,7 +181,6 @@ fn bench_execute_batch2(
     let mut batches_iter = batches.iter();
 
     let mut timing = ExecuteTimings::default();
-
 
     std::thread::scope(move |scope| {
         scope.spawn(move || {
