@@ -176,8 +176,9 @@ fn bench_execute_batch2(
     let mut batches_iter = batches.into_iter();
 
     let mut timing = ExecuteTimings::default();
-    //eprintln!("profile me!: {}", std::process::id());
-    //std::thread::sleep(std::time::Duration::from_secs(10));
+
+    eprintln!("profile me!: {}", std::process::id());
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
     bencher.iter(|| {
         for _ in 0..(64/batch_size) {
