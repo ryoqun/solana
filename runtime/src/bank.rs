@@ -6075,7 +6075,6 @@ impl Bank {
     }
 
     /// Process a batch of transactions.
-    #[must_use]
     pub fn load_execute_and_commit_transactions(
         &self,
         batch: &TransactionBatch,
@@ -6105,7 +6104,6 @@ impl Bank {
         );
     }
 
-    #[must_use]
     pub fn load_execute_and_commit_transactions2(
         &self,
         batch: &TransactionBatch,
