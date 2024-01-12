@@ -6091,7 +6091,6 @@ impl Bank {
         } else {
             vec![]
         };
-        return;
 
         self.load_and_execute_transactions(
             batch,
@@ -6121,7 +6120,6 @@ impl Bank {
         } else {
             vec![]
         };
-        return;
 
         self.load_and_execute_transactions2(
             batch,
