@@ -197,6 +197,7 @@ fn bench_execute_batch2(
             }
         }});
     });
+    drop(batches);
     //eprintln!("{:?}", timing);
 }
 
