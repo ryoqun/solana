@@ -5076,10 +5076,8 @@ impl Bank {
     ) {
         let sanitized_txs = batch.sanitized_transactions();
         let mut error_counters = TransactionErrorMetrics::default();
-        let hash_queue = self.blockhash_queue.read().unwrap();
-        let rcache = self.status_cache.read().unwrap();
-
         for sanitized_tx in sanitized_txs {
+            let hash_queue = self.blockhash_queue.read().unwrap();
             let last_blockhash = hash_queue.last_hash();
             let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
             self.check_transaction_age(
@@ -5089,6 +5087,7 @@ impl Bank {
                 &hash_queue,
                 &mut error_counters,
             ).0.unwrap();           
+            let rcache = self.status_cache.read().unwrap();
             if self.is_transaction_already_processed(sanitized_tx, &rcache)
             {
                 panic!();
