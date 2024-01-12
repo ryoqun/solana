@@ -211,56 +211,41 @@ fn bench_execute_batch2(
 }
 
 #[bench]
-fn bench_execute_batch_01_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_01_txes_per_batch(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 1, false);
 }
 
 #[bench]
-fn bench_execute_batch_00001_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch2(bencher, 1, false);
-}
-
-#[bench]
-fn bench_execute_batch_00004_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch2(bencher, 4, false);
-}
-
-#[bench]
-fn bench_execute_batch_00016_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch2(bencher, 16, false);
-}
-
-#[bench]
-fn bench_execute_batch_00064_unbatched_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch2(bencher, 64, false);
-}
-
-#[bench]
-fn bench_execute_batch_02_tx2_batch_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 2, false);
-}
-
-#[bench]
-fn bench_execute_batch_04_tx4_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_04_txes_per_batch(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 4, false);
 }
 
 #[bench]
-fn bench_execute_batch_08_tx8_batch_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 8, false);
-}
-
-#[bench]
-fn bench_execute_batch_16_tx8_batch_disable_tx_cost_update(bencher: &mut Bencher) {
+fn bench_execute_batch_16_txes_per_batch(bencher: &mut Bencher) {
     bench_execute_batch(bencher, 16, false);
 }
 
 #[bench]
-fn bench_execute_batch_32_half_batch_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 32, false);
+fn bench_execute_batch_64_txes_per_batch(bencher: &mut Bencher) {
+    bench_execute_batch(bencher, 64, false);
 }
 
 #[bench]
-fn bench_execute_batch_64_full_batch_disable_tx_cost_update(bencher: &mut Bencher) {
-    bench_execute_batch(bencher, 64, false);
+fn bench_execute_batch_flattend_01_txes_per_batch(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 1, false);
+}
+
+#[bench]
+fn bench_execute_batch_flattend_04_txes_per_batch(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 4, false);
+}
+
+#[bench]
+fn bench_execute_batch_flattend_16_txes_per_batch(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 16, false);
+}
+
+#[bench]
+fn bench_execute_batch_flattend_64_txes_per_batch(bencher: &mut Bencher) {
+    bench_execute_batch2(bencher, 64, false);
 }
