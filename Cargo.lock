@@ -7557,12 +7557,14 @@ dependencies = [
  "crossbeam-channel",
  "derivative",
  "log",
+ "qualifier_attr",
  "solana-ledger",
  "solana-logger",
  "solana-program-runtime",
  "solana-runtime",
  "solana-sdk",
  "solana-unified-scheduler-logic",
+ "solana-unified-scheduler-pool",
  "solana-vote",
 ]
 

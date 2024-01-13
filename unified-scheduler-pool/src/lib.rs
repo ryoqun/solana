@@ -13,6 +13,7 @@ use {
     crossbeam_channel::{select, unbounded, Receiver, SendError, Sender},
     derivative::Derivative,
     log::*,
+    qualifier_attr::qualifiers,
     solana_ledger::blockstore_processor::{
         execute_batch, TransactionBatchWithIndexes, TransactionStatusSender,
     },
@@ -30,6 +31,7 @@ use {
     solana_unified_scheduler_logic::Task,
     solana_vote::vote_sender_types::ReplayVoteSender,
     std::{
+        collections::VecDeque,
         fmt::Debug,
         marker::PhantomData,
         sync::{
@@ -82,6 +84,7 @@ where
 {
     // Some internal impl and test code want an actual concrete type, NOT the
     // `dyn InstalledSchedulerPool`. So don't merge this into `Self::new_dyn()`.
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
     fn new(
         log_messages_bytes_limit: Option<usize>,
         transaction_status_sender: Option<TransactionStatusSender>,
@@ -136,6 +139,7 @@ where
             .push(scheduler);
     }
 
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
         // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
         // returned recently
@@ -429,6 +433,19 @@ impl<TH: TaskHandler> PooledScheduler<TH> {
             initial_context,
         )
     }
+
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
+    fn clear_session_result_with_timings(&mut self) {
+        assert_matches!(
+            self.inner.thread_manager.take_session_result_with_timings(),
+            (Ok(_), _)
+        );
+    }
+
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
+    fn restart_session(&mut self) {
+        self.inner.thread_manager.start_session(&self.context);
+    }
 }
 
 impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
@@ -547,28 +564,59 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             // by design or by means of offloading at the last resort.
             move || loop {
                 let mut is_finished = false;
+
+                #[cfg(not(feature = "bench-conflicting-execution"))]
+                let is_conflicting = false;
+                #[cfg(feature = "bench-conflicting-execution")]
+                let is_conflicting = true;
+                let mut tasks = VecDeque::with_capacity(10000);
+
                 while !is_finished {
                     select! {
                         recv(finished_task_receiver) -> executed_task => {
                             let executed_task = executed_task.unwrap();
 
                             active_task_count = active_task_count.checked_sub(1).unwrap();
-                            executed_task_sender
-                                .send(ExecutedTaskPayload::Payload(executed_task))
-                                .unwrap();
+
+                            if is_conflicting {
+                                if let Some(task) = tasks.pop_front() {
+                                    runnable_task_sender
+                                        .send_payload(task)
+                                        .unwrap();
+                                }
+                            }
+
+                            #[cfg(feature = "bench-drop-in-accumulator")]
+                            {
+                                executed_task_sender
+                                    .send(ExecutedTaskPayload::Payload(executed_task))
+                                    .unwrap();
+                            }
+                            #[cfg(feature = "bench-drop-in-scheduler")]
+                            {
+                                assert_matches!(executed_task.result_with_timings, (Ok(_), _));
+                                drop(executed_task);
+                            }
                         },
                         recv(new_task_receiver) -> message => {
-                            match message.unwrap() {
+                            let Ok(message) = message else {
+                                break;
+                            };
+                            match message {
                                 NewTaskPayload::Payload(task) => {
                                     assert!(!session_ending);
 
                                     // so, we're NOT scheduling at all here; rather, just execute
                                     // tx straight off. the inter-tx locking deps aren't needed to
                                     // be resolved in the case of single-threaded FIFO like this.
+                                    if !is_conflicting || active_task_count == 0 {
+                                        runnable_task_sender
+                                            .send_payload(task)
+                                            .unwrap();
+                                    } else {
+                                        tasks.push_back(task);
+                                    }
                                     active_task_count = active_task_count.checked_add(1).unwrap();
-                                    runnable_task_sender
-                                        .send_payload(task)
-                                        .unwrap();
                                 }
                                 NewTaskPayload::OpenSubchannel(context) => {
                                     // signal about new SchedulingContext to both handler and

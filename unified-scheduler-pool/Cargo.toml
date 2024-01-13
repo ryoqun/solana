@@ -14,6 +14,7 @@ assert_matches = { workspace = true }
 crossbeam-channel = { workspace = true }
 derivative = { workspace = true }
 log = { workspace = true }
+qualifier_attr = { workspace = true }
 solana-ledger = { workspace = true }
 solana-program-runtime = { workspace = true }
 solana-runtime = { workspace = true }
@@ -25,3 +26,11 @@ solana-vote = { workspace = true }
 assert_matches = { workspace = true }
 solana-logger = { workspace = true }
 solana-runtime = { workspace = true, features = ["dev-context-only-utils"] }
+# See order-crates-for-publishing.py for using this unusual `path = "."`
+solana-unified-scheduler-pool = { path = ".", features = ["dev-context-only-utils"] }
+
+[features]
+dev-context-only-utils = []
+bench-drop-in-accumulator = []
+bench-drop-in-scheduler = []
+bench-conflicting-execution = []
