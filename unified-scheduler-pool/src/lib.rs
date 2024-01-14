@@ -570,6 +570,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 #[cfg(feature = "bench-conflicting-execution")]
                 let is_conflicting = true;
                 let mut tasks = VecDeque::with_capacity(10000);
+                let mut result_with_timings = initialized_result_with_timings();
 
                 while !is_finished {
                     select! {
@@ -595,6 +596,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             #[cfg(feature = "bench-drop-in-scheduler")]
                             {
                                 assert_matches!(executed_task.result_with_timings, (Ok(_), _));
+                                result_with_timings
+                                    .1
+                                    .accumulate(&executed_task.result_with_timings.1);
                                 drop(executed_task);
                             }
                         },
