@@ -638,7 +638,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                             }
                         },
-                        default => {},
+                        //default => {},
                     };
 
                     // a really simplistic termination condition, which only works under the
@@ -677,7 +677,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             continue;
                         }
                     },
-                    default => continue,
+                    //default => continue,
                 };
                 let mut task = ExecutedTask::new_boxed(task);
                 Self::execute_task_with_handler(

@@ -1228,7 +1228,7 @@ version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c278839b831783b70278b14df4d45e1beb1aad306c07bb796637de9a0e323e8e"
 dependencies = [
- "crossbeam-utils",
+ "crossbeam-utils 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1400,11 +1400,10 @@ dependencies = [
 [[package]]
 name = "crossbeam-channel"
 version = "0.5.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82a9b73a36529d9c47029b9fb3a6f0ea3cc916a261195352ba19e770fc1748b2"
+source = "git+https://github.com/ryoqun/crossbeam?rev=9835eb9c5c7789b58501f11c5960ac03392dfc91#9835eb9c5c7789b58501f11c5960ac03392dfc91"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-utils",
+ "crossbeam-utils 0.8.18 (git+https://github.com/ryoqun/crossbeam?rev=9835eb9c5c7789b58501f11c5960ac03392dfc91)",
 ]
 
 [[package]]
@@ -1415,7 +1414,7 @@ checksum = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-epoch",
- "crossbeam-utils",
+ "crossbeam-utils 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1424,7 +1423,7 @@ version = "0.9.5"
 source = "git+https://github.com/solana-labs/crossbeam?rev=fd279d707025f0e60951e429bf778b4813d1b6bf#fd279d707025f0e60951e429bf778b4813d1b6bf"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-utils",
+ "crossbeam-utils 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static",
  "memoffset 0.6.4",
  "scopeguard",
@@ -1435,6 +1434,14 @@ name = "crossbeam-utils"
 version = "0.8.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3a430a770ebd84726f584a90ee7f020d28db52c6d02138900f22341f866d39c"
+dependencies = [
+ "cfg-if 1.0.0",
+]
+
+[[package]]
+name = "crossbeam-utils"
+version = "0.8.18"
+source = "git+https://github.com/ryoqun/crossbeam?rev=9835eb9c5c7789b58501f11c5960ac03392dfc91#9835eb9c5c7789b58501f11c5960ac03392dfc91"
 dependencies = [
  "cfg-if 1.0.0",
 ]
@@ -4401,7 +4408,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ce3fb6ad83f861aac485e76e1985cd109d9a3713802152be56c3b1f0e0658ed"
 dependencies = [
  "crossbeam-deque",
- "crossbeam-utils",
+ "crossbeam-utils 0.8.18 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -7566,6 +7573,7 @@ dependencies = [
  "solana-unified-scheduler-logic",
  "solana-unified-scheduler-pool",
  "solana-vote",
+ "tikv-jemallocator",
 ]
 
 [[package]]

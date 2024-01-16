@@ -2,6 +2,13 @@
 
 extern crate test;
 
+#[cfg(not(target_env = "msvc"))]
+use jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 use {
     solana_program_runtime::timings::ExecuteTimings,
     solana_runtime::{
