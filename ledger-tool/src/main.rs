@@ -96,6 +96,11 @@ use {
         },
     },
 };
+use solana_core::banking_trace::BankingSimulator;
+use solana_accounts_db::accounts_index::AccountsIndexConfig;
+use solana_accounts_db::accounts_index::IndexLimitMb;
+use solana_accounts_db::accounts_db::AccountsDbConfig;
+use solana_ledger::bank_forks_utils::load_bank_forks;
 
 mod args;
 mod bigtable;
@@ -2283,6 +2288,100 @@ fn main() {
                         exit_signal.store(true, Ordering::Relaxed);
                         system_monitor_service.join().unwrap();
                     }
+                }
+                ("simulate-leader-blocks", Some(arg_matches)) => {
+                    let simulator = BankingSimulator::new(PathBuf::new().join("/dev/stdin"));
+
+                    if std::env::var("DUMP").is_ok() {
+                        simulator.dump(None);
+                        return
+                    }
+
+                    let mut accounts_index_config = AccountsIndexConfig::default();
+                    if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
+                        accounts_index_config.bins = Some(bins);
+                    }
+
+                    accounts_index_config.index_limit_mb = if let Some(limit) =
+                        value_t!(arg_matches, "accounts_index_memory_limit_mb", usize).ok()
+                    {
+                        IndexLimitMb::Limit(limit)
+                    } else if arg_matches.is_present("disable_accounts_disk_index") {
+                        IndexLimitMb::InMemOnly
+                    } else {
+                        IndexLimitMb::Unspecified
+                    };
+
+                    {
+                        let mut accounts_index_paths: Vec<PathBuf> =
+                            if arg_matches.is_present("accounts_index_path") {
+                                values_t_or_exit!(arg_matches, "accounts_index_path", String)
+                                    .into_iter()
+                                    .map(PathBuf::from)
+                                    .collect()
+                            } else {
+                                vec![]
+                            };
+                        if accounts_index_paths.is_empty() {
+                            accounts_index_paths = vec![ledger_path.join("accounts_index")];
+                        }
+                        accounts_index_config.drives = Some(accounts_index_paths);
+                    }
+
+                    let accounts_db_config = Some(AccountsDbConfig {
+                        ancient_append_vec_offset: value_t!(
+                            matches,
+                            "accounts_db_ancient_append_vecs",
+                            i64
+                        )
+                        .ok(),
+                        skip_initial_hash_calc: arg_matches
+                            .is_present("accounts_db_skip_initial_hash_calculation"),
+                        ..AccountsDbConfig::default()
+                    });
+
+                    let halt_at_slot = value_t!(arg_matches, "halt_at_slot", Slot).ok().unwrap();
+                    let process_options = ProcessOptions {
+                        halt_at_slot: Some(halt_at_slot),
+                        accounts_db_config,
+                        ..ProcessOptions::default()
+                    };
+
+                    let blockstore = Arc::new(open_blockstore(
+                        &ledger_path,
+                        AccessType::Primary,
+                        wal_recovery_mode,
+                        false,
+                        force_update_to_open,
+                    ));
+                    let first_simulated_slot = halt_at_slot + 1;
+                    if let Some(end_slot) = blockstore.slot_meta_iterator(first_simulated_slot).unwrap().map(|(s, _)| s).last() {
+                        info!("purging slots {first_simulated_slot}, {end_slot}");
+
+                        blockstore.purge_from_next_slots(first_simulated_slot, end_slot);
+                        blockstore.purge_slots(first_simulated_slot, end_slot, PurgeType::Exact);
+                        info!("done: purging");
+                    } else {
+                        info!("skipping purging...");
+                    }
+                    let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
+                    let (bank_forks, ..) = load_and_process_ledger(
+                        arg_matches,
+                        &genesis_config,
+                        blockstore.clone(),
+                        process_options,
+                        snapshot_archive_path,
+                        incremental_snapshot_archive_path,
+                    )
+                    .unwrap_or_else(|err| {
+                        eprintln!("Ledger verification failed: {:?}", err);
+                        exit(1);
+                    });
+
+                    //simulator.seek(bank); => Ok or Err("no BankStart")
+                    simulator.simulate(&genesis_config, bank_forks, blockstore);
+
+                    println!("Ok");
                 }
                 ("accounts", Some(arg_matches)) => {
                     let process_options = parse_process_options(&ledger_path, arg_matches);
