@@ -5,7 +5,8 @@ use {
         accounts_background_service::{AbsRequestSender, SnapshotRequest, SnapshotRequestKind},
         bank::{epoch_accounts_hash_utils, Bank, SquashTiming},
         installed_scheduler_pool::{
-            BankWithScheduler, InstalledSchedulerPoolArc, SchedulingContext,
+            BankWithScheduler, DefaultScheduleExecutionArg, InstalledSchedulerPoolArc,
+            SchedulingContext,
         },
         snapshot_config::SnapshotConfig,
     },
@@ -15,6 +16,7 @@ use {
     solana_sdk::{
         clock::{Epoch, Slot},
         hash::Hash,
+        scheduling::SchedulingMode,
         timing,
     },
     std::{
@@ -73,7 +75,13 @@ pub struct BankForks {
     last_accounts_hash_slot: Slot,
     in_vote_only_mode: Arc<AtomicBool>,
     highest_slot_at_startup: Slot,
-    scheduler_pool: Option<InstalledSchedulerPoolArc>,
+    scheduler_pool: Option<InstalledSchedulerPoolArc<DefaultScheduleExecutionArg>>,
+}
+
+impl Drop for BankForks {
+    fn drop(&mut self) {
+        info!("BankForks::drop(): successfully dropped");
+    }
 }
 
 impl Index<u64> for BankForks {
@@ -212,12 +220,35 @@ impl BankForks {
         self[self.root()].clone()
     }
 
-    pub fn install_scheduler_pool(&mut self, pool: InstalledSchedulerPoolArc) {
+    pub fn install_scheduler_pool(
+        &mut self,
+        pool: InstalledSchedulerPoolArc<DefaultScheduleExecutionArg>,
+    ) {
         info!("Installed new scheduler_pool into bank_forks: {:?}", pool);
         assert!(
             self.scheduler_pool.replace(pool).is_none(),
             "Reinstalling scheduler pool isn't supported"
         );
+    }
+
+    pub fn uninstall_scheduler_pool(&mut self) {
+        // hint scheduler pool to cut circular references of Arc<SchedulerPool>
+        if let Some(sp) = self.scheduler_pool.take() {
+            sp.uninstalled_from_bank_forks();
+        }
+    }
+
+    pub fn prepare_to_drop(&mut self) {
+        let root_bank = self.root_bank();
+        // drop all non root BankWithScheduler, which causes all schedulers wind down.
+        self.banks.clear();
+        self.uninstall_scheduler_pool();
+        // this cuts circular references of BankForks...
+        root_bank
+            .loaded_programs_cache
+            .write()
+            .unwrap()
+            .unset_fork_graph();
     }
 
     pub fn insert(&mut self, mut bank: Bank) -> BankWithScheduler {
@@ -227,7 +258,7 @@ impl BankForks {
 
         let bank = Arc::new(bank);
         let bank = if let Some(scheduler_pool) = &self.scheduler_pool {
-            let context = SchedulingContext::new(bank.clone());
+            let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
             let scheduler = scheduler_pool.take_scheduler(context);
             BankWithScheduler::new(bank, Some(scheduler))
         } else {
@@ -248,7 +279,7 @@ impl BankForks {
         self.insert(bank)
     }
 
-    pub fn remove(&mut self, slot: Slot) -> Option<Arc<Bank>> {
+    pub fn remove(&mut self, slot: Slot) -> Option<BankWithScheduler> {
         let bank = self.banks.remove(&slot)?;
         for parent in bank.proper_ancestors() {
             let Entry::Occupied(mut entry) = self.descendants.entry(parent) else {
@@ -265,7 +296,7 @@ impl BankForks {
         if entry.get().is_empty() {
             entry.remove_entry();
         }
-        Some(bank.clone_without_scheduler())
+        Some(bank)
     }
 
     pub fn highest_slot(&self) -> Slot {
@@ -285,7 +316,7 @@ impl BankForks {
         root: Slot,
         accounts_background_request_sender: &AbsRequestSender,
         highest_super_majority_root: Option<Slot>,
-    ) -> (Vec<Arc<Bank>>, SetRootMetrics) {
+    ) -> (Vec<BankWithScheduler>, SetRootMetrics) {
         let old_epoch = self.root_bank().epoch();
         // To support `RootBankCache` (via `ReadOnlyAtomicSlot`) accessing `root` *without* locking
         // BankForks first *and* from a different thread, this store *must* be at least Release to
@@ -464,7 +495,7 @@ impl BankForks {
         root: Slot,
         accounts_background_request_sender: &AbsRequestSender,
         highest_super_majority_root: Option<Slot>,
-    ) -> Vec<Arc<Bank>> {
+    ) -> Vec<BankWithScheduler> {
         let program_cache_prune_start = Instant::now();
         let set_root_start = Instant::now();
         let (removed_banks, set_root_metrics) = self.do_set_root_return_metrics(
@@ -625,7 +656,7 @@ impl BankForks {
         &mut self,
         root: Slot,
         highest_super_majority_root: Option<Slot>,
-    ) -> (Vec<Arc<Bank>>, u64, u64) {
+    ) -> (Vec<BankWithScheduler>, u64, u64) {
         // Clippy doesn't like separating the two collects below,
         // but we want to collect timing separately, and the 2nd requires
         // a unique borrow to self which is already borrowed by self.banks

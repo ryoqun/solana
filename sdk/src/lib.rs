@@ -98,6 +98,7 @@ pub mod rent_debits;
 pub mod reward_info;
 pub mod reward_type;
 pub mod rpc_port;
+pub mod scheduling;
 pub mod secp256k1_instruction;
 pub mod shred_version;
 pub mod signature;

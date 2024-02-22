@@ -1654,6 +1654,8 @@ fn main() {
                     }
                     exit_signal.store(true, Ordering::Relaxed);
                     system_monitor_service.join().unwrap();
+                    bank_forks.write().unwrap().prepare_to_drop();
+                    drop::<BankForks>(Arc::into_inner(bank_forks).unwrap().into_inner().unwrap());
                 }
                 ("graph", Some(arg_matches)) => {
                     let output_file = value_t_or_exit!(arg_matches, "graph_filename", String);
