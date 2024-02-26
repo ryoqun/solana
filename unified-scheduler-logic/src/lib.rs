@@ -288,7 +288,7 @@ type LockResult = Result<PageUsage, ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 8);
 
 use std::rc::Rc;
-type MyRc<T> = Rc<T>;
+type MyRc<T> = Arc<T>;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Debug)]
 pub struct Task(MyRc<TaskInner>);
