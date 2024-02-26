@@ -617,7 +617,7 @@ impl SchedulingStateMachine {
                     page.usage = new_usage;
                 }
                 LockResult::Err(()) => {
-                    MyRc::increment_strong_count(&t);
+                    MyRc::increment_strong_count(task_ptr);
                     //panic!();
                     page.push_blocked_task(Task(MyRc::from_raw(task_ptr)), attempt.requested_usage);
                 }
