@@ -350,7 +350,7 @@ impl Task {
     }
 
     #[must_use]
-    fn try_unblock(self: &Task, token: &mut BlockedPageCountToken) -> Option<Task> {
+    fn try_unblock(self: Task, token: &mut BlockedPageCountToken) -> Option<Task> {
         self.blocked_page_count_mut(token)
             .decrement_self()
             .is_zero()
