@@ -597,6 +597,14 @@ impl SchedulingStateMachine {
         }
     }
 
+    fn aaaa(task_ptr: usize, l: u16) {
+        unsafe {
+            for _ in 0..l {
+                Rc::increment_strong_count(task_ptr)
+            }
+        }
+    }
+
     #[must_use]
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
         let mut blocked_page_count = ShortCounter::zero();
@@ -630,9 +638,7 @@ impl SchedulingStateMachine {
             mem::forget(t);
             // failed
             let l = blocked_page_count.current() as u16;
-            for _ in 0..l {
-                Rc::increment_strong_count(task_ptr)
-            }
+            aaaa(task_ptr, l);
             None
         }
     } }
