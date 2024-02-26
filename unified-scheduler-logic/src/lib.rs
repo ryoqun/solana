@@ -624,7 +624,7 @@ impl SchedulingStateMachine {
             }
         }
 
-        println!("{}", MyRc::strong_count(&t.0));
+        eprintln!("{}", MyRc::strong_count(&t.0));
         if MyRc::strong_count(&t.0) == 1 {
         //if i == 0 {
         //if consume_given_task {
