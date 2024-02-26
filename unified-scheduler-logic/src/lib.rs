@@ -601,7 +601,7 @@ impl SchedulingStateMachine {
 
     #[must_use]
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
-        let t = task.clone();
+        let t = Task(task.0.clone());
         let task_ptr = MyRc::into_raw(task.0);
 
         for attempt in t.lock_attempts() {
