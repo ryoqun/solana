@@ -290,7 +290,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 8);
 use std::rc::Rc;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Debug, Clone)]
-pub struct Task(Arc<aTaskInner>);
+pub struct Task(Arc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 impl std::ops::Deref for Task {
