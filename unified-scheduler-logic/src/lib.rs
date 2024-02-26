@@ -638,7 +638,7 @@ impl SchedulingStateMachine {
             mem::forget(t);
             // failed
             let l = blocked_page_count.current() as u16;
-            aaaa(task_ptr, l);
+            Self::aaaa(task_ptr, l);
             None
         }
     } }
