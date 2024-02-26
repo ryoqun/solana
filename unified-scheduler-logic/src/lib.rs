@@ -587,7 +587,7 @@ impl SchedulingStateMachine {
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
         let task_ptr = MyRc::into_raw(task.0);
         let t = Task(MyRc::from_raw(task_ptr));
-        let mut sc = 1;
+        let mut sc = 0;
 
         for attempt in t.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
@@ -612,12 +612,12 @@ impl SchedulingStateMachine {
 
         //eprintln!("{}", MyRc::strong_count(&t.0));
         //if MyRc::strong_count(&t.0) == 1 {
-        if sc == 1 {
+        if sc == 0 {
         //if consume_given_task {
             // succeeded
             Some(t)
         } else {
-            MyRc::update_strong_count(task_ptr, sc - 1);
+            MyRc::update_strong_count(task_ptr, sc);
             //MyRc::decrement_strong_count(task_ptr);
             mem::forget(t);
             //drop(t);
