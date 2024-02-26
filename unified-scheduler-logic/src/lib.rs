@@ -288,9 +288,10 @@ type LockResult = Result<PageUsage, ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 8);
 
 use std::rc::Rc;
+type MyRc<T> = Rc<T>;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Debug)]
-pub struct Task(Arc<TaskInner>);
+pub struct Task(MyRc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 impl std::ops::Deref for Task {
@@ -346,7 +347,7 @@ impl TaskInner {
 
 impl Task {
     fn new(t: TaskInner) -> Self {
-        Task(Arc::new(t))
+        Task(MyRc::new(t))
     }
 
     #[must_use]
@@ -512,7 +513,8 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
+    pub fn schedule_task(&mut self, mut task: Task) -> Option<Task> {
+        assert!(MyRc::get_mut(&mut task.0).is_some());
         /*
         let new_task_index = task.task_index();
         if let Some(old_task_index) = self.last_task_index.replace(new_task_index) {
@@ -598,10 +600,11 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
-        let mut blocked_page_count = ShortCounter::zero();
+    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
+        let task_ptr = MyRc::into_raw(task.0);
+        let t = Task(MyRc::from_raw(task_ptr));
 
-        for attempt in task.lock_attempts() {
+        for attempt in t.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
             let lock_status = if page.has_no_blocked_task() {
                 Self::attempt_lock_page(page, attempt.requested_usage)
@@ -614,21 +617,23 @@ impl SchedulingStateMachine {
                     page.usage = new_usage;
                 }
                 LockResult::Err(()) => {
-                    blocked_page_count.increment_self();
-                    page.push_blocked_task(Task(task.0.clone()), attempt.requested_usage);
+                    MyRc::increment_strong_count(task_ptr);
+                    page.push_blocked_task(Task(MyRc::from_raw(task_ptr)), attempt.requested_usage);
                 }
             }
         }
 
-        if blocked_page_count.is_zero() {
+        if MyRc::strong_count(&t.0) == 1 {
+        //if consume_given_task {
             // succeeded
-            Some(task)
+            Some(t)
         } else {
-            // failed
-            task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
+            //MyRc::decrement_strong_count(task_ptr);
+            //mem::forget(t);
+            drop(t);
             None
         }
-    }
+    } }
 
     fn unlock_for_task(&mut self, task: &Task) {
         for unlock_attempt in task.lock_attempts() {
@@ -1247,6 +1252,15 @@ mod tests {
             page.0.borrow_mut(&mut state_machine.page_token).usage,
             PageUsage::Writable
         );
+        state_machine.deschedule_task(&task1);
+        assert_matches!(
+            state_machine
+                .schedule_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(102)
+        );
+        state_machine.deschedule_task(&task2);
+        assert!(state_machine.has_no_active_task());
     }
 
     #[test]
