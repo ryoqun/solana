@@ -339,10 +339,11 @@ impl Task {
     }
 
     #[must_use]
-    fn try_unblock(self: Task) -> Option<Task> {
-        eprintln!("{}", MyRc::strong_count(&self.0));
-        (MyRc::strong_count(&self.0) == 1).then_some(self)
-    }
+    fn try_unblock(task: Task) -> Option<Task> { unsafe {
+        let p = MyRc::into_raw(task);
+        let task = MyRc::from_raw(p);
+        (MyRc::strong_count(p) == 1).then_some(task)
+    } }
 }
 
 /// [`Task`]'s per-address attempt to use a [page](Page) with [certain kind of
