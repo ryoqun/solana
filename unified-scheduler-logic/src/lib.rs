@@ -512,7 +512,8 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
+    pub fn schedule_task(&mut self, mut task: Task) -> Option<Task> {
+        assert!(Rc::get_mut(&mut task.0).is_some());
         /*
         let new_task_index = task.task_index();
         if let Some(old_task_index) = self.last_task_index.replace(new_task_index) {
