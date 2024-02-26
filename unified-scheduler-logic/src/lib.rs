@@ -289,7 +289,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 8);
 
 use std::rc::Rc;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Task(Rc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
@@ -354,7 +354,7 @@ impl Task {
         self.blocked_page_count_mut(token)
             .decrement_self()
             .is_zero()
-            .then(|| Self(self.0.clone()))
+            .then(|| self.clone())
     }
 }
 
@@ -573,7 +573,7 @@ impl SchedulingStateMachine {
                 }
                 LockResult::Err(()) => {
                     blocked_page_count.increment_self();
-                    page.push_blocked_task(Task(task.0.clone()), attempt.requested_usage);
+                    page.push_blocked_task(task.clone(), attempt.requested_usage);
                 }
             }
         }
