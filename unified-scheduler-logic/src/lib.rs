@@ -587,12 +587,8 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
-        let task_ptr = MyRc::into_raw(task.0);
-        let t = Task(MyRc::from_raw(task_ptr));
-        //let mut sc = 0;
-
-        for attempt in t.lock_attempts() {
+    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
+        for attempt in task.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
             let lock_status = if page.has_no_blocked_task() {
                 Self::attempt_lock_page(page, attempt.requested_usage)
@@ -605,28 +601,17 @@ impl SchedulingStateMachine {
                     page.usage = new_usage;
                 }
                 LockResult::Err(()) => {
-                    MyRc::increment_strong_count(task_ptr);
-                    //sc += 1;
-                    //panic!();
-                    page.push_blocked_task(Task(MyRc::from_raw(task_ptr)), attempt.requested_usage);
+                    page.push_blocked_task(Task(task.0.clone()), attempt.requested_usage);
                 }
             }
         }
 
-        //eprintln!("{}", MyRc::strong_count(&t.0));
-        if MyRc::strong_count(&t.0) == 1 {
-        //if sc == 0 {
-        //if consume_given_task {
-            // succeeded
-            Some(t)
+        if MyRc::strong_count(&task.0) == 1 {
+            Some(task)
         } else {
-            //MyRc::update_strong_count(task_ptr, sc);
-            //MyRc::decrement_strong_count(task_ptr);
-            //mem::forget(t);
-            drop(t);
             None
         }
-    } }
+    }
 
     fn unlock_for_task(&mut self, task: &Task) {
         for unlock_attempt in task.lock_attempts() {
