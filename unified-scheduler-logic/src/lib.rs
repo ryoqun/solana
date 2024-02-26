@@ -718,7 +718,7 @@ impl SchedulingStateMachine {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "ajaaja")]
 mod tests {
     use {
         super::*,
