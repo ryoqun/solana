@@ -597,6 +597,7 @@ impl SchedulingStateMachine {
         }
     }
 
+    #[inline(never)]
     fn aaaa(task_ptr: *const TaskInner, l: u16) {
         unsafe {
             for _ in 0..l {
