@@ -354,7 +354,7 @@ impl Task {
         self.blocked_page_count_mut(token)
             .decrement_self()
             .is_zero()
-            .then(|_| self.clone())
+            .then(|| self.clone())
     }
 }
 
