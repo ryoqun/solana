@@ -621,17 +621,18 @@ impl SchedulingStateMachine {
             }
         }
 
-        let t = Task(Rc::from_raw(task_ptr));
         if blocked_page_count.is_zero() {
+            let t = Task(Rc::from_raw(task_ptr));
             // succeeded
             Some(t)
         } else {
             // failed
             for _ in 0..(blocked_page_count.current() - 1) {
-                Rc::increment_strong_count(t)
+                Rc::increment_strong_count(task_ptr)
             }
-            mem::forget(t);
+            let t = Task(Rc::from_raw(task_ptr));
             t.set_blocked_page_count(&mut self.count_token, blocked_page_count);
+            mem::forget(t);
             None
         }
     } }
