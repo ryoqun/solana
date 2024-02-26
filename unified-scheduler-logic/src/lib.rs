@@ -621,7 +621,7 @@ impl SchedulingStateMachine {
 
         if MyRc::strong_count(&task.0) == 1 {
             // succeeded
-            Some(t)
+            Some(task)
         } else {
             None
         }
