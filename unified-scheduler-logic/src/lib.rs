@@ -617,7 +617,7 @@ impl SchedulingStateMachine {
             // succeeded
             Some(t)
         } else {
-            MyRc::update_strong_count(task_ptr, i - 1);
+            MyRc::update_strong_count(task_ptr, i);
             //MyRc::decrement_strong_count(task_ptr);
             mem::forget(t);
             //drop(t);
