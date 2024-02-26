@@ -287,9 +287,18 @@ mod utils {
 type LockResult = Result<PageUsage, ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 8);
 
+use std::rc::Rc;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-pub type Task = Arc<TaskInner>;
+#[derive(Debug, Clone)]
+pub struct Task(Rc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
+
+impl std::ops::Deref for Task {
+    type Target = TaskInner;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// [`Token`] for [`Page`].
 type PageToken = Token<PageInner>;
@@ -331,6 +340,13 @@ impl TaskInner {
 
     fn set_blocked_page_count(&self, token: &mut BlockedPageCountToken, count: ShortCounter) {
         *self.blocked_page_count_mut(token) = count;
+    }
+
+}
+
+impl Task {
+    fn new(t: TaskInner) -> Self {
+        Task(Rc::new(t))
     }
 
     #[must_use]
