@@ -597,7 +597,7 @@ impl SchedulingStateMachine {
         }
     }
 
-    fn aaaa(task_ptr: usize, l: u16) {
+    fn aaaa(task_ptr: *const TaskInner, l: u16) {
         unsafe {
             for _ in 0..l {
                 Rc::increment_strong_count(task_ptr)
