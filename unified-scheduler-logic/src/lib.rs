@@ -616,17 +616,22 @@ impl SchedulingStateMachine {
                 }
                 LockResult::Err(()) => {
                     blocked_page_count.increment_self();
-                    page.push_blocked_task(task.clone(), attempt.requested_usage);
+                    page.push_blocked_task(Task(Rc::from_raw(task_ptr)), attempt.requested_usage);
                 }
             }
         }
 
+        let t = Task::from_raw(task_ptr);
         if blocked_page_count.is_zero() {
             // succeeded
-            Some(task)
+            Some(t)
         } else {
             // failed
-            task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
+            for _ in 0..(blocked_page_count.current() - 1) {
+                Rc::increment_strong_count(t)
+            }
+            mem::forget(t);
+            t.set_blocked_page_count(&mut self.count_token, blocked_page_count);
             None
         }
     } }
