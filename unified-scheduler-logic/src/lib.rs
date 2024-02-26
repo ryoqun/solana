@@ -316,7 +316,6 @@ pub struct TaskInner {
     transaction: SanitizedTransaction,
     index: usize,
     lock_attempts: Vec<LockAttempt>,
-    blocked_page_count: TokenCell<ShortCounter>,
 }
 
 impl TaskInner {
@@ -332,17 +331,6 @@ impl TaskInner {
         &self.lock_attempts
     }
 
-    fn blocked_page_count_mut<'t>(
-        &self,
-        token: &'t mut BlockedPageCountToken,
-    ) -> &'t mut ShortCounter {
-        self.blocked_page_count.borrow_mut(token)
-    }
-
-    fn set_blocked_page_count(&self, token: &mut BlockedPageCountToken, count: ShortCounter) {
-        *self.blocked_page_count_mut(token) = count;
-    }
-
 }
 
 impl Task {
@@ -351,11 +339,8 @@ impl Task {
     }
 
     #[must_use]
-    fn try_unblock(self: Task, token: &mut BlockedPageCountToken) -> Option<Task> {
-        self.blocked_page_count_mut(token)
-            .decrement_self()
-            .is_zero()
-            .then_some(self)
+    fn try_unblock(self: Task) -> Option<Task> {
+        (MyRc::strong_count(&self.0) == 1).then_some(self)
     }
 }
 
@@ -474,7 +459,6 @@ const_assert_eq!(mem::size_of::<Page>(), 8);
 
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
-#[cfg_attr(feature = "dev-context-only-utils", field_qualifiers(count_token(pub)))]
 pub struct SchedulingStateMachine {
     last_task_index: Option<usize>,
     unblocked_task_queue: VecDeque<Task>,
@@ -482,7 +466,6 @@ pub struct SchedulingStateMachine {
     handled_task_count: ShortCounter,
     unblocked_task_count: ShortCounter,
     total_task_count: ShortCounter,
-    count_token: BlockedPageCountToken,
     page_token: PageToken,
 }
 const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 64);
@@ -647,7 +630,7 @@ impl SchedulingStateMachine {
             let mut unblocked_task_from_page = Self::unlock_page(page, unlock_attempt);
 
             while let Some((task_with_unblocked_page, requested_usage)) = unblocked_task_from_page {
-                if let Some(task) = task_with_unblocked_page.try_unblock(&mut self.count_token) {
+                if let Some(task) = task_with_unblocked_page.try_unblock() {
                     self.unblocked_task_queue.push_back(task);
                 }
 
@@ -704,7 +687,6 @@ impl SchedulingStateMachine {
             transaction,
             index,
             lock_attempts,
-            blocked_page_count: TokenCell::new(ShortCounter::zero()),
         })
     }
 
@@ -742,7 +724,6 @@ impl SchedulingStateMachine {
             handled_task_count: ShortCounter::zero(),
             unblocked_task_count: ShortCounter::zero(),
             total_task_count: ShortCounter::zero(),
-            count_token: unsafe { BlockedPageCountToken::assume_exclusive_mutating_thread() },
             page_token: unsafe { PageToken::assume_exclusive_mutating_thread() },
         }
     }
