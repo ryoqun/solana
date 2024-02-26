@@ -629,7 +629,7 @@ impl SchedulingStateMachine {
             t.set_blocked_page_count(&mut self.count_token, blocked_page_count);
             mem::forget(t);
             // failed
-            let l = blocked_page_count.current() as u8;
+            let l = blocked_page_count.current() as u16;
             for _ in 0..l {
                 Rc::increment_strong_count(task_ptr)
             }
