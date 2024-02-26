@@ -573,7 +573,7 @@ impl SchedulingStateMachine {
                 }
                 LockResult::Err(()) => {
                     blocked_page_count.increment_self();
-                    page.push_blocked_task(task.clone(), attempt.requested_usage);
+                    page.push_blocked_task(Task(task.0.clone()), attempt.requested_usage);
                 }
             }
         }
