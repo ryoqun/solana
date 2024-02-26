@@ -497,6 +497,7 @@ impl SchedulingStateMachine {
 
     #[must_use]
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
+        /*
         let new_task_index = task.task_index();
         if let Some(old_task_index) = self.last_task_index.replace(new_task_index) {
             assert!(
@@ -504,6 +505,7 @@ impl SchedulingStateMachine {
                 "bad new task index: {new_task_index} > {old_task_index}"
             );
         }
+        */
         self.total_task_count.increment_self();
         self.active_task_count.increment_self();
         self.attempt_lock_for_task(task)
@@ -522,6 +524,7 @@ impl SchedulingStateMachine {
     }
 
     pub fn deschedule_task(&mut self, task: &Task) {
+        /*
         let blocked_task_index = task.task_index();
         let largest_task_index = self
             .last_task_index
@@ -530,6 +533,7 @@ impl SchedulingStateMachine {
             blocked_task_index <= largest_task_index,
             "bad unblocked task index: {blocked_task_index} <= {largest_task_index}"
         );
+        */
         self.active_task_count.decrement_self();
         self.handled_task_count.increment_self();
         self.unlock_for_task(task);
