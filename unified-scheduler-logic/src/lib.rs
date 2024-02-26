@@ -611,7 +611,6 @@ impl SchedulingStateMachine {
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
         let mut blocked_page_count = ShortCounter::zero();
         let task_ptr = Rc::into_raw(task.0);
-        let t = Task(Rc::from_raw(task_ptr));
 
         for attempt in t.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
@@ -633,11 +632,10 @@ impl SchedulingStateMachine {
         }
 
         if blocked_page_count.is_zero() {
+            let t = Task(Rc::from_raw(task_ptr));
             // succeeded
             Some(t)
         } else {
-            t.set_blocked_page_count(&mut self.count_token, blocked_page_count);
-            mem::forget(t);
             // failed
             let l = blocked_page_count.current() as u16;
             Self::aaaa(task_ptr, l);
