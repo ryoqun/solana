@@ -290,7 +290,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 8);
 use std::rc::Rc;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Debug, Clone)]
-pub struct Task(Arc<TaskInner>);
+pub struct Task(Rc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 impl std::ops::Deref for Task {
@@ -346,7 +346,7 @@ impl TaskInner {
 
 impl Task {
     fn new(t: TaskInner) -> Self {
-        Task(Arc::new(t))
+        Task(Rc::new(t))
     }
 
     #[must_use]
@@ -597,11 +597,22 @@ impl SchedulingStateMachine {
         }
     }
 
-    #[must_use]
-    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
-        let mut blocked_page_count = ShortCounter::zero();
+    #[inline(never)]
+    fn aaaa(task_ptr: *const TaskInner, l: u16) {
+        unsafe {
+            for _ in 0..l {
+                Rc::increment_strong_count(task_ptr)
+            }
+        }
+    }
 
-        for attempt in task.lock_attempts() {
+    #[must_use]
+    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
+        let mut blocked_page_count = ShortCounter::zero();
+        let task_ptr = Rc::into_raw(task.0);
+        let t = Task(Rc::from_raw(task_ptr));
+
+        for attempt in t.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
             let lock_status = if page.has_no_blocked_task() {
                 Self::attempt_lock_page(page, attempt.requested_usage)
@@ -615,20 +626,23 @@ impl SchedulingStateMachine {
                 }
                 LockResult::Err(()) => {
                     blocked_page_count.increment_self();
-                    page.push_blocked_task(task.clone(), attempt.requested_usage);
+                    page.push_blocked_task(Task(Rc::from_raw(task_ptr)), attempt.requested_usage);
                 }
             }
         }
 
         if blocked_page_count.is_zero() {
             // succeeded
-            Some(task)
+            Some(t)
         } else {
+            t.set_blocked_page_count(&mut self.count_token, blocked_page_count);
+            mem::forget(t);
             // failed
-            task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
+            let l = blocked_page_count.current() as u16;
+            Self::aaaa(task_ptr, l);
             None
         }
-    }
+    } }
 
     fn unlock_for_task(&mut self, task: &Task) {
         for unlock_attempt in task.lock_attempts() {
@@ -1247,6 +1261,15 @@ mod tests {
             page.0.borrow_mut(&mut state_machine.page_token).usage,
             PageUsage::Writable
         );
+        state_machine.deschedule_task(&task1);
+        assert_matches!(
+            state_machine
+                .schedule_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(102)
+        );
+        state_machine.deschedule_task(&task2);
+        assert!(state_machine.has_no_active_task());
     }
 
     #[test]
