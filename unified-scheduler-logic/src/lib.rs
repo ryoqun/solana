@@ -346,7 +346,7 @@ impl TaskInner {
 
 impl Task {
     fn new(t: TaskInner) -> Self {
-        Task(Rc::new(t))
+        Task(Arc::new(t))
     }
 
     #[must_use]
