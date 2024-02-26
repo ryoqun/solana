@@ -622,7 +622,7 @@ impl SchedulingStateMachine {
             }
         }
 
-        if Rc::strong_count(&t) == 1 {
+        if Rc::strong_count(&t.0) == 1 {
             // succeeded
             Some(t)
         } else {
