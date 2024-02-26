@@ -598,8 +598,9 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
+    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
         let mut blocked_page_count = ShortCounter::zero();
+        let task_ptr = Arc::from_ptr(task.0);
 
         for attempt in task.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
@@ -628,7 +629,7 @@ impl SchedulingStateMachine {
             task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
             None
         }
-    }
+    } }
 
     fn unlock_for_task(&mut self, task: &Task) {
         for unlock_attempt in task.lock_attempts() {
