@@ -603,6 +603,7 @@ impl SchedulingStateMachine {
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
         let task_ptr = MyRc::into_raw(task.0);
         let t = Task(MyRc::from_raw(task_ptr));
+        let mut i = 0;
 
         for attempt in t.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
@@ -617,7 +618,7 @@ impl SchedulingStateMachine {
                     page.usage = new_usage;
                 }
                 LockResult::Err(()) => {
-                    MyRc::update_strong_count(task_ptr, 3);
+                    i += 1;
                     page.push_blocked_task(Task(MyRc::from_raw(task_ptr)), attempt.requested_usage);
                 }
             }
@@ -628,6 +629,7 @@ impl SchedulingStateMachine {
             // succeeded
             Some(t)
         } else {
+            MyRc::update_strong_count(task_ptr, i);
             //MyRc::decrement_strong_count(task_ptr);
             //mem::forget(t);
             drop(t);
