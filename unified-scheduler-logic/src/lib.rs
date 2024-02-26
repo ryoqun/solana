@@ -621,7 +621,7 @@ impl SchedulingStateMachine {
             }
         }
 
-        let t = Task::from_raw(task_ptr);
+        let t = Task(Rc::from_raw(task_ptr));
         if blocked_page_count.is_zero() {
             // succeeded
             Some(t)
