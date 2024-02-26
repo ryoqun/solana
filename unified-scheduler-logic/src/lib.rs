@@ -627,7 +627,7 @@ impl SchedulingStateMachine {
             Some(t)
         } else {
             // failed
-            let l = (blocked_page_count.current() - 1) as u8;
+            let l = (blocked_page_count.current() - 0) as u8;
             for _ in 0..l {
                 Rc::increment_strong_count(task_ptr)
             }
