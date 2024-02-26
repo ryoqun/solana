@@ -620,7 +620,6 @@ impl SchedulingStateMachine {
                 LockResult::Err(()) => {
                     MyRc::increment_strong_count(&t);
                     //i += 1;
-                    panic!();
                     page.push_blocked_task(Task(MyRc::from_raw(task_ptr)), attempt.requested_usage);
                 }
             }
