@@ -598,18 +598,8 @@ impl SchedulingStateMachine {
         }
     }
 
-    #[inline(never)]
-    fn aaaa(task_ptr: *const TaskInner, l: u16) {
-        unsafe {
-            for _ in 0..l {
-                Rc::increment_strong_count(task_ptr)
-            }
-        }
-    }
-
     #[must_use]
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
-        let mut blocked_page_count = ShortCounter::zero();
         let task_ptr = Rc::into_raw(task.0);
         let t = Task(Rc::from_raw(task_ptr));
 
@@ -626,20 +616,17 @@ impl SchedulingStateMachine {
                     page.usage = new_usage;
                 }
                 LockResult::Err(()) => {
-                    blocked_page_count.increment_self();
+                    Rc::increment_strong_count(task_ptr)
                     page.push_blocked_task(Task(Rc::from_raw(task_ptr)), attempt.requested_usage);
                 }
             }
         }
 
-        if blocked_page_count.is_zero() {
+        if Rc::strong_count(&t) == 1 {
             // succeeded
             Some(t)
         } else {
             mem::forget(t);
-            // failed
-            let l = blocked_page_count.current() as u16;
-            Self::aaaa(task_ptr, l);
             None
         }
     } }
