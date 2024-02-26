@@ -628,7 +628,7 @@ impl SchedulingStateMachine {
             }
         }
 
-        if !consume_given_task {
+        if consume_given_task {
             // succeeded
             Some(t)
         } else {
