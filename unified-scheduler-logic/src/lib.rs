@@ -628,7 +628,7 @@ impl SchedulingStateMachine {
             }
         }
 
-        if MyRc::strong_count(&t.0) == 1 {
+        if !consume_given_task {
             // succeeded
             Some(t)
         } else {
