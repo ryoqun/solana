@@ -340,7 +340,7 @@ impl Task {
 
     #[must_use]
     fn try_unblock(task: Task) -> Option<Task> { unsafe {
-        let p = MyRc::into_raw(task);
+        let p = MyRc::into_raw(task.0);
         let task = MyRc::from_raw(p);
         (MyRc::strong_count(p) == 1).then_some(task)
     } }
