@@ -340,7 +340,7 @@ impl Task {
 
     #[must_use]
     fn try_unblock(self: Task) -> Option<Task> {
-        (MyRc::strong_count(&self) == 1).then_some(self)
+        (MyRc::strong_count(&self.0) == 1).then_some(self)
     }
 }
 
