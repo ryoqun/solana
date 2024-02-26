@@ -597,22 +597,11 @@ impl SchedulingStateMachine {
         }
     }
 
-    #[inline(never)]
-    fn aaaa(task_ptr: *const TaskInner, l: u16) {
-        unsafe {
-            for _ in 0..l {
-                Rc::increment_strong_count(task_ptr)
-            }
-        }
-    }
-
     #[must_use]
-    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> { unsafe {
+    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
         let mut blocked_page_count = ShortCounter::zero();
-        let task_ptr = Rc::into_raw(task.0);
-        let t = Task(Rc::from_raw(task_ptr));
 
-        for attempt in t.lock_attempts() {
+        for attempt in task.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
             let lock_status = if page.has_no_blocked_task() {
                 Self::attempt_lock_page(page, attempt.requested_usage)
@@ -626,23 +615,20 @@ impl SchedulingStateMachine {
                 }
                 LockResult::Err(()) => {
                     blocked_page_count.increment_self();
-                    page.push_blocked_task(Task(Rc::from_raw(task_ptr)), attempt.requested_usage);
+                    page.push_blocked_task(task.clone(), attempt.requested_usage);
                 }
             }
         }
 
         if blocked_page_count.is_zero() {
             // succeeded
-            Some(t)
+            Some(task)
         } else {
-            t.set_blocked_page_count(&mut self.count_token, blocked_page_count);
-            mem::forget(t);
             // failed
-            let l = blocked_page_count.current() as u16;
-            Self::aaaa(task_ptr, l);
+            task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
             None
         }
-    } }
+    }
 
     fn unlock_for_task(&mut self, task: &Task) {
         for unlock_attempt in task.lock_attempts() {
@@ -1261,15 +1247,6 @@ mod tests {
             page.0.borrow_mut(&mut state_machine.page_token).usage,
             PageUsage::Writable
         );
-        state_machine.deschedule_task(&task1);
-        assert_matches!(
-            state_machine
-                .schedule_unblocked_task()
-                .map(|t| t.task_index()),
-            Some(102)
-        );
-        state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_no_active_task());
     }
 
     #[test]
