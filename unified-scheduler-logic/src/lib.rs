@@ -601,7 +601,7 @@ impl SchedulingStateMachine {
 
     #[must_use]
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
-        for attempt in t.lock_attempts() {
+        for attempt in task.lock_attempts() {
             let page = attempt.page_mut(&mut self.page_token);
             let lock_status = if page.has_no_blocked_task() {
                 Self::attempt_lock_page(page, attempt.requested_usage)
