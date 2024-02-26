@@ -340,7 +340,7 @@ impl Task {
 
     #[must_use]
     fn try_unblock(self: Task) -> Option<Task> {
-        eprintln!("sc {}", MyRc::strong_count(&self.0));
+        //eprintln!("sc {}", MyRc::strong_count(&self.0));
         (MyRc::strong_count(&self.0) == 1).then_some(self)
     }
 }
@@ -619,8 +619,8 @@ impl SchedulingStateMachine {
         } else {
             MyRc::update_strong_count(task_ptr, i);
             //MyRc::decrement_strong_count(task_ptr);
-            //mem::forget(t);
-            drop(t);
+            mem::forget(t);
+            //drop(t);
             None
         }
     } }
