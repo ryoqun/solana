@@ -572,11 +572,11 @@ impl SchedulingStateMachine {
     #[must_use]
     fn unlock_usage_queue(
         usage_queue: &mut UsageQueueInner,
-        attempt: &LockAttempt,
+        requested_usage: RequestedUsage,
     ) -> Option<(RequestedUsage, Task)> {
         let mut is_unused_now = false;
         match &mut usage_queue.current_usage {
-            Usage::Readonly(ref mut count) => match attempt.requested_usage {
+            Usage::Readonly(ref mut count) => match requested_usage {
                 RequestedUsage::Readonly => {
                     if count.is_one() {
                         is_unused_now = true;
@@ -586,7 +586,7 @@ impl SchedulingStateMachine {
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
-            Usage::Writable => match attempt.requested_usage {
+            Usage::Writable => match requested_usage {
                 RequestedUsage::Writable => {
                     is_unused_now = true;
                 }
@@ -640,7 +640,8 @@ impl SchedulingStateMachine {
     fn unlock_for_task(&mut self, task: &Task) {
         for attempt in task.lock_attempts() {
             attempt.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                let mut unblocked_task_from_queue = Self::unlock_usage_queue(usage_queue, attempt);
+                let mut unblocked_task_from_queue =
+                    Self::unlock_usage_queue(usage_queue, attempt.requested_usage);
 
                 while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
@@ -1265,13 +1266,12 @@ mod tests {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
         let usage_queue = UsageQueue::default();
-        let usage_queue_for_lock_attempt = UsageQueue::default();
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 let _ = SchedulingStateMachine::unlock_usage_queue(
                     usage_queue,
-                    &LockAttempt::new(usage_queue_for_lock_attempt, RequestedUsage::Writable),
+                    RequestedUsage::Writable,
                 );
             });
     }
@@ -1287,10 +1287,9 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 usage_queue.current_usage = Usage::Writable;
-                let usage_queue_for_lock_attempt = UsageQueue::default();
                 let _ = SchedulingStateMachine::unlock_usage_queue(
                     usage_queue,
-                    &LockAttempt::new(usage_queue_for_lock_attempt, RequestedUsage::Readonly),
+                    RequestedUsage::Readonly,
                 );
             });
     }
@@ -1306,10 +1305,9 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 usage_queue.current_usage = Usage::Readonly(ShortCounter::one());
-                let usage_queue_for_lock_attempt = UsageQueue::default();
                 let _ = SchedulingStateMachine::unlock_usage_queue(
                     usage_queue,
-                    &LockAttempt::new(usage_queue_for_lock_attempt, RequestedUsage::Writable),
+                    RequestedUsage::Writable,
                 );
             });
     }
