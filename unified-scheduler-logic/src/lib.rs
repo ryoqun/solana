@@ -524,8 +524,7 @@ impl SchedulingStateMachine {
     /// Returns `Some(task)` if it's immediately scheduled. Otherwise, returns `None`,
     /// indicating the task is blocked currently.
     ///
-    /// Note that this function's type signature is intentionally redundant to take the ownership
-    /// of given task _conditionally_ for future optimization.
+    /// Note that this function takes ownership of the task to allow for future optimizations.
     #[must_use]
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
         self.total_task_count.increment_self();
