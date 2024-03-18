@@ -646,6 +646,10 @@ impl SchedulingStateMachine {
                 while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
                 {
+                    // When `try_unblock()` returns `None` as a failure of unblocking this time,
+                    // this means there's still blocking usages. So, don't push task into
+                    // unblocked_task_queue yet. It's guaranteed that every task will eventually
+                    // succeed to be unblocked entering in this condition clause.
                     if let Some(task) = task_with_unblocked_queue.try_unblock(&mut self.count_token)
                     {
                         self.unblocked_task_queue.push_back(task);
