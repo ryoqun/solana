@@ -522,7 +522,7 @@ impl SchedulingStateMachine {
     /// Schedules given `task`, returning it if successful.
     ///
     /// Returns `Some(task)` if it's immediately scheduled. Otherwise, returns `None`,
-    /// indicating the task is blocked currently.
+    /// indicating the scheduled task is blocked currently.
     ///
     /// Note that this function takes ownership of the task to allow for future optimizations.
     #[must_use]
@@ -539,6 +539,16 @@ impl SchedulingStateMachine {
         })
     }
 
+    /// Deschedules given scheduled `task`.
+    ///
+    /// This must be called exactly once for all scheduled tasks to uphold both
+    /// `SchedulingStateMachine` and `UsageQueue` internal state consistency at any given moment of
+    /// time. It's serious logic error to call this twice with the same task or none at all after
+    /// scheduling. Similarly, calling this with not scheduled task is also forbidden.
+    ///
+    /// Note that this function intentionally doesn't take ownership of the task to avoid dropping
+    /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
+    /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
         self.active_task_count.decrement_self();
         self.handled_task_count.increment_self();
