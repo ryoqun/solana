@@ -382,12 +382,9 @@ impl LockAttempt {
     }
 }
 
-/// Status about how the [`UsageQueue`] is used currently. Unlike [`RequestedUsage`], it has
-/// additional variant of [`Unused`](`Usage::Unused`).
-#[derive(Copy, Clone, Debug, Default)]
+/// Status about how the [`UsageQueue`] is used currently.
+#[derive(Copy, Clone, Debug)]
 enum Usage {
-    #[default]
-    Unused,
     Readonly(ShortCounter),
     Writable,
 }
@@ -417,7 +414,7 @@ enum RequestedUsage {
 /// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
 struct UsageQueueInner {
-    current_usage: Usage,
+    current_usage: Option<Usage>,
     blocked_usages_from_tasks: VecDeque<UsageFromTask>,
 }
 
@@ -426,7 +423,7 @@ type UsageFromTask = (RequestedUsage, Task);
 impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
-            current_usage: Usage::default(),
+            current_usage: None,
             // Capacity should be configurable to create with large capacity like 1024 inside the
             // (multi-threaded) closures passed to create_task(). In this way, reallocs can be
             // avoided happening in the scheduler thread. Also, this configurability is desired for
@@ -560,12 +557,12 @@ impl SchedulingStateMachine {
         requested_usage: RequestedUsage,
     ) -> LockResult {
         match usage_queue.current_usage {
-            Usage::Unused => LockResult::Ok(Usage::from(requested_usage)),
-            Usage::Readonly(count) => match requested_usage {
+            None => LockResult::Ok(Usage::from(requested_usage)),
+            Some(Usage::Readonly(count)) => match requested_usage {
                 RequestedUsage::Readonly => LockResult::Ok(Usage::Readonly(count.increment())),
                 RequestedUsage::Writable => LockResult::Err(()),
             },
-            Usage::Writable => LockResult::Err(()),
+            Some(Usage::Writable) => LockResult::Err(()),
         }
     }
 
@@ -576,7 +573,7 @@ impl SchedulingStateMachine {
     ) -> Option<(RequestedUsage, Task)> {
         let mut is_unused_now = false;
         match &mut usage_queue.current_usage {
-            Usage::Readonly(ref mut count) => match requested_usage {
+            Some(Usage::Readonly(ref mut count)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     if count.is_one() {
                         is_unused_now = true;
@@ -586,17 +583,17 @@ impl SchedulingStateMachine {
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
-            Usage::Writable => match requested_usage {
+            Some(Usage::Writable) => match requested_usage {
                 RequestedUsage::Writable => {
                     is_unused_now = true;
                 }
                 RequestedUsage::Readonly => unreachable!(),
             },
-            Usage::Unused => unreachable!(),
+            None => unreachable!(),
         }
 
         if is_unused_now {
-            usage_queue.current_usage = Usage::Unused;
+            usage_queue.current_usage = None;
             usage_queue.pop_unblocked_usage_from_task()
         } else {
             None
@@ -615,9 +612,8 @@ impl SchedulingStateMachine {
                     LockResult::Err(())
                 };
                 match lock_result {
-                    LockResult::Ok(Usage::Unused) => unreachable!(),
                     LockResult::Ok(new_usage) => {
-                        usage_queue.current_usage = new_usage;
+                        usage_queue.current_usage = Some(new_usage);
                     }
                     LockResult::Err(()) => {
                         blocked_usage_count.increment_self();
@@ -656,9 +652,8 @@ impl SchedulingStateMachine {
                     }
 
                     match Self::try_lock_usage_queue(usage_queue, requested_usage) {
-                        LockResult::Ok(Usage::Unused) => unreachable!(),
                         LockResult::Ok(new_usage) => {
-                            usage_queue.current_usage = new_usage;
+                            usage_queue.current_usage = Some(new_usage);
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
                             unblocked_task_from_queue = if matches!(new_usage, Usage::Readonly(_)) {
@@ -1241,7 +1236,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                assert_matches!(usage_queue.current_usage, Usage::Writable);
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable));
             });
         // task2's fee payer should have been locked already even if task2 is blocked still via the
         // above the schedule_task(task2) call
@@ -1250,7 +1245,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                assert_matches!(usage_queue.current_usage, Usage::Writable);
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable));
             });
         state_machine.deschedule_task(&task1);
         assert_matches!(
@@ -1290,7 +1285,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                usage_queue.current_usage = Usage::Writable;
+                usage_queue.current_usage = Some(Usage::Writable);
                 let _ = SchedulingStateMachine::unlock_usage_queue(
                     usage_queue,
                     RequestedUsage::Readonly,
@@ -1308,7 +1303,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                usage_queue.current_usage = Usage::Readonly(ShortCounter::one());
+                usage_queue.current_usage = Some(Usage::Readonly(ShortCounter::one()));
                 let _ = SchedulingStateMachine::unlock_usage_queue(
                     usage_queue,
                     RequestedUsage::Writable,
