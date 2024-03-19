@@ -323,6 +323,9 @@ const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 #[derive(Debug)]
 pub struct TaskInner {
     transaction: SanitizedTransaction,
+    /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
+    /// Carrying this along with the transaction is needed to properly record the execution result
+    /// of it.
     index: usize,
     lock_contexts: Vec<LockContext>,
     blocked_usage_count: TokenCell<ShortCounter>,
