@@ -574,7 +574,7 @@ impl SchedulingStateMachine {
     fn unlock_usage_queue(
         usage_queue: &mut UsageQueueInner,
         requested_usage: RequestedUsage,
-    ) -> Option<(RequestedUsage, Task)> {
+    ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut usage_queue.current_usage {
             Some(Usage::Readonly(ref mut count)) => match requested_usage {
