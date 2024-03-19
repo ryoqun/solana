@@ -739,7 +739,7 @@ impl SchedulingStateMachine {
     ///
     /// This method is intended to reuse SchedulingStateMachine instance (to avoid its `unsafe`
     /// [constructor](SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling)
-    /// as much as possible) and its (possbily cached) associated [`UsageQueue`]s for processing
+    /// as much as possible) and its (possibly cached) associated [`UsageQueue`]s for processing
     /// other slots.
     pub fn reinitialize(&mut self) {
         assert!(self.has_no_active_task());
@@ -850,7 +850,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scheduling_state_machine_reinitialization() {
+    fn test_scheduling_state_machine_good_reinitialization() {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
@@ -858,6 +858,18 @@ mod tests {
         assert_eq!(state_machine.total_task_count(), 1);
         state_machine.reinitialize();
         assert_eq!(state_machine.total_task_count(), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion failed: self.has_no_active_task()")]
+    fn test_scheduling_state_machine_bad_reinitialization() {
+        let mut state_machine = unsafe {
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+        };
+        let address_loader = &mut create_address_loader(None);
+        let task = SchedulingStateMachine::create_task(simplest_transaction(), 3, address_loader);
+        state_machine.schedule_task(task).unwrap();
+        state_machine.reinitialize();
     }
 
     #[test]
