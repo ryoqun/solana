@@ -400,8 +400,7 @@ impl From<RequestedUsage> for Usage {
     }
 }
 
-/// Status about how a task is requesting to use a particular [`UsageQueue`]. Unlike [`Usage`], it
-/// has only two unit variants.
+/// Status about how a task is requesting to use a particular [`UsageQueue`].
 #[derive(Clone, Copy, Debug)]
 enum RequestedUsage {
     Readonly,
