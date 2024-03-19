@@ -475,7 +475,7 @@ impl UsageQueueInner {
 
         if is_unused_now {
             self.current_usage = None;
-            self.pop_unblocked_usage_from_task()
+            self.blocked_usages_from_tasks.pop_front()
         } else {
             None
         }
@@ -484,12 +484,6 @@ impl UsageQueueInner {
     fn push_blocked_usage_from_task(&mut self, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         self.blocked_usages_from_tasks.push_back(usage_from_task);
-    }
-
-    #[must_use]
-    fn pop_unblocked_usage_from_task(&mut self) -> Option<UsageFromTask> {
-        assert_matches!(self.current_usage, None);
-        self.blocked_usages_from_tasks.pop_front()
     }
 
     #[must_use]
