@@ -610,14 +610,11 @@ impl SchedulingStateMachine {
                 } else {
                     LockResult::Err(())
                 };
-                match lock_result {
-                    LockResult::Ok(()) => {}
-                    LockResult::Err(()) => {
-                        blocked_usage_count.increment_self();
-                        let usage_from_task = (context.requested_usage, task.clone());
-                        usage_queue.push_blocked_usage_from_task(usage_from_task);
-                    }
-                }
+                lock_result.inspect_err(|_| {
+                    blocked_usage_count.increment_self();
+                    let usage_from_task = (context.requested_usage, task.clone());
+                    usage_queue.push_blocked_usage_from_task(usage_from_task);
+                });
             });
         }
 
