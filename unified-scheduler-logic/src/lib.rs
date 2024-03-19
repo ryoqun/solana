@@ -97,6 +97,7 @@
 //! scheduler pool.
 use {
     crate::utils::{ShortCounter, Token, TokenCell},
+    assert_matches::assert_matches,
     solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
     std::{collections::VecDeque, mem, sync::Arc},
@@ -440,11 +441,13 @@ impl Default for UsageQueueInner {
 
 impl UsageQueueInner {
     fn push_blocked_usage_from_task(&mut self, usage_from_task: UsageFromTask) {
+        assert_matches!(self.current_usage, Some(_));
         self.blocked_usages_from_tasks.push_back(usage_from_task);
     }
 
     #[must_use]
     fn pop_unblocked_usage_from_task(&mut self) -> Option<UsageFromTask> {
+        assert_matches!(self.current_usage, None);
         self.blocked_usages_from_tasks.pop_front()
     }
 
@@ -454,7 +457,8 @@ impl UsageQueueInner {
             self.blocked_usages_from_tasks.front(),
             Some((RequestedUsage::Readonly, _))
         ) {
-            self.pop_unblocked_usage_from_task()
+            assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
+            self.blocked_usages_from_tasks.pop_front()
         } else {
             None
         }
@@ -782,7 +786,6 @@ impl SchedulingStateMachine {
 mod tests {
     use {
         super::*,
-        assert_matches::assert_matches,
         solana_sdk::{
             instruction::{AccountMeta, Instruction},
             message::Message,
