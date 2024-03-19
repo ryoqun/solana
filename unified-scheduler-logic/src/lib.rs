@@ -304,8 +304,8 @@ mod utils {
 
 /// [`Result`] for locking a [usage_queue](UsageQueue) with particular
 /// [current_usage](RequestedUsage).
-type LockResult = Result<Usage, ()>;
-const_assert_eq!(mem::size_of::<LockResult>(), 8);
+type LockResult = Result<(), ()>;
+const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 pub type Task = Arc<TaskInner>;
@@ -442,15 +442,20 @@ impl Default for UsageQueueInner {
 }
 
 impl UsageQueueInner {
-    fn try_lock(&self, requested_usage: RequestedUsage) -> LockResult {
+    fn try_lock(&mut self, requested_usage: RequestedUsage) -> LockResult {
         match self.current_usage {
-            None => LockResult::Ok(Usage::from(requested_usage)),
+            None => Some(Usage::from(requested_usage)),
             Some(Usage::Readonly(count)) => match requested_usage {
-                RequestedUsage::Readonly => LockResult::Ok(Usage::Readonly(count.increment())),
-                RequestedUsage::Writable => LockResult::Err(()),
+                RequestedUsage::Readonly => Some(Usage::Readonly(count.increment())),
+                RequestedUsage::Writable => None,
             },
-            Some(Usage::Writable) => LockResult::Err(()),
+            Some(Usage::Writable) => None,
         }
+        .inspect(|&new_usage| {
+            self.current_usage = Some(new_usage);
+        })
+        .map(|_| ())
+        .ok_or(())
     }
 
     #[must_use]
@@ -606,9 +611,7 @@ impl SchedulingStateMachine {
                     LockResult::Err(())
                 };
                 match lock_result {
-                    LockResult::Ok(new_usage) => {
-                        usage_queue.current_usage = Some(new_usage);
-                    }
+                    LockResult::Ok(()) => {}
                     LockResult::Err(()) => {
                         blocked_usage_count.increment_self();
                         let usage_from_task = (context.requested_usage, task.clone());
@@ -646,15 +649,15 @@ impl SchedulingStateMachine {
                     }
 
                     match usage_queue.try_lock(requested_usage) {
-                        LockResult::Ok(new_usage) => {
-                            usage_queue.current_usage = Some(new_usage);
+                        LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
-                            unblocked_task_from_queue = if matches!(new_usage, Usage::Readonly(_)) {
-                                usage_queue.pop_unblocked_readonly_usage_from_task()
-                            } else {
-                                None
-                            };
+                            unblocked_task_from_queue =
+                                if matches!(requested_usage, RequestedUsage::Readonly) {
+                                    usage_queue.pop_unblocked_readonly_usage_from_task()
+                                } else {
+                                    None
+                                };
                         }
                         LockResult::Err(_) => panic!("should never fail in this context"),
                     }
