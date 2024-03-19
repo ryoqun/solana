@@ -324,7 +324,7 @@ const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 pub struct TaskInner {
     transaction: SanitizedTransaction,
     index: usize,
-    lock_attempts: Vec<LockAttempt>,
+    lock_contexts: Vec<LockContext>,
     blocked_usage_count: TokenCell<ShortCounter>,
 }
 
@@ -337,8 +337,8 @@ impl TaskInner {
         &self.transaction
     }
 
-    fn lock_attempts(&self) -> &[LockAttempt] {
-        &self.lock_attempts
+    fn lock_contexts(&self) -> &[LockContext] {
+        &self.lock_contexts
     }
 
     fn set_blocked_usage_count(&self, token: &mut BlockedUsageCountToken, count: ShortCounter) {
@@ -357,16 +357,16 @@ impl TaskInner {
     }
 }
 
-/// [`Task`]'s per-address attempt to use a [usage_queue](UsageQueue) with [certain kind of
+/// [`Task`]'s per-address context to use a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
 #[derive(Debug)]
-struct LockAttempt {
+struct LockContext {
     usage_queue: UsageQueue,
     requested_usage: RequestedUsage,
 }
-const_assert_eq!(mem::size_of::<LockAttempt>(), 16);
+const_assert_eq!(mem::size_of::<LockContext>(), 16);
 
-impl LockAttempt {
+impl LockContext {
     fn new(usage_queue: UsageQueue, requested_usage: RequestedUsage) -> Self {
         Self {
             usage_queue,
@@ -608,10 +608,10 @@ impl SchedulingStateMachine {
     fn try_lock_for_task(&mut self, task: Task) -> Option<Task> {
         let mut blocked_usage_count = ShortCounter::zero();
 
-        for attempt in task.lock_attempts() {
-            attempt.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
+        for context in task.lock_contexts() {
+            context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = if usage_queue.has_no_blocked_usage() {
-                    Self::try_lock_usage_queue(usage_queue, attempt.requested_usage)
+                    Self::try_lock_usage_queue(usage_queue, context.requested_usage)
                 } else {
                     LockResult::Err(())
                 };
@@ -621,7 +621,7 @@ impl SchedulingStateMachine {
                     }
                     LockResult::Err(()) => {
                         blocked_usage_count.increment_self();
-                        let usage_from_task = (attempt.requested_usage, task.clone());
+                        let usage_from_task = (context.requested_usage, task.clone());
                         usage_queue.push_blocked_usage_from_task(usage_from_task);
                     }
                 }
@@ -638,10 +638,10 @@ impl SchedulingStateMachine {
     }
 
     fn unlock_for_task(&mut self, task: &Task) {
-        for attempt in task.lock_attempts() {
-            attempt.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
+        for context in task.lock_contexts() {
+            context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut unblocked_task_from_queue =
-                    Self::unlock_usage_queue(usage_queue, attempt.requested_usage);
+                    Self::unlock_usage_queue(usage_queue, context.requested_usage);
 
                 while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
@@ -716,17 +716,17 @@ impl SchedulingStateMachine {
             .iter()
             .map(|address| (address, RequestedUsage::Readonly));
 
-        let lock_attempts = writable_locks
+        let lock_contexts = writable_locks
             .chain(readonly_locks)
             .map(|(address, requested_usage)| {
-                LockAttempt::new(usage_queue_loader(**address), requested_usage)
+                LockContext::new(usage_queue_loader(**address), requested_usage)
             })
             .collect();
 
         Task::new(TaskInner {
             transaction,
             index,
-            lock_attempts,
+            lock_contexts,
             blocked_usage_count: TokenCell::new(ShortCounter::zero()),
         })
     }
