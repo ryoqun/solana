@@ -357,7 +357,7 @@ impl TaskInner {
     }
 }
 
-/// [`Task`]'s per-address context to use a [usage_queue](UsageQueue) with [certain kind of
+/// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
 #[derive(Debug)]
 struct LockContext {
@@ -440,6 +440,48 @@ impl Default for UsageQueueInner {
 }
 
 impl UsageQueueInner {
+    fn try_lock(&self, requested_usage: RequestedUsage) -> LockResult {
+        match self.current_usage {
+            None => LockResult::Ok(Usage::from(requested_usage)),
+            Some(Usage::Readonly(count)) => match requested_usage {
+                RequestedUsage::Readonly => LockResult::Ok(Usage::Readonly(count.increment())),
+                RequestedUsage::Writable => LockResult::Err(()),
+            },
+            Some(Usage::Writable) => LockResult::Err(()),
+        }
+    }
+
+    #[must_use]
+    fn unlock(&mut self, requested_usage: RequestedUsage) -> Option<UsageFromTask> {
+        let mut is_unused_now = false;
+        match &mut self.current_usage {
+            Some(Usage::Readonly(ref mut count)) => match requested_usage {
+                RequestedUsage::Readonly => {
+                    if count.is_one() {
+                        is_unused_now = true;
+                    } else {
+                        count.decrement_self();
+                    }
+                }
+                RequestedUsage::Writable => unreachable!(),
+            },
+            Some(Usage::Writable) => match requested_usage {
+                RequestedUsage::Writable => {
+                    is_unused_now = true;
+                }
+                RequestedUsage::Readonly => unreachable!(),
+            },
+            None => unreachable!(),
+        }
+
+        if is_unused_now {
+            self.current_usage = None;
+            self.pop_unblocked_usage_from_task()
+        } else {
+            None
+        }
+    }
+
     fn push_blocked_usage_from_task(&mut self, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         self.blocked_usages_from_tasks.push_back(usage_from_task);
@@ -556,54 +598,6 @@ impl SchedulingStateMachine {
         self.unlock_for_task(task);
     }
 
-    fn try_lock_usage_queue(
-        usage_queue: &UsageQueueInner,
-        requested_usage: RequestedUsage,
-    ) -> LockResult {
-        match usage_queue.current_usage {
-            None => LockResult::Ok(Usage::from(requested_usage)),
-            Some(Usage::Readonly(count)) => match requested_usage {
-                RequestedUsage::Readonly => LockResult::Ok(Usage::Readonly(count.increment())),
-                RequestedUsage::Writable => LockResult::Err(()),
-            },
-            Some(Usage::Writable) => LockResult::Err(()),
-        }
-    }
-
-    #[must_use]
-    fn unlock_usage_queue(
-        usage_queue: &mut UsageQueueInner,
-        requested_usage: RequestedUsage,
-    ) -> Option<UsageFromTask> {
-        let mut is_unused_now = false;
-        match &mut usage_queue.current_usage {
-            Some(Usage::Readonly(ref mut count)) => match requested_usage {
-                RequestedUsage::Readonly => {
-                    if count.is_one() {
-                        is_unused_now = true;
-                    } else {
-                        count.decrement_self();
-                    }
-                }
-                RequestedUsage::Writable => unreachable!(),
-            },
-            Some(Usage::Writable) => match requested_usage {
-                RequestedUsage::Writable => {
-                    is_unused_now = true;
-                }
-                RequestedUsage::Readonly => unreachable!(),
-            },
-            None => unreachable!(),
-        }
-
-        if is_unused_now {
-            usage_queue.current_usage = None;
-            usage_queue.pop_unblocked_usage_from_task()
-        } else {
-            None
-        }
-    }
-
     #[must_use]
     fn try_lock_for_task(&mut self, task: Task) -> Option<Task> {
         let mut blocked_usage_count = ShortCounter::zero();
@@ -611,7 +605,7 @@ impl SchedulingStateMachine {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = if usage_queue.has_no_blocked_usage() {
-                    Self::try_lock_usage_queue(usage_queue, context.requested_usage)
+                    usage_queue.try_lock(context.requested_usage)
                 } else {
                     LockResult::Err(())
                 };
@@ -640,8 +634,7 @@ impl SchedulingStateMachine {
     fn unlock_for_task(&mut self, task: &Task) {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                let mut unblocked_task_from_queue =
-                    Self::unlock_usage_queue(usage_queue, context.requested_usage);
+                let mut unblocked_task_from_queue = usage_queue.unlock(context.requested_usage);
 
                 while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
@@ -655,7 +648,7 @@ impl SchedulingStateMachine {
                         self.unblocked_task_queue.push_back(task);
                     }
 
-                    match Self::try_lock_usage_queue(usage_queue, requested_usage) {
+                    match usage_queue.try_lock(requested_usage) {
                         LockResult::Ok(new_usage) => {
                             usage_queue.current_usage = Some(new_usage);
                             // Try to further schedule blocked task for parallelism in the case of
@@ -1283,10 +1276,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let _ = SchedulingStateMachine::unlock_usage_queue(
-                    usage_queue,
-                    RequestedUsage::Writable,
-                );
+                let _ = usage_queue.unlock(RequestedUsage::Writable);
             });
     }
 
@@ -1301,10 +1291,7 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 usage_queue.current_usage = Some(Usage::Writable);
-                let _ = SchedulingStateMachine::unlock_usage_queue(
-                    usage_queue,
-                    RequestedUsage::Readonly,
-                );
+                let _ = usage_queue.unlock(RequestedUsage::Readonly);
             });
     }
 
@@ -1319,10 +1306,7 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 usage_queue.current_usage = Some(Usage::Readonly(ShortCounter::one()));
-                let _ = SchedulingStateMachine::unlock_usage_queue(
-                    usage_queue,
-                    RequestedUsage::Writable,
-                );
+                let _ = usage_queue.unlock(RequestedUsage::Writable);
             });
     }
 }
