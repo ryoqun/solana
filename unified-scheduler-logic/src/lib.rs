@@ -656,7 +656,7 @@ impl SchedulingStateMachine {
                                     None
                                 };
                         }
-                        LockResult::Err(_) => panic!("should never fail in this context"),
+                        LockResult::Err(()) => panic!("should never fail in this context"),
                     }
                 }
             });
