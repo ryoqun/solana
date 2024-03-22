@@ -573,7 +573,7 @@ impl SchedulingStateMachine {
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
         self.total_task_count.increment_self();
         self.active_task_count.increment_self();
-        self.try_lock_for_task(task)
+        self.try_lock_usage_queues(task)
     }
 
     #[must_use]
@@ -596,11 +596,11 @@ impl SchedulingStateMachine {
     pub fn deschedule_task(&mut self, task: &Task) {
         self.active_task_count.decrement_self();
         self.handled_task_count.increment_self();
-        self.unlock_for_task(task);
+        self.unlock_usage_queues(task);
     }
 
     #[must_use]
-    fn try_lock_for_task(&mut self, task: Task) -> Option<Task> {
+    fn try_lock_usage_queues(&mut self, task: Task) -> Option<Task> {
         let mut blocked_usage_count = ShortCounter::zero();
 
         for context in task.lock_contexts() {
@@ -627,7 +627,7 @@ impl SchedulingStateMachine {
         }
     }
 
-    fn unlock_for_task(&mut self, task: &Task) {
+    fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut unblocked_task_from_queue = usage_queue.unlock(context.requested_usage);
