@@ -10,7 +10,7 @@
 //! execute in parallel. Lastly, `SchedulingStateMachine` should be notified about the completion
 //! of the exeuction via [`::deschedule_task()`](SchedulingStateMachine::deschedule_task), so that
 //! conflicting tasks can be returned from
-//! [`::schedule_unblocked_task()`](SchedulingStateMachine::schedule_unblocked_task) as
+//! [`::schedule_next_unblocked_task()`](SchedulingStateMachine::schedule_next_unblocked_task) as
 //! newly-unblocked runnable ones.
 //!
 //! The design principle of this crate (`solana-unified-scheduler-logic`) is simplicity for the
@@ -577,7 +577,7 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    pub fn schedule_unblocked_task(&mut self) -> Option<Task> {
+    pub fn schedule_next_unblocked_task(&mut self) -> Option<Task> {
         self.unblocked_task_queue.pop_front().inspect(|_| {
             self.unblocked_task_count.increment_self();
         })
@@ -917,16 +917,16 @@ mod tests {
         assert_eq!(state_machine.unblocked_task_count(), 0);
         assert_eq!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
         assert_eq!(state_machine.unblocked_task_count(), 1);
 
-        // there's no blocked task anymore; calling schedule_unblocked_task should be noop and
+        // there's no blocked task anymore; calling schedule_next_unblocked_task should be noop and
         // shouldn't increment the unblocked_task_count().
         assert!(!state_machine.has_unblocked_task());
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         assert_eq!(state_machine.unblocked_task_count(), 1);
 
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
@@ -971,7 +971,7 @@ mod tests {
         assert_eq!(state_machine.unblocked_task_count(), 0);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
@@ -981,7 +981,7 @@ mod tests {
 
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
@@ -1065,7 +1065,7 @@ mod tests {
         assert_eq!(state_machine.active_task_count(), 2);
         assert_eq!(state_machine.handled_task_count(), 1);
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.active_task_count(), 1);
         assert_eq!(state_machine.handled_task_count(), 2);
@@ -1073,7 +1073,7 @@ mod tests {
         // task3 is finally unblocked after all of readable tasks (task1 and task2) is finished.
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
@@ -1104,23 +1104,23 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task2);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task3);
         assert!(state_machine.has_no_active_task());
     }
@@ -1149,7 +1149,7 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
@@ -1186,29 +1186,29 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
         // the above deschedule_task(task1) call should only unblock task2 and task3 because these
         // are read-locking. And shouldn't unblock task4 because it's write-locking
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
 
         state_machine.deschedule_task(&task2);
         // still task4 is blocked...
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
 
         state_machine.deschedule_task(&task3);
         // finally task4 should be unblocked
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(104)
         );
@@ -1255,7 +1255,7 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
