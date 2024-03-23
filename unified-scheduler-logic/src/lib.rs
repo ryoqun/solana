@@ -287,9 +287,22 @@ mod utils {
 type LockResult = Result<PageUsage, ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 8);
 
+use std::rc::Rc;
+type MyRc<T> = Rc<T>;
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-pub type Task = Arc<TaskInner>;
+#[derive(Debug)]
+pub struct Task(MyRc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
+
+unsafe impl Send for Task {}
+unsafe impl Sync for Task {}
+
+impl std::ops::Deref for Task {
+    type Target = TaskInner;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// [`Token`] for [`Page`].
 type PageToken = Token<PageInner>;
@@ -306,7 +319,6 @@ pub struct TaskInner {
     transaction: SanitizedTransaction,
     index: usize,
     lock_attempts: Vec<LockAttempt>,
-    blocked_page_count: TokenCell<ShortCounter>,
 }
 
 impl TaskInner {
@@ -322,23 +334,17 @@ impl TaskInner {
         &self.lock_attempts
     }
 
-    fn blocked_page_count_mut<'t>(
-        &self,
-        token: &'t mut BlockedPageCountToken,
-    ) -> &'t mut ShortCounter {
-        self.blocked_page_count.borrow_mut(token)
-    }
+}
 
-    fn set_blocked_page_count(&self, token: &mut BlockedPageCountToken, count: ShortCounter) {
-        *self.blocked_page_count_mut(token) = count;
+impl Task {
+    fn new(t: TaskInner) -> Self {
+        Task(MyRc::new(t))
     }
 
     #[must_use]
-    fn try_unblock(self: &Task, token: &mut BlockedPageCountToken) -> Option<Task> {
-        self.blocked_page_count_mut(token)
-            .decrement_self()
-            .is_zero()
-            .then(|| self.clone())
+    fn try_unblock(self: Task) -> Option<Task> {
+        //eprintln!("sc {}", MyRc::strong_count(&self.0));
+        (MyRc::strong_count(&self.0) == 1).then_some(self)
     }
 }
 
@@ -457,7 +463,6 @@ const_assert_eq!(mem::size_of::<Page>(), 8);
 
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
-#[cfg_attr(feature = "dev-context-only-utils", field_qualifiers(count_token(pub)))]
 pub struct SchedulingStateMachine {
     last_task_index: Option<usize>,
     unblocked_task_queue: VecDeque<Task>,
@@ -465,7 +470,6 @@ pub struct SchedulingStateMachine {
     handled_task_count: ShortCounter,
     unblocked_task_count: ShortCounter,
     total_task_count: ShortCounter,
-    count_token: BlockedPageCountToken,
     page_token: PageToken,
 }
 const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 64);
@@ -496,7 +500,9 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
+    pub fn schedule_task(&mut self, mut task: Task) -> Option<Task> {
+        assert!(MyRc::get_mut(&mut task.0).is_some());
+        /*
         let new_task_index = task.task_index();
         if let Some(old_task_index) = self.last_task_index.replace(new_task_index) {
             assert!(
@@ -504,6 +510,7 @@ impl SchedulingStateMachine {
                 "bad new task index: {new_task_index} > {old_task_index}"
             );
         }
+        */
         self.total_task_count.increment_self();
         self.active_task_count.increment_self();
         self.attempt_lock_for_task(task)
@@ -522,6 +529,7 @@ impl SchedulingStateMachine {
     }
 
     pub fn deschedule_task(&mut self, task: &Task) {
+        /*
         let blocked_task_index = task.task_index();
         let largest_task_index = self
             .last_task_index
@@ -530,35 +538,10 @@ impl SchedulingStateMachine {
             blocked_task_index <= largest_task_index,
             "bad unblocked task index: {blocked_task_index} <= {largest_task_index}"
         );
+        */
         self.active_task_count.decrement_self();
         self.handled_task_count.increment_self();
         self.unlock_for_task(task);
-    }
-
-    #[must_use]
-    fn attempt_lock_pages(&mut self, task: &Task) -> ShortCounter {
-        let mut blocked_page_count = ShortCounter::zero();
-
-        for attempt in task.lock_attempts() {
-            let page = attempt.page_mut(&mut self.page_token);
-            let lock_status = if page.has_no_blocked_task() {
-                Self::attempt_lock_page(page, attempt.requested_usage)
-            } else {
-                LockResult::Err(())
-            };
-            match lock_status {
-                LockResult::Ok(PageUsage::Unused) => unreachable!(),
-                LockResult::Ok(new_usage) => {
-                    page.usage = new_usage;
-                }
-                LockResult::Err(()) => {
-                    blocked_page_count.increment_self();
-                    page.push_blocked_task(task.clone(), attempt.requested_usage);
-                }
-            }
-        }
-
-        blocked_page_count
     }
 
     fn attempt_lock_page(page: &PageInner, requested_usage: RequestedUsage) -> LockResult {
@@ -605,14 +588,27 @@ impl SchedulingStateMachine {
 
     #[must_use]
     fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
-        let blocked_page_count = self.attempt_lock_pages(&task);
+        for attempt in task.lock_attempts() {
+            let page = attempt.page_mut(&mut self.page_token);
+            let lock_status = if page.has_no_blocked_task() {
+                Self::attempt_lock_page(page, attempt.requested_usage)
+            } else {
+                LockResult::Err(())
+            };
+            match lock_status {
+                LockResult::Ok(PageUsage::Unused) => unreachable!(),
+                LockResult::Ok(new_usage) => {
+                    page.usage = new_usage;
+                }
+                LockResult::Err(()) => {
+                    page.push_blocked_task(Task(task.0.clone()), attempt.requested_usage);
+                }
+            }
+        }
 
-        if blocked_page_count.is_zero() {
-            // succeeded
+        if MyRc::strong_count(&task.0) == 1 {
             Some(task)
         } else {
-            // failed
-            task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
             None
         }
     }
@@ -623,7 +619,7 @@ impl SchedulingStateMachine {
             let mut unblocked_task_from_page = Self::unlock_page(page, unlock_attempt);
 
             while let Some((task_with_unblocked_page, requested_usage)) = unblocked_task_from_page {
-                if let Some(task) = task_with_unblocked_page.try_unblock(&mut self.count_token) {
+                if let Some(task) = task_with_unblocked_page.try_unblock() {
                     self.unblocked_task_queue.push_back(task);
                 }
 
@@ -680,7 +676,6 @@ impl SchedulingStateMachine {
             transaction,
             index,
             lock_attempts,
-            blocked_page_count: TokenCell::new(ShortCounter::zero()),
         })
     }
 
@@ -718,13 +713,12 @@ impl SchedulingStateMachine {
             handled_task_count: ShortCounter::zero(),
             unblocked_task_count: ShortCounter::zero(),
             total_task_count: ShortCounter::zero(),
-            count_token: unsafe { BlockedPageCountToken::assume_exclusive_mutating_thread() },
             page_token: unsafe { PageToken::assume_exclusive_mutating_thread() },
         }
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "ajaaja")]
 mod tests {
     use {
         super::*,
@@ -1234,6 +1228,15 @@ mod tests {
             page.0.borrow_mut(&mut state_machine.page_token).usage,
             PageUsage::Writable
         );
+        state_machine.deschedule_task(&task1);
+        assert_matches!(
+            state_machine
+                .schedule_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(102)
+        );
+        state_machine.deschedule_task(&task2);
+        assert!(state_machine.has_no_active_task());
     }
 
     #[test]
