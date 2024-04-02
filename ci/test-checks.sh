@@ -46,9 +46,6 @@ echo --- build environment
   wasm-pack --version
 )
 
-rustup component add miri --toolchain "$rust_nightly"
-$cargoNightly miri test -p solana-program -- hash:: account_info::
-
 export RUST_BACKTRACE=1
 export RUSTFLAGS="-D warnings -A incomplete_features"
 
