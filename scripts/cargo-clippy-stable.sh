@@ -29,3 +29,6 @@ source "$here/../ci/rust-version.sh" stable
   --deny=clippy::arithmetic_side_effects \
   --deny=clippy::manual_let_else \
   --deny=clippy::used_underscore_binding
+
+"$here/cargo-for-all-lock-files.sh" -- \
+  miri test -p solana-program -- hash:: account_info::
