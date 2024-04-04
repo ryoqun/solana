@@ -288,7 +288,7 @@ mod utils {
     mod tests {
         use {
             super::{Token, TokenCell},
-            std::{sync::Arc, thread},
+            std::{mem, sync::Arc, thread},
         };
 
         #[test]
@@ -303,6 +303,42 @@ mod utils {
             }
         }
 
+        #[derive(Debug)]
+        struct FakeQueue {
+            v: Vec<u8>,
+        }
+
+        // As documented above, it's illegal to create multiple tokens inside a single thread to
+        // acquire multiple mutable references to the same TokenCell at the same time.
+        #[test]
+        // Trigger (harmless) UB unless running under miri by conditionally #[ignore]-ing,
+        // confirming false-positive result to conversely show the merit of miri!
+        #[cfg_attr(miri, ignore)]
+        fn test_ub_illegally_created_multiple_tokens() {
+            // Unauthorized token minting!
+            let mut token1 = unsafe { mem::transmute(()) };
+            let mut token2 = unsafe { mem::transmute(()) };
+
+            let queue = TokenCell::new(FakeQueue {
+                v: Vec::with_capacity(20),
+            });
+            queue.with_borrow_mut(&mut token1, |queue_mut1| {
+                queue_mut1.v.push(1);
+                queue.with_borrow_mut(&mut token2, |queue_mut2| {
+                    queue_mut2.v.push(2);
+                    queue_mut1.v.push(3);
+                });
+                queue_mut1.v.push(4);
+            });
+
+            // It's in ub already, so we can't assert reliably, so dbg!(...) just for fun
+            #[cfg(not(miri))]
+            dbg!(queue.0.into_inner());
+
+            // Return successfully to indicate an unexpected outcome, because this test should
+            // have aborted by now.
+        }
+
         // As documented above, it's illegal to share (= co-own) the same instance of TokenCell
         // across threads. Unfortunately, we can't prevent this from happening with some
         // type-safety magic to cause compile errors... So sanity-check here test fails due to a
@@ -312,11 +348,6 @@ mod utils {
         // confirming false-positive result to conversely show the merit of miri!
         #[cfg_attr(miri, ignore)]
         fn test_ub_illegally_shared_token_cell() {
-            #[derive(Debug)]
-            struct FakeQueue {
-                v: Vec<u8>,
-            }
-
             let queue1 = Arc::new(TokenCell::new(FakeQueue {
                 v: Vec::with_capacity(20),
             }));
@@ -329,8 +360,7 @@ mod utils {
             for _ in 0..10 {
                 let (queue1, queue2) = (queue1.clone(), queue2.clone());
                 let thread1 = thread::spawn(move || {
-                    let mut token =
-                        unsafe { Token::<FakeQueue>::assume_exclusive_mutating_thread() };
+                    let mut token = unsafe { Token::assume_exclusive_mutating_thread() };
                     queue1.with_borrow_mut(&mut token, |queue| {
                         // this is UB
                         queue.v.push(3);
@@ -339,8 +369,7 @@ mod utils {
                 // Immediately spawn next thread without joining thread1 to ensure there's a data race
                 // definitely. Otherwise, joining here wouldn't cause UB.
                 let thread2 = thread::spawn(move || {
-                    let mut token =
-                        unsafe { Token::<FakeQueue>::assume_exclusive_mutating_thread() };
+                    let mut token = unsafe { Token::assume_exclusive_mutating_thread() };
                     queue2.with_borrow_mut(&mut token, |queue| {
                         // this is UB
                         queue.v.push(4);
@@ -358,8 +387,8 @@ mod utils {
                 dbg!(Arc::into_inner(queue3).unwrap().0.into_inner());
             }
 
-            // return successfully to indicate an unexpected outcome, because this test should
-            // abort by now
+            // Return successfully to indicate an unexpected outcome, because this test should
+            // have aborted by now
         }
     }
 }
