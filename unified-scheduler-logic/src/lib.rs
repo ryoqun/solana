@@ -286,7 +286,10 @@ mod utils {
 
     #[cfg(test)]
     mod tests {
-        use super::Token;
+        use {
+            super::{Token, TokenCell},
+            std::{sync::Arc, thread},
+        };
 
         #[test]
         #[should_panic(
@@ -298,6 +301,65 @@ mod utils {
                 let _ = Token::<usize>::assume_exclusive_mutating_thread();
                 let _ = Token::<usize>::assume_exclusive_mutating_thread();
             }
+        }
+
+        // As documented above, it's illegal to share (= co-own) the same instance of TokenCell
+        // across threads. Unfortunately, we can't prevent this from happening with some
+        // type-safety magic to cause compile errors... So sanity-check here test fails due to a
+        // runtime error of the known UB, when run under miri.
+        #[test]
+        // Trigger (harmless) UB unless running under miri by conditionally #[ignore]-ing,
+        // confirming false-positive result to conversely show the merit of miri!
+        #[cfg_attr(miri, ignore)]
+        fn test_ub_illegally_shared_token_cell() {
+            #[derive(Debug)]
+            struct FakeQueue {
+                v: Vec<u8>,
+            }
+
+            let queue1 = Arc::new(TokenCell::new(FakeQueue {
+                v: Vec::with_capacity(20),
+            }));
+            let queue2 = queue1.clone();
+            #[cfg(not(miri))]
+            let queue3 = queue1.clone();
+
+            // Usually miri immediately detects the data race; but just repeat enough time to avoid
+            // being flaky
+            for _ in 0..10 {
+                let (queue1, queue2) = (queue1.clone(), queue2.clone());
+                let thread1 = thread::spawn(move || {
+                    let mut token =
+                        unsafe { Token::<FakeQueue>::assume_exclusive_mutating_thread() };
+                    queue1.with_borrow_mut(&mut token, |queue| {
+                        // this is UB
+                        queue.v.push(3);
+                    });
+                });
+                // Immediately spawn next thread without joining thread1 to ensure there's a data race
+                // definitely. Otherwise, joining here wouldn't cause UB.
+                let thread2 = thread::spawn(move || {
+                    let mut token =
+                        unsafe { Token::<FakeQueue>::assume_exclusive_mutating_thread() };
+                    queue2.with_borrow_mut(&mut token, |queue| {
+                        // this is UB
+                        queue.v.push(4);
+                    });
+                });
+
+                thread1.join().unwrap();
+                thread2.join().unwrap();
+            }
+
+            // It's in ub already, so we can't assert reliably, so dbg!(...) just for fun
+            #[cfg(not(miri))]
+            {
+                drop((queue1, queue2));
+                dbg!(Arc::into_inner(queue3).unwrap().0.into_inner());
+            }
+
+            // return successfully to indicate an unexpected outcome, because this test should
+            // abort by now
         }
     }
 }
