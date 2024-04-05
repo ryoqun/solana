@@ -2159,7 +2159,15 @@ mod tests {
             prioritization_fee_cache,
         };
 
-        <DefaultTaskHandler as TaskHandler<DefaultScheduleExecutionArg>>::handle(&DefaultTaskHandler, result, timings, bank, tx, 0, handler_context);
+        <DefaultTaskHandler as TaskHandler<DefaultScheduleExecutionArg>>::handle(
+            &DefaultTaskHandler,
+            result,
+            timings,
+            bank,
+            tx,
+            0,
+            handler_context,
+        );
         assert_matches!(result, Err(TransactionError::AccountLoadedTwice));
     }
 }

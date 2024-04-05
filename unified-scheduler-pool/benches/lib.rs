@@ -58,7 +58,8 @@ fn setup_dummy_fork_graph(bank: Bank) -> Arc<Bank> {
     let slot = bank.slot();
     let bank_fork = BankForks::new_rw_arc(bank);
     let bank = bank_fork.read().unwrap().get(slot).unwrap();
-    bank.transaction_processor.program_cache
+    bank.transaction_processor
+        .program_cache
         .write()
         .unwrap()
         .set_fork_graph(bank_fork);
