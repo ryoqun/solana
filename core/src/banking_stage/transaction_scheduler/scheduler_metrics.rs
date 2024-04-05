@@ -1,9 +1,49 @@
-use {itertools::MinMaxResult, solana_sdk::timing::AtomicInterval};
+use {
+    itertools::MinMaxResult,
+    solana_poh::poh_recorder::BankStart,
+    solana_sdk::{clock::Slot, timing::AtomicInterval},
+    std::time::Instant,
+};
 
 #[derive(Default)]
 pub struct SchedulerCountMetrics {
-    interval: AtomicInterval,
+    interval: IntervalSchedulerCountMetrics,
+    slot: SlotSchedulerCountMetrics,
+}
 
+impl SchedulerCountMetrics {
+    pub fn update(&mut self, update: impl Fn(&mut SchedulerCountMetricsInner)) {
+        update(&mut self.interval.metrics);
+        update(&mut self.slot.metrics);
+    }
+
+    pub fn maybe_report_and_reset_slot(&mut self, slot: Option<Slot>) {
+        self.slot.maybe_report_and_reset(slot);
+    }
+
+    pub fn maybe_report_and_reset_interval(&mut self, should_report: bool) {
+        self.interval.maybe_report_and_reset(should_report);
+    }
+
+    pub fn interval_has_data(&self) -> bool {
+        self.interval.metrics.has_data()
+    }
+}
+
+#[derive(Default)]
+struct IntervalSchedulerCountMetrics {
+    interval: AtomicInterval,
+    metrics: SchedulerCountMetricsInner,
+}
+
+#[derive(Default)]
+struct SlotSchedulerCountMetrics {
+    slot: Option<Slot>,
+    metrics: SchedulerCountMetricsInner,
+}
+
+#[derive(Default)]
+pub struct SchedulerCountMetricsInner {
     /// Number of packets received.
     pub num_received: usize,
     /// Number of packets buffered.
@@ -41,20 +81,36 @@ pub struct SchedulerCountMetrics {
     pub max_prioritization_fees: u64,
 }
 
-impl SchedulerCountMetrics {
-    pub fn maybe_report_and_reset(&mut self, should_report: bool) {
+impl IntervalSchedulerCountMetrics {
+    fn maybe_report_and_reset(&mut self, should_report: bool) {
         const REPORT_INTERVAL_MS: u64 = 1000;
         if self.interval.should_update(REPORT_INTERVAL_MS) {
             if should_report {
-                self.report();
+                self.metrics.report("banking_stage_scheduler_counts", None);
             }
-            self.reset();
+            self.metrics.reset();
         }
     }
+}
 
-    fn report(&self) {
-        datapoint_info!(
-            "banking_stage_scheduler_counts",
+impl SlotSchedulerCountMetrics {
+    fn maybe_report_and_reset(&mut self, slot: Option<Slot>) {
+        if self.slot != slot {
+            // Only report if there was an assigned slot.
+            if self.slot.is_some() {
+                self.metrics
+                    .report("banking_stage_scheduler_slot_counts", self.slot);
+            }
+            self.metrics.reset();
+            self.slot = slot;
+        }
+    }
+}
+
+impl SchedulerCountMetricsInner {
+    fn report(&self, name: &'static str, slot: Option<Slot>) {
+        let mut datapoint = create_datapoint!(
+            @point name,
             ("num_received", self.num_received, i64),
             ("num_buffered", self.num_buffered, i64),
             ("num_scheduled", self.num_scheduled, i64),
@@ -92,6 +148,10 @@ impl SchedulerCountMetrics {
             ("min_priority", self.get_min_priority(), i64),
             ("max_priority", self.get_max_priority(), i64)
         );
+        if let Some(slot) = slot {
+            datapoint.add_field_i64("slot", slot as i64);
+        }
+        solana_metrics::submit(datapoint, log::Level::Info);
     }
 
     pub fn has_data(&self) -> bool {
@@ -163,7 +223,39 @@ impl SchedulerCountMetrics {
 
 #[derive(Default)]
 pub struct SchedulerTimingMetrics {
+    interval: IntervalSchedulerTimingMetrics,
+    slot: SlotSchedulerTimingMetrics,
+}
+
+impl SchedulerTimingMetrics {
+    pub fn update(&mut self, update: impl Fn(&mut SchedulerTimingMetricsInner)) {
+        update(&mut self.interval.metrics);
+        update(&mut self.slot.metrics);
+    }
+
+    pub fn maybe_report_and_reset_slot(&mut self, slot: Option<Slot>) {
+        self.slot.maybe_report_and_reset(slot);
+    }
+
+    pub fn maybe_report_and_reset_interval(&mut self, should_report: bool) {
+        self.interval.maybe_report_and_reset(should_report);
+    }
+}
+
+#[derive(Default)]
+struct IntervalSchedulerTimingMetrics {
     interval: AtomicInterval,
+    metrics: SchedulerTimingMetricsInner,
+}
+
+#[derive(Default)]
+struct SlotSchedulerTimingMetrics {
+    slot: Option<Slot>,
+    metrics: SchedulerTimingMetricsInner,
+}
+
+#[derive(Default)]
+pub struct SchedulerTimingMetricsInner {
     /// Time spent making processing decisions.
     pub decision_time_us: u64,
     /// Time spent receiving packets.
@@ -182,20 +274,36 @@ pub struct SchedulerTimingMetrics {
     pub receive_completed_time_us: u64,
 }
 
-impl SchedulerTimingMetrics {
-    pub fn maybe_report_and_reset(&mut self, should_report: bool) {
+impl IntervalSchedulerTimingMetrics {
+    fn maybe_report_and_reset(&mut self, should_report: bool) {
         const REPORT_INTERVAL_MS: u64 = 1000;
         if self.interval.should_update(REPORT_INTERVAL_MS) {
             if should_report {
-                self.report();
+                self.metrics.report("banking_stage_scheduler_timing", None);
             }
-            self.reset();
+            self.metrics.reset();
         }
     }
+}
 
-    fn report(&self) {
-        datapoint_info!(
-            "banking_stage_scheduler_timing",
+impl SlotSchedulerTimingMetrics {
+    fn maybe_report_and_reset(&mut self, slot: Option<Slot>) {
+        if self.slot != slot {
+            // Only report if there was an assigned slot.
+            if self.slot.is_some() {
+                self.metrics
+                    .report("banking_stage_scheduler_slot_timing", self.slot);
+            }
+            self.metrics.reset();
+            self.slot = slot;
+        }
+    }
+}
+
+impl SchedulerTimingMetricsInner {
+    fn report(&self, name: &'static str, slot: Option<Slot>) {
+        let mut datapoint = create_datapoint!(
+            @point name,
             ("decision_time_us", self.decision_time_us, i64),
             ("receive_time_us", self.receive_time_us, i64),
             ("buffer_time_us", self.buffer_time_us, i64),
@@ -209,6 +317,10 @@ impl SchedulerTimingMetrics {
                 i64
             )
         );
+        if let Some(slot) = slot {
+            datapoint.add_field_i64("slot", slot as i64);
+        }
+        solana_metrics::submit(datapoint, log::Level::Info);
     }
 
     fn reset(&mut self) {
@@ -220,5 +332,68 @@ impl SchedulerTimingMetrics {
         self.clear_time_us = 0;
         self.clean_time_us = 0;
         self.receive_completed_time_us = 0;
+    }
+}
+
+#[derive(Default)]
+pub struct SchedulerLeaderDetectionMetrics {
+    inner: Option<SchedulerLeaderDetectionMetricsInner>,
+}
+
+struct SchedulerLeaderDetectionMetricsInner {
+    slot: Slot,
+    bank_creation_time: Instant,
+    bank_detected_time: Instant,
+}
+
+impl SchedulerLeaderDetectionMetrics {
+    pub fn update_and_maybe_report(&mut self, bank_start: Option<&BankStart>) {
+        match (&self.inner, bank_start) {
+            (None, Some(bank_start)) => self.initialize_inner(bank_start),
+            (Some(_inner), None) => self.report_and_reset(),
+            (Some(inner), Some(bank_start)) if inner.slot != bank_start.working_bank.slot() => {
+                self.report_and_reset();
+                self.initialize_inner(bank_start);
+            }
+            _ => {}
+        }
+    }
+
+    fn initialize_inner(&mut self, bank_start: &BankStart) {
+        let bank_detected_time = Instant::now();
+        self.inner = Some(SchedulerLeaderDetectionMetricsInner {
+            slot: bank_start.working_bank.slot(),
+            bank_creation_time: *bank_start.bank_creation_time,
+            bank_detected_time,
+        });
+    }
+
+    fn report_and_reset(&mut self) {
+        let SchedulerLeaderDetectionMetricsInner {
+            slot,
+            bank_creation_time,
+            bank_detected_time,
+        } = self.inner.take().expect("inner must be present");
+
+        let bank_detected_delay_us = bank_detected_time
+            .duration_since(bank_creation_time)
+            .as_micros()
+            .try_into()
+            .unwrap_or(i64::MAX);
+        let bank_detected_to_slot_end_detected_us = bank_detected_time
+            .elapsed()
+            .as_micros()
+            .try_into()
+            .unwrap_or(i64::MAX);
+        datapoint_info!(
+            "banking_stage_scheduler_leader_detection",
+            ("slot", slot, i64),
+            ("bank_detected_delay_us", bank_detected_delay_us, i64),
+            (
+                "bank_detected_to_slot_end_detected_us",
+                bank_detected_to_slot_end_detected_us,
+                i64
+            ),
+        );
     }
 }

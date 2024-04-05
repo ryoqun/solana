@@ -3,14 +3,14 @@
 //!
 //! ### High-level API and design
 //!
-//! The most important type is [`SchedulingStateMachine`]. It takes new tasks (= transactons) and
+//! The most important type is [`SchedulingStateMachine`]. It takes new tasks (= transactions) and
 //! may return back them if runnable via
 //! [`::schedule_task()`](SchedulingStateMachine::schedule_task) while maintaining the account
 //! readonly/writable lock rules. Those returned runnable tasks are guaranteed to be safe to
 //! execute in parallel. Lastly, `SchedulingStateMachine` should be notified about the completion
-//! of the exeuciton via [`::deschedule_task()`](SchedulingStateMachine::deschedule_task), so that
+//! of the exeuction via [`::deschedule_task()`](SchedulingStateMachine::deschedule_task), so that
 //! conflicting tasks can be returned from
-//! [`::schedule_unblocked_task()`](SchedulingStateMachine::schedule_unblocked_task) as
+//! [`::schedule_next_unblocked_task()`](SchedulingStateMachine::schedule_next_unblocked_task) as
 //! newly-unblocked runnable ones.
 //!
 //! The design principle of this crate (`solana-unified-scheduler-logic`) is simplicity for the
@@ -39,13 +39,15 @@
 //! The last missing piece is that the scheduler actually tries to reschedule previously blocked
 //! tasks while deschduling, in addition to the above-mentioned book-keeping processing. Namely,
 //! when given address is ready for new fresh locking resulted from descheduling a task (i.e. write
-//! lock is released or read lock count is reached to zero), it pops out the first element of the
+//! lock is released or read lock count has reached zero), it pops out the first element of the
 //! FIFO blocked-task queue of the address. Then, it immediately marks the address as relocked. It
 //! also decrements the number of conflicting addresses of the popped-out task. As the final step,
 //! if the number reaches to the zero, it means the task has fully finished locking all of its
-//! addresses and is directly routed to be runnable.
+//! addresses and is directly routed to be runnable. Lastly, if the next first element of the
+//! blocked-task queue is trying to read-lock the address like the popped-out one, this
+//! rescheduling is repeated as an optimization to increase parallelism of task execution.
 //!
-//! Put differently, this algorigthm tries to gradually lock all of addresses of tasks at different
+//! Put differently, this algorithm tries to gradually lock all of addresses of tasks at different
 //! timings while not deviating the execution order from the original task ingestion order. This
 //! implies there's no locking retries in general, which is the primary source of non-linear perf.
 //! degration.
@@ -61,42 +63,43 @@
 //! Its algorithm is very fast for high throughput, real-time for low latency. The whole
 //! unified-scheduler architecture is designed from grounds up to support the fastest execution of
 //! this scheduling code. For that end, unified scheduler pre-loads address-specific locking state
-//! data structures (called [`Page`]) for all of transaction's accounts, in order to offload the
-//! job to other threads from the scheduler thread. This preloading is done inside
+//! data structures (called [`UsageQueue`]) for all of transaction's accounts, in order to offload
+//! the job to other threads from the scheduler thread. This preloading is done inside
 //! [`create_task()`](SchedulingStateMachine::create_task). In this way, task scheduling
 //! computational complexity is basically reduced to several word-sized loads and stores in the
 //! schduler thread (i.e.  constant; no allocations nor syscalls), while being proportional to the
 //! number of addresses in a given transaction. Note that this statement is held true, regardless
 //! of conflicts. This is because the preloading also pre-allocates some scratch-pad area
-//! ([`blocked_tasks`](PageInner::blocked_tasks)) to stash blocked ones. So, a conflict only incurs
-//! some additional fixed number of mem stores, within error magin of the constant complexity. And
-//! additional memory allocation for the scratchpad could said to be amortized, if such unsual
-//! event should occur.
+//! ([`blocked_usages_from_tasks`](UsageQueueInner::blocked_usages_from_tasks)) to stash blocked
+//! ones. So, a conflict only incurs some additional fixed number of mem stores, within error
+//! margin of the constant complexity. And additional memory allocation for the scratchpad could
+//! said to be amortized, if such an unusual event should occur.
 //!
-//! [`Arc`] is used to implement this preloading mechanism, because `Page`s are shared across tasks
-//! accessing the same account, and among threads due to the preloading. Also, interior mutability
-//! is needed. However, `SchedulingStateMachine` doesn't use conventional locks like RwLock.
-//! Leveraving the fact it's the only state-mutating exclusive thread, it instead uses
+//! [`Arc`] is used to implement this preloading mechanism, because `UsageQueue`s are shared across
+//! tasks accessing the same account, and among threads due to the preloading. Also, interior
+//! mutability is needed. However, `SchedulingStateMachine` doesn't use conventional locks like
+//! RwLock.  Leveraging the fact it's the only state-mutating exclusive thread, it instead uses
 //! `UnsafeCell`, which is sugar-coated by a tailored wrapper called [`TokenCell`]. `TokenCell`
-//! improses an overly restrictive aliasing rule via rust type system to maintain the memory
-//! safety. By localizing any synchronization to the message passing, the scheduling code itself
-//! attains maximally possible single-threaed execution without stalling cpu pipelines at all, only
-//! constrained to mem access latency, while efficiently utilzing L1-L3 cpu cache with full of
-//! `Page`s.
+//! imposes an overly restrictive aliasing rule via rust type system to maintain the memory safety.
+//! By localizing any synchronization to the message passing, the scheduling code itself attains
+//! maximally possible single-threaed execution without stalling cpu pipelines at all, only
+//! constrained to mem access latency, while efficiently utilizing L1-L3 cpu cache with full of
+//! `UsageQueue`s.
 //!
 //! ### Buffer bloat insignificance
 //!
 //! The scheduler code itself doesn't care about the buffer bloat problem, which can occur in
-//! unified scheduler, where a run of heavily linearized and blocked tasks could severely hampered
-//! by very large number of interleaved runnable tasks along side.  The reason is again for
-//! separation of concerns. This is acceptable because the scheduling code itself isn't susceptible
-//! to the buffer bloat problem by itself as explained by the description and validated by the
-//! mentioned benchmark above. Thus, this should be solved elsewhere, specifically at the scheduler
-//! pool.
+//! unified scheduler, where a run of heavily linearized and blocked tasks could be severely
+//! hampered by very large number of interleaved runnable tasks along side.  The reason is again
+//! for separation of concerns. This is acceptable because the scheduling code itself isn't
+//! susceptible to the buffer bloat problem by itself as explained by the description and validated
+//! by the mentioned benchmark above. Thus, this should be solved elsewhere, specifically at the
+//! scheduler pool.
 #[cfg(feature = "dev-context-only-utils")]
 use qualifier_attr::field_qualifiers;
 use {
     crate::utils::{ShortCounter, Token, TokenCell},
+    assert_matches::assert_matches,
     solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
     std::{collections::VecDeque, mem, sync::Arc},
@@ -106,6 +109,7 @@ use {
 mod utils {
     #[cfg(feature = "dev-context-only-utils")]
     use qualifier_attr::qualifiers;
+
     use std::{
         any::{self, TypeId},
         cell::{RefCell, UnsafeCell},
@@ -187,7 +191,8 @@ mod utils {
     /// [`TokenCell`]s. And `&mut Token` is needed to access one of them as if the one is of
     /// [`Token`]'s `*_mut()` getters. Thus, the Rust aliasing rule for `UnsafeCell` can
     /// transitively be proven to be satisfied simply based on the usual borrow checking of the
-    /// `&mut` reference of [`Token`] itself via [`::borrow_mut()`](TokenCell::borrow_mut).
+    /// `&mut` reference of [`Token`] itself via
+    /// [`::with_borrow_mut()`](TokenCell::with_borrow_mut).
     ///
     /// By extension, it's allowed to create _multiple_ tokens in a _single_ process as long as no
     /// instance of [`TokenCell`] is shared by multiple instances of [`Token`].
@@ -209,30 +214,39 @@ mod utils {
         /// complex handling of non-`'static` heaped data in general. Instead, it's manually
         /// required to ensure this instance is accessed only via its associated Token for the
         /// entire lifetime.
-        // non-const to forbid unprotected sharing via static variables among threads.
+        ///
+        /// This is intentionally left to be non-`const` to forbid unprotected sharing via static
+        /// variables among threads.
         pub(super) fn new(value: V) -> Self {
             Self(UnsafeCell::new(value))
         }
 
-        /// Returns a mutable reference with its lifetime bound to the mutable reference of the
-        /// given token.
+        /// Acquires a mutable reference inside a given closure, while borrowing the mutable
+        /// reference of the given token.
         ///
         /// In this way, any additional reborrow can never happen at the same time across all
         /// instances of [`TokenCell<V>`] conceptually owned by the instance of [`Token<V>`] (a
         /// particular thread), unless previous borrow is released. After the release, the used
         /// singleton token should be free to be reused for reborrows.
-        pub(super) fn borrow_mut<'t>(&self, _token: &'t mut Token<V>) -> &'t mut V {
-            unsafe { &mut *self.0.get() }
+        ///
+        /// Note that lifetime of the acquired reference is still restricted to 'self, not
+        /// 'token, in order to avoid use-after-free undefined behaviors.
+        pub(super) fn with_borrow_mut<R>(
+            &self,
+            _token: &mut Token<V>,
+            f: impl FnOnce(&mut V) -> R,
+        ) -> R {
+            f(unsafe { &mut *self.0.get() })
         }
     }
 
-    // Safety: Access to TokenCell is assumed to be only from a single thread by proper use of
-    // Token once after TokenCell is sent to the thread from other threads; So, both implementing
-    // Send and Sync can be thought as safe.
+    // Safety: Once after a (`Send`-able) `TokenCell` is transferred to a thread from other
+    // threads, access to `TokenCell` is assumed to be only from the single thread by proper use of
+    // Token. Thereby, implementing `Sync` can be thought as safe and doing so is needed for the
+    // particular implementation pattern in the unified scheduler (multi-threaded off-loading).
     //
-    // In other words, TokenCell is technicall still !Send and !Sync. But there should be no legal
-    // use happening which requires !Send or !Sync to avoid undefined behavior.
-    unsafe impl<V> Send for TokenCell<V> {}
+    // In other words, TokenCell is technically still `!Sync`. But there should be no
+    // legalized usage which depends on real `Sync` to avoid undefined behaviors.
     unsafe impl<V> Sync for TokenCell<V> {}
 
     /// A auxiliary zero-sized type to enforce aliasing rule to [`TokenCell`] via rust type system
@@ -240,20 +254,32 @@ mod utils {
     /// Token semantically owns a collection of `TokenCell` objects and governs the _unique_
     /// existence of mutable access over them by requiring the token itself to be mutably borrowed
     /// to get a mutable reference to the internal value of `TokenCell`.
-    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
     // *mut is used to make this type !Send and !Sync
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
     pub(super) struct Token<V: 'static>(PhantomData<*mut V>);
 
     impl<V> Token<V> {
-        // Returns the token to acquire a mutable reference to the inner value of [TokenCell].
-        //
-        // Safety:
-        // This method should be called exactly once for each thread at most.
+        /// Returns the token to acquire a mutable reference to the inner value of [TokenCell].
+        ///
+        /// This is intentionally left to be non-`const` to forbid unprotected sharing via static
+        /// variables among threads.
+        ///
+        /// # Panics
+        ///
+        /// This function will `panic!()` if called multiple times with same type `V` from the same
+        /// thread to detect potential misuses.
+        ///
+        /// # Safety
+        ///
+        /// This method should be called exactly once for each thread at most to avoid undefined
+        /// behavior when used with [`Token`].
         #[must_use]
         pub(super) unsafe fn assume_exclusive_mutating_thread() -> Self {
             thread_local! {
                 static TOKENS: RefCell<BTreeSet<TypeId>> = const { RefCell::new(BTreeSet::new()) };
             }
+            // TOKEN.with_borrow_mut can't panic because it's the only non-overlapping
+            // bound-to-local-variable borrow of the _thread local_ variable.
             assert!(
                 TOKENS.with_borrow_mut(|tokens| tokens.insert(TypeId::of::<Self>())),
                 "{:?} is wrongly initialized twice on {:?}",
@@ -267,7 +293,10 @@ mod utils {
 
     #[cfg(test)]
     mod tests {
-        use super::Token;
+        use {
+            super::{Token, TokenCell},
+            std::{mem, sync::Arc, thread},
+        };
 
         #[test]
         #[should_panic(
@@ -280,33 +309,125 @@ mod utils {
                 let _ = Token::<usize>::assume_exclusive_mutating_thread();
             }
         }
+
+        #[derive(Debug)]
+        struct FakeQueue {
+            v: Vec<u8>,
+        }
+
+        // As documented above, it's illegal to create multiple tokens inside a single thread to
+        // acquire multiple mutable references to the same TokenCell at the same time.
+        #[test]
+        // Trigger (harmless) UB unless running under miri by conditionally #[ignore]-ing,
+        // confirming false-positive result to conversely show the merit of miri!
+        #[cfg_attr(miri, ignore)]
+        fn test_ub_illegally_created_multiple_tokens() {
+            // Unauthorized token minting!
+            let mut token1 = unsafe { mem::transmute(()) };
+            let mut token2 = unsafe { mem::transmute(()) };
+
+            let queue = TokenCell::new(FakeQueue {
+                v: Vec::with_capacity(20),
+            });
+            queue.with_borrow_mut(&mut token1, |queue_mut1| {
+                queue_mut1.v.push(1);
+                queue.with_borrow_mut(&mut token2, |queue_mut2| {
+                    queue_mut2.v.push(2);
+                    queue_mut1.v.push(3);
+                });
+                queue_mut1.v.push(4);
+            });
+
+            // It's in ub already, so we can't assert reliably, so dbg!(...) just for fun
+            #[cfg(not(miri))]
+            dbg!(queue.0.into_inner());
+
+            // Return successfully to indicate an unexpected outcome, because this test should
+            // have aborted by now.
+        }
+
+        // As documented above, it's illegal to share (= co-own) the same instance of TokenCell
+        // across threads. Unfortunately, we can't prevent this from happening with some
+        // type-safety magic to cause compile errors... So sanity-check here test fails due to a
+        // runtime error of the known UB, when run under miri.
+        #[test]
+        // Trigger (harmless) UB unless running under miri by conditionally #[ignore]-ing,
+        // confirming false-positive result to conversely show the merit of miri!
+        #[cfg_attr(miri, ignore)]
+        fn test_ub_illegally_shared_token_cell() {
+            let queue1 = Arc::new(TokenCell::new(FakeQueue {
+                v: Vec::with_capacity(20),
+            }));
+            let queue2 = queue1.clone();
+            #[cfg(not(miri))]
+            let queue3 = queue1.clone();
+
+            // Usually miri immediately detects the data race; but just repeat enough time to avoid
+            // being flaky
+            for _ in 0..10 {
+                let (queue1, queue2) = (queue1.clone(), queue2.clone());
+                let thread1 = thread::spawn(move || {
+                    let mut token = unsafe { Token::assume_exclusive_mutating_thread() };
+                    queue1.with_borrow_mut(&mut token, |queue| {
+                        // this is UB
+                        queue.v.push(3);
+                    });
+                });
+                // Immediately spawn next thread without joining thread1 to ensure there's a data race
+                // definitely. Otherwise, joining here wouldn't cause UB.
+                let thread2 = thread::spawn(move || {
+                    let mut token = unsafe { Token::assume_exclusive_mutating_thread() };
+                    queue2.with_borrow_mut(&mut token, |queue| {
+                        // this is UB
+                        queue.v.push(4);
+                    });
+                });
+
+                thread1.join().unwrap();
+                thread2.join().unwrap();
+            }
+
+            // It's in ub already, so we can't assert reliably, so dbg!(...) just for fun
+            #[cfg(not(miri))]
+            {
+                drop((queue1, queue2));
+                dbg!(Arc::into_inner(queue3).unwrap().0.into_inner());
+            }
+
+            // Return successfully to indicate an unexpected outcome, because this test should
+            // have aborted by now
+        }
     }
 }
 
-/// [`Result`] for locking a [page](Page) with particular [usage](RequestedUsage).
-type LockResult = Result<PageUsage, ()>;
-const_assert_eq!(mem::size_of::<LockResult>(), 8);
+/// [`Result`] for locking a [usage_queue](UsageQueue) with particular
+/// [current_usage](RequestedUsage).
+type LockResult = Result<(), ()>;
+const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 pub type Task = Arc<TaskInner>;
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
-/// [`Token`] for [`Page`].
-type PageToken = Token<PageInner>;
-const_assert_eq!(mem::size_of::<PageToken>(), 0);
+/// [`Token`] for [`UsageQueue`].
+type UsageQueueToken = Token<UsageQueueInner>;
+const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 
-/// [`Token`] for [task](Task)'s [internal mutable data](`TaskInner::blocked_page_count`).
-type BlockedPageCountToken = Token<ShortCounter>;
-const_assert_eq!(mem::size_of::<BlockedPageCountToken>(), 0);
+/// [`Token`] for [task](Task)'s [internal mutable data](`TaskInner::blocked_usage_count`).
+type BlockedUsageCountToken = Token<ShortCounter>;
+const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
 /// Internal scheduling data about a particular task.
 #[cfg_attr(feature = "dev-context-only-utils", field_qualifiers(index(pub)))]
 #[derive(Debug)]
 pub struct TaskInner {
     transaction: SanitizedTransaction,
+    /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
+    /// Carrying this along with the transaction is needed to properly record the execution result
+    /// of it.
     index: usize,
-    lock_attempts: Vec<LockAttempt>,
-    blocked_page_count: TokenCell<ShortCounter>,
+    lock_contexts: Vec<LockContext>,
+    blocked_usage_count: TokenCell<ShortCounter>,
 }
 
 impl TaskInner {
@@ -318,74 +439,70 @@ impl TaskInner {
         &self.transaction
     }
 
-    fn lock_attempts(&self) -> &Vec<LockAttempt> {
-        &self.lock_attempts
+    fn lock_contexts(&self) -> &[LockContext] {
+        &self.lock_contexts
     }
 
-    fn blocked_page_count_mut<'t>(
-        &self,
-        token: &'t mut BlockedPageCountToken,
-    ) -> &'t mut ShortCounter {
-        self.blocked_page_count.borrow_mut(token)
-    }
-
-    fn set_blocked_page_count(&self, token: &mut BlockedPageCountToken, count: ShortCounter) {
-        *self.blocked_page_count_mut(token) = count;
+    fn set_blocked_usage_count(&self, token: &mut BlockedUsageCountToken, count: ShortCounter) {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |usage_count| {
+                *usage_count = count;
+            })
     }
 
     #[must_use]
-    fn try_unblock(self: &Task, token: &mut BlockedPageCountToken) -> Option<Task> {
-        self.blocked_page_count_mut(token)
-            .decrement_self()
-            .is_zero()
-            .then(|| self.clone())
+    fn try_unblock(self: Task, token: &mut BlockedUsageCountToken) -> Option<Task> {
+        let did_unblock = self
+            .blocked_usage_count
+            .with_borrow_mut(token, |usage_count| usage_count.decrement_self().is_zero());
+        did_unblock.then_some(self)
     }
 }
 
-/// [`Task`]'s per-address attempt to use a [page](Page) with [certain kind of
+/// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
 #[derive(Debug)]
-struct LockAttempt {
-    page: Page,
+struct LockContext {
+    usage_queue: UsageQueue,
     requested_usage: RequestedUsage,
 }
-const_assert_eq!(mem::size_of::<LockAttempt>(), 16);
+const_assert_eq!(mem::size_of::<LockContext>(), 16);
 
-impl LockAttempt {
-    fn new(page: Page, requested_usage: RequestedUsage) -> Self {
+impl LockContext {
+    fn new(usage_queue: UsageQueue, requested_usage: RequestedUsage) -> Self {
         Self {
-            page,
+            usage_queue,
             requested_usage,
         }
     }
 
-    fn page_mut<'t>(&self, page_token: &'t mut PageToken) -> &'t mut PageInner {
-        self.page.0.borrow_mut(page_token)
+    fn with_usage_queue_mut<R>(
+        &self,
+        usage_queue_token: &mut UsageQueueToken,
+        f: impl FnOnce(&mut UsageQueueInner) -> R,
+    ) -> R {
+        self.usage_queue.0.with_borrow_mut(usage_queue_token, f)
     }
 }
 
-/// Status about how the [`Page`] is used currently. Unlike [`RequestedUsage`], it has additional
-/// variant of [`Unused`](`PageUsage::Unused`).
-#[derive(Copy, Clone, Debug, Default)]
-enum PageUsage {
-    #[default]
-    Unused,
+/// Status about how the [`UsageQueue`] is used currently.
+#[derive(Copy, Clone, Debug)]
+enum Usage {
     Readonly(ShortCounter),
     Writable,
 }
-const_assert_eq!(mem::size_of::<PageUsage>(), 8);
+const_assert_eq!(mem::size_of::<Usage>(), 8);
 
-impl PageUsage {
-    fn from_requested_usage(requested_usage: RequestedUsage) -> Self {
+impl From<RequestedUsage> for Usage {
+    fn from(requested_usage: RequestedUsage) -> Self {
         match requested_usage {
-            RequestedUsage::Readonly => PageUsage::Readonly(ShortCounter::one()),
-            RequestedUsage::Writable => PageUsage::Writable,
+            RequestedUsage::Readonly => Usage::Readonly(ShortCounter::one()),
+            RequestedUsage::Writable => Usage::Writable,
         }
     }
 }
 
-/// Status about how a task is requesting to use a particular [`Page`]. Unlike [`PageUsage`],
-/// it has only two unit variants.
+/// Status about how a task is requesting to use a particular [`UsageQueue`].
 #[derive(Clone, Copy, Debug)]
 enum RequestedUsage {
     Readonly,
@@ -394,85 +511,136 @@ enum RequestedUsage {
 
 /// Internal scheduling data about a particular address.
 ///
-/// Specifially, it holds the current [`PageUsage`] (or no usage with [`PageUsage::Unused`]) and
-/// which [`Task`]s are blocked to be executed after the current task is notified to be finished
-/// via [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
+/// Specifically, it holds the current [`Usage`] (or no usage with [`Usage::Unused`]) and which
+/// [`Task`]s are blocked to be executed after the current task is notified to be finished via
+/// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
-struct PageInner {
-    usage: PageUsage,
-    blocked_tasks: VecDeque<(Task, RequestedUsage)>,
+struct UsageQueueInner {
+    current_usage: Option<Usage>,
+    blocked_usages_from_tasks: VecDeque<UsageFromTask>,
 }
 
-impl Default for PageInner {
+type UsageFromTask = (RequestedUsage, Task);
+
+impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
-            usage: PageUsage::default(),
-            blocked_tasks: VecDeque::with_capacity(1024),
+            current_usage: None,
+            // Capacity should be configurable to create with large capacity like 1024 inside the
+            // (multi-threaded) closures passed to create_task(). In this way, reallocs can be
+            // avoided happening in the scheduler thread. Also, this configurability is desired for
+            // unified-scheduler-logic's motto: separation of concerns (the pure logic should be
+            // sufficiently distanced from any some random knob's constants needed for messy
+            // reality for author's personal preference...).
+            //
+            // Note that large cap should be accompanied with proper scheduler cleaning after use,
+            // which should be handled by higher layers (i.e. scheduler pool).
+            blocked_usages_from_tasks: VecDeque::with_capacity(128),
         }
     }
 }
 
-impl PageInner {
-    fn push_blocked_task(&mut self, task: Task, requested_usage: RequestedUsage) {
-        self.blocked_tasks.push_back((task, requested_usage));
-    }
-
-    fn has_no_blocked_task(&self) -> bool {
-        self.blocked_tasks.is_empty()
-    }
-
-    #[must_use]
-    fn pop_unblocked_next_task(&mut self) -> Option<(Task, RequestedUsage)> {
-        self.blocked_tasks.pop_front()
-    }
-
-    #[must_use]
-    fn blocked_next_task(&self) -> Option<(&Task, RequestedUsage)> {
-        self.blocked_tasks
-            .front()
-            .map(|(task, requested_usage)| (task, *requested_usage))
+impl UsageQueueInner {
+    fn try_lock(&mut self, requested_usage: RequestedUsage) -> LockResult {
+        match self.current_usage {
+            None => Some(Usage::from(requested_usage)),
+            Some(Usage::Readonly(count)) => match requested_usage {
+                RequestedUsage::Readonly => Some(Usage::Readonly(count.increment())),
+                RequestedUsage::Writable => None,
+            },
+            Some(Usage::Writable) => None,
+        }
+        .inspect(|&new_usage| {
+            self.current_usage = Some(new_usage);
+        })
+        .map(|_| ())
+        .ok_or(())
     }
 
     #[must_use]
-    fn pop_blocked_next_readonly_task(&mut self) -> Option<(Task, RequestedUsage)> {
-        if matches!(
-            self.blocked_next_task(),
-            Some((_, RequestedUsage::Readonly))
-        ) {
-            self.pop_unblocked_next_task()
+    fn unlock(&mut self, requested_usage: RequestedUsage) -> Option<UsageFromTask> {
+        let mut is_unused_now = false;
+        match &mut self.current_usage {
+            Some(Usage::Readonly(ref mut count)) => match requested_usage {
+                RequestedUsage::Readonly => {
+                    if count.is_one() {
+                        is_unused_now = true;
+                    } else {
+                        count.decrement_self();
+                    }
+                }
+                RequestedUsage::Writable => unreachable!(),
+            },
+            Some(Usage::Writable) => match requested_usage {
+                RequestedUsage::Writable => {
+                    is_unused_now = true;
+                }
+                RequestedUsage::Readonly => unreachable!(),
+            },
+            None => unreachable!(),
+        }
+
+        if is_unused_now {
+            self.current_usage = None;
+            self.blocked_usages_from_tasks.pop_front()
         } else {
             None
         }
     }
+
+    fn push_blocked_usage_from_task(&mut self, usage_from_task: UsageFromTask) {
+        assert_matches!(self.current_usage, Some(_));
+        self.blocked_usages_from_tasks.push_back(usage_from_task);
+    }
+
+    #[must_use]
+    fn pop_unblocked_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
+        if matches!(
+            self.blocked_usages_from_tasks.front(),
+            Some((RequestedUsage::Readonly, _))
+        ) {
+            assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
+            self.blocked_usages_from_tasks.pop_front()
+        } else {
+            None
+        }
+    }
+
+    fn has_no_blocked_usage(&self) -> bool {
+        self.blocked_usages_from_tasks.is_empty()
+    }
 }
 
-const_assert_eq!(mem::size_of::<TokenCell<PageInner>>(), 40);
+const_assert_eq!(mem::size_of::<TokenCell<UsageQueueInner>>(), 40);
 
 /// Scheduler's internal data for each address ([`Pubkey`](`solana_sdk::pubkey::Pubkey`)). Very
 /// opaque wrapper type; no methods just with [`::clone()`](Clone::clone) and
 /// [`::default()`](Default::default).
 #[derive(Debug, Clone, Default)]
-pub struct Page(Arc<TokenCell<PageInner>>);
-const_assert_eq!(mem::size_of::<Page>(), 8);
+pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
+const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
 #[cfg_attr(feature = "dev-context-only-utils", field_qualifiers(count_token(pub)))]
 pub struct SchedulingStateMachine {
-    last_task_index: Option<usize>,
     unblocked_task_queue: VecDeque<Task>,
     active_task_count: ShortCounter,
     handled_task_count: ShortCounter,
     unblocked_task_count: ShortCounter,
     total_task_count: ShortCounter,
-    count_token: BlockedPageCountToken,
-    page_token: PageToken,
+    count_token: BlockedUsageCountToken,
+    usage_queue_token: UsageQueueToken,
 }
-const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 64);
+const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 48);
 
 impl SchedulingStateMachine {
     pub fn has_no_active_task(&self) -> bool {
         self.active_task_count.is_zero()
+    }
+
+    pub fn has_unblocked_task(&self) -> bool {
+        !self.unblocked_task_queue.is_empty()
     }
 
     pub fn unblocked_task_queue_count(&self) -> usize {
@@ -495,169 +663,138 @@ impl SchedulingStateMachine {
         self.total_task_count.current()
     }
 
+    /// Schedules given `task`, returning it if successful.
+    ///
+    /// Returns `Some(task)` if it's immediately scheduled. Otherwise, returns `None`,
+    /// indicating the scheduled task is blocked currently.
+    ///
+    /// Note that this function takes ownership of the task to allow for future optimizations.
     #[must_use]
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
-        let new_task_index = task.task_index();
-        if let Some(old_task_index) = self.last_task_index.replace(new_task_index) {
-            assert!(
-                new_task_index > old_task_index,
-                "bad new task index: {new_task_index} > {old_task_index}"
-            );
-        }
         self.total_task_count.increment_self();
         self.active_task_count.increment_self();
-        self.attempt_lock_for_task(task)
-    }
-
-    pub fn has_unblocked_task(&self) -> bool {
-        !self.unblocked_task_queue.is_empty()
+        self.try_lock_usage_queues(task)
     }
 
     #[must_use]
-    pub fn schedule_unblocked_task(&mut self) -> Option<Task> {
-        self.unblocked_task_queue.pop_front().map(|task| {
+    pub fn schedule_next_unblocked_task(&mut self) -> Option<Task> {
+        self.unblocked_task_queue.pop_front().inspect(|_| {
             self.unblocked_task_count.increment_self();
-            task
         })
     }
 
+    /// Deschedules given scheduled `task`.
+    ///
+    /// This must be called exactly once for all scheduled tasks to uphold both
+    /// `SchedulingStateMachine` and `UsageQueue` internal state consistency at any given moment of
+    /// time. It's serious logic error to call this twice with the same task or none at all after
+    /// scheduling. Similarly, calling this with not scheduled task is also forbidden.
+    ///
+    /// Note that this function intentionally doesn't take ownership of the task to avoid dropping
+    /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
+    /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
-        let blocked_task_index = task.task_index();
-        let largest_task_index = self
-            .last_task_index
-            .expect("task should have been scheduled");
-        assert!(
-            blocked_task_index <= largest_task_index,
-            "bad unblocked task index: {blocked_task_index} <= {largest_task_index}"
-        );
         self.active_task_count.decrement_self();
         self.handled_task_count.increment_self();
-        self.unlock_for_task(task);
+        self.unlock_usage_queues(task);
     }
 
     #[must_use]
-    fn attempt_lock_pages(&mut self, task: &Task) -> ShortCounter {
-        let mut blocked_page_count = ShortCounter::zero();
+    fn try_lock_usage_queues(&mut self, task: Task) -> Option<Task> {
+        let mut blocked_usage_count = ShortCounter::zero();
 
-        for attempt in task.lock_attempts() {
-            let page = attempt.page_mut(&mut self.page_token);
-            let lock_status = if page.has_no_blocked_task() {
-                Self::attempt_lock_page(page, attempt.requested_usage)
-            } else {
-                LockResult::Err(())
-            };
-            match lock_status {
-                LockResult::Ok(PageUsage::Unused) => unreachable!(),
-                LockResult::Ok(new_usage) => {
-                    page.usage = new_usage;
+        for context in task.lock_contexts() {
+            context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
+                let lock_result = if usage_queue.has_no_blocked_usage() {
+                    usage_queue.try_lock(context.requested_usage)
+                } else {
+                    LockResult::Err(())
+                };
+                if let Err(()) = lock_result {
+                    blocked_usage_count.increment_self();
+                    let usage_from_task = (context.requested_usage, task.clone());
+                    usage_queue.push_blocked_usage_from_task(usage_from_task);
                 }
-                LockResult::Err(()) => {
-                    blocked_page_count.increment_self();
-                    page.push_blocked_task(task.clone(), attempt.requested_usage);
-                }
-            }
+            });
         }
 
-        blocked_page_count
-    }
-
-    fn attempt_lock_page(page: &PageInner, requested_usage: RequestedUsage) -> LockResult {
-        match page.usage {
-            PageUsage::Unused => LockResult::Ok(PageUsage::from_requested_usage(requested_usage)),
-            PageUsage::Readonly(count) => match requested_usage {
-                RequestedUsage::Readonly => LockResult::Ok(PageUsage::Readonly(count.increment())),
-                RequestedUsage::Writable => LockResult::Err(()),
-            },
-            PageUsage::Writable => LockResult::Err(()),
-        }
-    }
-
-    #[must_use]
-    fn unlock_page(page: &mut PageInner, attempt: &LockAttempt) -> Option<(Task, RequestedUsage)> {
-        let mut is_unused_now = false;
-        match &mut page.usage {
-            PageUsage::Readonly(ref mut count) => match attempt.requested_usage {
-                RequestedUsage::Readonly => {
-                    if count.is_one() {
-                        is_unused_now = true;
-                    } else {
-                        count.decrement_self();
-                    }
-                }
-                RequestedUsage::Writable => unreachable!(),
-            },
-            PageUsage::Writable => match attempt.requested_usage {
-                RequestedUsage::Writable => {
-                    is_unused_now = true;
-                }
-                RequestedUsage::Readonly => unreachable!(),
-            },
-            PageUsage::Unused => unreachable!(),
-        }
-
-        if is_unused_now {
-            page.usage = PageUsage::Unused;
-            page.pop_unblocked_next_task()
-        } else {
-            None
-        }
-    }
-
-    #[must_use]
-    fn attempt_lock_for_task(&mut self, task: Task) -> Option<Task> {
-        let blocked_page_count = self.attempt_lock_pages(&task);
-
-        if blocked_page_count.is_zero() {
-            // succeeded
+        // no blocked usage count means success
+        if blocked_usage_count.is_zero() {
             Some(task)
         } else {
-            // failed
-            task.set_blocked_page_count(&mut self.count_token, blocked_page_count);
+            task.set_blocked_usage_count(&mut self.count_token, blocked_usage_count);
             None
         }
     }
 
-    fn unlock_for_task(&mut self, task: &Task) {
-        for unlock_attempt in task.lock_attempts() {
-            let page = unlock_attempt.page_mut(&mut self.page_token);
-            let mut unblocked_task_from_page = Self::unlock_page(page, unlock_attempt);
+    fn unlock_usage_queues(&mut self, task: &Task) {
+        for context in task.lock_contexts() {
+            context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
+                let mut unblocked_task_from_queue = usage_queue.unlock(context.requested_usage);
 
-            while let Some((task_with_unblocked_page, requested_usage)) = unblocked_task_from_page {
-                if let Some(task) = task_with_unblocked_page.try_unblock(&mut self.count_token) {
-                    self.unblocked_task_queue.push_back(task);
-                }
-
-                match Self::attempt_lock_page(page, requested_usage) {
-                    LockResult::Ok(PageUsage::Unused) => unreachable!(),
-                    LockResult::Ok(new_usage) => {
-                        page.usage = new_usage;
-                        // Try to further schedule blocked task for parallelism in the case of
-                        // readonly usages
-                        unblocked_task_from_page = if matches!(new_usage, PageUsage::Readonly(_)) {
-                            page.pop_blocked_next_readonly_task()
-                        } else {
-                            None
-                        };
+                while let Some((requested_usage, task_with_unblocked_queue)) =
+                    unblocked_task_from_queue
+                {
+                    // When `try_unblock()` returns `None` as a failure of unblocking this time,
+                    // this means the task is still blocked by other active task's usages. So,
+                    // don't push task into unblocked_task_queue yet. It can be assumed that every
+                    // task will eventually succeed to be unblocked, and enter in this condition
+                    // clause as long as `SchedulingStateMachine` is used correctly.
+                    if let Some(task) = task_with_unblocked_queue.try_unblock(&mut self.count_token)
+                    {
+                        self.unblocked_task_queue.push_back(task);
                     }
-                    LockResult::Err(_) => panic!("should never fail in this context"),
+
+                    match usage_queue.try_lock(requested_usage) {
+                        LockResult::Ok(()) => {
+                            // Try to further schedule blocked task for parallelism in the case of
+                            // readonly usages
+                            unblocked_task_from_queue =
+                                if matches!(requested_usage, RequestedUsage::Readonly) {
+                                    usage_queue.pop_unblocked_readonly_usage_from_task()
+                                } else {
+                                    None
+                                };
+                        }
+                        LockResult::Err(()) => panic!("should never fail in this context"),
+                    }
                 }
-            }
+            });
         }
     }
 
-    /// Creates a new task with [`SanitizedTransaction`] with all of its corresponding [`Page`]s
-    /// preloaded.
+    /// Creates a new task with [`SanitizedTransaction`] with all of its corresponding
+    /// [`UsageQueue`]s preloaded.
     ///
-    /// Closure (`page_loader`) is used to delegate the (possibly multi-threaded)
-    /// implementation of [`Page`] look-up by [`pubkey`](Pubkey) to callers. It's the caller's
-    /// responsibility to ensure the same instance is returned from the closure, given a particular
-    /// pubkey.
+    /// Closure (`usage_queue_loader`) is used to delegate the (possibly multi-threaded)
+    /// implementation of [`UsageQueue`] look-up by [`pubkey`](Pubkey) to callers. It's the
+    /// caller's responsibility to ensure the same instance is returned from the closure, given a
+    /// particular pubkey.
+    ///
+    /// Closure is used here to delegate the responsibility of primary ownership of `UsageQueue`
+    /// (and caching/pruning if any) to the caller. `SchedulingStateMachine` guarantees that all of
+    /// shared owndership of `UsageQueue`s are released and UsageQueue state is identical to just
+    /// after created, if `has_no_active_task()` is `true`. Also note that this is desired for
+    /// separation of concern.
     pub fn create_task(
         transaction: SanitizedTransaction,
         index: usize,
-        page_loader: &mut impl FnMut(Pubkey) -> Page,
+        usage_queue_loader: &mut impl FnMut(Pubkey) -> UsageQueue,
     ) -> Task {
-        // this is safe bla bla
+        // Calling the _unchecked() version here is safe for faster operation, because
+        // `get_account_locks()` (the safe variant) is ensured to be called in
+        // DefaultTransactionHandler::handle() via Bank::prepare_unlocked_batch_from_single_tx().
+        //
+        // The safe variant has additional account-locking related verifications, which is crucial.
+        //
+        // Currently the replaying stage is redundantly calling `get_account_locks()` when unified
+        // scheduler is enabled on the given transaction at the blockstore. This will be relaxed
+        // for optimization in the future. As for banking stage with unified scheduler, it will
+        // need to run .get_account_locks() at least once somewhere in the code path. In the
+        // distant future, this function `create_task()` should be adjusted so that both stages do
+        // the checks before calling this (say, with some ad-hoc type like
+        // `SanitizedTransactionWithCheckedAccountLocks`) or do the checks here, resulting in
+        // eliminating the redundant one in the replaying stage and in the handler.
         let locks = transaction.get_account_locks_unchecked();
 
         let writable_locks = locks
@@ -669,18 +806,18 @@ impl SchedulingStateMachine {
             .iter()
             .map(|address| (address, RequestedUsage::Readonly));
 
-        let lock_attempts = writable_locks
+        let lock_contexts = writable_locks
             .chain(readonly_locks)
             .map(|(address, requested_usage)| {
-                LockAttempt::new(page_loader(**address), requested_usage)
+                LockContext::new(usage_queue_loader(**address), requested_usage)
             })
             .collect();
 
         Task::new(TaskInner {
             transaction,
             index,
-            lock_attempts,
-            blocked_page_count: TokenCell::new(ShortCounter::zero()),
+            lock_contexts,
+            blocked_usage_count: TokenCell::new(ShortCounter::zero()),
         })
     }
 
@@ -688,20 +825,30 @@ impl SchedulingStateMachine {
     ///
     /// This isn't called _reset_ to indicate this isn't safe to call this at any given moment.
     /// This panics if the state machine hasn't properly been finished (i.e.  there should be no
-    /// active task) to uphold invariants of [`Page`]s.
+    /// active task) to uphold invariants of [`UsageQueue`]s.
     ///
     /// This method is intended to reuse SchedulingStateMachine instance (to avoid its `unsafe`
     /// [constructor](SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling)
-    /// as much as possible) and its (possbily cached) associated [`Page`]s for processing other
-    /// slots.
+    /// as much as possible) and its (possibly cached) associated [`UsageQueue`]s for processing
+    /// other slots.
     pub fn reinitialize(&mut self) {
         assert!(self.has_no_active_task());
         assert_eq!(self.unblocked_task_queue.len(), 0);
-        self.last_task_index = None;
-        self.active_task_count.reset_to_zero();
-        self.handled_task_count.reset_to_zero();
-        self.unblocked_task_count.reset_to_zero();
-        self.total_task_count.reset_to_zero();
+        // nice trick to ensure all fields are handled here if new one is added.
+        let Self {
+            unblocked_task_queue: _,
+            active_task_count,
+            handled_task_count,
+            unblocked_task_count,
+            total_task_count,
+            count_token: _,
+            usage_queue_token: _,
+            // don't add ".." here
+        } = self;
+        active_task_count.reset_to_zero();
+        handled_task_count.reset_to_zero();
+        unblocked_task_count.reset_to_zero();
+        total_task_count.reset_to_zero();
     }
 
     /// Creates a new instance of [`SchedulingStateMachine`] with its `unsafe` fields created as
@@ -712,14 +859,15 @@ impl SchedulingStateMachine {
     #[must_use]
     pub unsafe fn exclusively_initialize_current_thread_for_scheduling() -> Self {
         Self {
-            last_task_index: None,
+            // It's very unlikely this is desired to be configurable, like
+            // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
             unblocked_task_queue: VecDeque::with_capacity(1024),
             active_task_count: ShortCounter::zero(),
             handled_task_count: ShortCounter::zero(),
             unblocked_task_count: ShortCounter::zero(),
             total_task_count: ShortCounter::zero(),
-            count_token: unsafe { BlockedPageCountToken::assume_exclusive_mutating_thread() },
-            page_token: unsafe { PageToken::assume_exclusive_mutating_thread() },
+            count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
+            usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
         }
     }
 }
@@ -728,7 +876,6 @@ impl SchedulingStateMachine {
 mod tests {
     use {
         super::*,
-        assert_matches::assert_matches,
         solana_sdk::{
             instruction::{AccountMeta, Instruction},
             message::Message,
@@ -770,30 +917,16 @@ mod tests {
     }
 
     fn create_address_loader(
-        pages: Option<Rc<RefCell<HashMap<Pubkey, Page>>>>,
-    ) -> impl FnMut(Pubkey) -> Page {
-        let pages = pages.unwrap_or_default();
-        move |address| pages.borrow_mut().entry(address).or_default().clone()
-    }
-
-    #[test]
-    fn test_debug() {
-        // these are almost meaningless just to see eye-pleasing coverage report....
-        assert_eq!(
-            format!(
-                "{:?}",
-                LockResult::Ok(PageUsage::Readonly(ShortCounter::one()))
-            ),
-            "Ok(Readonly(ShortCounter(1)))"
-        );
-        let sanitized = simplest_transaction();
-        let task = SchedulingStateMachine::create_task(sanitized, 0, &mut |_| Page::default());
-        assert!(format!("{:?}", task).contains("TaskInner"));
-
-        assert_eq!(
-            format!("{:?}", PageInner::default()),
-            "PageInner { usage: Unused, blocked_tasks: [] }"
-        )
+        usage_queues: Option<Rc<RefCell<HashMap<Pubkey, UsageQueue>>>>,
+    ) -> impl FnMut(Pubkey) -> UsageQueue {
+        let usage_queues = usage_queues.unwrap_or_default();
+        move |address| {
+            usage_queues
+                .borrow_mut()
+                .entry(address)
+                .or_default()
+                .clone()
+        }
     }
 
     #[test]
@@ -807,23 +940,34 @@ mod tests {
     }
 
     #[test]
-    fn test_scheduling_state_machine_reinitialization() {
+    fn test_scheduling_state_machine_good_reinitialization() {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
         state_machine.total_task_count.increment_self();
         assert_eq!(state_machine.total_task_count(), 1);
-        state_machine.last_task_index = Some(1);
         state_machine.reinitialize();
         assert_eq!(state_machine.total_task_count(), 0);
-        assert_eq!(state_machine.last_task_index, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion failed: self.has_no_active_task()")]
+    fn test_scheduling_state_machine_bad_reinitialization() {
+        let mut state_machine = unsafe {
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+        };
+        let address_loader = &mut create_address_loader(None);
+        let task = SchedulingStateMachine::create_task(simplest_transaction(), 3, address_loader);
+        state_machine.schedule_task(task).unwrap();
+        state_machine.reinitialize();
     }
 
     #[test]
     fn test_create_task() {
         let sanitized = simplest_transaction();
-        let task =
-            SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| Page::default());
+        let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
+            UsageQueue::default()
+        });
         assert_eq!(task.task_index(), 3);
         assert_eq!(task.transaction(), &sanitized);
     }
@@ -868,14 +1012,23 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert!(state_machine.has_unblocked_task());
         assert_eq!(state_machine.unblocked_task_queue_count(), 1);
+
+        // unblocked_task_count() should be incremented
+        assert_eq!(state_machine.unblocked_task_count(), 0);
         assert_eq!(
             state_machine
-                .schedule_unblocked_task()
-                .unwrap()
-                .task_index(),
-            task2.task_index()
+                .schedule_next_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(102)
         );
+        assert_eq!(state_machine.unblocked_task_count(), 1);
+
+        // there's no blocked task anymore; calling schedule_next_unblocked_task should be noop and
+        // shouldn't increment the unblocked_task_count().
         assert!(!state_machine.has_unblocked_task());
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_eq!(state_machine.unblocked_task_count(), 1);
+
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
         state_machine.deschedule_task(&task2);
 
@@ -886,43 +1039,6 @@ mod tests {
             Some(103)
         );
         state_machine.deschedule_task(&task3);
-        assert!(state_machine.has_no_active_task());
-    }
-
-    #[test]
-    fn test_unblocked_task_related_counts() {
-        let sanitized = simplest_transaction();
-        let address_loader = &mut create_address_loader(None);
-        let task1 = SchedulingStateMachine::create_task(sanitized.clone(), 101, address_loader);
-        let task2 = SchedulingStateMachine::create_task(sanitized.clone(), 102, address_loader);
-
-        let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
-        };
-        assert_matches!(
-            state_machine
-                .schedule_task(task1.clone())
-                .map(|t| t.task_index()),
-            Some(101)
-        );
-        assert_matches!(state_machine.schedule_task(task2.clone()), None);
-
-        state_machine.deschedule_task(&task1);
-
-        assert_eq!(state_machine.unblocked_task_count(), 0);
-        assert_matches!(
-            state_machine
-                .schedule_unblocked_task()
-                .map(|t| t.task_index()),
-            Some(102)
-        );
-        assert_eq!(state_machine.unblocked_task_count(), 1);
-        // there's no blocked task anymore; calling schedule_unblocked_task should be noop and
-        // shouldn't increment the unblocked_task_count().
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
-        assert_eq!(state_machine.unblocked_task_count(), 1);
-
-        state_machine.deschedule_task(&task2);
         assert!(state_machine.has_no_active_task());
     }
 
@@ -955,7 +1071,7 @@ mod tests {
         assert_eq!(state_machine.unblocked_task_count(), 0);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
@@ -965,7 +1081,7 @@ mod tests {
 
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
@@ -1015,7 +1131,7 @@ mod tests {
     }
 
     #[test]
-    fn test_all_blocking_redable_tasks_block_writable_task() {
+    fn test_all_blocking_readable_tasks_block_writable_task() {
         let conflicting_address = Pubkey::new_unique();
         let sanitized1 = transaction_with_readonly_address(conflicting_address);
         let sanitized2 = transaction_with_readonly_address(conflicting_address);
@@ -1049,15 +1165,15 @@ mod tests {
         assert_eq!(state_machine.active_task_count(), 2);
         assert_eq!(state_machine.handled_task_count(), 1);
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.active_task_count(), 1);
         assert_eq!(state_machine.handled_task_count(), 2);
         assert_eq!(state_machine.unblocked_task_queue_count(), 1);
-        // task3 is finally unblocked after all of readble tasks (task1 and task2) is finished.
+        // task3 is finally unblocked after all of readable tasks (task1 and task2) is finished.
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
@@ -1088,23 +1204,23 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task2);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task3);
         assert!(state_machine.has_no_active_task());
     }
@@ -1133,7 +1249,7 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
@@ -1170,29 +1286,29 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
         // the above deschedule_task(task1) call should only unblock task2 and task3 because these
         // are read-locking. And shouldn't unblock task4 because it's write-locking
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
 
         state_machine.deschedule_task(&task2);
         // still task4 is blocked...
-        assert_matches!(state_machine.schedule_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
 
         state_machine.deschedule_task(&task3);
         // finally task4 should be unblocked
         assert_matches!(
             state_machine
-                .schedule_unblocked_task()
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(104)
         );
@@ -1205,8 +1321,8 @@ mod tests {
         let conflicting_address = Pubkey::new_unique();
         let sanitized1 = transaction_with_writable_address(conflicting_address);
         let sanitized2 = transaction_with_writable_address(conflicting_address);
-        let pages = Rc::new(RefCell::new(HashMap::new()));
-        let address_loader = &mut create_address_loader(Some(pages.clone()));
+        let usage_queues = Rc::new(RefCell::new(HashMap::new()));
+        let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
         let task2 = SchedulingStateMachine::create_task(sanitized2, 102, address_loader);
 
@@ -1220,20 +1336,31 @@ mod tests {
             Some(101)
         );
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
-        let pages = pages.borrow_mut();
-        let page = pages.get(&conflicting_address).unwrap();
-        assert_matches!(
-            page.0.borrow_mut(&mut state_machine.page_token).usage,
-            PageUsage::Writable
-        );
+        let usage_queues = usage_queues.borrow_mut();
+        let usage_queue = usage_queues.get(&conflicting_address).unwrap();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable));
+            });
         // task2's fee payer should have been locked already even if task2 is blocked still via the
         // above the schedule_task(task2) call
         let fee_payer = task2.transaction().message().fee_payer();
-        let page = pages.get(fee_payer).unwrap();
+        let usage_queue = usage_queues.get(fee_payer).unwrap();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable));
+            });
+        state_machine.deschedule_task(&task1);
         assert_matches!(
-            page.0.borrow_mut(&mut state_machine.page_token).usage,
-            PageUsage::Writable
+            state_machine
+                .schedule_next_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(102)
         );
+        state_machine.deschedule_task(&task2);
+        assert!(state_machine.has_no_active_task());
     }
 
     #[test]
@@ -1242,11 +1369,12 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
-        let page = Page::default();
-        let _ = SchedulingStateMachine::unlock_page(
-            page.0.borrow_mut(&mut state_machine.page_token),
-            &LockAttempt::new(page, RequestedUsage::Writable),
-        );
+        let usage_queue = UsageQueue::default();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                let _ = usage_queue.unlock(RequestedUsage::Writable);
+            });
     }
 
     #[test]
@@ -1255,12 +1383,13 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
-        let page = Page::default();
-        page.0.borrow_mut(&mut state_machine.page_token).usage = PageUsage::Writable;
-        let _ = SchedulingStateMachine::unlock_page(
-            page.0.borrow_mut(&mut state_machine.page_token),
-            &LockAttempt::new(page, RequestedUsage::Readonly),
-        );
+        let usage_queue = UsageQueue::default();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                usage_queue.current_usage = Some(Usage::Writable);
+                let _ = usage_queue.unlock(RequestedUsage::Readonly);
+            });
     }
 
     #[test]
@@ -1269,73 +1398,12 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
-        let page = Page::default();
-        page.0.borrow_mut(&mut state_machine.page_token).usage =
-            PageUsage::Readonly(ShortCounter::one());
-        let _ = SchedulingStateMachine::unlock_page(
-            page.0.borrow_mut(&mut state_machine.page_token),
-            &LockAttempt::new(page, RequestedUsage::Writable),
-        );
-    }
-
-    #[test]
-    #[should_panic(expected = "bad new task index: 101 > 101")]
-    fn test_schedule_same_task() {
-        let conflicting_address = Pubkey::new_unique();
-        let sanitized = transaction_with_writable_address(conflicting_address);
-        let address_loader = &mut create_address_loader(None);
-        let task = SchedulingStateMachine::create_task(sanitized, 101, address_loader);
-
-        let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
-        };
-        let _ = state_machine.schedule_task(task.clone());
-        let _ = state_machine.schedule_task(task.clone());
-    }
-
-    #[test]
-    #[should_panic(expected = "bad new task index: 101 > 102")]
-    fn test_schedule_task_out_of_order() {
-        let conflicting_address = Pubkey::new_unique();
-        let sanitized = transaction_with_writable_address(conflicting_address);
-        let address_loader = &mut create_address_loader(None);
-        let task1 = SchedulingStateMachine::create_task(sanitized.clone(), 101, address_loader);
-        let task2 = SchedulingStateMachine::create_task(sanitized.clone(), 102, address_loader);
-
-        let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
-        };
-        let _ = state_machine.schedule_task(task2.clone());
-        let _ = state_machine.schedule_task(task1.clone());
-    }
-
-    #[test]
-    #[should_panic(expected = "task should have been scheduled")]
-    fn test_deschedule_new_task_wihout_scheduling() {
-        let conflicting_address = Pubkey::new_unique();
-        let sanitized = transaction_with_writable_address(conflicting_address);
-        let address_loader = &mut create_address_loader(None);
-        let task = SchedulingStateMachine::create_task(sanitized.clone(), 101, address_loader);
-
-        let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
-        };
-        state_machine.deschedule_task(&task);
-    }
-
-    #[test]
-    #[should_panic(expected = "bad unblocked task index: 102 <= 101")]
-    fn test_deschedule_new_task_out_of_order() {
-        let conflicting_address = Pubkey::new_unique();
-        let sanitized = transaction_with_writable_address(conflicting_address);
-        let address_loader = &mut create_address_loader(None);
-        let task1 = SchedulingStateMachine::create_task(sanitized.clone(), 101, address_loader);
-        let task2 = SchedulingStateMachine::create_task(sanitized.clone(), 102, address_loader);
-
-        let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
-        };
-        let _ = state_machine.schedule_task(task1.clone());
-        state_machine.deschedule_task(&task2);
+        let usage_queue = UsageQueue::default();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                usage_queue.current_usage = Some(Usage::Readonly(ShortCounter::one()));
+                let _ = usage_queue.unlock(RequestedUsage::Writable);
+            });
     }
 }

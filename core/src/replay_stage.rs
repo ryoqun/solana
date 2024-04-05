@@ -33,7 +33,6 @@ use {
         window_service::DuplicateSlotReceiver,
     },
     crossbeam_channel::{Receiver, RecvTimeoutError, Sender},
-    lazy_static::lazy_static,
     rayon::{prelude::*, ThreadPool},
     solana_entry::entry::VerifyRecyclers,
     solana_geyser_plugin_manager::block_metadata_notifier_interface::BlockMetadataNotifierArc,
@@ -80,6 +79,7 @@ use {
     solana_vote_program::vote_state::VoteTransaction,
     std::{
         collections::{HashMap, HashSet},
+        num::NonZeroUsize,
         result,
         sync::{
             atomic::{AtomicBool, AtomicU64, Ordering},
@@ -95,20 +95,10 @@ pub const SUPERMINORITY_THRESHOLD: f64 = 1f64 / 3f64;
 pub const MAX_UNCONFIRMED_SLOTS: usize = 5;
 pub const DUPLICATE_LIVENESS_THRESHOLD: f64 = 0.1;
 pub const DUPLICATE_THRESHOLD: f64 = 1.0 - SWITCH_FORK_THRESHOLD - DUPLICATE_LIVENESS_THRESHOLD;
+
 const MAX_VOTE_SIGNATURES: usize = 200;
 const MAX_VOTE_REFRESH_INTERVAL_MILLIS: usize = 5000;
-// Expect this number to be small enough to minimize thread pool overhead while large enough
-// to be able to replay all active forks at the same time in most cases.
-const MAX_CONCURRENT_FORKS_TO_REPLAY: usize = 4;
 const MAX_REPAIR_RETRY_LOOP_ATTEMPTS: usize = 10;
-
-lazy_static! {
-    static ref PAR_THREAD_POOL: ThreadPool = rayon::ThreadPoolBuilder::new()
-        .num_threads(MAX_CONCURRENT_FORKS_TO_REPLAY)
-        .thread_name(|i| format!("solReplay{i:02}"))
-        .build()
-        .unwrap();
-}
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum HeaviestForkFailures {
@@ -129,6 +119,11 @@ pub enum HeaviestForkFailures {
         /* Observed stake */ u64,
         /* Total stake */ u64,
     ),
+}
+
+enum ForkReplayMode {
+    Serial,
+    Parallel(ThreadPool),
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -294,89 +289,101 @@ pub struct ReplayStageConfig {
     // Stops voting until this slot has been reached. Should be used to avoid
     // duplicate voting which can lead to slashing.
     pub wait_to_vote_slot: Option<Slot>,
-    pub replay_slots_concurrently: bool,
+    pub replay_forks_threads: NonZeroUsize,
+    pub replay_transactions_threads: NonZeroUsize,
 }
 
+/// Timing information for the ReplayStage main processing loop
 #[derive(Default)]
-pub struct ReplayTiming {
-    last_print: u64,
-    collect_frozen_banks_elapsed: u64,
-    compute_bank_stats_elapsed: u64,
-    select_vote_and_reset_forks_elapsed: u64,
-    start_leader_elapsed: u64,
-    reset_bank_elapsed: u64,
-    voting_elapsed: u64,
+struct ReplayLoopTiming {
+    last_submit: u64,
+    loop_count: u64,
+    collect_frozen_banks_elapsed_us: u64,
+    compute_bank_stats_elapsed_us: u64,
+    select_vote_and_reset_forks_elapsed_us: u64,
+    start_leader_elapsed_us: u64,
+    reset_bank_elapsed_us: u64,
+    voting_elapsed_us: u64,
     generate_vote_us: u64,
     update_commitment_cache_us: u64,
-    select_forks_elapsed: u64,
-    compute_slot_stats_elapsed: u64,
-    generate_new_bank_forks_elapsed: u64,
-    replay_active_banks_elapsed: u64,
-    wait_receive_elapsed: u64,
-    heaviest_fork_failures_elapsed: u64,
+    select_forks_elapsed_us: u64,
+    compute_slot_stats_elapsed_us: u64,
+    generate_new_bank_forks_elapsed_us: u64,
+    replay_active_banks_elapsed_us: u64,
+    wait_receive_elapsed_us: u64,
+    heaviest_fork_failures_elapsed_us: u64,
     bank_count: u64,
-    process_ancestor_hashes_duplicate_slots_elapsed: u64,
-    process_duplicate_confirmed_slots_elapsed: u64,
-    process_duplicate_slots_elapsed: u64,
-    process_unfrozen_gossip_verified_vote_hashes_elapsed: u64,
-    process_popular_pruned_forks_elapsed: u64,
-    repair_correct_slots_elapsed: u64,
-    retransmit_not_propagated_elapsed: u64,
+    process_ancestor_hashes_duplicate_slots_elapsed_us: u64,
+    process_duplicate_confirmed_slots_elapsed_us: u64,
+    process_duplicate_slots_elapsed_us: u64,
+    process_unfrozen_gossip_verified_vote_hashes_elapsed_us: u64,
+    process_popular_pruned_forks_elapsed_us: u64,
+    repair_correct_slots_elapsed_us: u64,
+    retransmit_not_propagated_elapsed_us: u64,
     generate_new_bank_forks_read_lock_us: u64,
     generate_new_bank_forks_get_slots_since_us: u64,
     generate_new_bank_forks_loop_us: u64,
     generate_new_bank_forks_write_lock_us: u64,
-    replay_blockstore_us: u64, //< When processing forks concurrently, only captures the longest fork
+    // When processing multiple forks concurrently, only captures the longest fork
+    replay_blockstore_us: u64,
 }
-impl ReplayTiming {
+impl ReplayLoopTiming {
     #[allow(clippy::too_many_arguments)]
     fn update(
         &mut self,
-        collect_frozen_banks_elapsed: u64,
-        compute_bank_stats_elapsed: u64,
-        select_vote_and_reset_forks_elapsed: u64,
-        start_leader_elapsed: u64,
-        reset_bank_elapsed: u64,
-        voting_elapsed: u64,
-        select_forks_elapsed: u64,
-        compute_slot_stats_elapsed: u64,
-        generate_new_bank_forks_elapsed: u64,
-        replay_active_banks_elapsed: u64,
-        wait_receive_elapsed: u64,
-        heaviest_fork_failures_elapsed: u64,
+        collect_frozen_banks_elapsed_us: u64,
+        compute_bank_stats_elapsed_us: u64,
+        select_vote_and_reset_forks_elapsed_us: u64,
+        start_leader_elapsed_us: u64,
+        reset_bank_elapsed_us: u64,
+        voting_elapsed_us: u64,
+        select_forks_elapsed_us: u64,
+        compute_slot_stats_elapsed_us: u64,
+        generate_new_bank_forks_elapsed_us: u64,
+        replay_active_banks_elapsed_us: u64,
+        wait_receive_elapsed_us: u64,
+        heaviest_fork_failures_elapsed_us: u64,
         bank_count: u64,
-        process_ancestor_hashes_duplicate_slots_elapsed: u64,
-        process_duplicate_confirmed_slots_elapsed: u64,
-        process_unfrozen_gossip_verified_vote_hashes_elapsed: u64,
-        process_popular_pruned_forks_elapsed: u64,
-        process_duplicate_slots_elapsed: u64,
-        repair_correct_slots_elapsed: u64,
-        retransmit_not_propagated_elapsed: u64,
+        process_ancestor_hashes_duplicate_slots_elapsed_us: u64,
+        process_duplicate_confirmed_slots_elapsed_us: u64,
+        process_unfrozen_gossip_verified_vote_hashes_elapsed_us: u64,
+        process_popular_pruned_forks_elapsed_us: u64,
+        process_duplicate_slots_elapsed_us: u64,
+        repair_correct_slots_elapsed_us: u64,
+        retransmit_not_propagated_elapsed_us: u64,
     ) {
-        self.collect_frozen_banks_elapsed += collect_frozen_banks_elapsed;
-        self.compute_bank_stats_elapsed += compute_bank_stats_elapsed;
-        self.select_vote_and_reset_forks_elapsed += select_vote_and_reset_forks_elapsed;
-        self.start_leader_elapsed += start_leader_elapsed;
-        self.reset_bank_elapsed += reset_bank_elapsed;
-        self.voting_elapsed += voting_elapsed;
-        self.select_forks_elapsed += select_forks_elapsed;
-        self.compute_slot_stats_elapsed += compute_slot_stats_elapsed;
-        self.generate_new_bank_forks_elapsed += generate_new_bank_forks_elapsed;
-        self.replay_active_banks_elapsed += replay_active_banks_elapsed;
-        self.wait_receive_elapsed += wait_receive_elapsed;
-        self.heaviest_fork_failures_elapsed += heaviest_fork_failures_elapsed;
+        self.loop_count += 1;
+        self.collect_frozen_banks_elapsed_us += collect_frozen_banks_elapsed_us;
+        self.compute_bank_stats_elapsed_us += compute_bank_stats_elapsed_us;
+        self.select_vote_and_reset_forks_elapsed_us += select_vote_and_reset_forks_elapsed_us;
+        self.start_leader_elapsed_us += start_leader_elapsed_us;
+        self.reset_bank_elapsed_us += reset_bank_elapsed_us;
+        self.voting_elapsed_us += voting_elapsed_us;
+        self.select_forks_elapsed_us += select_forks_elapsed_us;
+        self.compute_slot_stats_elapsed_us += compute_slot_stats_elapsed_us;
+        self.generate_new_bank_forks_elapsed_us += generate_new_bank_forks_elapsed_us;
+        self.replay_active_banks_elapsed_us += replay_active_banks_elapsed_us;
+        self.wait_receive_elapsed_us += wait_receive_elapsed_us;
+        self.heaviest_fork_failures_elapsed_us += heaviest_fork_failures_elapsed_us;
         self.bank_count += bank_count;
-        self.process_ancestor_hashes_duplicate_slots_elapsed +=
-            process_ancestor_hashes_duplicate_slots_elapsed;
-        self.process_duplicate_confirmed_slots_elapsed += process_duplicate_confirmed_slots_elapsed;
-        self.process_unfrozen_gossip_verified_vote_hashes_elapsed +=
-            process_unfrozen_gossip_verified_vote_hashes_elapsed;
-        self.process_popular_pruned_forks_elapsed += process_popular_pruned_forks_elapsed;
-        self.process_duplicate_slots_elapsed += process_duplicate_slots_elapsed;
-        self.repair_correct_slots_elapsed += repair_correct_slots_elapsed;
-        self.retransmit_not_propagated_elapsed += retransmit_not_propagated_elapsed;
+        self.process_ancestor_hashes_duplicate_slots_elapsed_us +=
+            process_ancestor_hashes_duplicate_slots_elapsed_us;
+        self.process_duplicate_confirmed_slots_elapsed_us +=
+            process_duplicate_confirmed_slots_elapsed_us;
+        self.process_unfrozen_gossip_verified_vote_hashes_elapsed_us +=
+            process_unfrozen_gossip_verified_vote_hashes_elapsed_us;
+        self.process_popular_pruned_forks_elapsed_us += process_popular_pruned_forks_elapsed_us;
+        self.process_duplicate_slots_elapsed_us += process_duplicate_slots_elapsed_us;
+        self.repair_correct_slots_elapsed_us += repair_correct_slots_elapsed_us;
+        self.retransmit_not_propagated_elapsed_us += retransmit_not_propagated_elapsed_us;
+
+        self.maybe_submit();
+    }
+
+    fn maybe_submit(&mut self) {
         let now = timestamp();
-        let elapsed_ms = now - self.last_print;
+        let elapsed_ms = now - self.last_submit;
+
         if elapsed_ms > 1000 {
             datapoint_info!(
                 "replay-loop-voting-stats",
@@ -389,93 +396,98 @@ impl ReplayTiming {
             );
             datapoint_info!(
                 "replay-loop-timing-stats",
+                ("loop_count", self.loop_count as i64, i64),
                 ("total_elapsed_us", elapsed_ms * 1000, i64),
                 (
-                    "collect_frozen_banks_elapsed",
-                    self.collect_frozen_banks_elapsed as i64,
+                    "collect_frozen_banks_elapsed_us",
+                    self.collect_frozen_banks_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "compute_bank_stats_elapsed",
-                    self.compute_bank_stats_elapsed as i64,
+                    "compute_bank_stats_elapsed_us",
+                    self.compute_bank_stats_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "select_vote_and_reset_forks_elapsed",
-                    self.select_vote_and_reset_forks_elapsed as i64,
+                    "select_vote_and_reset_forks_elapsed_us",
+                    self.select_vote_and_reset_forks_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "start_leader_elapsed",
-                    self.start_leader_elapsed as i64,
-                    i64
-                ),
-                ("reset_bank_elapsed", self.reset_bank_elapsed as i64, i64),
-                ("voting_elapsed", self.voting_elapsed as i64, i64),
-                (
-                    "select_forks_elapsed",
-                    self.select_forks_elapsed as i64,
+                    "start_leader_elapsed_us",
+                    self.start_leader_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "compute_slot_stats_elapsed",
-                    self.compute_slot_stats_elapsed as i64,
+                    "reset_bank_elapsed_us",
+                    self.reset_bank_elapsed_us as i64,
+                    i64
+                ),
+                ("voting_elapsed_us", self.voting_elapsed_us as i64, i64),
+                (
+                    "select_forks_elapsed_us",
+                    self.select_forks_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "generate_new_bank_forks_elapsed",
-                    self.generate_new_bank_forks_elapsed as i64,
+                    "compute_slot_stats_elapsed_us",
+                    self.compute_slot_stats_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "replay_active_banks_elapsed",
-                    self.replay_active_banks_elapsed as i64,
+                    "generate_new_bank_forks_elapsed_us",
+                    self.generate_new_bank_forks_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "process_ancestor_hashes_duplicate_slots_elapsed",
-                    self.process_ancestor_hashes_duplicate_slots_elapsed as i64,
+                    "replay_active_banks_elapsed_us",
+                    self.replay_active_banks_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "process_duplicate_confirmed_slots_elapsed",
-                    self.process_duplicate_confirmed_slots_elapsed as i64,
+                    "process_ancestor_hashes_duplicate_slots_elapsed_us",
+                    self.process_ancestor_hashes_duplicate_slots_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "process_unfrozen_gossip_verified_vote_hashes_elapsed",
-                    self.process_unfrozen_gossip_verified_vote_hashes_elapsed as i64,
+                    "process_duplicate_confirmed_slots_elapsed_us",
+                    self.process_duplicate_confirmed_slots_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "process_popular_pruned_forks_elapsed",
-                    self.process_popular_pruned_forks_elapsed as i64,
+                    "process_unfrozen_gossip_verified_vote_hashes_elapsed_us",
+                    self.process_unfrozen_gossip_verified_vote_hashes_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "wait_receive_elapsed",
-                    self.wait_receive_elapsed as i64,
+                    "process_popular_pruned_forks_elapsed_us",
+                    self.process_popular_pruned_forks_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "heaviest_fork_failures_elapsed",
-                    self.heaviest_fork_failures_elapsed as i64,
+                    "wait_receive_elapsed_us",
+                    self.wait_receive_elapsed_us as i64,
+                    i64
+                ),
+                (
+                    "heaviest_fork_failures_elapsed_us",
+                    self.heaviest_fork_failures_elapsed_us as i64,
                     i64
                 ),
                 ("bank_count", self.bank_count as i64, i64),
                 (
-                    "process_duplicate_slots_elapsed",
-                    self.process_duplicate_slots_elapsed as i64,
+                    "process_duplicate_slots_elapsed_us",
+                    self.process_duplicate_slots_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "repair_correct_slots_elapsed",
-                    self.repair_correct_slots_elapsed as i64,
+                    "repair_correct_slots_elapsed_us",
+                    self.repair_correct_slots_elapsed_us as i64,
                     i64
                 ),
                 (
-                    "retransmit_not_propagated_elapsed",
-                    self.retransmit_not_propagated_elapsed as i64,
+                    "retransmit_not_propagated_elapsed_us",
+                    self.retransmit_not_propagated_elapsed_us as i64,
                     i64
                 ),
                 (
@@ -504,8 +516,8 @@ impl ReplayTiming {
                     i64
                 ),
             );
-            *self = ReplayTiming::default();
-            self.last_print = now;
+            *self = ReplayLoopTiming::default();
+            self.last_submit = now;
         }
     }
 }
@@ -561,7 +573,8 @@ impl ReplayStage {
             ancestor_hashes_replay_update_sender,
             tower_storage,
             wait_to_vote_slot,
-            replay_slots_concurrently,
+            replay_forks_threads,
+            replay_transactions_threads,
         } = config;
 
         trace!("replay stage");
@@ -615,7 +628,7 @@ impl ReplayStage {
             let mut last_reset = Hash::default();
             let mut partition_info = PartitionInfo::new();
             let mut skipped_slots_info = SkippedSlotsInfo::default();
-            let mut replay_timing = ReplayTiming::default();
+            let mut replay_timing = ReplayLoopTiming::default();
             let mut duplicate_slots_tracker = DuplicateSlotsTracker::default();
             let mut duplicate_confirmed_slots: DuplicateConfirmedSlots =
                 DuplicateConfirmedSlots::default();
@@ -640,6 +653,23 @@ impl ReplayStage {
                     r_bank_forks.get_vote_only_mode_signal(),
                 )
             };
+            // Thread pool to (maybe) replay multiple threads in parallel
+            let replay_mode = if replay_forks_threads.get() == 1 {
+                ForkReplayMode::Serial
+            } else {
+                let pool = rayon::ThreadPoolBuilder::new()
+                    .num_threads(replay_forks_threads.get())
+                    .thread_name(|i| format!("solReplayFork{i:02}"))
+                    .build()
+                    .expect("new rayon threadpool");
+                ForkReplayMode::Parallel(pool)
+            };
+            // Thread pool to replay multiple transactions within one block in parallel
+            let replay_tx_thread_pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(replay_transactions_threads.get())
+                .thread_name(|i| format!("solReplayTx{i:02}"))
+                .build()
+                .expect("new rayon threadpool");
 
             Self::reset_poh_recorder(
                 &my_pubkey,
@@ -701,7 +731,8 @@ impl ReplayStage {
                     block_metadata_notifier.clone(),
                     &mut replay_timing,
                     log_messages_bytes_limit,
-                    replay_slots_concurrently,
+                    &replay_mode,
+                    &replay_tx_thread_pool,
                     &prioritization_fee_cache,
                     &mut purge_repair_slot_counter,
                 );
@@ -1655,11 +1686,7 @@ impl ReplayStage {
             root_bank.clear_slot_signatures(slot);
 
             // Remove cached entries of the programs that were deployed in this slot.
-            root_bank
-                .loaded_programs_cache
-                .write()
-                .unwrap()
-                .prune_by_deployment_slot(slot);
+            root_bank.prune_program_cache_by_deployment_slot(slot);
 
             if let Some(bank_hash) = blockstore.get_bank_hash(slot) {
                 // If a descendant was successfully replayed and chained from a duplicate it must
@@ -2114,6 +2141,7 @@ impl ReplayStage {
     fn replay_blockstore_into_bank(
         bank: &BankWithScheduler,
         blockstore: &Blockstore,
+        replay_tx_thread_pool: &ThreadPool,
         replay_stats: &RwLock<ReplaySlotStats>,
         replay_progress: &RwLock<ConfirmationProgress>,
         transaction_status_sender: Option<&TransactionStatusSender>,
@@ -2132,6 +2160,7 @@ impl ReplayStage {
         blockstore_processor::confirm_slot(
             blockstore,
             bank,
+            replay_tx_thread_pool,
             &mut w_replay_stats,
             &mut w_replay_progress,
             false,
@@ -2272,7 +2301,7 @@ impl ReplayStage {
         unfrozen_gossip_verified_vote_hashes: &mut UnfrozenGossipVerifiedVoteHashes,
         vote_signatures: &mut Vec<Signature>,
         has_new_vote_been_rooted: &mut bool,
-        replay_timing: &mut ReplayTiming,
+        replay_timing: &mut ReplayLoopTiming,
         voting_sender: &Sender<VoteOp>,
         epoch_slots_frozen_slots: &mut EpochSlotsFrozenSlots,
         drop_bank_sender: &Sender<Vec<BankWithScheduler>>,
@@ -2604,7 +2633,7 @@ impl ReplayStage {
         switch_fork_decision: &SwitchForkDecision,
         vote_signatures: &mut Vec<Signature>,
         has_new_vote_been_rooted: bool,
-        replay_timing: &mut ReplayTiming,
+        replay_timing: &mut ReplayLoopTiming,
         voting_sender: &Sender<VoteOp>,
         wait_to_vote_slot: Option<Slot>,
     ) {
@@ -2690,6 +2719,8 @@ impl ReplayStage {
     fn replay_active_banks_concurrently(
         blockstore: &Blockstore,
         bank_forks: &RwLock<BankForks>,
+        fork_thread_pool: &ThreadPool,
+        replay_tx_thread_pool: &ThreadPool,
         my_pubkey: &Pubkey,
         vote_account: &Pubkey,
         progress: &mut ProgressMap,
@@ -2697,7 +2728,7 @@ impl ReplayStage {
         entry_notification_sender: Option<&EntryNotifierSender>,
         verify_recyclers: &VerifyRecyclers,
         replay_vote_sender: &ReplayVoteSender,
-        replay_timing: &mut ReplayTiming,
+        replay_timing: &mut ReplayLoopTiming,
         log_messages_bytes_limit: Option<usize>,
         active_bank_slots: &[Slot],
         prioritization_fee_cache: &PrioritizationFeeCache,
@@ -2707,7 +2738,7 @@ impl ReplayStage {
         let longest_replay_time_us = AtomicU64::new(0);
 
         // Allow for concurrent replaying of slots from different forks.
-        let replay_result_vec: Vec<ReplaySlotFromBlockstore> = PAR_THREAD_POOL.install(|| {
+        let replay_result_vec: Vec<ReplaySlotFromBlockstore> = fork_thread_pool.install(|| {
             active_bank_slots
                 .into_par_iter()
                 .map(|bank_slot| {
@@ -2721,7 +2752,7 @@ impl ReplayStage {
                     trace!(
                         "Replay active bank: slot {}, thread_idx {}",
                         bank_slot,
-                        PAR_THREAD_POOL.current_thread_index().unwrap_or_default()
+                        fork_thread_pool.current_thread_index().unwrap_or_default()
                     );
                     let mut progress_lock = progress.write().unwrap();
                     if progress_lock
@@ -2774,6 +2805,7 @@ impl ReplayStage {
                         let blockstore_result = Self::replay_blockstore_into_bank(
                             &bank,
                             blockstore,
+                            replay_tx_thread_pool,
                             &replay_stats,
                             &replay_progress,
                             transaction_status_sender,
@@ -2803,6 +2835,7 @@ impl ReplayStage {
     fn replay_active_bank(
         blockstore: &Blockstore,
         bank_forks: &RwLock<BankForks>,
+        replay_tx_thread_pool: &ThreadPool,
         my_pubkey: &Pubkey,
         vote_account: &Pubkey,
         progress: &mut ProgressMap,
@@ -2810,7 +2843,7 @@ impl ReplayStage {
         entry_notification_sender: Option<&EntryNotifierSender>,
         verify_recyclers: &VerifyRecyclers,
         replay_vote_sender: &ReplayVoteSender,
-        replay_timing: &mut ReplayTiming,
+        replay_timing: &mut ReplayLoopTiming,
         log_messages_bytes_limit: Option<usize>,
         bank_slot: Slot,
         prioritization_fee_cache: &PrioritizationFeeCache,
@@ -2861,6 +2894,7 @@ impl ReplayStage {
                 let blockstore_result = Self::replay_blockstore_into_bank(
                     &bank,
                     blockstore,
+                    replay_tx_thread_pool,
                     &bank_progress.replay_stats,
                     &bank_progress.replay_progress,
                     transaction_status_sender,
@@ -3157,9 +3191,10 @@ impl ReplayStage {
         duplicate_slots_to_repair: &mut DuplicateSlotsToRepair,
         ancestor_hashes_replay_update_sender: &AncestorHashesReplayUpdateSender,
         block_metadata_notifier: Option<BlockMetadataNotifierArc>,
-        replay_timing: &mut ReplayTiming,
+        replay_timing: &mut ReplayLoopTiming,
         log_messages_bytes_limit: Option<usize>,
-        replay_slots_concurrently: bool,
+        replay_mode: &ForkReplayMode,
+        replay_tx_thread_pool: &ThreadPool,
         prioritization_fee_cache: &PrioritizationFeeCache,
         purge_repair_slot_counter: &mut PurgeRepairSlotCounter,
     ) -> bool /* completed a bank */ {
@@ -3170,11 +3205,18 @@ impl ReplayStage {
             num_active_banks,
             active_bank_slots
         );
-        if num_active_banks > 0 {
-            let replay_result_vec = if num_active_banks > 1 && replay_slots_concurrently {
+        if active_bank_slots.is_empty() {
+            return false;
+        }
+
+        let replay_result_vec = match replay_mode {
+            // Skip the overhead of the threadpool if there is only one bank to play
+            ForkReplayMode::Parallel(fork_thread_pool) if num_active_banks > 1 => {
                 Self::replay_active_banks_concurrently(
                     blockstore,
                     bank_forks,
+                    fork_thread_pool,
+                    replay_tx_thread_pool,
                     my_pubkey,
                     vote_account,
                     progress,
@@ -3187,55 +3229,53 @@ impl ReplayStage {
                     &active_bank_slots,
                     prioritization_fee_cache,
                 )
-            } else {
-                active_bank_slots
-                    .iter()
-                    .map(|bank_slot| {
-                        Self::replay_active_bank(
-                            blockstore,
-                            bank_forks,
-                            my_pubkey,
-                            vote_account,
-                            progress,
-                            transaction_status_sender,
-                            entry_notification_sender,
-                            verify_recyclers,
-                            replay_vote_sender,
-                            replay_timing,
-                            log_messages_bytes_limit,
-                            *bank_slot,
-                            prioritization_fee_cache,
-                        )
-                    })
-                    .collect()
-            };
+            }
+            ForkReplayMode::Serial | ForkReplayMode::Parallel(_) => active_bank_slots
+                .iter()
+                .map(|bank_slot| {
+                    Self::replay_active_bank(
+                        blockstore,
+                        bank_forks,
+                        replay_tx_thread_pool,
+                        my_pubkey,
+                        vote_account,
+                        progress,
+                        transaction_status_sender,
+                        entry_notification_sender,
+                        verify_recyclers,
+                        replay_vote_sender,
+                        replay_timing,
+                        log_messages_bytes_limit,
+                        *bank_slot,
+                        prioritization_fee_cache,
+                    )
+                })
+                .collect(),
+        };
 
-            Self::process_replay_results(
-                blockstore,
-                bank_forks,
-                progress,
-                transaction_status_sender,
-                cache_block_meta_sender,
-                heaviest_subtree_fork_choice,
-                bank_notification_sender,
-                rewards_recorder_sender,
-                rpc_subscriptions,
-                duplicate_slots_tracker,
-                duplicate_confirmed_slots,
-                epoch_slots_frozen_slots,
-                unfrozen_gossip_verified_vote_hashes,
-                latest_validator_votes_for_frozen_banks,
-                cluster_slots_update_sender,
-                cost_update_sender,
-                duplicate_slots_to_repair,
-                ancestor_hashes_replay_update_sender,
-                block_metadata_notifier,
-                &replay_result_vec,
-                purge_repair_slot_counter,
-            )
-        } else {
-            false
-        }
+        Self::process_replay_results(
+            blockstore,
+            bank_forks,
+            progress,
+            transaction_status_sender,
+            cache_block_meta_sender,
+            heaviest_subtree_fork_choice,
+            bank_notification_sender,
+            rewards_recorder_sender,
+            rpc_subscriptions,
+            duplicate_slots_tracker,
+            duplicate_confirmed_slots,
+            epoch_slots_frozen_slots,
+            unfrozen_gossip_verified_vote_hashes,
+            latest_validator_votes_for_frozen_banks,
+            cluster_slots_update_sender,
+            cost_update_sender,
+            duplicate_slots_to_repair,
+            ancestor_hashes_replay_update_sender,
+            block_metadata_notifier,
+            &replay_result_vec,
+            purge_repair_slot_counter,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -4140,7 +4180,7 @@ impl ReplayStage {
         leader_schedule_cache: &Arc<LeaderScheduleCache>,
         rpc_subscriptions: &Arc<RpcSubscriptions>,
         progress: &mut ProgressMap,
-        replay_timing: &mut ReplayTiming,
+        replay_timing: &mut ReplayLoopTiming,
     ) {
         // Find the next slot that chains to the old slot
         let mut generate_new_bank_forks_read_lock =
@@ -4530,7 +4570,7 @@ pub(crate) mod tests {
             .unwrap()
             .get(NUM_CONSECUTIVE_LEADER_SLOTS)
             .is_none());
-        let mut replay_timing = ReplayTiming::default();
+        let mut replay_timing = ReplayLoopTiming::default();
         ReplayStage::generate_new_bank_forks(
             &blockstore,
             &bank_forks,
@@ -5008,9 +5048,15 @@ pub(crate) mod tests {
             blockstore.insert_shreds(shreds, None, false).unwrap();
             let block_commitment_cache = Arc::new(RwLock::new(BlockCommitmentCache::default()));
             let exit = Arc::new(AtomicBool::new(false));
+            let replay_tx_thread_pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(1)
+                .thread_name(|i| format!("solReplayTest{i:02}"))
+                .build()
+                .expect("new rayon threadpool");
             let res = ReplayStage::replay_blockstore_into_bank(
                 &bank1,
                 &blockstore,
+                &replay_tx_thread_pool,
                 &bank1_progress.replay_stats,
                 &bank1_progress.replay_progress,
                 None,
@@ -6351,7 +6397,7 @@ pub(crate) mod tests {
             ..
         } = vote_simulator;
 
-        let mut replay_timing = ReplayTiming::default();
+        let mut replay_timing = ReplayLoopTiming::default();
 
         // Create bank 7 and insert to blockstore and bank forks
         let root_bank = bank_forks.read().unwrap().root_bank();
@@ -7543,7 +7589,7 @@ pub(crate) mod tests {
             &SwitchForkDecision::SameFork,
             &mut voted_signatures,
             has_new_vote_been_rooted,
-            &mut ReplayTiming::default(),
+            &mut ReplayLoopTiming::default(),
             &voting_sender,
             None,
         );
@@ -7618,7 +7664,7 @@ pub(crate) mod tests {
             &SwitchForkDecision::SameFork,
             &mut voted_signatures,
             has_new_vote_been_rooted,
-            &mut ReplayTiming::default(),
+            &mut ReplayLoopTiming::default(),
             &voting_sender,
             None,
         );
@@ -7819,7 +7865,7 @@ pub(crate) mod tests {
             &SwitchForkDecision::SameFork,
             voted_signatures,
             has_new_vote_been_rooted,
-            &mut ReplayTiming::default(),
+            &mut ReplayLoopTiming::default(),
             voting_sender,
             None,
         );

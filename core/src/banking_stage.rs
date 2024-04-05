@@ -285,8 +285,7 @@ pub struct BatchedTransactionCostDetails {
     pub batched_signature_cost: u64,
     pub batched_write_lock_cost: u64,
     pub batched_data_bytes_cost: u64,
-    pub batched_builtins_execute_cost: u64,
-    pub batched_bpf_execute_cost: u64,
+    pub batched_programs_execute_cost: u64,
 }
 
 #[derive(Debug, Default)]
@@ -787,7 +786,7 @@ mod tests {
         crate::banking_trace::{BankingPacketBatch, BankingTracer},
         crossbeam_channel::{unbounded, Receiver},
         itertools::Itertools,
-        solana_entry::entry::{Entry, EntrySlice},
+        solana_entry::entry::{self, Entry, EntrySlice},
         solana_gossip::cluster_info::Node,
         solana_ledger::{
             blockstore::Blockstore,
@@ -942,7 +941,7 @@ mod tests {
                 .collect();
             trace!("done");
             assert_eq!(entries.len(), genesis_config.ticks_per_slot as usize);
-            assert!(entries.verify(&start_hash));
+            assert!(entries.verify(&start_hash, &entry::thread_pool_for_tests()));
             assert_eq!(entries[entries.len() - 1].hash, bank.last_blockhash());
             banking_stage.join().unwrap();
         }
@@ -1061,7 +1060,7 @@ mod tests {
                     .map(|(_bank, (entry, _tick_height))| entry)
                     .collect();
 
-                assert!(entries.verify(&blockhash));
+                assert!(entries.verify(&blockhash, &entry::thread_pool_for_tests()));
                 if !entries.is_empty() {
                     blockhash = entries.last().unwrap().hash;
                     for entry in entries {

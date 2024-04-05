@@ -1,6 +1,7 @@
 #![cfg(test)]
 //! Helper functions for TieredStorage tests
 use {
+    super::footer::TieredStorageFooter,
     crate::{
         account_storage::meta::{StoredAccountMeta, StoredMeta},
         accounts_hash::AccountHash,
@@ -48,20 +49,10 @@ pub(super) fn verify_test_account(
     stored_meta: &StoredAccountMeta<'_>,
     account: Option<&impl ReadableAccount>,
     address: &Pubkey,
-    account_hash: &AccountHash,
 ) {
-    let (lamports, owner, data, executable, account_hash) = account
-        .map(|acc| {
-            (
-                acc.lamports(),
-                acc.owner(),
-                acc.data(),
-                acc.executable(),
-                // only persist rent_epoch for those rent-paying accounts
-                Some(*account_hash),
-            )
-        })
-        .unwrap_or((0, &OWNER_NO_OWNER, &[], false, None));
+    let (lamports, owner, data, executable) = account
+        .map(|acc| (acc.lamports(), acc.owner(), acc.data(), acc.executable()))
+        .unwrap_or((0, &OWNER_NO_OWNER, &[], false));
 
     assert_eq!(stored_meta.lamports(), lamports);
     assert_eq!(stored_meta.data().len(), data.len());
@@ -69,8 +60,16 @@ pub(super) fn verify_test_account(
     assert_eq!(stored_meta.executable(), executable);
     assert_eq!(stored_meta.owner(), owner);
     assert_eq!(stored_meta.pubkey(), address);
-    assert_eq!(
-        *stored_meta.hash(),
-        account_hash.unwrap_or(AccountHash(Hash::default()))
-    );
+    assert_eq!(*stored_meta.hash(), AccountHash(Hash::default()));
+}
+
+pub(super) fn verify_test_account_with_footer(
+    stored_meta: &StoredAccountMeta<'_>,
+    account: Option<&impl ReadableAccount>,
+    address: &Pubkey,
+    footer: &TieredStorageFooter,
+) {
+    verify_test_account(stored_meta, account, address);
+    assert!(footer.min_account_address <= *address);
+    assert!(footer.max_account_address >= *address);
 }

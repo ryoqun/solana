@@ -14,6 +14,11 @@ Release channels have their own copy of this changelog:
 
 <a name="edge-channel"></a>
 ## [2.0.0] - Unreleased
+* Changes
+  * `central-scheduler` as default option for `--block-production-method` (#34891)
+  * `solana-rpc-client-api`: `RpcFilterError` depends on `base64` version 0.22, so users may need to upgrade to `base64` version 0.22
+  * Changed default value for `--health-check-slot-distance` from 150 to 128
+  * CLI: Can specify `--with-compute-unit-price` and `--max-sign-attempts` during program deployment
 
 ## [1.18.0]
 * Changes
@@ -21,7 +26,6 @@ Release channels have their own copy of this changelog:
   * The default for `--use-snapshot-archives-at-startup` is now `when-newest` (#33883)
     * The default for `solana-ledger-tool`, however, remains `always` (#34228)
   * Added `central-scheduler` option for `--block-production-method` (#33890)
-    * `central-scheduler` as default option for `--block-production-method` (#34891)
   * Updated to Borsh v1
   * Added allow_commission_decrease_at_any_time feature which will allow commission on a vote account to be
     decreased even in the second half of epochs when the commission_updates_only_allowed_in_first_half_of_epoch
@@ -35,6 +39,8 @@ Release channels have their own copy of this changelog:
   * New program deployments default to the exact size of a program, instead of
     double the size. Program accounts must be extended with `solana program extend`
     before an upgrade if they need to accommodate larger programs.
+  * Interface for `gossip_service::get_client()` has changed. `gossip_service::get_multi_client()` has been removed.
+  * CLI: Can specify `--with-compute-unit-price` and `--max-sign-attempts` during program deployment
 * Upgrade Notes
   * `solana-program` and `solana-sdk` default to support for Borsh v1, with
 limited backward compatibility for v0.10 and v0.9. Please upgrade to Borsh v1.

@@ -1,7 +1,7 @@
 //! Used to create minimal snapshots - separated here to keep accounts_db simpler
 
 use {
-    crate::{bank::Bank, builtins::BUILTINS, static_ids},
+    crate::{bank::Bank, static_ids},
     dashmap::DashSet,
     log::info,
     rayon::{
@@ -113,9 +113,12 @@ impl<'a> SnapshotMinimizer<'a> {
 
     /// Used to get builtin accounts in `minimize`
     fn get_builtins(&self) {
-        BUILTINS.iter().for_each(|e| {
-            self.minimized_account_set.insert(e.program_id);
-        });
+        self.bank
+            .get_builtin_program_ids()
+            .iter()
+            .for_each(|program_id| {
+                self.minimized_account_set.insert(*program_id);
+            });
     }
 
     /// Used to get static runtime accounts in `minimize`
@@ -239,12 +242,8 @@ impl<'a> SnapshotMinimizer<'a> {
             measure!(self.purge_dead_slots(dead_slots), "purge dead slots");
         info!("{purge_dead_slots_measure}");
 
-        let (_, drop_or_recycle_stores_measure) = measure!(
-            self.accounts_db()
-                .drop_or_recycle_stores(dead_storages, &self.accounts_db().shrink_stats),
-            "drop or recycle stores"
-        );
-        info!("{drop_or_recycle_stores_measure}");
+        let (_, drop_storages_measure) = measure!(drop(dead_storages), "drop storages");
+        info!("{drop_storages_measure}");
 
         // Turn logging back on after minimization
         self.accounts_db()
@@ -360,12 +359,10 @@ impl<'a> SnapshotMinimizer<'a> {
         if aligned_total > 0 {
             let mut accounts = Vec::with_capacity(keep_accounts.len());
             let mut hashes = Vec::with_capacity(keep_accounts.len());
-            let mut write_versions = Vec::with_capacity(keep_accounts.len());
 
             for alive_account in keep_accounts {
                 accounts.push(alive_account);
                 hashes.push(alive_account.hash());
-                write_versions.push(alive_account.write_version());
             }
 
             shrink_in_progress = Some(self.accounts_db().get_store_for_shrink(slot, aligned_total));
@@ -374,7 +371,6 @@ impl<'a> SnapshotMinimizer<'a> {
                 (slot, &accounts[..]),
                 Some(hashes),
                 new_storage,
-                Some(Box::new(write_versions.into_iter())),
                 StoreReclaims::Ignore,
             );
 

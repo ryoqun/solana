@@ -16,8 +16,8 @@ use {
     std::{
         net::UdpSocket,
         sync::{
-            atomic::{AtomicBool, AtomicUsize, Ordering},
-            Arc, RwLock,
+            atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
+            Arc, Mutex, RwLock,
         },
         thread,
         time::{Duration, SystemTime},
@@ -100,9 +100,9 @@ pub(crate) fn configure_server(
     Ok((server_config, cert_chain_pem))
 }
 
-fn rt() -> Runtime {
+fn rt(name: String) -> Runtime {
     tokio::runtime::Builder::new_multi_thread()
-        .thread_name("quic-server")
+        .thread_name(name)
         .enable_all()
         .build()
         .unwrap()
@@ -175,10 +175,19 @@ pub struct StreamStats {
     pub(crate) stream_load_ema: AtomicUsize,
     pub(crate) stream_load_ema_overflow: AtomicUsize,
     pub(crate) stream_load_capacity_overflow: AtomicUsize,
+    pub(crate) process_sampled_packets_us_hist: Mutex<histogram::Histogram>,
+    pub(crate) perf_track_overhead_us: AtomicU64,
 }
 
 impl StreamStats {
     pub fn report(&self, name: &'static str) {
+        let process_sampled_packets_us_hist = {
+            let mut metrics = self.process_sampled_packets_us_hist.lock().unwrap();
+            let process_sampled_packets_us_hist = metrics.clone();
+            metrics.clear();
+            process_sampled_packets_us_hist
+        };
+
         datapoint_info!(
             name,
             (
@@ -425,13 +434,46 @@ impl StreamStats {
                 self.stream_load_capacity_overflow.load(Ordering::Relaxed),
                 i64
             ),
+            (
+                "process_sampled_packets_us_90pct",
+                process_sampled_packets_us_hist
+                    .percentile(90.0)
+                    .unwrap_or(0),
+                i64
+            ),
+            (
+                "process_sampled_packets_us_min",
+                process_sampled_packets_us_hist.minimum().unwrap_or(0),
+                i64
+            ),
+            (
+                "process_sampled_packets_us_max",
+                process_sampled_packets_us_hist.maximum().unwrap_or(0),
+                i64
+            ),
+            (
+                "process_sampled_packets_us_mean",
+                process_sampled_packets_us_hist.mean().unwrap_or(0),
+                i64
+            ),
+            (
+                "process_sampled_packets_count",
+                process_sampled_packets_us_hist.entries(),
+                i64
+            ),
+            (
+                "perf_track_overhead_us",
+                self.perf_track_overhead_us.swap(0, Ordering::Relaxed),
+                i64
+            ),
         );
     }
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn spawn_server(
-    name: &'static str,
+    thread_name: &'static str,
+    metrics_name: &'static str,
     sock: UdpSocket,
     keypair: &Keypair,
     packet_sender: Sender<PacketBatch>,
@@ -443,11 +485,11 @@ pub fn spawn_server(
     wait_for_chunk_timeout: Duration,
     coalesce: Duration,
 ) -> Result<SpawnServerResult, QuicServerError> {
-    let runtime = rt();
+    let runtime = rt(format!("{thread_name}Rt"));
     let (endpoint, _stats, task) = {
         let _guard = runtime.enter();
         crate::nonblocking::quic::spawn_server(
-            name,
+            metrics_name,
             sock,
             keypair,
             packet_sender,
@@ -461,7 +503,7 @@ pub fn spawn_server(
         )
     }?;
     let handle = thread::Builder::new()
-        .name("solQuicServer".into())
+        .name(thread_name.into())
         .spawn(move || {
             if let Err(e) = runtime.block_on(task) {
                 warn!("error from runtime.block_on: {:?}", e);
@@ -505,6 +547,7 @@ mod test {
             thread: t,
             key_updater: _,
         } = spawn_server(
+            "solQuicTest",
             "quic_streamer_test",
             s,
             &keypair,
@@ -532,7 +575,7 @@ mod test {
     fn test_quic_timeout() {
         solana_logger::setup();
         let (t, exit, receiver, server_address) = setup_quic_server();
-        let runtime = rt();
+        let runtime = rt("solQuicTestRt".to_string());
         runtime.block_on(check_timeout(receiver, server_address));
         exit.store(true, Ordering::Relaxed);
         t.join().unwrap();
@@ -543,7 +586,7 @@ mod test {
         solana_logger::setup();
         let (t, exit, _receiver, server_address) = setup_quic_server();
 
-        let runtime = rt();
+        let runtime = rt("solQuicTestRt".to_string());
         runtime.block_on(check_block_multiple_connections(server_address));
         exit.store(true, Ordering::Relaxed);
         t.join().unwrap();
@@ -563,6 +606,7 @@ mod test {
             thread: t,
             key_updater: _,
         } = spawn_server(
+            "solQuicTest",
             "quic_streamer_test",
             s,
             &keypair,
@@ -577,7 +621,7 @@ mod test {
         )
         .unwrap();
 
-        let runtime = rt();
+        let runtime = rt("solQuicTestRt".to_string());
         runtime.block_on(check_multiple_streams(receiver, server_address));
         exit.store(true, Ordering::Relaxed);
         t.join().unwrap();
@@ -588,7 +632,7 @@ mod test {
         solana_logger::setup();
         let (t, exit, receiver, server_address) = setup_quic_server();
 
-        let runtime = rt();
+        let runtime = rt("solQuicTestRt".to_string());
         runtime.block_on(check_multiple_writes(receiver, server_address, None));
         exit.store(true, Ordering::Relaxed);
         t.join().unwrap();
@@ -608,6 +652,7 @@ mod test {
             thread: t,
             key_updater: _,
         } = spawn_server(
+            "solQuicTest",
             "quic_streamer_test",
             s,
             &keypair,
@@ -622,7 +667,7 @@ mod test {
         )
         .unwrap();
 
-        let runtime = rt();
+        let runtime = rt("solQuicTestRt".to_string());
         runtime.block_on(check_unstaked_node_connect_failure(server_address));
         exit.store(true, Ordering::Relaxed);
         t.join().unwrap();

@@ -11,11 +11,10 @@ pub mod mmap_utils;
 pub mod owners;
 pub mod readable;
 mod test_utils;
-pub mod writer;
 
 use {
     crate::{
-        account_storage::meta::{StorableAccountsWithHashesAndWriteVersions, StoredAccountInfo},
+        account_storage::meta::{StorableAccountsWithHashes, StoredAccountInfo},
         accounts_hash::AccountHash,
         storable_accounts::StorableAccounts,
     },
@@ -28,7 +27,7 @@ use {
     solana_sdk::account::ReadableAccount,
     std::{
         borrow::Borrow,
-        fs::{self, OpenOptions},
+        fs, io,
         path::{Path, PathBuf},
         sync::{
             atomic::{AtomicBool, Ordering},
@@ -38,6 +37,8 @@ use {
 };
 
 pub type TieredStorageResult<T> = Result<T, TieredStorageError>;
+
+const MAX_TIERED_STORAGE_FILE_SIZE: u64 = 16 * 1024 * 1024 * 1024; // 16 GiB;
 
 /// The struct that defines the formats of all building blocks of a
 /// TieredStorage.
@@ -64,10 +65,14 @@ pub struct TieredStorage {
 impl Drop for TieredStorage {
     fn drop(&mut self) {
         if let Err(err) = fs::remove_file(&self.path) {
-            panic!(
-                "TieredStorage failed to remove backing storage file '{}': {err}",
-                self.path.display(),
-            );
+            // Here we bypass NotFound error as the focus of the panic is to
+            // detect any leakage of storage resource.
+            if err.kind() != io::ErrorKind::NotFound {
+                panic!(
+                    "TieredStorage failed to remove backing storage file '{}': {err}",
+                    self.path.display(),
+                );
+            }
         }
     }
 }
@@ -114,7 +119,7 @@ impl TieredStorage {
         V: Borrow<AccountHash>,
     >(
         &self,
-        accounts: &StorableAccountsWithHashesAndWriteVersions<'a, 'b, T, U, V>,
+        accounts: &StorableAccountsWithHashes<'a, 'b, T, U, V>,
         skip: usize,
         format: &TieredStorageFormat,
     ) -> TieredStorageResult<Vec<StoredAccountInfo>> {
@@ -126,7 +131,7 @@ impl TieredStorage {
 
         if format == &HOT_FORMAT {
             let result = {
-                let writer = HotStorageWriter::new(&self.path)?;
+                let mut writer = HotStorageWriter::new(&self.path)?;
                 writer.write_accounts(accounts, skip)
             };
 
@@ -156,13 +161,18 @@ impl TieredStorage {
     }
 
     /// Returns the size of the underlying accounts file.
-    pub fn file_size(&self) -> TieredStorageResult<u64> {
-        let file = OpenOptions::new().read(true).open(&self.path);
+    pub fn len(&self) -> usize {
+        self.reader().map_or(0, |reader| reader.len())
+    }
 
-        Ok(file
-            .and_then(|file| file.metadata())
-            .map(|metadata| metadata.len())
-            .unwrap_or(0))
+    /// Returns whether the underlying storage is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn capacity(&self) -> u64 {
+        self.reader()
+            .map_or(MAX_TIERED_STORAGE_FILE_SIZE, |reader| reader.capacity())
     }
 }
 
@@ -170,8 +180,8 @@ impl TieredStorage {
 mod tests {
     use {
         super::*,
-        crate::account_storage::meta::StoredMetaWriteVersion,
-        footer::{TieredStorageFooter, TieredStorageMagicNumber},
+        file::TieredStorageMagicNumber,
+        footer::TieredStorageFooter,
         hot::HOT_FORMAT,
         index::IndexOffset,
         solana_sdk::{
@@ -183,7 +193,7 @@ mod tests {
             mem::ManuallyDrop,
         },
         tempfile::tempdir,
-        test_utils::{create_test_account, verify_test_account},
+        test_utils::{create_test_account, verify_test_account_with_footer},
     };
 
     impl TieredStorage {
@@ -202,11 +212,7 @@ mod tests {
         let account_refs = Vec::<(&Pubkey, &AccountSharedData)>::new();
         let account_data = (slot_ignored, account_refs.as_slice());
         let storable_accounts =
-            StorableAccountsWithHashesAndWriteVersions::new_with_hashes_and_write_versions(
-                &account_data,
-                Vec::<AccountHash>::new(),
-                Vec::<StoredMetaWriteVersion>::new(),
-            );
+            StorableAccountsWithHashes::new_with_hashes(&account_data, Vec::<AccountHash>::new());
 
         let result = tiered_storage.write_accounts(&storable_accounts, 0, &HOT_FORMAT);
 
@@ -225,7 +231,7 @@ mod tests {
 
         assert!(tiered_storage.is_read_only());
         assert_eq!(
-            tiered_storage.file_size().unwrap() as usize,
+            tiered_storage.len(),
             std::mem::size_of::<TieredStorageFooter>()
                 + std::mem::size_of::<TieredStorageMagicNumber>()
         );
@@ -243,7 +249,7 @@ mod tests {
 
             assert!(!tiered_storage.is_read_only());
             assert_eq!(tiered_storage.path(), tiered_storage_path);
-            assert_eq!(tiered_storage.file_size().unwrap(), 0);
+            assert_eq!(tiered_storage.len(), 0);
 
             write_zero_accounts(&tiered_storage, Ok(vec![]));
         }
@@ -257,7 +263,7 @@ mod tests {
         assert_eq!(footer.index_block_format, HOT_FORMAT.index_block_format);
         assert_eq!(footer.account_block_format, HOT_FORMAT.account_block_format);
         assert_eq!(
-            tiered_storage_readonly.file_size().unwrap() as usize,
+            tiered_storage_readonly.len(),
             std::mem::size_of::<TieredStorageFooter>()
                 + std::mem::size_of::<TieredStorageMagicNumber>()
         );
@@ -339,17 +345,8 @@ mod tests {
         let hashes: Vec<_> = std::iter::repeat_with(|| AccountHash(Hash::new_unique()))
             .take(account_data_sizes.len())
             .collect();
-        let write_versions: Vec<_> = accounts
-            .iter()
-            .map(|account| account.0.write_version_obsolete)
-            .collect();
 
-        let storable_accounts =
-            StorableAccountsWithHashesAndWriteVersions::new_with_hashes_and_write_versions(
-                &account_data,
-                hashes,
-                write_versions,
-            );
+        let storable_accounts = StorableAccountsWithHashes::new_with_hashes(&account_data, hashes);
 
         let temp_dir = tempdir().unwrap();
         let tiered_storage_path = temp_dir.path().join(path_suffix);
@@ -362,19 +359,39 @@ mod tests {
 
         let mut expected_accounts_map = HashMap::new();
         for i in 0..num_accounts {
-            let (account, address, account_hash, _write_version) = storable_accounts.get(i);
-            expected_accounts_map.insert(address, (account, account_hash));
+            let (account, address, _account_hash) = storable_accounts.get(i);
+            expected_accounts_map.insert(address, account);
         }
 
         let mut index_offset = IndexOffset(0);
         let mut verified_accounts = HashSet::new();
+        let footer = reader.footer();
+
+        const MIN_PUBKEY: Pubkey = Pubkey::new_from_array([0x00u8; 32]);
+        const MAX_PUBKEY: Pubkey = Pubkey::new_from_array([0xFFu8; 32]);
+        let mut min_pubkey_ref = &MAX_PUBKEY;
+        let mut max_pubkey_ref = &MIN_PUBKEY;
+
         while let Some((stored_meta, next)) = reader.get_account(index_offset).unwrap() {
-            if let Some((account, account_hash)) = expected_accounts_map.get(stored_meta.pubkey()) {
-                verify_test_account(&stored_meta, *account, stored_meta.pubkey(), account_hash);
+            if let Some(account) = expected_accounts_map.get(stored_meta.pubkey()) {
+                verify_test_account_with_footer(
+                    &stored_meta,
+                    *account,
+                    stored_meta.pubkey(),
+                    footer,
+                );
                 verified_accounts.insert(stored_meta.pubkey());
+                if *min_pubkey_ref > *stored_meta.pubkey() {
+                    min_pubkey_ref = stored_meta.pubkey();
+                }
+                if *max_pubkey_ref < *stored_meta.pubkey() {
+                    max_pubkey_ref = stored_meta.pubkey();
+                }
             }
             index_offset = next;
         }
+        assert_eq!(footer.min_account_address, *min_pubkey_ref);
+        assert_eq!(footer.max_account_address, *max_pubkey_ref);
         assert!(!verified_accounts.is_empty());
         assert_eq!(verified_accounts.len(), expected_accounts_map.len())
     }

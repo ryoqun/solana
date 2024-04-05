@@ -1,13 +1,15 @@
 use {
     crate::{
-        cluster::{Cluster, ClusterValidatorInfo, ValidatorInfo},
+        cluster::{Cluster, ClusterValidatorInfo, QuicTpuClient, ValidatorInfo},
         cluster_tests,
         validator_configs::*,
     },
     itertools::izip,
     log::*,
     solana_accounts_db::utils::create_accounts_run_and_snapshot_dirs,
-    solana_client::{connection_cache::ConnectionCache, thin_client::ThinClient},
+    solana_client::{
+        connection_cache::ConnectionCache, rpc_client::RpcClient, thin_client::ThinClient,
+    },
     solana_core::{
         consensus::tower_storage::FileTowerStorage,
         validator::{Validator, ValidatorConfig, ValidatorStartProgress},
@@ -28,7 +30,7 @@ use {
     solana_sdk::{
         account::{Account, AccountSharedData},
         client::SyncClient,
-        clock::{DEFAULT_DEV_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT},
+        clock::{Slot, DEFAULT_DEV_SLOTS_PER_EPOCH, DEFAULT_TICKS_PER_SLOT},
         commitment_config::CommitmentConfig,
         epoch_schedule::EpochSchedule,
         feature_set,
@@ -47,7 +49,8 @@ use {
     solana_stake_program::stake_state,
     solana_streamer::socket::SocketAddrSpace,
     solana_tpu_client::tpu_client::{
-        DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_TPU_ENABLE_UDP, DEFAULT_TPU_USE_QUIC,
+        TpuClient, TpuClientConfig, DEFAULT_TPU_CONNECTION_POOL_SIZE, DEFAULT_TPU_ENABLE_UDP,
+        DEFAULT_TPU_USE_QUIC,
     },
     solana_vote_program::{
         vote_instruction,
@@ -552,12 +555,11 @@ impl LocalCluster {
         Self::transfer_with_client(&client, source_keypair, dest_pubkey, lamports)
     }
 
-    pub fn check_for_new_roots(
+    fn discover_nodes(
         &self,
-        num_new_roots: usize,
-        test_name: &str,
         socket_addr_space: SocketAddrSpace,
-    ) {
+        test_name: &str,
+    ) -> Vec<ContactInfo> {
         let alive_node_contact_infos: Vec<_> = self
             .validators
             .values()
@@ -572,6 +574,36 @@ impl LocalCluster {
         )
         .unwrap();
         info!("{} discovered {} nodes", test_name, cluster_nodes.len());
+        alive_node_contact_infos
+    }
+
+    pub fn check_min_slot_is_rooted(
+        &self,
+        min_root: Slot,
+        test_name: &str,
+        socket_addr_space: SocketAddrSpace,
+    ) {
+        let alive_node_contact_infos = self.discover_nodes(socket_addr_space, test_name);
+        info!(
+            "{} looking minimum root {} on all nodes",
+            min_root, test_name
+        );
+        cluster_tests::check_min_slot_is_rooted(
+            min_root,
+            &alive_node_contact_infos,
+            &self.connection_cache,
+            test_name,
+        );
+        info!("{} done waiting for roots", test_name);
+    }
+
+    pub fn check_for_new_roots(
+        &self,
+        num_new_roots: usize,
+        test_name: &str,
+        socket_addr_space: SocketAddrSpace,
+    ) {
+        let alive_node_contact_infos = self.discover_nodes(socket_addr_space, test_name);
         info!("{} looking for new roots on all nodes", test_name);
         cluster_tests::check_for_new_roots(
             num_new_roots,
@@ -802,6 +834,34 @@ impl LocalCluster {
             ..SnapshotConfig::new_load_only()
         }
     }
+
+    fn build_tpu_client<F>(&self, rpc_client_builder: F) -> Result<QuicTpuClient>
+    where
+        F: FnOnce(String) -> Arc<RpcClient>,
+    {
+        let rpc_pubsub_url = format!("ws://{}/", self.entry_point_info.rpc_pubsub().unwrap());
+        let rpc_url = format!("http://{}", self.entry_point_info.rpc().unwrap());
+
+        let cache = match &*self.connection_cache {
+            ConnectionCache::Quic(cache) => cache,
+            ConnectionCache::Udp(_) => {
+                return Err(Error::new(
+                    ErrorKind::Other,
+                    "Expected a Quic ConnectionCache. Got UDP",
+                ))
+            }
+        };
+
+        let tpu_client = TpuClient::new_with_connection_cache(
+            rpc_client_builder(rpc_url),
+            rpc_pubsub_url.as_str(),
+            TpuClientConfig::default(),
+            cache.clone(),
+        )
+        .map_err(|err| Error::new(ErrorKind::Other, format!("TpuSenderError: {}", err)))?;
+
+        Ok(tpu_client)
+    }
 }
 
 impl Cluster for LocalCluster {
@@ -817,6 +877,19 @@ impl Cluster for LocalCluster {
                 })
                 .unwrap();
             ThinClient::new(rpc, tpu, self.connection_cache.clone())
+        })
+    }
+
+    fn build_tpu_quic_client(&self) -> Result<QuicTpuClient> {
+        self.build_tpu_client(|rpc_url| Arc::new(RpcClient::new(rpc_url)))
+    }
+
+    fn build_tpu_quic_client_with_commitment(
+        &self,
+        commitment_config: CommitmentConfig,
+    ) -> Result<QuicTpuClient> {
+        self.build_tpu_client(|rpc_url| {
+            Arc::new(RpcClient::new_with_commitment(rpc_url, commitment_config))
         })
     }
 

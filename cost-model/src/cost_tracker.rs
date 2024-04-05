@@ -58,6 +58,13 @@ pub struct CostTracker {
     vote_cost: u64,
     transaction_count: u64,
     account_data_size: u64,
+    transaction_signature_count: u64,
+    secp256k1_instruction_signature_count: u64,
+    ed25519_instruction_signature_count: u64,
+    /// The number of transactions that have had their estimated cost added to
+    /// the tracker, but are still waiting for an update with actual usage or
+    /// removal if the transaction does not end up getting committed.
+    in_flight_transaction_count: usize,
 }
 
 impl Default for CostTracker {
@@ -77,6 +84,10 @@ impl Default for CostTracker {
             vote_cost: 0,
             transaction_count: 0,
             account_data_size: 0,
+            transaction_signature_count: 0,
+            secp256k1_instruction_signature_count: 0,
+            ed25519_instruction_signature_count: 0,
+            in_flight_transaction_count: 0,
         }
     }
 }
@@ -94,6 +105,23 @@ impl CostTracker {
         self.vote_cost_limit = vote_cost_limit;
     }
 
+    pub fn in_flight_transaction_count(&self) -> usize {
+        self.in_flight_transaction_count
+    }
+
+    pub fn add_transactions_in_flight(&mut self, in_flight_transaction_count: usize) {
+        saturating_add_assign!(
+            self.in_flight_transaction_count,
+            in_flight_transaction_count
+        );
+    }
+
+    pub fn sub_transactions_in_flight(&mut self, in_flight_transaction_count: usize) {
+        self.in_flight_transaction_count = self
+            .in_flight_transaction_count
+            .saturating_sub(in_flight_transaction_count);
+    }
+
     pub fn try_add(&mut self, tx_cost: &TransactionCost) -> Result<u64, CostTrackerError> {
         self.would_fit(tx_cost)?;
         self.add_transaction_cost(tx_cost);
@@ -105,7 +133,7 @@ impl CostTracker {
         estimated_tx_cost: &TransactionCost,
         actual_execution_units: u64,
     ) {
-        let estimated_execution_units = estimated_tx_cost.bpf_execution_cost();
+        let estimated_execution_units = estimated_tx_cost.programs_execution_cost();
         match actual_execution_units.cmp(&estimated_execution_units) {
             Ordering::Equal => (),
             Ordering::Greater => {
@@ -153,6 +181,26 @@ impl CostTracker {
             ("costliest_account", costliest_account.to_string(), String),
             ("costliest_account_cost", costliest_account_cost as i64, i64),
             ("account_data_size", self.account_data_size, i64),
+            (
+                "transaction_signature_count",
+                self.transaction_signature_count,
+                i64
+            ),
+            (
+                "secp256k1_instruction_signature_count",
+                self.secp256k1_instruction_signature_count,
+                i64
+            ),
+            (
+                "ed25519_instruction_signature_count",
+                self.ed25519_instruction_signature_count,
+                i64
+            ),
+            (
+                "inflight_transaction_count",
+                self.in_flight_transaction_count,
+                i64
+            ),
         );
     }
 
@@ -213,6 +261,18 @@ impl CostTracker {
         self.add_transaction_execution_cost(tx_cost, tx_cost.sum());
         saturating_add_assign!(self.account_data_size, tx_cost.account_data_size());
         saturating_add_assign!(self.transaction_count, 1);
+        saturating_add_assign!(
+            self.transaction_signature_count,
+            tx_cost.num_transaction_signatures()
+        );
+        saturating_add_assign!(
+            self.secp256k1_instruction_signature_count,
+            tx_cost.num_secp256k1_instruction_signatures()
+        );
+        saturating_add_assign!(
+            self.ed25519_instruction_signature_count,
+            tx_cost.num_ed25519_instruction_signatures()
+        );
     }
 
     fn remove_transaction_cost(&mut self, tx_cost: &TransactionCost) {
@@ -222,6 +282,15 @@ impl CostTracker {
             .account_data_size
             .saturating_sub(tx_cost.account_data_size());
         self.transaction_count = self.transaction_count.saturating_sub(1);
+        self.transaction_signature_count = self
+            .transaction_signature_count
+            .saturating_sub(tx_cost.num_transaction_signatures());
+        self.secp256k1_instruction_signature_count = self
+            .secp256k1_instruction_signature_count
+            .saturating_sub(tx_cost.num_secp256k1_instruction_signatures());
+        self.ed25519_instruction_signature_count = self
+            .ed25519_instruction_signature_count
+            .saturating_sub(tx_cost.num_ed25519_instruction_signatures());
     }
 
     /// Apply additional actual execution units to cost_tracker
@@ -307,7 +376,7 @@ mod tests {
             system_transaction::transfer(mint_keypair, &keypair.pubkey(), 2, *start_hash),
         );
         let mut tx_cost = UsageCostDetails::new_with_capacity(1);
-        tx_cost.bpf_execution_cost = 5;
+        tx_cost.programs_execution_cost = 5;
         tx_cost.writable_accounts.push(mint_keypair.pubkey());
 
         (simple_transaction, TransactionCost::Transaction(tx_cost))
@@ -606,7 +675,7 @@ mod tests {
         {
             let tx_cost = TransactionCost::Transaction(UsageCostDetails {
                 writable_accounts: vec![acct1, acct2, acct3],
-                bpf_execution_cost: cost,
+                programs_execution_cost: cost,
                 ..UsageCostDetails::default()
             });
             assert!(testee.try_add(&tx_cost).is_ok());
@@ -624,7 +693,7 @@ mod tests {
         {
             let tx_cost = TransactionCost::Transaction(UsageCostDetails {
                 writable_accounts: vec![acct2],
-                bpf_execution_cost: cost,
+                programs_execution_cost: cost,
                 ..UsageCostDetails::default()
             });
             assert!(testee.try_add(&tx_cost).is_ok());
@@ -644,7 +713,7 @@ mod tests {
         {
             let tx_cost = TransactionCost::Transaction(UsageCostDetails {
                 writable_accounts: vec![acct1, acct2],
-                bpf_execution_cost: cost,
+                programs_execution_cost: cost,
                 ..UsageCostDetails::default()
             });
             assert!(testee.try_add(&tx_cost).is_err());
@@ -668,7 +737,7 @@ mod tests {
         let mut testee = CostTracker::new(account_max, block_max, block_max);
         let tx_cost = TransactionCost::Transaction(UsageCostDetails {
             writable_accounts: vec![acct1, acct2, acct3],
-            bpf_execution_cost: cost,
+            programs_execution_cost: cost,
             ..UsageCostDetails::default()
         });
         let mut expected_block_cost = tx_cost.sum();
@@ -755,7 +824,7 @@ mod tests {
 
         let tx_cost = TransactionCost::Transaction(UsageCostDetails {
             writable_accounts: vec![acct1, acct2, acct3],
-            bpf_execution_cost: cost,
+            programs_execution_cost: cost,
             ..UsageCostDetails::default()
         });
 
@@ -802,7 +871,7 @@ mod tests {
         let cost = 100u64;
         let tx_cost = TransactionCost::Transaction(UsageCostDetails {
             writable_accounts: vec![Pubkey::new_unique()],
-            bpf_execution_cost: cost,
+            programs_execution_cost: cost,
             ..UsageCostDetails::default()
         });
 

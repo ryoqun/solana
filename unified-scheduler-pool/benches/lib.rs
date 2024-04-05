@@ -25,7 +25,7 @@ use {
         scheduling::SchedulingMode,
         transaction::{Result, SanitizedTransaction},
     },
-    solana_unified_scheduler_logic::{Page, SchedulingStateMachine},
+    solana_unified_scheduler_logic::{SchedulingStateMachine, UsageQueue},
     solana_unified_scheduler_pool::{
         HandlerContext, PooledScheduler, SchedulerPool, SpawnableScheduler, TaskHandler,
     },
@@ -58,7 +58,7 @@ fn setup_dummy_fork_graph(bank: Bank) -> Arc<Bank> {
     let slot = bank.slot();
     let bank_fork = BankForks::new_rw_arc(bank);
     let bank = bank_fork.read().unwrap().get(slot).unwrap();
-    bank.loaded_programs_cache
+    bank.transaction_processor.program_cache
         .write()
         .unwrap()
         .set_fork_graph(bank_fork);
@@ -125,7 +125,7 @@ fn do_bench_tx_throughput(label: &str, bencher: &mut Criterion) {
     use std::sync::atomic::AtomicUsize;
     let i = Arc::new(AtomicUsize::default());
     use std::sync::Mutex;
-    let pages: Arc<Mutex<std::collections::HashMap<solana_sdk::pubkey::Pubkey, Page>>> =
+    let pages: Arc<Mutex<std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue>>> =
         Arc::new(Mutex::new(std::collections::HashMap::new()));
     /*
     for _ in 0..5 {
@@ -183,7 +183,7 @@ fn do_bench_tx_throughput(label: &str, bencher: &mut Criterion) {
                 }
                 scheduler.deschedule_task(first_task.as_ref().unwrap());
                 new_tasks.push(first_task.unwrap());
-                while let Some(unblocked_task) = scheduler.schedule_unblocked_task() {
+                while let Some(unblocked_task) = scheduler.schedule_next_unblocked_task() {
                     scheduler.deschedule_task(&unblocked_task);
                     new_tasks.push(unblocked_task);
                 }

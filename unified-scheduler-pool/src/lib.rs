@@ -1,3 +1,8 @@
+//! NOTE: While the unified scheduler is fully functional and moderately performant even with
+//! mainnet-beta, it has known resource-exhaustion related security issues for replaying
+//! specially-crafted blocks produced by malicious leaders. Thus, this experimental and
+//! nondefault functionality is exempt from the bug bounty program for now.
+//!
 //! Transaction scheduling code.
 //!
 //! This crate implements 3 solana-runtime traits (`InstalledScheduler`, `UninstalledScheduler` and
@@ -42,7 +47,7 @@ use {
         pubkey::Pubkey,
         transaction::{Result, SanitizedTransaction, TransactionError},
     },
-    solana_unified_scheduler_logic::{Page, SchedulingStateMachine, Task},
+    solana_unified_scheduler_logic::{SchedulingStateMachine, Task, UsageQueue},
     solana_vote::vote_sender_types::ReplayVoteSender,
     std::{
         env,
@@ -627,22 +632,28 @@ mod chained_channel {
     }
 }
 
+/// The primary owner of all [`UsageQueue`]s used for particular [`PooledScheduler`].
+///
+/// Currently, the simplest implementation. This grows memory usage in unbounded way. Cleaning will
+/// be added later. This struct is here to be put outside `solana-unified-scheduler-logic` for the
+/// crate's original intent (separation of logics from this crate). Some practical and mundane
+/// pruning will be implemented in this type.
 #[derive(Default, Debug)]
-pub struct AddressBook {
-    book: DashMap<Pubkey, Page>,
+pub struct UsageQueueLoader {
+    usage_queues: DashMap<Pubkey, UsageQueue>,
 }
 
-impl AddressBook {
-    pub fn load(&self, address: Pubkey) -> Page {
-        self.book.entry(address).or_default().clone()
+impl UsageQueueLoader {
+    pub fn load(&self, address: Pubkey) -> UsageQueue {
+        self.usage_queues.entry(address).or_default().clone()
     }
 
     pub fn page_count(&self) -> usize {
-        self.book.len()
+        self.usage_queues.len()
     }
 
     pub fn clear(&self) {
-        self.book.clear();
+        self.usage_queues.clear();
     }
 }
 
@@ -668,7 +679,7 @@ where
     SEA: ScheduleExecutionArg,
 {
     thread_manager: Arc<RwLock<ThreadManager<S, TH, SEA>>>,
-    address_book: AddressBook,
+    usage_queue_loader: UsageQueueLoader,
     pooled_at: Instant,
 }
 
@@ -749,7 +760,7 @@ where
         Self::from_inner(
             PooledSchedulerInner {
                 thread_manager: Arc::new(RwLock::new(ThreadManager::new(pool.clone(), handler))),
-                address_book: AddressBook::default(),
+                usage_queue_loader: UsageQueueLoader::default(),
                 pooled_at: Instant::now(),
             },
             initial_context,
@@ -1037,6 +1048,15 @@ where
             // like syscalls, VDSO, and even memory (de)allocation should be avoided at all costs
             // by design or by means of offloading at the last resort.
             move || {
+                let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
+                let dummy_receiver = |trigger| {
+                    if trigger {
+                        do_now
+                    } else {
+                        dont_now
+                    }
+                };
+
                 const BITS_PER_HEX_DIGIT: usize = 4;
                 let mut state_machine = unsafe {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
@@ -1071,12 +1091,31 @@ where
                         tid
                     })
                     .unwrap();
-                let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
                 log_scheduler!("S+T:started");
 
                 while !thread_suspending {
                     let mut is_finished = false;
                     while !is_finished {
+                        // ALL recv selectors are eager-evaluated ALWAYS by current crossbeam impl,
+                        // which isn't great and is inconsistent with `if`s in the Rust's match
+                        // arm. So, eagerly binding the result to a variable unconditionally here
+                        // makes no perf. difference...
+                        let dummy_unblocked_task_receiver =
+                            dummy_receiver(state_machine.has_unblocked_task());
+
+                        // (Assume this is biased; i.e. select_biased! in this crossbeam pr:
+                        // https://github.com/rust-lang/futures-rs/pull/1976)
+                        //
+                        // There's something special called dummy_unblocked_task_receiver here.
+                        // This odd pattern was needed to react to newly unblocked tasks from
+                        // _not-crossbeam-channel_ event sources, precisely at the specified
+                        // precedence among other selectors, while delegating the conrol flow to
+                        // select_biased!.
+                        //
+                        // In this way, hot looping is avoided and overall control flow is much
+                        // consistent. Note that unified scheduler will go
+                        // into busy looping to seek lowest latency eventually. However, not now,
+                        // to measure _actual_ cpu usage easily with the select approach.
                         let state_change = select_biased! {
                             recv(finished_task_receiver) -> executed_task => {
                                 let executed_task = executed_task.unwrap();
@@ -1096,14 +1135,13 @@ where
                                 }
                                 "step"
                             },
-                            recv(if state_machine.has_unblocked_task() { do_now } else { dont_now }) -> dummy_result => {
-                                assert_matches!(dummy_result, Err(RecvError));
+                            recv(dummy_unblocked_task_receiver) -> dummy => {
+                                assert_matches!(dummy, Err(RecvError));
 
-                                if let Some(task) = state_machine.schedule_unblocked_task() {
-                                    blocked_task_sender
-                                        .send_payload(task)
-                                        .unwrap();
-                                }
+                                let task = state_machine
+                                    .schedule_next_unblocked_task()
+                                    .expect("unblocked task");
+                                blocked_task_sender.send_payload(task).unwrap();
                                 "step"
                             },
                             recv(new_task_receiver) -> message => {
@@ -1486,7 +1524,7 @@ where
         transaction_with_index.with_transaction_and_index(|transaction, index| {
             let task =
                 SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
-                    self.inner.address_book.load(pubkey)
+                    self.inner.usage_queue_loader.load(pubkey)
                 });
             let abort_detected = self
                 .ensure_thread_manager_resumed(&self.context)?
@@ -1542,7 +1580,7 @@ where
         const IDLE_DURATION_FOR_LAZY_THREAD_RECLAIM: Duration = Duration::from_secs(600);
 
         const BITS_PER_HEX_DIGIT: usize = 4;
-        let page_count = self.address_book.page_count();
+        let page_count = self.usage_queue_loader.page_count();
         if page_count < 200_000 {
             info!(
                 "[sch_{:0width$x}]: cleaner: address book size: {page_count}...",
@@ -1555,7 +1593,7 @@ where
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );
-            self.address_book.clear();
+            self.usage_queue_loader.clear();
             return true;
         } else {
             info!(
@@ -1766,10 +1804,7 @@ mod tests {
         let slot = bank.slot();
         let bank_fork = BankForks::new_rw_arc(bank);
         let bank = bank_fork.read().unwrap().get(slot).unwrap();
-        bank.loaded_programs_cache
-            .write()
-            .unwrap()
-            .set_fork_graph(bank_fork);
+        bank.set_fork_graph_in_program_cache(bank_fork);
         bank
     }
 
@@ -1850,7 +1885,7 @@ mod tests {
         );
         thread::sleep(Duration::from_secs(3));
         assert_matches!(
-            scheduler.schedule_execution(&(good_tx_after_bad_tx, 0)),
+            scheduler.schedule_execution(&(good_tx_after_bad_tx, 1)),
             Err(_)
         );
         error!("last pause!");
@@ -2088,5 +2123,43 @@ mod tests {
             DefaultSchedulerPool::calculate_default_handler_count(None),
             4
         );
+    }
+
+    // See comment in SchedulingStateMachine::create_task() for the justification of this test
+    #[test]
+    fn test_enfoced_get_account_locks_validation() {
+        solana_logger::setup();
+
+        let GenesisConfigInfo {
+            genesis_config,
+            ref mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = &setup_dummy_fork_graph(bank);
+
+        let mut tx = system_transaction::transfer(
+            mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        );
+        // mangle the transfer tx to try to lock fee_payer (= mint_keypair) address twice!
+        tx.message.account_keys.push(tx.message.account_keys[0]);
+        let tx = &SanitizedTransaction::from_transaction_for_tests(tx);
+
+        // this internally should call SanitizedTransaction::get_account_locks().
+        let result = &mut Ok(());
+        let timings = &mut ExecuteTimings::default();
+        let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let handler_context = &HandlerContext {
+            log_messages_bytes_limit: None,
+            transaction_status_sender: None,
+            replay_vote_sender: None,
+            prioritization_fee_cache,
+        };
+
+        <DefaultTaskHandler as TaskHandler<DefaultScheduleExecutionArg>>::handle(&DefaultTaskHandler, result, timings, bank, tx, 0, handler_context);
+        assert_matches!(result, Err(TransactionError::AccountLoadedTwice));
     }
 }

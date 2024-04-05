@@ -6,7 +6,6 @@ use {
     jsonrpc_ipc_server::{
         tokio::sync::oneshot::channel as oneshot_channel, RequestContext, ServerBuilder,
     },
-    jsonrpc_server_utils::tokio,
     log::*,
     serde::{de::Deserializer, Deserialize, Serialize},
     solana_accounts_db::accounts_index::AccountIndex,
@@ -35,6 +34,7 @@ use {
         thread::{self, Builder},
         time::{Duration, SystemTime},
     },
+    tokio::runtime::Runtime,
 };
 
 #[derive(Clone)]
@@ -815,8 +815,12 @@ pub async fn connect(ledger_path: &Path) -> std::result::Result<gen_client::Clie
     }
 }
 
-pub fn runtime() -> jsonrpc_server_utils::tokio::runtime::Runtime {
-    jsonrpc_server_utils::tokio::runtime::Runtime::new().expect("new tokio runtime")
+pub fn runtime() -> Runtime {
+    tokio::runtime::Builder::new_multi_thread()
+        .thread_name("solAdminRpcRt")
+        .enable_all()
+        .build()
+        .expect("new tokio runtime")
 }
 
 #[derive(Default, Deserialize, Clone)]
@@ -856,9 +860,10 @@ mod tests {
     use {
         super::*,
         serde_json::Value,
-        solana_accounts_db::{accounts_index::AccountSecondaryIndexes, inline_spl_token},
+        solana_accounts_db::accounts_index::AccountSecondaryIndexes,
         solana_core::consensus::tower_storage::NullTowerStorage,
         solana_gossip::cluster_info::ClusterInfo,
+        solana_inline_spl::token,
         solana_ledger::genesis_utils::{create_genesis_config, GenesisConfigInfo},
         solana_rpc::rpc::create_validator_exit,
         solana_runtime::{
@@ -1016,7 +1021,7 @@ mod tests {
                 // Count SPL Token Program Default Accounts
                 let req = format!(
                     r#"{{"jsonrpc":"2.0","id":1,"method":"getSecondaryIndexKeySize","params":["{}"]}}"#,
-                    inline_spl_token::id(),
+                    token::id(),
                 );
                 let res = io.handle_request_sync(&req, meta.clone());
                 let result: Value = serde_json::from_str(&res.expect("actual response"))
@@ -1071,7 +1076,7 @@ mod tests {
             let token_account1 = AccountSharedData::from(Account {
                 lamports: 111,
                 data: account1_data.to_vec(),
-                owner: inline_spl_token::id(),
+                owner: token::id(),
                 ..Account::default()
             });
             bank.store_account(&token_account1_pubkey, &token_account1);
@@ -1089,7 +1094,7 @@ mod tests {
             let mint_account1 = AccountSharedData::from(Account {
                 lamports: 222,
                 data: mint1_data.to_vec(),
-                owner: inline_spl_token::id(),
+                owner: token::id(),
                 ..Account::default()
             });
             bank.store_account(&mint1_pubkey, &mint_account1);
@@ -1110,7 +1115,7 @@ mod tests {
             let token_account2 = AccountSharedData::from(Account {
                 lamports: 333,
                 data: account2_data.to_vec(),
-                owner: inline_spl_token::id(),
+                owner: token::id(),
                 ..Account::default()
             });
             bank.store_account(&token_account2_pubkey, &token_account2);
@@ -1131,7 +1136,7 @@ mod tests {
             let token_account3 = AccountSharedData::from(Account {
                 lamports: 444,
                 data: account3_data.to_vec(),
-                owner: inline_spl_token::id(),
+                owner: token::id(),
                 ..Account::default()
             });
             bank.store_account(&token_account3_pubkey, &token_account3);
@@ -1149,7 +1154,7 @@ mod tests {
             let mint_account2 = AccountSharedData::from(Account {
                 lamports: 555,
                 data: mint2_data.to_vec(),
-                owner: inline_spl_token::id(),
+                owner: token::id(),
                 ..Account::default()
             });
             bank.store_account(&mint2_pubkey, &mint_account2);
@@ -1229,7 +1234,7 @@ mod tests {
                 // 5) SPL Token Program Owns 6 Accounts - 1 Default, 5 created above.
                 let req = format!(
                     r#"{{"jsonrpc":"2.0","id":1,"method":"getSecondaryIndexKeySize","params":["{}"]}}"#,
-                    inline_spl_token::id(),
+                    token::id(),
                 );
                 let res = io.handle_request_sync(&req, meta.clone());
                 let result: Value = serde_json::from_str(&res.expect("actual response"))

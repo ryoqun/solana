@@ -17,6 +17,7 @@ use {
     quinn::{Connecting, Connection, Endpoint, EndpointConfig, TokioRuntime, VarInt},
     quinn_proto::VarIntBoundsExceeded,
     rand::{thread_rng, Rng},
+    solana_measure::measure::Measure,
     solana_perf::packet::{PacketBatch, PACKETS_PER_BATCH},
     solana_sdk::{
         packet::{Meta, PACKET_DATA_SIZE},
@@ -27,19 +28,33 @@ use {
             QUIC_MIN_STAKED_CONCURRENT_STREAMS, QUIC_MIN_STAKED_RECEIVE_WINDOW_RATIO,
             QUIC_TOTAL_STAKED_CONCURRENT_STREAMS, QUIC_UNSTAKED_RECEIVE_WINDOW_RATIO,
         },
-        signature::Keypair,
+        signature::{Keypair, Signature},
         timing,
     },
+    solana_transaction_metrics_tracker::signature_if_should_track_packet,
     std::{
         iter::repeat_with,
         net::{IpAddr, SocketAddr, UdpSocket},
+        // CAUTION: be careful not to introduce any awaits while holding an RwLock.
         sync::{
             atomic::{AtomicBool, AtomicU64, Ordering},
-            Arc, Mutex, MutexGuard, RwLock,
+            Arc, RwLock,
         },
         time::{Duration, Instant},
     },
-    tokio::{task::JoinHandle, time::timeout},
+    tokio::{
+        // CAUTION: It's kind of sketch that we're mixing async and sync locks (see the RwLock above).
+        // This is done so that sync code can also access the stake table.
+        // Make sure we don't hold a sync lock across an await - including the await to
+        // lock an async Mutex. This does not happen now and should not happen as long as we
+        // don't hold an async Mutex and sync RwLock at the same time (currently true)
+        // but if we do, the scope of the RwLock must always be a subset of the async Mutex
+        // (i.e. lock order is always async Mutex -> RwLock). Also, be careful not to
+        // introduce any other awaits while holding the RwLock.
+        sync::{Mutex, MutexGuard},
+        task::JoinHandle,
+        time::timeout,
+    },
 };
 
 const WAIT_FOR_STREAM_TIMEOUT: Duration = Duration::from_millis(100);
@@ -81,6 +96,7 @@ struct PacketChunk {
 struct PacketAccumulator {
     pub meta: Meta,
     pub chunks: Vec<PacketChunk>,
+    pub start_time: Instant,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -383,7 +399,7 @@ fn handle_and_cache_new_connection(
     }
 }
 
-fn prune_unstaked_connections_and_add_new_connection(
+async fn prune_unstaked_connections_and_add_new_connection(
     connection: Connection,
     connection_table: Arc<Mutex<ConnectionTable>>,
     max_connections: usize,
@@ -394,7 +410,7 @@ fn prune_unstaked_connections_and_add_new_connection(
     let stats = params.stats.clone();
     if max_connections > 0 {
         let connection_table_clone = connection_table.clone();
-        let mut connection_table = connection_table.lock().unwrap();
+        let mut connection_table = connection_table.lock().await;
         prune_unstaked_connection_table(&mut connection_table, max_connections, stats);
         handle_and_cache_new_connection(
             connection,
@@ -504,7 +520,8 @@ async fn setup_connection(
 
                 match params.peer_type {
                     ConnectionPeerType::Staked(stake) => {
-                        let mut connection_table_l = staked_connection_table.lock().unwrap();
+                        let mut connection_table_l = staked_connection_table.lock().await;
+
                         if connection_table_l.total_size >= max_staked_connections {
                             let num_pruned =
                                 connection_table_l.prune_random(PRUNE_RANDOM_SAMPLE_SIZE, stake);
@@ -535,7 +552,9 @@ async fn setup_connection(
                                 &params,
                                 wait_for_chunk_timeout,
                                 stream_load_ema.clone(),
-                            ) {
+                            )
+                            .await
+                            {
                                 stats
                                     .connection_added_from_staked_peer
                                     .fetch_add(1, Ordering::Relaxed);
@@ -557,7 +576,9 @@ async fn setup_connection(
                             &params,
                             wait_for_chunk_timeout,
                             stream_load_ema.clone(),
-                        ) {
+                        )
+                        .await
+                        {
                             stats
                                 .connection_added_from_unstaked_peer
                                 .fetch_add(1, Ordering::Relaxed);
@@ -628,6 +649,7 @@ async fn packet_batch_sender(
     trace!("enter packet_batch_sender");
     let mut batch_start_time = Instant::now();
     loop {
+        let mut packet_perf_measure: Vec<([u8; 64], std::time::Instant)> = Vec::default();
         let mut packet_batch = PacketBatch::with_capacity(PACKETS_PER_BATCH);
         let mut total_bytes: usize = 0;
 
@@ -647,6 +669,8 @@ async fn packet_batch_sender(
                 || (!packet_batch.is_empty() && elapsed >= coalesce)
             {
                 let len = packet_batch.len();
+                track_streamer_fetch_packet_performance(&mut packet_perf_measure, &stats);
+
                 if let Err(e) = packet_sender.send(packet_batch) {
                     stats
                         .total_packet_batch_send_err
@@ -692,12 +716,46 @@ async fn packet_batch_sender(
 
                 total_bytes += packet_batch[i].meta().size;
 
+                if let Some(signature) = signature_if_should_track_packet(&packet_batch[i])
+                    .ok()
+                    .flatten()
+                {
+                    packet_perf_measure.push((*signature, packet_accumulator.start_time));
+                    // we set the PERF_TRACK_PACKET on
+                    packet_batch[i].meta_mut().set_track_performance(true);
+                }
                 stats
                     .total_chunks_processed_by_batcher
                     .fetch_add(num_chunks, Ordering::Relaxed);
             }
         }
     }
+}
+
+fn track_streamer_fetch_packet_performance(
+    packet_perf_measure: &mut [([u8; 64], Instant)],
+    stats: &Arc<StreamStats>,
+) {
+    if packet_perf_measure.is_empty() {
+        return;
+    }
+    let mut measure = Measure::start("track_perf");
+    let mut process_sampled_packets_us_hist = stats.process_sampled_packets_us_hist.lock().unwrap();
+
+    for (signature, start_time) in packet_perf_measure.iter() {
+        let duration = Instant::now().duration_since(*start_time);
+        debug!(
+            "QUIC streamer fetch stage took {duration:?} for transaction {:?}",
+            Signature::from(*signature)
+        );
+        process_sampled_packets_us_hist
+            .increment(duration.as_micros() as u64)
+            .unwrap();
+    }
+    measure.stop();
+    stats
+        .perf_track_overhead_us
+        .fetch_add(measure.as_us(), Ordering::Relaxed);
 }
 
 async fn handle_connection(
@@ -800,7 +858,7 @@ async fn handle_connection(
         }
     }
 
-    let removed_connection_count = connection_table.lock().unwrap().remove_connection(
+    let removed_connection_count = connection_table.lock().await.remove_connection(
         ConnectionTableKey::new(remote_addr.ip(), params.remote_pubkey),
         remote_addr.port(),
         stable_id,
@@ -854,6 +912,7 @@ async fn handle_chunk(
                     *packet_accum = Some(PacketAccumulator {
                         meta,
                         chunks: Vec::new(),
+                        start_time: Instant::now(),
                     });
                 }
 
@@ -1453,6 +1512,7 @@ pub mod test {
                     offset,
                     end_of_chunk: size,
                 }],
+                start_time: Instant::now(),
             };
             ptk_sender.send(packet_accum).await.unwrap();
         }

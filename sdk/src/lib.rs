@@ -31,7 +31,6 @@
 
 #![allow(incomplete_features)]
 #![cfg_attr(RUSTC_WITH_SPECIALIZATION, feature(specialization))]
-#![cfg_attr(RUSTC_NEEDS_PROC_MACRO_HYGIENE, feature(proc_macro_hygiene))]
 
 // Allows macro expansion of `use ::solana_sdk::*` to work within this crate
 extern crate self as solana_sdk;
@@ -95,6 +94,7 @@ pub mod quic;
 pub mod recent_blockhashes_account;
 pub mod rent_collector;
 pub mod rent_debits;
+pub mod reserved_account_keys;
 pub mod reward_info;
 pub mod reward_type;
 pub mod rpc_port;
