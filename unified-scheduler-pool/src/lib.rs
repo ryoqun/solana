@@ -509,7 +509,7 @@ enum SubchanneledPayload<P1, P2> {
 }
 
 type NewTaskPayload = SubchanneledPayload<Task, SchedulingContext>;
-type ExecutedTaskPayload = SubchanneledPayload<Box<ExecutedTask>, ()>;
+type RetiredTaskPayload = SubchanneledPayload<Box<ExecutedTask>, ()>;
 
 // A tiny generic message type to synchronize multiple threads everytime some contextual data needs
 // to be switched (ie. SchedulingContext), just using a single communication channel.
@@ -983,7 +983,7 @@ where
             unbounded::<Box<ExecutedTask>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             unbounded::<Box<ExecutedTask>>();
-        let (executed_task_sender, executed_task_receiver) = unbounded::<ExecutedTaskPayload>();
+        let (retired_task_sender, retired_task_receiver) = unbounded::<RetiredTaskPayload>();
         let (accumulated_result_sender, accumulated_result_receiver) =
             unbounded::<Option<ResultWithTimings>>();
 
@@ -1132,7 +1132,7 @@ where
                                     return Some(executed_task.result_with_timings);
                                 } else {
                                     state_machine.deschedule_task(&executed_task.task);
-                                    executed_task_sender.send_buffered(ExecutedTaskPayload::Payload(executed_task)).unwrap();
+                                    retired_task_sender.send_buffered(RetiredTaskPayload::Payload(executed_task)).unwrap();
                                 }
                                 "step"
                             },
@@ -1159,8 +1159,8 @@ where
                                         blocked_task_sender
                                             .send_chained_channel(context, handler_count)
                                             .unwrap();
-                                        executed_task_sender
-                                            .send(ExecutedTaskPayload::OpenSubchannel(()))
+                                        retired_task_sender
+                                            .send(RetiredTaskPayload::OpenSubchannel(()))
                                             .unwrap();
                                         "S:started"
                                     }
@@ -1194,7 +1194,7 @@ where
                                     return Some(executed_task.result_with_timings);
                                 } else {
                                     state_machine.deschedule_task(&executed_task.task);
-                                    executed_task_sender.send_buffered(ExecutedTaskPayload::Payload(executed_task)).unwrap();
+                                    retired_task_sender.send_buffered(RetiredTaskPayload::Payload(executed_task)).unwrap();
                                 }
                                 "step"
                             },
@@ -1211,8 +1211,8 @@ where
                         log_scheduler!("S:ended");
                         state_machine.reinitialize();
                         log_interval = LogInterval::default();
-                        executed_task_sender
-                            .send(ExecutedTaskPayload::CloseSubchannel)
+                        retired_task_sender
+                            .send(RetiredTaskPayload::CloseSubchannel)
                             .unwrap();
                         session_result_sender
                             .send(Some(
@@ -1232,8 +1232,8 @@ where
                 let result_with_timings = if session_ending {
                     None
                 } else {
-                    executed_task_sender
-                        .send(ExecutedTaskPayload::CloseSubchannel)
+                    retired_task_sender
+                        .send(RetiredTaskPayload::CloseSubchannel)
                         .unwrap();
                     accumulated_result_receiver.recv().unwrap()
                 };
@@ -1305,18 +1305,18 @@ where
 
         let accumulator_main_loop = || {
             move || 'outer: loop {
-                match executed_task_receiver.recv_timeout(Duration::from_millis(40)) {
-                    Ok(ExecutedTaskPayload::Payload(executed_task)) => {
+                match retired_task_receiver.recv_timeout(Duration::from_millis(40)) {
+                    Ok(RetiredTaskPayload::Payload(executed_task)) => {
                         let result_with_timings = result_with_timings.as_mut().unwrap();
                         Self::accumulate_result_with_timings(result_with_timings, executed_task);
                     }
-                    Ok(ExecutedTaskPayload::OpenSubchannel(())) => {
+                    Ok(RetiredTaskPayload::OpenSubchannel(())) => {
                         assert_matches!(
                             result_with_timings.replace(initialized_result_with_timings()),
                             None
                         );
                     }
-                    Ok(ExecutedTaskPayload::CloseSubchannel) => {
+                    Ok(RetiredTaskPayload::CloseSubchannel) => {
                         if accumulated_result_sender
                             .send(result_with_timings.take())
                             .is_err()
