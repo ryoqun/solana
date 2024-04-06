@@ -1,4 +1,3 @@
-#![cfg(feature = "dummy")]
 #![allow(clippy::arithmetic_side_effects)]
 
 #[global_allocator]
@@ -407,21 +406,21 @@ fn bench_schedule_task_conflicting_hot(account_count: usize, task_count: usize) 
     let mut scheduler =
         unsafe { SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling() };
 
-    let mut pages: std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue> =
+    let mut usage_queues: std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue> =
         std::collections::HashMap::new();
     let task = SchedulingStateMachine::create_task(tx0.clone(), 0, &mut |address| {
-        pages.entry(address).or_default().clone()
+        usage_queues.entry(address).or_default().clone()
     });
     scheduler.schedule_task(task).unwrap();
     for i in 1..=task_count {
         let task = SchedulingStateMachine::create_task(tx0.clone(), i, &mut |address| {
-            pages.entry(address).or_default().clone()
+            usage_queues.entry(address).or_default().clone()
         });
         assert_matches!(scheduler.schedule_task(task), None);
     }
 
     let task = SchedulingStateMachine::create_task(tx0.clone(), task_count + 1, &mut |address| {
-        pages.entry(address).or_default().clone()
+        usage_queues.entry(address).or_default().clone()
     });
     let task2 = task.clone();
 
@@ -505,13 +504,13 @@ fn bench_schedule_unblocked_task(account_count: usize) {
     //panic!("{:?}", txn);
     //assert_eq!(wire_txn.len(), 3);
     let tx0 = SanitizedTransaction::from_transaction_for_tests(txn);
-    let mut pages: std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue> =
+    let mut usage_queues: std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue> =
         std::collections::HashMap::new();
     let task = SchedulingStateMachine::create_task(tx0.clone(), 0, &mut |address| {
-        pages.entry(address).or_default().clone()
+        usage_queues.entry(address).or_default().clone()
     });
     let task2 = SchedulingStateMachine::create_task(tx0, 1, &mut |address| {
-        pages.entry(address).or_default().clone()
+        usage_queues.entry(address).or_default().clone()
     });
     let mut scheduler =
         unsafe { SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling() };
@@ -557,10 +556,10 @@ fn bench_end_to_end_worst(account_count: usize) {
     //panic!("{:?}", txn);
     //assert_eq!(wire_txn.len(), 3);
     let tx0 = SanitizedTransaction::from_transaction_for_tests(txn);
-    let mut pages: std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue> =
+    let mut usage_queues: std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue> =
         std::collections::HashMap::new();
     let task = SchedulingStateMachine::create_task(tx0.clone(), 0, &mut |address| {
-        pages.entry(address).or_default().clone()
+        usage_queues.entry(address).or_default().clone()
     });
     let mut scheduler =
         unsafe { SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling() };
@@ -586,7 +585,7 @@ fn bench_end_to_end_worst(account_count: usize) {
         //assert_eq!(wire_txn.len(), 3);
         let tx0 = SanitizedTransaction::from_transaction_for_tests(txn);
         let task2 = SchedulingStateMachine::create_task(tx0, i, &mut |address| {
-            pages.entry(address).or_default().clone()
+            usage_queues.entry(address).or_default().clone()
         });
         toggle_collect();
         let scheduled_task = scheduler.schedule_task(task2.clone());
