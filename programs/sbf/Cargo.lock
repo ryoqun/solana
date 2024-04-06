@@ -6613,6 +6613,7 @@ dependencies = [
  "solana-sdk",
  "solana-unified-scheduler-logic",
  "solana-vote",
+ "tikv-jemallocator",
 ]
 
 [[package]]
