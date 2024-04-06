@@ -1120,6 +1120,7 @@ where
                         let state_change = select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let executed_task = executed_task.unwrap();
+
                                 if executed_task.is_err() {
                                     log_scheduler!("S+T:aborted");
                                     // MUST: clear the usage queue loader before reusing this scheduler
@@ -1282,11 +1283,10 @@ where
                             }
                         },
                     };
-                    let bank = blocked_task_receiver.context().bank();
                     let mut task = ExecutedTask::new_boxed(task, thx, bank.slot());
                     Self::execute_task_with_handler(
                         &handler,
-                        bank,
+                        blocked_task_receiver.context().bank(),
                         &mut task,
                         &pool.handler_context,
                         send_metrics,
