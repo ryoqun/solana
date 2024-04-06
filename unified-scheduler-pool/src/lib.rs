@@ -88,7 +88,7 @@ pub struct SchedulerPool<
     weak_self: Weak<Self>,
     next_scheduler_id: AtomicSchedulerId,
     // prune schedulers, stop idling scheduler's threads, sanity check on the
-    // address book after scheduler is returned.
+    // usage queue loader after scheduler is returned.
     cleaner_sender: Sender<Weak<RwLock<ThreadManager<S, TH, SEA>>>>,
     cleaner_exit_signal_sender: Sender<()>,
     cleaner_thread: Mutex<Option<JoinHandle<()>>>,
@@ -1122,7 +1122,7 @@ where
                                 let executed_task = executed_task.unwrap();
                                 if executed_task.is_err() {
                                     log_scheduler!("S+T:aborted");
-                                    // MUST: clear the addressbook before reusing this scheduler
+                                    // MUST: clear the usage queue loader before reusing this scheduler
                                     // ...
                                     session_result_sender.send(None).unwrap();
                                     // be explicit about specifically dropping this receiver
@@ -1574,23 +1574,23 @@ where
 {
     fn retire_if_stale(&mut self) -> bool {
         // reap threads after 10mins of inactivity for any pooled (idle) schedulers. The primary
-        // scheduler is special-cased to empty its address book instead, for easier monitoring to
-        // accumulate os-level thread metrics. The duration is chosen based on the rough estimation
-        // from the frequency of short-lived forks on the mainnet-beta, with consideration of some
-        // increased forking at epoch boundaries.
+        // scheduler is special-cased to empty its usage queue loader book instead, for easier
+        // monitoring to accumulate os-level thread metrics. The duration is chosen based on the
+        // rough estimation from the frequency of short-lived forks on the mainnet-beta, with
+        // consideration of some increased forking at epoch boundaries.
         const IDLE_DURATION_FOR_LAZY_THREAD_RECLAIM: Duration = Duration::from_secs(600);
 
         const BITS_PER_HEX_DIGIT: usize = 4;
         let usage_queue_count = self.usage_queue_loader.usage_queue_count();
         if usage_queue_count < 200_000 {
             info!(
-                "[sch_{:0width$x}]: cleaner: address book size: {usage_queue_count}...",
+                "[sch_{:0width$x}]: cleaner: usage queue loader book size: {usage_queue_count}...",
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );
         } else if self.thread_manager.read().unwrap().is_primary() {
             info!(
-                "[sch_{:0width$x}]: cleaner: too big address book size: {usage_queue_count}...; emptying the primary scheduler",
+                "[sch_{:0width$x}]: cleaner: too big usage queue loader book size: {usage_queue_count}...; emptying the primary scheduler",
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );
@@ -1598,7 +1598,7 @@ where
             return true;
         } else {
             info!(
-                "[sch_{:0width$x}]: cleaner: too big address book size: {usage_queue_count}...; retiring scheduler",
+                "[sch_{:0width$x}]: cleaner: too big usage queue loader book size: {usage_queue_count}...; retiring scheduler",
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );
