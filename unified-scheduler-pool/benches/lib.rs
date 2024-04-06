@@ -126,20 +126,21 @@ fn do_bench_tx_throughput(label: &str, bencher: &mut Criterion) {
     use std::sync::atomic::AtomicUsize;
     let i = Arc::new(AtomicUsize::default());
     use std::sync::Mutex;
-    let pages: Arc<Mutex<std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue>>> =
-        Arc::new(Mutex::new(std::collections::HashMap::new()));
+    let usage_queues: Arc<
+        Mutex<std::collections::HashMap<solana_sdk::pubkey::Pubkey, UsageQueue>>,
+    > = Arc::new(Mutex::new(std::collections::HashMap::new()));
     /*
     for _ in 0..5 {
         std::thread::Builder::new()
             .name("solScGen".to_owned())
             .spawn({
-                let pages = pages.clone();
+                let usage_queues = usage_queues.clone();
                 let i = i.clone();
                 let tx1 = tx0.clone();
                 let s = s.clone();
                 move || loop {
                     let tasks = std::iter::repeat_with(|| SchedulingStateMachine::create_task(tx1.clone(), i.fetch_add(1, std::sync::atomic::Ordering::Relaxed), &mut |address| {
-        pages.lock().unwrap().entry(address).or_default().clone()
+        usage_queues.lock().unwrap().entry(address).or_default().clone()
     })).take(100).collect::<Vec<_>>();
                     if s.send(tasks).is_err() {
                         break;
@@ -161,7 +162,14 @@ fn do_bench_tx_throughput(label: &str, bencher: &mut Criterion) {
         SchedulingStateMachine::create_task(
             tx0.clone(),
             i.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-            &mut |address| pages.lock().unwrap().entry(address).or_default().clone(),
+            &mut |address| {
+                usage_queues
+                    .lock()
+                    .unwrap()
+                    .entry(address)
+                    .or_default()
+                    .clone()
+            },
         )
     })
     .take(100)

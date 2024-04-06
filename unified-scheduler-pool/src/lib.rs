@@ -648,7 +648,7 @@ impl UsageQueueLoader {
         self.usage_queues.entry(address).or_default().clone()
     }
 
-    pub fn page_count(&self) -> usize {
+    pub fn usage_queue_count(&self) -> usize {
         self.usage_queues.len()
     }
 
@@ -1581,16 +1581,16 @@ where
         const IDLE_DURATION_FOR_LAZY_THREAD_RECLAIM: Duration = Duration::from_secs(600);
 
         const BITS_PER_HEX_DIGIT: usize = 4;
-        let page_count = self.usage_queue_loader.page_count();
-        if page_count < 200_000 {
+        let usage_queue_count = self.usage_queue_loader.usage_queue_count();
+        if usage_queue_count < 200_000 {
             info!(
-                "[sch_{:0width$x}]: cleaner: address book size: {page_count}...",
+                "[sch_{:0width$x}]: cleaner: address book size: {usage_queue_count}...",
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );
         } else if self.thread_manager.read().unwrap().is_primary() {
             info!(
-                "[sch_{:0width$x}]: cleaner: too big address book size: {page_count}...; emptying the primary scheduler",
+                "[sch_{:0width$x}]: cleaner: too big address book size: {usage_queue_count}...; emptying the primary scheduler",
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );
@@ -1598,7 +1598,7 @@ where
             return true;
         } else {
             info!(
-                "[sch_{:0width$x}]: cleaner: too big address book size: {page_count}...; retiring scheduler",
+                "[sch_{:0width$x}]: cleaner: too big address book size: {usage_queue_count}...; retiring scheduler",
                 self.id(),
                 width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
             );

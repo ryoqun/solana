@@ -1,4 +1,3 @@
-#![cfg(feature = "dummy")]
 #![allow(clippy::arithmetic_side_effects)]
 
 #[global_allocator]
