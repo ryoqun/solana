@@ -34,7 +34,6 @@ procfs = { workspace = true }
 [dev-dependencies]
 bincode = { workspace = true }
 criterion = "0.5.1"
-jemallocator = { workspace = true }
 log = { workspace = true }
 rand = { workspace = true }
 solana-logger = { workspace = true }
@@ -42,6 +41,9 @@ solana-nohash-hasher = { workspace = true }
 solana-runtime = { workspace = true, features = ["dev-context-only-utils"] }
 # See order-crates-for-publishing.py for using this unusual `path = "."`
 solana-unified-scheduler-pool = { path = ".", features = ["dev-context-only-utils"] }
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+jemallocator = { workspace = true }
 
 [[bench]]
 name = "lib"

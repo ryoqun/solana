@@ -2,6 +2,7 @@
 #![feature(test)]
 #![allow(clippy::arithmetic_side_effects)]
 
+#[cfg(not(target_env = "msvc"))]
 #[global_allocator]
 static GLOBAL: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
