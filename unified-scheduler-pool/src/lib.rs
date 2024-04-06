@@ -979,7 +979,8 @@ where
         let (mut blocked_task_sender, blocked_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
         let (idle_task_sender, idle_task_receiver) = unbounded::<Task>();
-        let (finished_task_sender, finished_task_receiver) = unbounded::<Box<ExecutedTask>>();
+        let (finished_blocked_task_sender, finished_blocked_task_receiver) =
+            unbounded::<Box<ExecutedTask>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             unbounded::<Box<ExecutedTask>>();
         let (executed_task_sender, executed_task_receiver) = unbounded::<ExecutedTaskPayload>();
@@ -1075,7 +1076,7 @@ where
                             state_machine.unblocked_task_count(),
                             new_task_receiver.len(),
                             blocked_task_sender.len(), idle_task_sender.len(),
-                            finished_task_receiver.len(), finished_idle_task_receiver.len(),
+                            finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
                             width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
                         );
                     };
@@ -1117,7 +1118,7 @@ where
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
                         let state_change = select_biased! {
-                            recv(finished_task_receiver) -> executed_task => {
+                            recv(finished_blocked_task_receiver) -> executed_task => {
                                 let executed_task = executed_task.unwrap();
                                 if executed_task.is_err() {
                                     log_scheduler!("S+T:aborted");
@@ -1249,7 +1250,7 @@ where
             let handler = self.handler.clone();
             let mut blocked_task_receiver = blocked_task_receiver.clone();
             let mut idle_task_receiver = idle_task_receiver.clone();
-            let finished_task_sender = finished_task_sender.clone();
+            let finished_blocked_task_sender = finished_blocked_task_sender.clone();
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
             move || {
@@ -1264,7 +1265,7 @@ where
                             match message {
                                 Ok(message) => {
                                     if let Some(task) = blocked_task_receiver.after_select(message) {
-                                        (task, &finished_task_sender)
+                                        (task, &finished_blocked_task_sender)
                                     } else {
                                         continue;
                                     }
