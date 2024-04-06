@@ -1104,9 +1104,6 @@ where
                         let dummy_unblocked_task_receiver =
                             dummy_receiver(state_machine.has_unblocked_task());
 
-                        // (Assume this is biased; i.e. select_biased! in this crossbeam pr:
-                        // https://github.com/rust-lang/futures-rs/pull/1976)
-                        //
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
                         // _not-crossbeam-channel_ event sources, precisely at the specified
