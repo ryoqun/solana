@@ -1120,6 +1120,7 @@ where
                         let state_change = select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let executed_task = executed_task.unwrap();
+
                                 if executed_task.is_err() {
                                     log_scheduler!("S+T:aborted");
                                     // MUST: clear the usage queue loader before reusing this scheduler
@@ -1184,6 +1185,7 @@ where
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
                                 let executed_task = executed_task.unwrap();
+
                                 if executed_task.is_err() {
                                     log_scheduler!("S+T:aborted");
                                     session_result_sender.send(None).unwrap();
