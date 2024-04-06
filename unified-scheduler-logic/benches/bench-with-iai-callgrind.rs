@@ -74,7 +74,7 @@ use {
         signer::keypair::Keypair,
         transaction::{SanitizedTransaction, Transaction},
     },
-    solana_unified_scheduler_logic::{Page, SchedulingStateMachine},
+    solana_unified_scheduler_logic::{SchedulingStateMachine, UsageQueue},
 };
 
 #[library_benchmark]
