@@ -1148,6 +1148,7 @@ where
                             },
                             recv(new_task_receiver) -> message => {
                                 assert!(message.is_err() || (!session_ending && !thread_suspending));
+
                                 match message {
                                     Ok(NewTaskPayload::Payload(task)) => {
                                         if let Some(task) = state_machine.schedule_task(task) {
