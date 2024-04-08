@@ -1132,6 +1132,91 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_scheduler_schedule_execution_blocked() {
+        solana_logger::setup();
+
+        const STALLED_TRANSACTION_INDEX: usize = 0;
+        const BLOCKED_TRANSACTION_INDEX: usize = 1;
+        static LOCK_TO_STALL: Mutex<()> = Mutex::new(());
+
+        #[derive(Debug)]
+        struct StallingHandler;
+        impl TaskHandler for StallingHandler {
+            fn handle(
+                result: &mut Result<()>,
+                timings: &mut ExecuteTimings,
+                bank: &Arc<Bank>,
+                transaction: &SanitizedTransaction,
+                index: usize,
+                handler_context: &HandlerContext,
+            ) {
+                match index {
+                    STALLED_TRANSACTION_INDEX => *LOCK_TO_STALL.lock().unwrap(),
+                    BLOCKED_TRANSACTION_INDEX => {}
+                    _ => unreachable!(),
+                };
+                DefaultTaskHandler::handle(
+                    result,
+                    timings,
+                    bank,
+                    transaction,
+                    index,
+                    handler_context,
+                );
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        // tx0 and tx1 is definitely conflicting to write-lock the mint address
+        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+        let tx1 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = setup_dummy_fork_graph(bank);
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<StallingHandler>, _>::new_dyn(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context = SchedulingContext::new(bank.clone());
+
+        assert_eq!(bank.transaction_count(), 0);
+        let scheduler = pool.take_scheduler(context);
+
+        // Stall handling tx0 and tx1
+        let lock_to_stall = LOCK_TO_STALL.lock().unwrap();
+        scheduler.schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX));
+        scheduler.schedule_execution(&(tx1, BLOCKED_TRANSACTION_INDEX));
+
+        // Wait a bit for the scheduler thread to decide to block tx1
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // Resume handling by unlocking LOCK_TO_STALL
+        drop(lock_to_stall);
+        let bank = BankWithScheduler::new(bank, Some(scheduler));
+        assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
+        assert_eq!(bank.transaction_count(), 2);
+    }
+
     #[derive(Debug)]
     struct AsyncScheduler<const TRIGGER_RACE_CONDITION: bool>(
         Mutex<ResultWithTimings>,
