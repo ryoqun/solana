@@ -530,6 +530,58 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     }
 
     fn start_threads(&mut self, context: &SchedulingContext) {
+        // Firstly, setup bi-directional messaging between the scheduler and handlers to pass
+        // around tasks, by creating 2 channels (one for to-be-handled tasks from the scheduler to
+        // the handlers and the other for finished tasks from the handlers to the scheduler).
+        // Furthermore, this pair of channels is duplicated to work as a primitive 2-level priority
+        // queue, totalling 4 channels.
+        //
+        // This quasi-priority-queue arrangement is desired as an optimization to prioritize
+        // blocked tasks.
+        //
+        // As a quick background, SchedulingStateMachine doesn't throttle runnable tasks at all.
+        // Thus, it's likely for to-be-handled tasks to be stalled for extended duration due to
+        // excessive buffering (commonly known as buffer bloat). Normally, these buffering isn't
+        // problematic and actually intentional to fully saturate all the handler threads.
+        //
+        // However, there's one caveat: task dependencies. It can be hinted with tasks being
+        // blocked, that there could be more similarly-blocked tasks in the future. Empirically,
+        // clearing these linearized long run of blocking tasks out of the buffer is delaying bank
+        // freezing while only using 1 handler thread or two near the end of slot, deteriorating
+        // the concurrency.
+        //
+        // To alleviate the situation, blocked tasks are exchanged via independent communication
+        // pathway as a heuristic. Without prioritization of these tasks, progression of clearing
+        // them would be severely hampered due to interleaved not-blocked tasks (called _idle_
+        // here; typically, voting transactions) in the single buffer.
+        //
+        // Concurrent priority queue isn't used to avoid penalized throughput due to higher
+        // overhead than crossbeam channel, even considering the doubled processing of the
+        // crossbeam channel. Fortunately, just 2-level prioritization is enough. Also, sticking to
+        // crossbeam was easy to implement and there was no popular and promising crate for
+        // concurrent priority queue as of writing.
+        //
+        // It's generally harmless for blocked task buffer to be flooded, stalling the idle tasks
+        // completely. Firstly, it's unlikely without malice, considering all blocked task must
+        // somehow be independently blocked for each isolated linearized runs because all buffered
+        // blocked and idle tasks must not conflicting with each other. Furthermore, handler
+        // threads would still be saturated to maximum even under such block-verification
+        // situation, meaning no remotely-controlled performance degradation.
+        //
+        // Overall, while this is merely a heuristic, this is effective and adaptive.
+        //
+        // One known caveat, though, is that this heuristic is employed under sub-optimal settings,
+        // considering scheduling is done in real-time. Namely, prioritization enforcement isn't
+        // immediate, where the first of a long run of tasks is buried in the middle of a large
+        // idle task buffer. Prioritization of such a run will be realized after the first task is
+        // handled with the priority of an idle task. To overcome this, some kind of
+        // re-prioritization or look-ahead mechanism would be needed. However, both isn't
+        // implemented. The former is due to complex implementation and the later due to delayed
+        // (NOT real-time) processing.
+        //
+        // Finally, note that this optimization should be combined with biased select (i.e.
+        // `select_biased!`), which isn't for now... However, consistent performance imporvement is
+        // observed just with this priority queuing alone.
         let (mut blocked_task_sender, blocked_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
         let (idle_task_sender, idle_task_receiver) = unbounded::<Task>();
