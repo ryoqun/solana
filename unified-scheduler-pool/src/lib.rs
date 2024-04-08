@@ -541,46 +541,49 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         //
         // As a quick background, SchedulingStateMachine doesn't throttle runnable tasks at all.
         // Thus, it's likely for to-be-handled tasks to be stalled for extended duration due to
-        // excessive buffering (commonly known as buffer bloat). Normally, these buffering isn't
+        // excessive buffering (commonly known as buffer bloat). Normally, this buffering isn't
         // problematic and actually intentional to fully saturate all the handler threads.
         //
         // However, there's one caveat: task dependencies. It can be hinted with tasks being
         // blocked, that there could be more similarly-blocked tasks in the future. Empirically,
-        // clearing these linearized long run of blocking tasks out of the buffer is delaying bank
+        // clearing these linearized long runs of blocking tasks out of the buffer is delaying bank
         // freezing while only using 1 handler thread or two near the end of slot, deteriorating
-        // the concurrency.
+        // the overall concurrency.
         //
         // To alleviate the situation, blocked tasks are exchanged via independent communication
-        // pathway as a heuristic. Without prioritization of these tasks, progression of clearing
-        // them would be severely hampered due to interleaved not-blocked tasks (called _idle_
-        // here; typically, voting transactions) in the single buffer.
+        // pathway as a heuristic for expedite processing. Without prioritization of these tasks,
+        // progression of clearing these runs would be severely hampered due to interleaved
+        // not-blocked tasks (called _idle_ here; typically, voting transactions) in the single
+        // buffer.
         //
         // Concurrent priority queue isn't used to avoid penalized throughput due to higher
         // overhead than crossbeam channel, even considering the doubled processing of the
         // crossbeam channel. Fortunately, just 2-level prioritization is enough. Also, sticking to
-        // crossbeam was easy to implement and there was no popular and promising crate for
-        // concurrent priority queue as of writing.
+        // crossbeam was convenient and there was no popular and promising crate for concurrent
+        // priority queue as of writing.
         //
-        // It's generally harmless for blocked task buffer to be flooded, stalling the idle tasks
-        // completely. Firstly, it's unlikely without malice, considering all blocked task must
-        // somehow be independently blocked for each isolated linearized runs because all buffered
-        // blocked and idle tasks must not conflicting with each other. Furthermore, handler
-        // threads would still be saturated to maximum even under such block-verification
-        // situation, meaning no remotely-controlled performance degradation.
+        // It's generally harmless for the blocked task buffer to be flooded, stalling the idle
+        // tasks completely. Firstly, it's unlikely without malice, considering all blocked tasks
+        // must have independently been blocked for each isolated linearized runs. That's because
+        // all to-be-handled tasks of the blocked and idle buffers must not be conflicting with
+        // each other by definition. Furthermore, handler threads would still be saturated to
+        // maximum even under such a block-verification situation, meaning no remotely-controlled
+        // performance degradation.
         //
-        // Overall, while this is merely a heuristic, this is effective and adaptive.
+        // Overall, while this is merely a heuristic, it's effective and adaptive while not
+        // vulnerable.
         //
-        // One known caveat, though, is that this heuristic is employed under sub-optimal settings,
-        // considering scheduling is done in real-time. Namely, prioritization enforcement isn't
-        // immediate, where the first of a long run of tasks is buried in the middle of a large
-        // idle task buffer. Prioritization of such a run will be realized after the first task is
-        // handled with the priority of an idle task. To overcome this, some kind of
-        // re-prioritization or look-ahead mechanism would be needed. However, both isn't
-        // implemented. The former is due to complex implementation and the later due to delayed
-        // (NOT real-time) processing.
+        // One known caveat, though, is that this heuristic is employed under a sub-optimal
+        // setting, considering scheduling is done in real-time. Namely, prioritization enforcement
+        // isn't immediate, in a sense that the first task of a long run is buried in the middle of
+        // a large idle task buffer. Prioritization of such a run will be realized only after the
+        // first task is handled with the priority of an idle task. To overcome this, some kind of
+        // re-prioritization or look-ahead scheduling mechanism would be needed. However, both
+        // isn't implemented. The former is due to complex implementation and the later is due to
+        // delayed (NOT real-time) processing, which is against the unified scheduler design goal.
         //
         // Finally, note that this optimization should be combined with biased select (i.e.
-        // `select_biased!`), which isn't for now... However, consistent performance imporvement is
+        // `select_biased!`), which isn't for now... However, consistent performance improvement is
         // observed just with this priority queuing alone.
         let (mut blocked_task_sender, blocked_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
