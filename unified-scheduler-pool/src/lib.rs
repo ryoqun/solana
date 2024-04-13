@@ -571,7 +571,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // performance degradation.
         //
         // Overall, while this is merely a heuristic, it's effective and adaptive while not
-        // vulnerable.
+        // vulnerable, merely reusing existing information without any additional runtime cost.
         //
         // One known caveat, though, is that this heuristic is employed under a sub-optimal
         // setting, considering scheduling is done in real-time. Namely, prioritization enforcement
@@ -585,6 +585,30 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // Finally, note that this optimization should be combined with biased select (i.e.
         // `select_biased!`), which isn't for now... However, consistent performance improvement is
         // observed just with this priority queuing alone.
+        //
+        // Alternatively, more faithful prioritization can be realized by checking blocking
+        // statuses of all addresses immediately before sending to the handlers. This would prevent
+        // false negatives of the heuristics approach (i.e. the last task of a run doesn't need to
+        // be handled with the higher priority). Note that this is the only improvement, compared
+        // to the heuristics. That's because this underlying information asymmetry between the 2
+        // approaches doesn't exist for all other cases, assuming no look-ahead: idle tasks are
+        // always unblocked by definition, and other blocked tasks should always be calculated as
+        // blocked by the very existence of the last blocked task.
+        //
+        // The faithful approach incurs a considerable overhead: O(N), where N is the number of
+        // locked addresses in a task, adding to the current bare-minimum complexity of O(2*N) for
+        // both scheduling and descheduling. This means 1.5x increase. Furthermore, this doesn't
+        // nicely work in practice with a real-time streamed scheduler. That's because these
+        // linearized runs could be intermittent in the view with little or no look-back, albeit
+        // actually forming a far more longer runs in longer time span. These access patterns are
+        // very common, considering existence of well-known hot accounts.
+        //
+        // Thus, intentionally allowing these false-positives by the heuristic approach is actually
+        // helping to extend the logical prioritization session for the invisible longer runs, as
+        // long as the last task of the current run is being handled by the handlers, hoping yet
+        // another blocking new task is arriving to finalize the tentatively extended
+        // prioritization further. Consequently, this also contributes to alleviate the known
+        // heuristic's caveat for the first task of linearized runs, which is described above.
         let (mut blocked_task_sender, blocked_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
         let (idle_task_sender, idle_task_receiver) = unbounded::<Task>();
