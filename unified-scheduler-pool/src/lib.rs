@@ -15,7 +15,7 @@
 
 use {
     assert_matches::assert_matches,
-    crossbeam_channel::{never, select, unbounded, Receiver, RecvError, SendError, Sender},
+    crossbeam_channel::{self, never, select, Receiver, RecvError, SendError, Sender},
     dashmap::DashMap,
     derivative::Derivative,
     log::*,
@@ -415,7 +415,7 @@ impl UsageQueueLoader {
 // https://github.com/crossbeam-rs/crossbeam/pull/1047)
 fn disconnected<T>() -> Receiver<T> {
     // drop the sender residing at .0, returning an always-disconnected receiver.
-    unbounded().1
+    crossbeam_channel::unbounded().1
 }
 
 fn initialized_result_with_timings() -> ResultWithTimings {
@@ -466,8 +466,8 @@ impl<TH: TaskHandler> PooledScheduler<TH> {
 
 impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     fn new(pool: Arc<SchedulerPool<S, TH>>) -> Self {
-        let (new_task_sender, new_task_receiver) = unbounded();
-        let (session_result_sender, session_result_receiver) = unbounded();
+        let (new_task_sender, new_task_receiver) = crossbeam_channel::unbounded();
+        let (session_result_sender, session_result_receiver) = crossbeam_channel::unbounded();
         let handler_count = pool.handler_count;
 
         Self {
@@ -611,11 +611,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // heuristic's caveat for the first task of linearized runs, which is described above.
         let (mut blocked_task_sender, blocked_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
-        let (idle_task_sender, idle_task_receiver) = unbounded::<Task>();
+        let (idle_task_sender, idle_task_receiver) = crossbeam_channel::unbounded::<Task>();
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
-            unbounded::<Box<ExecutedTask>>();
+            crossbeam_channel::unbounded::<Box<ExecutedTask>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
-            unbounded::<Box<ExecutedTask>>();
+            crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
         let mut result_with_timings = self.session_result_with_timings.take();
 
