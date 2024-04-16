@@ -294,30 +294,42 @@ type NewTaskPayload = SubchanneledPayload<Task, SchedulingContext>;
 // Overall, this greatly simplifies the code, reduces CAS/syscall overhead per messaging to the
 // minimum at the cost of a single channel recreation per switching. Needless to say, such an
 // allocation can be amortized to be negligible.
+//
+// Lastly, there's an auxiliary channel to realize a 2-level priority queue. See comment before
+// runnable_task_sender.
 mod chained_channel {
     use super::*;
 
     // hide variants by putting this inside newtype
     enum ChainedChannelPrivate<P, C> {
         Payload(P),
-        ContextAndChannel(C, Receiver<ChainedChannel<P, C>>),
+        ContextAndChannels(C, Receiver<ChainedChannel<P, C>>, Receiver<P>),
     }
 
     pub(super) struct ChainedChannel<P, C>(ChainedChannelPrivate<P, C>);
 
     impl<P, C> ChainedChannel<P, C> {
-        fn chain_to_new_channel(context: C, receiver: Receiver<Self>) -> Self {
-            Self(ChainedChannelPrivate::ContextAndChannel(context, receiver))
+        fn chain_to_new_channel(
+            context: C,
+            receiver: Receiver<Self>,
+            aux_receiver: Receiver<P>,
+        ) -> Self {
+            Self(ChainedChannelPrivate::ContextAndChannels(
+                context,
+                receiver,
+                aux_receiver,
+            ))
         }
     }
 
     pub(super) struct ChainedChannelSender<P, C> {
         sender: Sender<ChainedChannel<P, C>>,
+        aux_sender: Sender<P>,
     }
 
     impl<P, C: Clone> ChainedChannelSender<P, C> {
-        fn new(sender: Sender<ChainedChannel<P, C>>) -> Self {
-            Self { sender }
+        fn new(sender: Sender<ChainedChannel<P, C>>, aux_sender: Sender<P>) -> Self {
+            Self { sender, aux_sender }
         }
 
         pub(super) fn send_payload(
@@ -328,19 +340,26 @@ mod chained_channel {
                 .send(ChainedChannel(ChainedChannelPrivate::Payload(payload)))
         }
 
+        pub(super) fn send_aux_payload(&self, payload: P) -> std::result::Result<(), SendError<P>> {
+            self.aux_sender.send(payload)
+        }
+
         pub(super) fn send_chained_channel(
             &mut self,
             context: C,
             count: usize,
         ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
             let (chained_sender, chained_receiver) = crossbeam_channel::unbounded();
+            let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::unbounded();
             for _ in 0..count {
                 self.sender.send(ChainedChannel::chain_to_new_channel(
                     context.clone(),
                     chained_receiver.clone(),
+                    chained_aux_receiver.clone(),
                 ))?
             }
             self.sender = chained_sender;
+            self.aux_sender = chained_aux_sender;
             Ok(())
         }
     }
@@ -351,13 +370,19 @@ mod chained_channel {
     #[derivative(Clone(bound = "C: Clone"))]
     pub(super) struct ChainedChannelReceiver<P, C: Clone> {
         receiver: Receiver<ChainedChannel<P, C>>,
+        aux_receiver: Receiver<P>,
         context: C,
     }
 
     impl<P, C: Clone> ChainedChannelReceiver<P, C> {
-        fn new(receiver: Receiver<ChainedChannel<P, C>>, initial_context: C) -> Self {
+        fn new(
+            receiver: Receiver<ChainedChannel<P, C>>,
+            aux_receiver: Receiver<P>,
+            initial_context: C,
+        ) -> Self {
             Self {
                 receiver,
+                aux_receiver,
                 context: initial_context,
             }
         }
@@ -370,12 +395,17 @@ mod chained_channel {
             &self.receiver
         }
 
+        pub(super) fn aux_for_select(&self) -> &Receiver<P> {
+            &self.aux_receiver
+        }
+
         pub(super) fn after_select(&mut self, message: ChainedChannel<P, C>) -> Option<P> {
             match message.0 {
                 ChainedChannelPrivate::Payload(payload) => Some(payload),
-                ChainedChannelPrivate::ContextAndChannel(context, channel) => {
+                ChainedChannelPrivate::ContextAndChannels(context, channel, idle_channel) => {
                     self.context = context;
                     self.receiver = channel;
+                    self.aux_receiver = idle_channel;
                     None
                 }
             }
@@ -386,9 +416,10 @@ mod chained_channel {
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
         let (sender, receiver) = crossbeam_channel::unbounded();
+        let (aux_sender, aux_receiver) = crossbeam_channel::unbounded();
         (
-            ChainedChannelSender::new(sender),
-            ChainedChannelReceiver::new(receiver, initial_context),
+            ChainedChannelSender::new(sender, aux_sender),
+            ChainedChannelReceiver::new(receiver, aux_receiver, initial_context),
         )
     }
 }
@@ -534,7 +565,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // around tasks, by creating 2 channels (one for to-be-handled tasks from the scheduler to
         // the handlers and the other for finished tasks from the handlers to the scheduler).
         // Furthermore, this pair of channels is duplicated to work as a primitive 2-level priority
-        // queue, totalling 4 channels.
+        // queue, totalling 4 channels. Note that the two scheduler-to-handler channels are managed
+        // behind chained_channel to avoid race conditions relating to contexts.
         //
         // This quasi-priority-queue arrangement is desired as an optimization to prioritize
         // blocked tasks.
@@ -609,9 +641,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // another blocking new task is arriving to finalize the tentatively extended
         // prioritization further. Consequently, this also contributes to alleviate the known
         // heuristic's caveat for the first task of linearized runs, which is described above.
-        let (mut blocked_task_sender, blocked_task_receiver) =
+        let (mut runnable_task_sender, runnable_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
-        let (idle_task_sender, idle_task_receiver) = crossbeam_channel::unbounded::<Task>();
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
@@ -722,7 +753,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let task = state_machine
                                     .schedule_next_unblocked_task()
                                     .expect("unblocked task");
-                                blocked_task_sender.send_payload(task).unwrap();
+                                runnable_task_sender.send_payload(task).unwrap();
                             },
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
@@ -730,12 +761,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 match message.unwrap() {
                                     NewTaskPayload::Payload(task) => {
                                         if let Some(task) = state_machine.schedule_task(task) {
-                                            idle_task_sender.send(task).unwrap();
+                                            runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
                                     }
                                     NewTaskPayload::OpenSubchannel(context) => {
                                         // signal about new SchedulingContext to handler threads
-                                        blocked_task_sender
+                                        runnable_task_sender
                                             .send_chained_channel(context, handler_count)
                                             .unwrap();
                                         assert_matches!(
@@ -777,32 +808,30 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
         let handler_main_loop = || {
             let pool = self.pool.clone();
-            let mut blocked_task_receiver = blocked_task_receiver.clone();
-            let mut idle_task_receiver = idle_task_receiver.clone();
+            let mut runnable_task_receiver = runnable_task_receiver.clone();
             let finished_blocked_task_sender = finished_blocked_task_sender.clone();
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
             move || loop {
                 let (task, sender) = select! {
-                    recv(blocked_task_receiver.for_select()) -> message => {
-                        if let Some(task) = blocked_task_receiver.after_select(message.unwrap()) {
+                    recv(runnable_task_receiver.for_select()) -> message => {
+                        if let Some(task) = runnable_task_receiver.after_select(message.unwrap()) {
                             (task, &finished_blocked_task_sender)
                         } else {
                             continue;
                         }
                     },
-                    recv(idle_task_receiver) -> task => {
+                    recv(runnable_task_receiver.aux_for_select()) -> task => {
                         if let Ok(task) = task {
                             (task, &finished_idle_task_sender)
                         } else {
-                            idle_task_receiver = never();
                             continue;
                         }
                     },
                 };
                 let mut task = ExecutedTask::new_boxed(task);
                 Self::execute_task_with_handler(
-                    blocked_task_receiver.context().bank(),
+                    runnable_task_receiver.context().bank(),
                     &mut task,
                     &pool.handler_context,
                 );
