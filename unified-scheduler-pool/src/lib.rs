@@ -951,7 +951,7 @@ mod tests {
             prioritization_fee_cache::PrioritizationFeeCache,
         },
         solana_sdk::{
-            clock::MAX_PROCESSING_AGE,
+            clock::{Slot, MAX_PROCESSING_AGE},
             pubkey::Pubkey,
             signer::keypair::Keypair,
             system_transaction,
@@ -1294,6 +1294,64 @@ mod tests {
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
         assert_eq!(bank.transaction_count(), 2);
+    }
+
+    #[test]
+    fn test_mismatched_scheduling_context_due_to_race_condition() {
+        solana_logger::setup();
+
+        #[derive(Debug)]
+        struct ContextAndTaskChecker;
+        impl TaskHandler for ContextAndTaskChecker {
+            fn handle(
+                _result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                bank: &Arc<Bank>,
+                _transaction: &SanitizedTransaction,
+                index: usize,
+                _handler_context: &HandlerContext,
+            ) {
+                assert_eq!(bank.slot(), index as Slot);
+            }
+        }
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank0 = setup_dummy_fork_graph(bank);
+        let bank1 = Arc::new(Bank::new_from_parent(
+            bank0.clone(),
+            &Pubkey::default(),
+            bank0.slot().checked_add(1).unwrap(),
+        ));
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<ContextAndTaskChecker>, _>::new(
+            Some(4), // spawn 4 threads
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context0 = &SchedulingContext::new(bank0.clone());
+        let context1 = &SchedulingContext::new(bank1.clone());
+        let tx = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+        let mut scheduler = pool.take_scheduler(context0.clone());
+        for (current_index, next_context) in
+            [(0, context1), (1, context0)].iter().cycle().take(10000)
+        {
+            scheduler.schedule_execution(&(tx, *current_index));
+            scheduler.wait_for_termination(false).1.return_to_pool();
+            scheduler = pool.take_scheduler((*next_context).clone());
+        }
+        scheduler.wait_for_termination(false).1.return_to_pool();
     }
 
     #[derive(Debug)]
