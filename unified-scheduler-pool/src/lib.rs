@@ -643,6 +643,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // heuristic's caveat for the first task of linearized runs, which is described above.
         let (mut runnable_task_sender, runnable_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
+        // Create two handler-to-scheduler channels to prioritize the finishing of blocked tasks,
+        // because it is more likely that a blocked task will have more blocked tasks behind it,
+        // which should be scheduled while minimizing the delay to clear buffered linearized runs
+        // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
