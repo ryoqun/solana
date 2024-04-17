@@ -721,6 +721,19 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
 
                 loop {
+                    if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
+                        // signal about new SchedulingContext to handler threads
+                        runnable_task_sender
+                            .send_chained_channel(context, handler_count)
+                            .unwrap();
+                        assert_matches!(
+                            result_with_timings.replace(initialized_result_with_timings()),
+                            None
+                        );
+                    } else {
+                        unreachable!();
+                    }
+
                     let mut is_finished = false;
                     while !is_finished {
                         // ALL recv selectors are eager-evaluated ALWAYS by current crossbeam impl,
@@ -768,18 +781,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
                                     }
-                                    NewTaskPayload::OpenSubchannel(context) => {
-                                        // signal about new SchedulingContext to handler threads
-                                        runnable_task_sender
-                                            .send_chained_channel(context, handler_count)
-                                            .unwrap();
-                                        assert_matches!(
-                                            result_with_timings.replace(initialized_result_with_timings()),
-                                            None
-                                        );
-                                    }
                                     NewTaskPayload::CloseSubchannel => {
                                         session_ending = true;
+                                    }
+                                    NewTaskPayload::OpenSubchannel(_context) => {
+                                        unreachable!();
                                     }
                                 }
                             },
