@@ -1330,12 +1330,12 @@ mod tests {
     }
 
     #[test]
-    fn test_mismatched_scheduling_context_due_to_race_condition() {
+    fn test_scheduler_mismatched_scheduling_context_race() {
         solana_logger::setup();
 
         #[derive(Debug)]
-        struct ContextAndTaskChecker;
-        impl TaskHandler for ContextAndTaskChecker {
+        struct TaskAndContextChecker;
+        impl TaskHandler for TaskAndContextChecker {
             fn handle(
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -1344,47 +1344,56 @@ mod tests {
                 index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                assert_eq!(bank.slot(), index as Slot);
+                // The task index must always be matched to the slot.
+                assert_eq!(index as Slot, bank.slot());
             }
         }
+
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
             ..
         } = create_genesis_config(10_000);
 
-        let bank = Bank::new_for_tests(&genesis_config);
-        let bank0 = setup_dummy_fork_graph(bank);
+        // Create two banks for two contexts
+        let bank0 = Bank::new_for_tests(&genesis_config);
+        let bank0 = setup_dummy_fork_graph(bank0);
         let bank1 = Arc::new(Bank::new_from_parent(
             bank0.clone(),
             &Pubkey::default(),
             bank0.slot().checked_add(1).unwrap(),
         ));
+
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<ContextAndTaskChecker>, _>::new(
+        let pool = SchedulerPool::<PooledScheduler<TaskAndContextChecker>, _>::new(
             Some(4), // spawn 4 threads
             None,
             None,
             None,
             ignored_prioritization_fee_cache,
         );
+
+        // Create a dummy tx and two contexts
+        let dummy_tx =
+            &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                &mint_keypair,
+                &solana_sdk::pubkey::new_rand(),
+                2,
+                genesis_config.hash(),
+            ));
         let context0 = &SchedulingContext::new(bank0.clone());
         let context1 = &SchedulingContext::new(bank1.clone());
-        let tx = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-            &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
-            2,
-            genesis_config.hash(),
-        ));
-        let mut scheduler = pool.take_scheduler(context0.clone());
-        for (current_index, next_context) in
-            [(0, context1), (1, context0)].iter().cycle().take(10000)
+
+        // Exercise the scheduler by busy-looping to expose the race condition
+        for (context, index) in [(context0, 0), (context1, 1)]
+            .into_iter()
+            .cycle()
+            .take(10000)
         {
-            scheduler.schedule_execution(&(tx, *current_index));
+            let scheduler = pool.take_scheduler(context.clone());
+            scheduler.schedule_execution(&(dummy_tx, index));
             scheduler.wait_for_termination(false).1.return_to_pool();
-            scheduler = pool.take_scheduler((*next_context).clone());
         }
-        scheduler.wait_for_termination(false).1.return_to_pool();
     }
 
     #[derive(Debug)]
