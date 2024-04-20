@@ -1109,7 +1109,7 @@ where
             crossbeam_channel::unbounded::<Option<ResultWithTimings>>();
 
         let scheduler_id = self.scheduler_id;
-        let mut slot = context.bank().slot();
+        let mut slot = Slot::max_value();
         let (tid_sender, tid_receiver) = bounded(1);
         let mut result_with_timings = self.session_result_with_timings.take();
 
