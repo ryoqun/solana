@@ -994,7 +994,7 @@ where
         );
     }
 
-    fn start_or_try_resume_threads(&mut self, context: &SchedulingContext) -> Result<()> {
+    fn start_or_try_resume_threads(&mut self) -> Result<()> {
         if !self.is_suspended() {
             // this can't be promoted to panic! as read => write upgrade isn't completely
             // race-free in ensure_thread_manager_resumed()...
