@@ -1218,6 +1218,7 @@ where
                 while !thread_suspending {
                     match new_task_receiver.recv() {
                     Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                        info!("received context");
                         slot = context.bank().slot();
                         // signal about new SchedulingContext to handler threads
                         runnable_task_sender
@@ -1229,7 +1230,7 @@ where
                         log_scheduler!("S:started");
                     }
                     aa => {
-                        info!("received {aa:?}");
+                        info!("received other: {aa:?}");
                         assert!(!thread_suspending);
                         thread_suspending = true;
                         log_scheduler!("T:suspending1");
