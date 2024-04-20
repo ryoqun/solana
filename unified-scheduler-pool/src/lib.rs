@@ -1229,7 +1229,7 @@ where
                         log_scheduler!("S:started");
                     }
                     aa => {
-                        info!("received {aa}");
+                        info!("received {aa:?}");
                         assert!(!thread_suspending);
                         thread_suspending = true;
                         log_scheduler!("T:suspending1");
