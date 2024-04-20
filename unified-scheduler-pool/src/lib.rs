@@ -1228,7 +1228,7 @@ where
                     } else {
                         assert!(!thread_suspending);
                         thread_suspending = true;
-                        log_scheduler!("T:suspending");
+                        log_scheduler!("T:suspending1");
                         continue;
                     }
 
@@ -1307,7 +1307,7 @@ where
                                         // never() should pose no possibility of missed messages.
                                         new_task_receiver = never();
 
-                                        "T:suspending"
+                                        "T:suspending2"
                                     }
                                 }
                             },
