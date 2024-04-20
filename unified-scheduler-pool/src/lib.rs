@@ -19,8 +19,8 @@ use {
     assert_matches::assert_matches,
     cpu_time::ThreadTime,
     crossbeam_channel::{
-        self, disconnected, never, select_biased, Receiver, RecvError, RecvTimeoutError,
-        SendError, Sender, TryRecvError,
+        self, disconnected, never, select_biased, Receiver, RecvError, RecvTimeoutError, SendError,
+        Sender, TryRecvError,
     },
     dashmap::DashMap,
     derivative::Derivative,
