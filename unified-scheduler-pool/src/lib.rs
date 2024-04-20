@@ -932,7 +932,6 @@ where
         executed_task: Box<ExecutedTask>,
     ) {
         assert_matches!(executed_task.result_with_timings.0, Ok(()));
-        timings.accumulate(&executed_task.result_with_timings.1);
 
         if let Some(handler_timings) = &executed_task.handler_timings {
             let thread = format!("solScExLane{:02}", executed_task.thx);
@@ -967,7 +966,7 @@ where
                 ("priority", compute_unit_price, i64), // old name is kept for compat...
             );
         }
-
+        timings.accumulate(&executed_task.result_with_timings.1);
         drop(executed_task);
     }
 
