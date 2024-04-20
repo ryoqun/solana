@@ -503,6 +503,7 @@ impl ExecutedTask {
 // Note that the above properties can be upheld only when this is used inside MPSC or SPSC channels
 // (i.e. the consumer side needs to be single threaded). For the multiple consumer cases,
 // ChainedChannel can be used instead.
+#[Debug]
 enum SubchanneledPayload<P1, P2> {
     Payload(P1),
     OpenSubchannel(P2),
