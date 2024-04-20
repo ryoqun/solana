@@ -1449,11 +1449,6 @@ where
                         );
                     }
                     Ok(RetiredTaskPayload::OpenSubchannel(())) => {
-                        assert_matches!(
-                            accumulator_result_with_timings
-                                .replace(initialized_result_with_timings()),
-                            None
-                        );
                     }
                     Ok(RetiredTaskPayload::CloseSubchannel) => {
                         if accumulated_result_sender
