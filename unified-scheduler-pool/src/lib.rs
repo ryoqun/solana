@@ -19,8 +19,8 @@ use {
     assert_matches::assert_matches,
     cpu_time::ThreadTime,
     crossbeam_channel::{
-        self, bounded, disconnected, never, select_biased, Receiver, RecvError,
-        RecvTimeoutError, SendError, Sender, TryRecvError,
+        self, bounded, disconnected, never, select_biased, Receiver, RecvError, RecvTimeoutError,
+        SendError, Sender, TryRecvError,
     },
     dashmap::DashMap,
     derivative::Derivative,
@@ -229,7 +229,8 @@ where
 
         let (scheduler_pool_sender, scheduler_pool_receiver) = bounded(1);
         let (cleaner_sender, cleaner_receiver) = crossbeam_channel::unbounded();
-        let (cleaner_exit_signal_sender, cleaner_exit_signal_receiver) = crossbeam_channel::unbounded();
+        let (cleaner_exit_signal_sender, cleaner_exit_signal_receiver) =
+            crossbeam_channel::unbounded();
 
         let cleaner_main_loop = || {
             move || {
@@ -1101,7 +1102,8 @@ where
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
-        let (retired_task_sender, retired_task_receiver) = crossbeam_channel::unbounded::<RetiredTaskPayload>();
+        let (retired_task_sender, retired_task_receiver) =
+            crossbeam_channel::unbounded::<RetiredTaskPayload>();
         let (accumulated_result_sender, accumulated_result_receiver) =
             crossbeam_channel::unbounded::<Option<ResultWithTimings>>();
 
@@ -2043,7 +2045,9 @@ mod tests {
         #[derive(Debug, Clone)]
         struct StallingHandler;
         impl TaskHandler<DefaultScheduleExecutionArg> for StallingHandler {
-            fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(_pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>) -> Self {
+            fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(
+                _pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>,
+            ) -> Self {
                 unreachable!();
             }
 
@@ -2096,13 +2100,11 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<StallingHandler, DefaultScheduleExecutionArg>, _, _>::new_dyn(
-            None,
-            None,
-            None,
-            None,
-            ignored_prioritization_fee_cache,
-        );
+        let pool = SchedulerPool::<
+            PooledScheduler<StallingHandler, DefaultScheduleExecutionArg>,
+            _,
+            _,
+        >::new_dyn(None, None, None, None, ignored_prioritization_fee_cache);
         let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
 
         assert_eq!(bank.transaction_count(), 0);
@@ -2110,8 +2112,12 @@ mod tests {
 
         // Stall handling tx0 and tx1
         let lock_to_stall = LOCK_TO_STALL.lock().unwrap();
-        scheduler.schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX)).unwrap();
-        scheduler.schedule_execution(&(tx1, BLOCKED_TRANSACTION_INDEX)).unwrap();
+        scheduler
+            .schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX))
+            .unwrap();
+        scheduler
+            .schedule_execution(&(tx1, BLOCKED_TRANSACTION_INDEX))
+            .unwrap();
 
         // Wait a bit for the scheduler thread to decide to block tx1
         std::thread::sleep(std::time::Duration::from_secs(1));
@@ -2130,7 +2136,9 @@ mod tests {
         #[derive(Debug, Clone)]
         struct TaskAndContextChecker;
         impl TaskHandler<DefaultScheduleExecutionArg> for TaskAndContextChecker {
-            fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(_pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>) -> Self {
+            fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(
+                _pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>,
+            ) -> Self {
                 unreachable!();
             }
 
@@ -2164,7 +2172,11 @@ mod tests {
         ));
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<TaskAndContextChecker, DefaultScheduleExecutionArg>, _, _>::new(
+        let pool = SchedulerPool::<
+            PooledScheduler<TaskAndContextChecker, DefaultScheduleExecutionArg>,
+            _,
+            _,
+        >::new(
             Some(4), // spawn 4 threads
             None,
             None,
