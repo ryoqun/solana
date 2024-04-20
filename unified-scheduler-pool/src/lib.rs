@@ -1534,7 +1534,6 @@ where
         if !self.is_suspended() {
             assert_matches!(self.session_result_with_timings, None);
         } else {
-            self.put_session_result_with_timings(initialized_result_with_timings());
             assert_matches!(self.start_or_try_resume_threads(context), Ok(()));
         }
     }
