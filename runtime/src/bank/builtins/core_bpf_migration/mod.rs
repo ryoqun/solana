@@ -7,7 +7,7 @@ use {
     crate::bank::Bank,
     error::CoreBpfMigrationError,
     solana_program_runtime::{
-        invoke_context::InvokeContext, loaded_programs::LoadedProgramsForTxBatch,
+        invoke_context::InvokeContext, loaded_programs::ProgramCacheForTxBatch,
         sysvar_cache::SysvarCache,
     },
     solana_sdk::{
@@ -154,14 +154,14 @@ impl Bank {
             .get(programdata_data_offset..)
             .ok_or(InstructionError::InvalidAccountData)?;
 
-        // Set up the two `LoadedProgramsForTxBatch` instances, as if
+        // Set up the two `ProgramCacheForTxBatch` instances, as if
         // processing a new transaction batch.
-        let programs_loaded = LoadedProgramsForTxBatch::new_from_cache(
+        let programs_loaded = ProgramCacheForTxBatch::new_from_cache(
             self.slot,
             self.epoch,
             &self.transaction_processor.program_cache.read().unwrap(),
         );
-        let mut programs_modified = LoadedProgramsForTxBatch::new(
+        let mut programs_modified = ProgramCacheForTxBatch::new(
             self.slot,
             programs_loaded.environments.clone(),
             programs_loaded.upcoming_environments.clone(),
@@ -169,7 +169,7 @@ impl Bank {
         );
 
         // Configure a dummy `InvokeContext` from the runtime's current
-        // environment, as well as the two `LoadedProgramsForTxBatch`
+        // environment, as well as the two `ProgramCacheForTxBatch`
         // instances configured above, then invoke the loader.
         {
             let compute_budget = self.runtime_config.compute_budget.unwrap_or_default();
@@ -281,7 +281,11 @@ impl Bank {
         self.store_account(&source.program_data_address, &AccountSharedData::default());
 
         // Remove the built-in program from the bank's list of built-ins.
-        self.builtin_program_ids.remove(&target.program_address);
+        self.transaction_processor
+            .builtin_program_ids
+            .write()
+            .unwrap()
+            .remove(&target.program_address);
 
         // Update the account data size delta.
         self.calculate_and_update_accounts_data_size_delta_off_chain(old_data_size, new_data_size);
@@ -296,7 +300,7 @@ mod tests {
         super::*,
         crate::bank::tests::create_simple_test_bank,
         assert_matches::assert_matches,
-        solana_program_runtime::loaded_programs::{LoadedProgram, LoadedProgramType},
+        solana_program_runtime::loaded_programs::{ProgramCacheEntry, ProgramCacheEntryType},
         solana_sdk::{
             account_utils::StateMut,
             bpf_loader_upgradeable::{self, get_program_data_address},
@@ -427,7 +431,12 @@ mod tests {
 
             // The bank's builtins should no longer contain the builtin
             // program ID.
-            assert!(!bank.builtin_program_ids.contains(&self.builtin_id));
+            assert!(!bank
+                .transaction_processor
+                .builtin_program_ids
+                .read()
+                .unwrap()
+                .contains(&self.builtin_id));
 
             // The cache should contain the target program.
             let program_cache = bank.transaction_processor.program_cache.read().unwrap();
@@ -445,7 +454,7 @@ mod tests {
             assert_eq!(target_entry.latest_access_slot.load(Relaxed), bank.slot());
 
             // The target program entry should now be a BPF program.
-            assert_matches!(target_entry.program, LoadedProgramType::LegacyV1(..));
+            assert_matches!(target_entry.program, ProgramCacheEntryType::Loaded(..));
         }
     }
 
@@ -468,7 +477,12 @@ mod tests {
             let account =
                 AccountSharedData::new_data(1, &builtin_name, &native_loader::id()).unwrap();
             bank.store_account_and_update_capitalization(&builtin_id, &account);
-            bank.add_builtin(builtin_id, builtin_name.as_str(), LoadedProgram::default());
+            bank.transaction_processor.add_builtin(
+                &bank,
+                builtin_id,
+                builtin_name.as_str(),
+                ProgramCacheEntry::default(),
+            );
             account
         };
         assert_eq!(&bank.get_account(&builtin_id).unwrap(), &builtin_account);

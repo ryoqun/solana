@@ -12,7 +12,9 @@ use {
     solana_ledger::{blockstore_options::AccessType, use_snapshot_archives_at_startup},
     solana_program_runtime::{
         invoke_context::InvokeContext,
-        loaded_programs::{LoadProgramMetrics, LoadedProgramType, DELAY_VISIBILITY_SLOT_OFFSET},
+        loaded_programs::{
+            LoadProgramMetrics, ProgramCacheEntryType, DELAY_VISIBILITY_SLOT_OFFSET,
+        },
         with_mock_invoke_context,
     },
     solana_rbpf::{
@@ -344,7 +346,7 @@ fn load_program<'a>(
         );
         match result {
             Ok(loaded_program) => match loaded_program.program {
-                LoadedProgramType::LegacyV1(program) => Ok(program),
+                ProgramCacheEntryType::Loaded(program) => Ok(program),
                 _ => unreachable!(),
             },
             Err(err) => Err(format!("Loading executable failed: {err:?}")),
@@ -522,7 +524,11 @@ pub fn program(ledger_path: &Path, matches: &ArgMatches<'_>) {
     let mut loaded_programs =
         bank.new_program_cache_for_tx_batch_for_slot(bank.slot() + DELAY_VISIBILITY_SLOT_OFFSET);
     for key in cached_account_keys {
-        loaded_programs.replenish(key, bank.load_program(&key, false, bank.epoch()));
+        loaded_programs.replenish(
+            key,
+            bank.load_program(&key, false, bank.epoch())
+                .expect("Couldn't find program account"),
+        );
         debug!("Loaded program {}", key);
     }
     invoke_context.programs_loaded_for_tx_batch = &loaded_programs;

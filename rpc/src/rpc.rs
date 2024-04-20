@@ -3657,7 +3657,11 @@ pub mod rpc_full {
                 min_context_slot,
             })?;
 
-            let transaction = sanitize_transaction(unsanitized_tx, preflight_bank)?;
+            let transaction = sanitize_transaction(
+                unsanitized_tx,
+                preflight_bank,
+                preflight_bank.get_reserved_account_keys(),
+            )?;
             let signature = *transaction.signature();
 
             let mut last_valid_block_height = preflight_bank
@@ -3723,6 +3727,7 @@ pub mod rpc_full {
                             units_consumed: Some(units_consumed),
                             return_data: return_data.map(|return_data| return_data.into()),
                             inner_instructions: None,
+                            replacement_blockhash: None,
                         },
                     }
                     .into());
@@ -3768,18 +3773,28 @@ pub mod rpc_full {
                 commitment,
                 min_context_slot,
             })?;
+            let mut blockhash: Option<RpcBlockhash> = None;
             if replace_recent_blockhash {
                 if sig_verify {
                     return Err(Error::invalid_params(
                         "sigVerify may not be used with replaceRecentBlockhash",
                     ));
                 }
+                let recent_blockhash = bank.last_blockhash();
                 unsanitized_tx
                     .message
-                    .set_recent_blockhash(bank.last_blockhash());
+                    .set_recent_blockhash(recent_blockhash);
+                let last_valid_block_height = bank
+                    .get_blockhash_last_valid_block_height(&recent_blockhash)
+                    .expect("bank blockhash queue should contain blockhash");
+                blockhash.replace(RpcBlockhash {
+                    blockhash: recent_blockhash.to_string(),
+                    last_valid_block_height,
+                });
             }
 
-            let transaction = sanitize_transaction(unsanitized_tx, bank)?;
+            let transaction =
+                sanitize_transaction(unsanitized_tx, bank, bank.get_reserved_account_keys())?;
             if sig_verify {
                 verify_transaction(&transaction, &bank.feature_set)?;
             }
@@ -3857,6 +3872,7 @@ pub mod rpc_full {
                     units_consumed: Some(units_consumed),
                     return_data: return_data.map(|return_data| return_data.into()),
                     inner_instructions,
+                    replacement_blockhash: blockhash,
                 },
             ))
         }
@@ -4030,10 +4046,12 @@ pub mod rpc_full {
                 .map_err(|err| {
                     Error::invalid_params(format!("invalid transaction message: {err}"))
                 })?;
-            let sanitized_message = SanitizedMessage::try_new(sanitized_versioned_message, bank)
-                .map_err(|err| {
-                    Error::invalid_params(format!("invalid transaction message: {err}"))
-                })?;
+            let sanitized_message = SanitizedMessage::try_new(
+                sanitized_versioned_message,
+                bank,
+                bank.get_reserved_account_keys(),
+            )
+            .map_err(|err| Error::invalid_params(format!("invalid transaction message: {err}")))?;
             let fee = bank.get_fee_for_message(&sanitized_message);
             Ok(new_response(bank, fee))
         }
@@ -4612,9 +4630,16 @@ where
 fn sanitize_transaction(
     transaction: VersionedTransaction,
     address_loader: impl AddressLoader,
+    reserved_account_keys: &HashSet<Pubkey>,
 ) -> Result<SanitizedTransaction> {
-    SanitizedTransaction::try_create(transaction, MessageHash::Compute, None, address_loader)
-        .map_err(|err| Error::invalid_params(format!("invalid transaction: {err}")))
+    SanitizedTransaction::try_create(
+        transaction,
+        MessageHash::Compute,
+        None,
+        address_loader,
+        reserved_account_keys,
+    )
+    .map_err(|err| Error::invalid_params(format!("invalid transaction: {err}")))
 }
 
 pub fn create_validator_exit(exit: Arc<AtomicBool>) -> Arc<RwLock<Exit>> {
@@ -4760,6 +4785,7 @@ pub mod tests {
                 Message, MessageHeader, VersionedMessage,
             },
             nonce::{self, state::DurableNonce},
+            reserved_account_keys::ReservedAccountKeys,
             rpc_port,
             signature::{Keypair, Signer},
             slot_hashes::SlotHashes,
@@ -5076,11 +5102,11 @@ pub mod tests {
             self.bank_forks.write().unwrap().insert(new_bank);
 
             for root in roots.iter() {
-                self.bank_forks.write().unwrap().set_root(
-                    *root,
-                    &AbsRequestSender::default(),
-                    Some(0),
-                );
+                self.bank_forks
+                    .write()
+                    .unwrap()
+                    .set_root(*root, &AbsRequestSender::default(), Some(0))
+                    .unwrap();
                 let block_time = self
                     .bank_forks
                     .read()
@@ -6009,6 +6035,7 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 invoke [1]",
                         "Program 11111111111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": null,
                     "returnData":null,
                     "unitsConsumed":150,
                 }
@@ -6094,6 +6121,7 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 invoke [1]",
                         "Program 11111111111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": null,
                     "returnData":null,
                     "unitsConsumed":150,
                 }
@@ -6123,7 +6151,8 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 invoke [1]",
                         "Program 11111111111111111111111111111111 success"
                     ],
-                    "returnData":null,
+                    "replacementBlockhash": null,
+                    "returnData": null,
                     "unitsConsumed":150,
                 }
             },
@@ -6173,7 +6202,8 @@ pub mod tests {
                     "accounts":null,
                     "innerInstructions":null,
                     "logs":[],
-                    "returnData":null,
+                    "replacementBlockhash": null,
+                    "returnData": null,
                     "unitsConsumed":0,
                 }
             },
@@ -6191,6 +6221,11 @@ pub mod tests {
             r#"{{"jsonrpc":"2.0","id":1,"method":"simulateTransaction","params":["{tx_invalid_recent_blockhash}", {{"replaceRecentBlockhash": true}}]}}"#,
         );
         let res = io.handle_request_sync(&req, meta.clone());
+        let latest_blockhash = bank.confirmed_last_blockhash();
+        let expiry_slot = bank
+            .get_blockhash_last_valid_block_height(&latest_blockhash)
+            .expect("blockhash exists");
+
         let expected = json!({
             "jsonrpc": "2.0",
             "result": {
@@ -6203,6 +6238,10 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 invoke [1]",
                         "Program 11111111111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": {
+                        "blockhash": latest_blockhash.to_string(),
+                        "lastValidBlockHeight": expiry_slot
+                    },
                     "returnData":null,
                     "unitsConsumed":150,
                 }
@@ -6347,6 +6386,7 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 invoke [1]",
                         "Program 11111111111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": null,
                     "returnData": null,
                     "unitsConsumed": 150,
                 }
@@ -6427,6 +6467,7 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 success",
                         "Program AddressLookupTab1e1111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": null,
                     "returnData":null,
                     "unitsConsumed":1200,
                 }
@@ -6470,6 +6511,7 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 success",
                         "Program AddressLookupTab1e1111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": null,
                     "returnData":null,
                     "unitsConsumed":1200,
                 }
@@ -6556,6 +6598,7 @@ pub mod tests {
                         "Program 11111111111111111111111111111111 success",
                         "Program AddressLookupTab1e1111111111111111111111111 success"
                     ],
+                    "replacementBlockhash": null,
                     "returnData":null,
                     "unitsConsumed":1200,
                 }
@@ -6931,7 +6974,7 @@ pub mod tests {
         assert_eq!(
             res,
             Some(
-                r#"{"jsonrpc":"2.0","error":{"code":-32002,"message":"Transaction simulation failed: Blockhash not found","data":{"accounts":null,"err":"BlockhashNotFound","innerInstructions":null,"logs":[],"returnData":null,"unitsConsumed":0}},"id":1}"#.to_string(),
+                r#"{"jsonrpc":"2.0","error":{"code":-32002,"message":"Transaction simulation failed: Blockhash not found","data":{"accounts":null,"err":"BlockhashNotFound","innerInstructions":null,"logs":[],"replacementBlockhash":null,"returnData":null,"unitsConsumed":0}},"id":1}"#.to_string(),
             )
         );
 
@@ -9021,8 +9064,12 @@ pub mod tests {
                 .to_string(),
         );
         assert_eq!(
-            sanitize_transaction(unsanitary_versioned_tx, SimpleAddressLoader::Disabled)
-                .unwrap_err(),
+            sanitize_transaction(
+                unsanitary_versioned_tx,
+                SimpleAddressLoader::Disabled,
+                &ReservedAccountKeys::empty_key_set()
+            )
+            .unwrap_err(),
             expect58
         );
     }
@@ -9042,7 +9089,12 @@ pub mod tests {
         };
 
         assert_eq!(
-            sanitize_transaction(versioned_tx, SimpleAddressLoader::Disabled).unwrap_err(),
+            sanitize_transaction(
+                versioned_tx,
+                SimpleAddressLoader::Disabled,
+                &ReservedAccountKeys::empty_key_set()
+            )
+            .unwrap_err(),
             Error::invalid_params(
                 "invalid transaction: Transaction version is unsupported".to_string(),
             )

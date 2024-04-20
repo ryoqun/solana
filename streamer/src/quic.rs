@@ -177,6 +177,10 @@ pub struct StreamStats {
     pub(crate) stream_load_capacity_overflow: AtomicUsize,
     pub(crate) process_sampled_packets_us_hist: Mutex<histogram::Histogram>,
     pub(crate) perf_track_overhead_us: AtomicU64,
+    pub(crate) total_staked_packets_sent_for_batching: AtomicUsize,
+    pub(crate) total_unstaked_packets_sent_for_batching: AtomicUsize,
+    pub(crate) throttled_staked_streams: AtomicUsize,
+    pub(crate) throttled_unstaked_streams: AtomicUsize,
 }
 
 impl StreamStats {
@@ -339,6 +343,18 @@ impl StreamStats {
                 i64
             ),
             (
+                "staked_packets_sent_for_batching",
+                self.total_staked_packets_sent_for_batching
+                    .swap(0, Ordering::Relaxed),
+                i64
+            ),
+            (
+                "unstaked_packets_sent_for_batching",
+                self.total_unstaked_packets_sent_for_batching
+                    .swap(0, Ordering::Relaxed),
+                i64
+            ),
+            (
                 "bytes_sent_for_batching",
                 self.total_bytes_sent_for_batching
                     .swap(0, Ordering::Relaxed),
@@ -435,6 +451,16 @@ impl StreamStats {
                 i64
             ),
             (
+                "throttled_unstaked_streams",
+                self.throttled_unstaked_streams.swap(0, Ordering::Relaxed),
+                i64
+            ),
+            (
+                "throttled_staked_streams",
+                self.throttled_staked_streams.swap(0, Ordering::Relaxed),
+                i64
+            ),
+            (
                 "process_sampled_packets_us_90pct",
                 process_sampled_packets_us_hist
                     .percentile(90.0)
@@ -482,6 +508,7 @@ pub fn spawn_server(
     staked_nodes: Arc<RwLock<StakedNodes>>,
     max_staked_connections: usize,
     max_unstaked_connections: usize,
+    max_streams_per_ms: u64,
     wait_for_chunk_timeout: Duration,
     coalesce: Duration,
 ) -> Result<SpawnServerResult, QuicServerError> {
@@ -498,6 +525,7 @@ pub fn spawn_server(
             staked_nodes,
             max_staked_connections,
             max_unstaked_connections,
+            max_streams_per_ms,
             wait_for_chunk_timeout,
             coalesce,
         )
@@ -524,7 +552,9 @@ pub fn spawn_server(
 mod test {
     use {
         super::*,
-        crate::nonblocking::quic::{test::*, DEFAULT_WAIT_FOR_CHUNK_TIMEOUT},
+        crate::nonblocking::quic::{
+            test::*, DEFAULT_MAX_STREAMS_PER_MS, DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
+        },
         crossbeam_channel::unbounded,
         solana_sdk::net::DEFAULT_TPU_COALESCE,
         std::net::SocketAddr,
@@ -557,6 +587,7 @@ mod test {
             staked_nodes,
             MAX_STAKED_CONNECTIONS,
             MAX_UNSTAKED_CONNECTIONS,
+            DEFAULT_MAX_STREAMS_PER_MS,
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             DEFAULT_TPU_COALESCE,
         )
@@ -616,6 +647,7 @@ mod test {
             staked_nodes,
             MAX_STAKED_CONNECTIONS,
             MAX_UNSTAKED_CONNECTIONS,
+            DEFAULT_MAX_STREAMS_PER_MS,
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             DEFAULT_TPU_COALESCE,
         )
@@ -662,6 +694,7 @@ mod test {
             staked_nodes,
             MAX_STAKED_CONNECTIONS,
             0, // Do not allow any connection from unstaked clients/nodes
+            DEFAULT_MAX_STREAMS_PER_MS,
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             DEFAULT_TPU_COALESCE,
         )

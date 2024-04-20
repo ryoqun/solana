@@ -19,7 +19,7 @@ use {
     assert_matches::assert_matches,
     cpu_time::ThreadTime,
     crossbeam_channel::{
-        bounded, disconnected, never, select_biased, unbounded, Receiver, RecvError,
+        self, bounded, disconnected, never, select_biased, Receiver, RecvError,
         RecvTimeoutError, SendError, Sender, TryRecvError,
     },
     dashmap::DashMap,
@@ -228,8 +228,8 @@ where
         assert!(handler_count >= 1);
 
         let (scheduler_pool_sender, scheduler_pool_receiver) = bounded(1);
-        let (cleaner_sender, cleaner_receiver) = unbounded();
-        let (cleaner_exit_signal_sender, cleaner_exit_signal_receiver) = unbounded();
+        let (cleaner_sender, cleaner_receiver) = crossbeam_channel::unbounded();
+        let (cleaner_exit_signal_sender, cleaner_exit_signal_receiver) = crossbeam_channel::unbounded();
 
         let cleaner_main_loop = || {
             move || {
@@ -529,30 +529,42 @@ type RetiredTaskPayload = SubchanneledPayload<Box<ExecutedTask>, ()>;
 // Overall, this greatly simplifies the code, reduces CAS/syscall overhead per messaging to the
 // minimum at the cost of a single channel recreation per switching. Needless to say, such an
 // allocation can be amortized to be negligible.
+//
+// Lastly, there's an auxiliary channel to realize a 2-level priority queue. See comment before
+// runnable_task_sender.
 mod chained_channel {
     use super::*;
 
     // hide variants by putting this inside newtype
     enum ChainedChannelPrivate<P, C> {
         Payload(P),
-        ContextAndChannel(C, Receiver<ChainedChannel<P, C>>),
+        ContextAndChannels(C, Receiver<ChainedChannel<P, C>>, Receiver<P>),
     }
 
     pub(super) struct ChainedChannel<P, C>(ChainedChannelPrivate<P, C>);
 
     impl<P, C> ChainedChannel<P, C> {
-        fn chain_to_new_channel(context: C, receiver: Receiver<Self>) -> Self {
-            Self(ChainedChannelPrivate::ContextAndChannel(context, receiver))
+        fn chain_to_new_channel(
+            context: C,
+            receiver: Receiver<Self>,
+            aux_receiver: Receiver<P>,
+        ) -> Self {
+            Self(ChainedChannelPrivate::ContextAndChannels(
+                context,
+                receiver,
+                aux_receiver,
+            ))
         }
     }
 
     pub(super) struct ChainedChannelSender<P, C> {
         sender: Sender<ChainedChannel<P, C>>,
+        aux_sender: Sender<P>,
     }
 
     impl<P, C: Clone> ChainedChannelSender<P, C> {
-        fn new(sender: Sender<ChainedChannel<P, C>>) -> Self {
-            Self { sender }
+        fn new(sender: Sender<ChainedChannel<P, C>>, aux_sender: Sender<P>) -> Self {
+            Self { sender, aux_sender }
         }
 
         pub(super) fn send_payload(
@@ -563,24 +575,35 @@ mod chained_channel {
                 .send(ChainedChannel(ChainedChannelPrivate::Payload(payload)))
         }
 
+        pub(super) fn send_aux_payload(&self, payload: P) -> std::result::Result<(), SendError<P>> {
+            self.aux_sender.send(payload)
+        }
+
         pub(super) fn send_chained_channel(
             &mut self,
             context: C,
             count: usize,
         ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
             let (chained_sender, chained_receiver) = crossbeam_channel::unbounded();
+            let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::unbounded();
             for _ in 0..count {
                 self.sender.send(ChainedChannel::chain_to_new_channel(
                     context.clone(),
                     chained_receiver.clone(),
+                    chained_aux_receiver.clone(),
                 ))?
             }
             self.sender = chained_sender;
+            self.aux_sender = chained_aux_sender;
             Ok(())
         }
 
         pub(super) fn len(&self) -> usize {
             self.sender.len()
+        }
+
+        pub(super) fn aux_len(&self) -> usize {
+            self.aux_sender.len()
         }
     }
 
@@ -590,13 +613,19 @@ mod chained_channel {
     #[derivative(Clone(bound = "C: Clone"))]
     pub(super) struct ChainedChannelReceiver<P, C: Clone> {
         receiver: Receiver<ChainedChannel<P, C>>,
+        aux_receiver: Receiver<P>,
         context: C,
     }
 
     impl<P, C: Clone> ChainedChannelReceiver<P, C> {
-        fn new(receiver: Receiver<ChainedChannel<P, C>>, initial_context: C) -> Self {
+        fn new(
+            receiver: Receiver<ChainedChannel<P, C>>,
+            aux_receiver: Receiver<P>,
+            initial_context: C,
+        ) -> Self {
             Self {
                 receiver,
+                aux_receiver,
                 context: initial_context,
             }
         }
@@ -609,12 +638,17 @@ mod chained_channel {
             &self.receiver
         }
 
+        pub(super) fn aux_for_select(&self) -> &Receiver<P> {
+            &self.aux_receiver
+        }
+
         pub(super) fn after_select(&mut self, message: ChainedChannel<P, C>) -> Option<P> {
             match message.0 {
                 ChainedChannelPrivate::Payload(payload) => Some(payload),
-                ChainedChannelPrivate::ContextAndChannel(context, channel) => {
+                ChainedChannelPrivate::ContextAndChannels(context, channel, idle_channel) => {
                     self.context = context;
                     self.receiver = channel;
+                    self.aux_receiver = idle_channel;
                     None
                 }
             }
@@ -625,9 +659,10 @@ mod chained_channel {
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
         let (sender, receiver) = crossbeam_channel::unbounded();
+        let (aux_sender, aux_receiver) = crossbeam_channel::unbounded();
         (
-            ChainedChannelSender::new(sender),
-            ChainedChannelReceiver::new(receiver, initial_context),
+            ChainedChannelSender::new(sender, aux_sender),
+            ChainedChannelReceiver::new(receiver, aux_receiver, initial_context),
         )
     }
 }
@@ -830,8 +865,8 @@ where
     SEA: ScheduleExecutionArg,
 {
     fn new(pool: Arc<SchedulerPool<S, TH, SEA>>, handler: TH) -> Self {
-        let (new_task_sender, new_task_receiver) = unbounded();
-        let (session_result_sender, session_result_receiver) = unbounded();
+        let (new_task_sender, new_task_receiver) = crossbeam_channel::unbounded();
+        let (session_result_sender, session_result_receiver) = crossbeam_channel::unbounded();
         let handler_count = pool.handler_count;
 
         Self {
@@ -975,17 +1010,100 @@ where
         debug!("try_resume(): doing now");
 
         let send_metrics = env::var("SOLANA_TRANSACTION_TIMINGS").is_ok();
-
-        let (mut blocked_task_sender, blocked_task_receiver) =
+        // Firstly, setup bi-directional messaging between the scheduler and handlers to pass
+        // around tasks, by creating 2 channels (one for to-be-handled tasks from the scheduler to
+        // the handlers and the other for finished tasks from the handlers to the scheduler).
+        // Furthermore, this pair of channels is duplicated to work as a primitive 2-level priority
+        // queue, totalling 4 channels. Note that the two scheduler-to-handler channels are managed
+        // behind chained_channel to avoid race conditions relating to contexts.
+        //
+        // This quasi-priority-queue arrangement is desired as an optimization to prioritize
+        // blocked tasks.
+        //
+        // As a quick background, SchedulingStateMachine doesn't throttle runnable tasks at all.
+        // Thus, it's likely for to-be-handled tasks to be stalled for extended duration due to
+        // excessive buffering (commonly known as buffer bloat). Normally, this buffering isn't
+        // problematic and actually intentional to fully saturate all the handler threads.
+        //
+        // However, there's one caveat: task dependencies. It can be hinted with tasks being
+        // blocked, that there could be more similarly-blocked tasks in the future. Empirically,
+        // clearing these linearized long runs of blocking tasks out of the buffer is delaying bank
+        // freezing while only using 1 handler thread or two near the end of slot, deteriorating
+        // the overall concurrency.
+        //
+        // To alleviate the situation, blocked tasks are exchanged via independent communication
+        // pathway as a heuristic for expedite processing. Without prioritization of these tasks,
+        // progression of clearing these runs would be severely hampered due to interleaved
+        // not-blocked tasks (called _idle_ here; typically, voting transactions) in the single
+        // buffer.
+        //
+        // Concurrent priority queue isn't used to avoid penalized throughput due to higher
+        // overhead than crossbeam channel, even considering the doubled processing of the
+        // crossbeam channel. Fortunately, just 2-level prioritization is enough. Also, sticking to
+        // crossbeam was convenient and there was no popular and promising crate for concurrent
+        // priority queue as of writing.
+        //
+        // It's generally harmless for the blocked task buffer to be flooded, stalling the idle
+        // tasks completely. Firstly, it's unlikely without malice, considering all blocked tasks
+        // must have independently been blocked for each isolated linearized runs. That's because
+        // all to-be-handled tasks of the blocked and idle buffers must not be conflicting with
+        // each other by definition. Furthermore, handler threads would still be saturated to
+        // maximum even under such a block-verification situation, meaning no remotely-controlled
+        // performance degradation.
+        //
+        // Overall, while this is merely a heuristic, it's effective and adaptive while not
+        // vulnerable, merely reusing existing information without any additional runtime cost.
+        //
+        // One known caveat, though, is that this heuristic is employed under a sub-optimal
+        // setting, considering scheduling is done in real-time. Namely, prioritization enforcement
+        // isn't immediate, in a sense that the first task of a long run is buried in the middle of
+        // a large idle task buffer. Prioritization of such a run will be realized only after the
+        // first task is handled with the priority of an idle task. To overcome this, some kind of
+        // re-prioritization or look-ahead scheduling mechanism would be needed. However, both
+        // isn't implemented. The former is due to complex implementation and the later is due to
+        // delayed (NOT real-time) processing, which is against the unified scheduler design goal.
+        //
+        // Finally, note that this optimization should be combined with biased select (i.e.
+        // `select_biased!`), which isn't for now... However, consistent performance improvement is
+        // observed just with this priority queuing alone.
+        //
+        // Alternatively, more faithful prioritization can be realized by checking blocking
+        // statuses of all addresses immediately before sending to the handlers. This would prevent
+        // false negatives of the heuristics approach (i.e. the last task of a run doesn't need to
+        // be handled with the higher priority). Note that this is the only improvement, compared
+        // to the heuristics. That's because this underlying information asymmetry between the 2
+        // approaches doesn't exist for all other cases, assuming no look-ahead: idle tasks are
+        // always unblocked by definition, and other blocked tasks should always be calculated as
+        // blocked by the very existence of the last blocked task.
+        //
+        // The faithful approach incurs a considerable overhead: O(N), where N is the number of
+        // locked addresses in a task, adding to the current bare-minimum complexity of O(2*N) for
+        // both scheduling and descheduling. This means 1.5x increase. Furthermore, this doesn't
+        // nicely work in practice with a real-time streamed scheduler. That's because these
+        // linearized runs could be intermittent in the view with little or no look-back, albeit
+        // actually forming a far more longer runs in longer time span. These access patterns are
+        // very common, considering existence of well-known hot accounts.
+        //
+        // Thus, intentionally allowing these false-positives by the heuristic approach is actually
+        // helping to extend the logical prioritization session for the invisible longer runs, as
+        // long as the last task of the current run is being handled by the handlers, hoping yet
+        // another blocking new task is arriving to finalize the tentatively extended
+        // prioritization further. Consequently, this also contributes to alleviate the known
+        // heuristic's caveat for the first task of linearized runs, which is described above.
+        let (mut runnable_task_sender, runnable_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
-        let (idle_task_sender, idle_task_receiver) = unbounded::<Task>();
+        // Create two handler-to-scheduler channels to prioritize the finishing of blocked tasks,
+        // because it is more likely that a blocked task will have more blocked tasks behind it,
+        // which should be scheduled while minimizing the delay to clear buffered linearized runs
+        // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
-            unbounded::<Box<ExecutedTask>>();
+            crossbeam_channel::unbounded::<Box<ExecutedTask>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
-            unbounded::<Box<ExecutedTask>>();
-        let (retired_task_sender, retired_task_receiver) = unbounded::<RetiredTaskPayload>();
+            crossbeam_channel::unbounded::<Box<ExecutedTask>>();
+
+        let (retired_task_sender, retired_task_receiver) = crossbeam_channel::unbounded::<RetiredTaskPayload>();
         let (accumulated_result_sender, accumulated_result_receiver) =
-            unbounded::<Option<ResultWithTimings>>();
+            crossbeam_channel::unbounded::<Option<ResultWithTimings>>();
 
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
@@ -1075,7 +1193,7 @@ where
                             state_machine.total_task_count(),
                             state_machine.unblocked_task_count(),
                             new_task_receiver.len(),
-                            blocked_task_sender.len(), idle_task_sender.len(),
+                            runnable_task_sender.len(), runnable_task_sender.aux_len(),
                             finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
                             width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
                         );
@@ -1092,9 +1210,26 @@ where
                         tid
                     })
                     .unwrap();
-                log_scheduler!("S+T:started");
+                log_scheduler!("T:started");
 
                 while !thread_suspending {
+                    if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
+                        slot = context.bank().slot();
+                        // signal about new SchedulingContext to handler threads
+                        runnable_task_sender
+                            .send_chained_channel(context, handler_count)
+                            .unwrap();
+                        retired_task_sender
+                            .send(RetiredTaskPayload::OpenSubchannel(()))
+                            .unwrap();
+                        log_scheduler!("S:started");
+                    } else {
+                        assert!(!thread_suspending);
+                        thread_suspending = true;
+                        log_scheduler!("T:suspending");
+                        continue;
+                    }
+
                     let mut is_finished = false;
                     while !is_finished {
                         // ALL recv selectors are eager-evaluated ALWAYS by current crossbeam impl,
@@ -1140,7 +1275,7 @@ where
                                 let task = state_machine
                                     .schedule_next_unblocked_task()
                                     .expect("unblocked task");
-                                blocked_task_sender.send_payload(task).unwrap();
+                                runnable_task_sender.send_payload(task).unwrap();
                                 "step"
                             },
                             recv(new_task_receiver) -> message => {
@@ -1149,23 +1284,16 @@ where
                                 match message {
                                     Ok(NewTaskPayload::Payload(task)) => {
                                         if let Some(task) = state_machine.schedule_task(task) {
-                                            idle_task_sender.send(task).unwrap();
+                                            runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
                                         "step"
-                                    }
-                                    Ok(NewTaskPayload::OpenSubchannel(context)) => {
-                                        slot = context.bank().slot();
-                                        blocked_task_sender
-                                            .send_chained_channel(context, handler_count)
-                                            .unwrap();
-                                        retired_task_sender
-                                            .send(RetiredTaskPayload::OpenSubchannel(()))
-                                            .unwrap();
-                                        "S:started"
                                     }
                                     Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
                                         "S:ending"
+                                    }
+                                    Ok(NewTaskPayload::OpenSubchannel(_context)) => {
+                                        unreachable!();
                                     }
                                     Err(_) => {
                                         assert!(!thread_suspending);
@@ -1248,8 +1376,7 @@ where
         let handler_main_loop = |thx| {
             let pool = self.pool.clone();
             let handler = self.handler.clone();
-            let mut blocked_task_receiver = blocked_task_receiver.clone();
-            let mut idle_task_receiver = idle_task_receiver.clone();
+            let mut runnable_task_receiver = runnable_task_receiver.clone();
             let finished_blocked_task_sender = finished_blocked_task_sender.clone();
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
@@ -1261,10 +1388,10 @@ where
                 );
                 loop {
                     let (task, sender) = select_biased! {
-                        recv(blocked_task_receiver.for_select()) -> message => {
+                        recv(runnable_task_receiver.for_select()) -> message => {
                             match message {
                                 Ok(message) => {
-                                    if let Some(task) = blocked_task_receiver.after_select(message) {
+                                    if let Some(task) = runnable_task_receiver.after_select(message) {
                                         (task, &finished_blocked_task_sender)
                                     } else {
                                         continue;
@@ -1273,16 +1400,15 @@ where
                                 Err(_) => break,
                             }
                         },
-                        recv(idle_task_receiver) -> task => {
+                        recv(runnable_task_receiver.aux_for_select()) -> task => {
                             if let Ok(task) = task {
                                 (task, &finished_idle_task_sender)
                             } else {
-                                idle_task_receiver = never();
                                 continue;
                             }
                         },
                     };
-                    let bank = blocked_task_receiver.context().bank();
+                    let bank = runnable_task_receiver.context().bank();
                     let mut task = ExecutedTask::new_boxed(task, thx, bank.slot());
                     Self::execute_task_with_handler(
                         &handler,
@@ -1412,7 +1538,7 @@ where
         };
         debug!("suspend(): terminating threads by {:?}", thread::current());
 
-        let (s, r) = unbounded();
+        let (s, r) = crossbeam_channel::unbounded();
         (self.new_task_sender, self.new_task_receiver) = (s, Some(r));
 
         let () = self.accumulator_thread.take().unwrap().join().unwrap();
@@ -1636,7 +1762,7 @@ mod tests {
             prioritization_fee_cache::PrioritizationFeeCache,
         },
         solana_sdk::{
-            clock::MAX_PROCESSING_AGE,
+            clock::{Slot, MAX_PROCESSING_AGE},
             pubkey::Pubkey,
             scheduling::SchedulingMode,
             signer::keypair::Keypair,
@@ -1904,6 +2030,169 @@ mod tests {
             Some((Ok(()), _timings))
         );
         pool.uninstalled_from_bank_forks();
+    }
+
+    #[test]
+    fn test_scheduler_schedule_execution_blocked() {
+        solana_logger::setup();
+
+        const STALLED_TRANSACTION_INDEX: usize = 0;
+        const BLOCKED_TRANSACTION_INDEX: usize = 1;
+        static LOCK_TO_STALL: Mutex<()> = Mutex::new(());
+
+        #[derive(Debug, Clone)]
+        struct StallingHandler;
+        impl TaskHandler<DefaultScheduleExecutionArg> for StallingHandler {
+            fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(_pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>) -> Self {
+                unreachable!();
+            }
+
+            fn handle(
+                &self,
+                result: &mut Result<()>,
+                timings: &mut ExecuteTimings,
+                bank: &Arc<Bank>,
+                transaction: &SanitizedTransaction,
+                index: usize,
+                handler_context: &HandlerContext,
+            ) {
+                match index {
+                    STALLED_TRANSACTION_INDEX => *LOCK_TO_STALL.lock().unwrap(),
+                    BLOCKED_TRANSACTION_INDEX => {}
+                    _ => unreachable!(),
+                };
+                <DefaultTaskHandler as TaskHandler<DefaultScheduleExecutionArg>>::handle(
+                    &DefaultTaskHandler,
+                    result,
+                    timings,
+                    bank,
+                    transaction,
+                    index,
+                    handler_context,
+                );
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        // tx0 and tx1 is definitely conflicting to write-lock the mint address
+        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+        let tx1 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = setup_dummy_fork_graph(bank);
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<StallingHandler, DefaultScheduleExecutionArg>, _, _>::new_dyn(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
+
+        assert_eq!(bank.transaction_count(), 0);
+        let scheduler = pool.take_scheduler(context);
+
+        // Stall handling tx0 and tx1
+        let lock_to_stall = LOCK_TO_STALL.lock().unwrap();
+        scheduler.schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX)).unwrap();
+        scheduler.schedule_execution(&(tx1, BLOCKED_TRANSACTION_INDEX)).unwrap();
+
+        // Wait a bit for the scheduler thread to decide to block tx1
+        std::thread::sleep(std::time::Duration::from_secs(1));
+
+        // Resume handling by unlocking LOCK_TO_STALL
+        drop(lock_to_stall);
+        let bank = BankWithScheduler::new(bank, Some(scheduler));
+        assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
+        assert_eq!(bank.transaction_count(), 2);
+    }
+
+    #[test]
+    fn test_scheduler_mismatched_scheduling_context_race() {
+        solana_logger::setup();
+
+        #[derive(Debug, Clone)]
+        struct TaskAndContextChecker;
+        impl TaskHandler<DefaultScheduleExecutionArg> for TaskAndContextChecker {
+            fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(_pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>) -> Self {
+                unreachable!();
+            }
+
+            fn handle(
+                &self,
+                _result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                bank: &Arc<Bank>,
+                _transaction: &SanitizedTransaction,
+                index: usize,
+                _handler_context: &HandlerContext,
+            ) {
+                // The task index must always be matched to the slot.
+                assert_eq!(index as Slot, bank.slot());
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        // Create two banks for two contexts
+        let bank0 = Bank::new_for_tests(&genesis_config);
+        let bank0 = setup_dummy_fork_graph(bank0);
+        let bank1 = Arc::new(Bank::new_from_parent(
+            bank0.clone(),
+            &Pubkey::default(),
+            bank0.slot().checked_add(1).unwrap(),
+        ));
+
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<TaskAndContextChecker, DefaultScheduleExecutionArg>, _, _>::new(
+            Some(4), // spawn 4 threads
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+
+        // Create a dummy tx and two contexts
+        let dummy_tx =
+            &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                &mint_keypair,
+                &solana_sdk::pubkey::new_rand(),
+                2,
+                genesis_config.hash(),
+            ));
+        let context0 = &SchedulingContext::new(SchedulingMode::BlockVerification, bank0.clone());
+        let context1 = &SchedulingContext::new(SchedulingMode::BlockVerification, bank1.clone());
+
+        // Exercise the scheduler by busy-looping to expose the race condition
+        for (context, index) in [(context0, 0), (context1, 1)]
+            .into_iter()
+            .cycle()
+            .take(10000)
+        {
+            let scheduler = pool.take_scheduler(context.clone());
+            scheduler.schedule_execution(&(dummy_tx, index)).unwrap();
+            scheduler.wait_for_termination(false).1.return_to_pool();
+        }
     }
 
     #[derive(Debug)]

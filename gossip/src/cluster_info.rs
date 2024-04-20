@@ -89,6 +89,7 @@ use {
         io::BufReader,
         iter::repeat,
         net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, UdpSocket},
+        num::NonZeroUsize,
         ops::{Deref, Div},
         path::{Path, PathBuf},
         result::Result,
@@ -143,6 +144,11 @@ pub(crate) const CRDS_UNIQUE_PUBKEY_CAPACITY: usize = 8192;
 const MIN_STAKE_FOR_GOSSIP: u64 = solana_sdk::native_token::LAMPORTS_PER_SOL;
 /// Minimum number of staked nodes for enforcing stakes in gossip.
 const MIN_NUM_STAKED_NODES: usize = 500;
+
+// Must have at least one socket to monitor the TVU port
+// The unsafes are safe because we're using fixed, known non-zero values
+pub const MINIMUM_NUM_TVU_SOCKETS: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1) };
+pub const DEFAULT_NUM_TVU_SOCKETS: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(8) };
 
 #[derive(Debug, PartialEq, Eq, Error)]
 pub enum ClusterInfoError {
@@ -1438,7 +1444,7 @@ impl ClusterInfo {
     fn append_entrypoint_to_pulls(
         &self,
         thread_pool: &ThreadPool,
-        pulls: &mut HashMap<LegacyContactInfo, Vec<CrdsFilter>>,
+        pulls: &mut Vec<(LegacyContactInfo, Vec<CrdsFilter>)>,
     ) {
         const THROTTLE_DELAY: u64 = CRDS_GOSSIP_PULL_CRDS_TIMEOUT_MS / 2;
         let entrypoint = {
@@ -1470,10 +1476,14 @@ impl ClusterInfo {
                 .pull
                 .build_crds_filters(thread_pool, &self.gossip.crds, MAX_BLOOM_SIZE)
         } else {
-            pulls.values().flatten().cloned().collect()
+            pulls
+                .iter()
+                .flat_map(|(_, filters)| filters)
+                .cloned()
+                .collect()
         };
         self.stats.pull_from_entrypoint_count.add_relaxed(1);
-        pulls.insert(entrypoint, filters);
+        pulls.push((entrypoint, filters));
     }
 
     /// Splits an input feed of serializable data into chunks where the sum of
@@ -1556,7 +1566,10 @@ impl ClusterInfo {
                 .unwrap_or_default()
         };
         self.append_entrypoint_to_pulls(thread_pool, &mut pulls);
-        let num_requests = pulls.values().map(Vec::len).sum::<usize>() as u64;
+        let num_requests = pulls
+            .iter()
+            .map(|(_, filters)| filters.len())
+            .sum::<usize>() as u64;
         self.stats.new_pull_requests_count.add_relaxed(num_requests);
         let self_info = LegacyContactInfo::try_from(&self.my_contact_info())
             .map(CrdsData::LegacyContactInfo)
@@ -1955,14 +1968,17 @@ impl ClusterInfo {
             requests
                 .into_par_iter()
                 .with_min_len(1024)
-                .filter(|(_, _, caller)| match caller.contact_info() {
-                    None => false,
-                    Some(caller) if caller.pubkey() == &self_pubkey => {
-                        warn!("PullRequest ignored, I'm talking to myself");
-                        self.stats.window_request_loopback.add_relaxed(1);
-                        false
+                .filter(|(_, _, caller)| match &caller.data {
+                    CrdsData::LegacyContactInfo(_) | CrdsData::ContactInfo(_) => {
+                        if caller.pubkey() == self_pubkey {
+                            warn!("PullRequest ignored, I'm talking to myself");
+                            self.stats.window_request_loopback.add_relaxed(1);
+                            false
+                        } else {
+                            true
+                        }
                     }
-                    Some(_) => true,
+                    _ => false,
                 })
                 .map(|(from_addr, filter, caller)| PullData {
                     from_addr,
@@ -2792,6 +2808,8 @@ pub struct NodeConfig {
     pub bind_ip_addr: IpAddr,
     pub public_tpu_addr: Option<SocketAddr>,
     pub public_tpu_forwards_addr: Option<SocketAddr>,
+    /// The number of TVU sockets to create
+    pub num_tvu_sockets: NonZeroUsize,
 }
 
 #[derive(Debug)]
@@ -2993,13 +3011,15 @@ impl Node {
             bind_ip_addr,
             public_tpu_addr,
             public_tpu_forwards_addr,
+            num_tvu_sockets,
         } = config;
 
         let (gossip_port, (gossip, ip_echo)) =
             Self::get_gossip_port(&gossip_addr, port_range, bind_ip_addr);
 
         let (tvu_port, tvu_sockets) =
-            multi_bind_in_range(bind_ip_addr, port_range, 8).expect("tvu multi_bind");
+            multi_bind_in_range(bind_ip_addr, port_range, num_tvu_sockets.get())
+                .expect("tvu multi_bind");
         let (tvu_quic_port, tvu_quic) = Self::bind(bind_ip_addr, port_range);
         let (tpu_port, tpu_sockets) =
             multi_bind_in_range(bind_ip_addr, port_range, 32).expect("tpu multi_bind");
@@ -3576,7 +3596,7 @@ mod tests {
     }
 
     fn check_sockets(sockets: &[UdpSocket], ip: IpAddr, range: (u16, u16)) {
-        assert!(sockets.len() > 1);
+        assert!(!sockets.is_empty());
         let port = sockets[0].local_addr().unwrap().port();
         for socket in sockets.iter() {
             check_socket(socket, ip, range);
@@ -3608,6 +3628,7 @@ mod tests {
             bind_ip_addr: IpAddr::V4(ip),
             public_tpu_addr: None,
             public_tpu_forwards_addr: None,
+            num_tvu_sockets: MINIMUM_NUM_TVU_SOCKETS,
         };
 
         let node = Node::new_with_external_ip(&solana_sdk::pubkey::new_rand(), config);
@@ -3631,6 +3652,7 @@ mod tests {
             bind_ip_addr: ip,
             public_tpu_addr: None,
             public_tpu_forwards_addr: None,
+            num_tvu_sockets: MINIMUM_NUM_TVU_SOCKETS,
         };
 
         let node = Node::new_with_external_ip(&solana_sdk::pubkey::new_rand(), config);

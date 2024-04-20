@@ -50,7 +50,6 @@ use {
     },
     solana_perf::recycler::enable_recycler_warming,
     solana_poh::poh_service,
-    solana_program_runtime::runtime_config::RuntimeConfig,
     solana_rpc::{
         rpc::{JsonRpcConfig, RpcBigtableConfig},
         rpc_pubsub_service::PubSubConfig,
@@ -58,6 +57,7 @@ use {
     solana_rpc_client::rpc_client::RpcClient,
     solana_rpc_client_api::config::RpcLeaderScheduleConfig,
     solana_runtime::{
+        runtime_config::RuntimeConfig,
         snapshot_bank_utils::DISABLED_SNAPSHOT_ARCHIVE_INTERVAL,
         snapshot_config::{SnapshotConfig, SnapshotUsage},
         snapshot_utils::{self, ArchiveFormat, SnapshotVersion},
@@ -1338,6 +1338,7 @@ pub fn main() {
         ip_echo_server_threads,
         replay_forks_threads,
         replay_transactions_threads,
+        tvu_receive_threads,
     } = cli::thread_args::parse_num_threads_args(&matches);
 
     let mut validator_config = ValidatorConfig {
@@ -1481,6 +1482,8 @@ pub fn main() {
         ip_echo_server_threads,
         replay_forks_threads,
         replay_transactions_threads,
+        delay_leader_block_for_pending_fork: matches
+            .is_present("delay_leader_block_for_pending_fork"),
         ..ValidatorConfig::default()
     };
 
@@ -1853,6 +1856,7 @@ pub fn main() {
         bind_ip_addr: bind_address,
         public_tpu_addr,
         public_tpu_forwards_addr,
+        num_tvu_sockets: tvu_receive_threads,
     };
 
     let cluster_entrypoints = entrypoint_addrs

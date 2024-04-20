@@ -8,19 +8,17 @@ use {
         account_storage::{meta::StoredAccountMeta, ShrinkInProgress},
         accounts_db::{
             AccountStorageEntry, AccountsDb, AliveAccounts, GetUniqueAccountsResult, ShrinkCollect,
-            ShrinkCollectAliveSeparatedByRefs, ShrinkStatsSub, StoreReclaims,
+            ShrinkCollectAliveSeparatedByRefs, ShrinkStatsSub,
         },
         accounts_file::AccountsFile,
-        accounts_hash::AccountHash,
-        accounts_index::{AccountsIndexScanResult, ZeroLamport},
+        accounts_index::AccountsIndexScanResult,
         active_stats::ActiveStatItem,
-        append_vec::aligned_stored_size,
         storable_accounts::{StorableAccounts, StorableAccountsBySlot},
     },
     rand::{thread_rng, Rng},
     rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator},
     solana_measure::measure_us,
-    solana_sdk::{account::ReadableAccount, clock::Slot},
+    solana_sdk::clock::Slot,
     std::{
         collections::HashMap,
         num::{NonZeroU64, Saturating},
@@ -441,21 +439,18 @@ impl AccountsDb {
     /// create append vec of size 'bytes'
     /// write 'accounts_to_write' into it
     /// return shrink_in_progress and some metrics
-    fn write_ancient_accounts<'a, 'b: 'a, T: ReadableAccount + Sync + ZeroLamport + 'a>(
+    fn write_ancient_accounts<'a, 'b: 'a>(
         &'b self,
         bytes: u64,
-        accounts_to_write: impl StorableAccounts<'a, T>,
+        accounts_to_write: impl StorableAccounts<'a>,
         write_ancient_accounts: &mut WriteAncientAccounts<'b>,
     ) {
         let target_slot = accounts_to_write.target_slot();
         let (shrink_in_progress, create_and_insert_store_elapsed_us) =
             measure_us!(self.get_store_for_shrink(target_slot, bytes));
-        let (store_accounts_timing, rewrite_elapsed_us) = measure_us!(self.store_accounts_frozen(
-            accounts_to_write,
-            None::<Vec<AccountHash>>,
-            shrink_in_progress.new_storage(),
-            StoreReclaims::Ignore,
-        ));
+        let (store_accounts_timing, rewrite_elapsed_us) = measure_us!(
+            self.store_accounts_frozen(accounts_to_write, shrink_in_progress.new_storage(),)
+        );
 
         write_ancient_accounts.metrics.accumulate(&ShrinkStatsSub {
             store_accounts_timing,
@@ -823,7 +818,7 @@ impl<'a> PackedAncientStorage<'a> {
                     // look at each account and stop when we exceed the ideal size
                     while partial_inner_index_max_exclusive < alive_accounts.accounts.len() {
                         let account = alive_accounts.accounts[partial_inner_index_max_exclusive];
-                        let account_size = aligned_stored_size(account.data().len());
+                        let account_size = account.stored_size();
                         let new_size = bytes_total.saturating_add(account_size);
                         if new_size > ideal_size && bytes_total > 0 {
                             full = true;
@@ -1001,6 +996,7 @@ pub mod tests {
                 },
                 ShrinkCollectRefs,
             },
+            accounts_hash::AccountHash,
             accounts_index::UpsertReclaim,
             append_vec::{aligned_stored_size, AppendVec, AppendVecStoredAccountMeta},
             storable_accounts::StorableAccountsBySlot,
@@ -1129,7 +1125,7 @@ pub mod tests {
                         bytes: accounts
                             .stored_accounts
                             .iter()
-                            .map(|account| aligned_stored_size(account.data().len()))
+                            .map(|account| aligned_stored_size(account.data_len()))
                             .sum(),
                         slot,
                     })
@@ -1321,7 +1317,7 @@ pub mod tests {
                         bytes: accounts
                             .stored_accounts
                             .iter()
-                            .map(|account| aligned_stored_size(account.data().len()))
+                            .map(|account| aligned_stored_size(account.data_len()))
                             .sum(),
                         slot,
                     })
@@ -1368,7 +1364,7 @@ pub mod tests {
                             .iter()
                             .map(|(_slot, accounts)| accounts
                                 .iter()
-                                .map(|account| aligned_stored_size(account.data().len()) as u64)
+                                .map(|account| aligned_stored_size(account.data_len()) as u64)
                                 .sum::<u64>())
                             .sum::<u64>()
                     );
@@ -1669,8 +1665,9 @@ pub mod tests {
                 .stored_accounts
                 .first()
                 .unwrap();
+            let account_shared_data_with_2_refs = account_with_2_refs.to_account_shared_data();
             let pk_with_2_refs = account_with_2_refs.pubkey();
-            let mut account_with_1_ref = account_with_2_refs.to_account_shared_data();
+            let mut account_with_1_ref = account_shared_data_with_2_refs.clone();
             account_with_1_ref.checked_add_lamports(1).unwrap();
             append_single_account_with_default_hash(
                 &storage,
@@ -1687,7 +1684,7 @@ pub mod tests {
             append_single_account_with_default_hash(
                 &ignored_storage,
                 pk_with_2_refs,
-                &account_with_2_refs.to_account_shared_data(),
+                &account_shared_data_with_2_refs,
                 true,
                 Some(&db.accounts_index),
             );
@@ -1735,6 +1732,11 @@ pub mod tests {
                 .alive_accounts
                 .one_ref
                 .accounts;
+            let one_ref_accounts_account_shared_data = one_ref_accounts
+                .iter()
+                .map(|account| account.to_account_shared_data())
+                .collect::<Vec<_>>();
+
             assert_eq!(
                 one_ref_accounts
                     .iter()
@@ -1743,7 +1745,7 @@ pub mod tests {
                 vec![&pk_with_1_ref]
             );
             assert_eq!(
-                one_ref_accounts
+                one_ref_accounts_account_shared_data
                     .iter()
                     .map(|meta| meta.to_account_shared_data())
                     .collect::<Vec<_>>(),
@@ -1819,7 +1821,7 @@ pub mod tests {
                     .first()
                     .unwrap()
                     .to_account_shared_data(),
-                account_with_2_refs.to_account_shared_data()
+                account_shared_data_with_2_refs
             );
         }
     }
@@ -1847,8 +1849,9 @@ pub mod tests {
                 .stored_accounts
                 .first()
                 .unwrap();
+            let account_shared_data_with_2_refs = account_with_2_refs.to_account_shared_data();
             let pk_with_2_refs = account_with_2_refs.pubkey();
-            let mut account_with_1_ref = account_with_2_refs.to_account_shared_data();
+            let mut account_with_1_ref = account_shared_data_with_2_refs.clone();
             _ = account_with_1_ref.checked_add_lamports(1);
             append_single_account_with_default_hash(
                 &storage,
@@ -1910,6 +1913,10 @@ pub mod tests {
                 .alive_accounts
                 .one_ref
                 .accounts;
+            let one_ref_accounts_account_shared_data = one_ref_accounts
+                .iter()
+                .map(|account| account.to_account_shared_data())
+                .collect::<Vec<_>>();
             assert_eq!(
                 one_ref_accounts
                     .iter()
@@ -1918,7 +1925,7 @@ pub mod tests {
                 vec![&pk_with_1_ref]
             );
             assert_eq!(
-                one_ref_accounts
+                one_ref_accounts_account_shared_data
                     .iter()
                     .map(|meta| meta.to_account_shared_data())
                     .collect::<Vec<_>>(),
@@ -1962,7 +1969,7 @@ pub mod tests {
                     .first()
                     .unwrap()
                     .to_account_shared_data(),
-                account_with_2_refs.to_account_shared_data()
+                account_shared_data_with_2_refs
             );
         }
     }
@@ -3167,7 +3174,7 @@ pub mod tests {
         let data_size = None;
         let (_db, storages, _slots, _infos) = get_sample_storages(num_slots, data_size);
 
-        let account = storages[0].accounts.get_account(0).unwrap().0;
+        let account = storages[0].accounts.get_stored_account_meta(0).unwrap().0;
         let slot = 1;
         let capacity = 0;
         for i in 0..4usize {

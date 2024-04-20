@@ -73,7 +73,6 @@ use {
         poh_recorder::PohRecorder,
         poh_service::{self, PohService},
     },
-    solana_program_runtime::runtime_config::RuntimeConfig,
     solana_rayon_threadlimit::get_max_thread_count,
     solana_rpc::{
         max_slots::MaxSlots,
@@ -98,6 +97,7 @@ use {
         bank_forks::BankForks,
         commitment::BlockCommitmentCache,
         prioritization_fee_cache::PrioritizationFeeCache,
+        runtime_config::RuntimeConfig,
         snapshot_archive_info::SnapshotArchiveInfoGetter,
         snapshot_bank_utils::{self, DISABLED_SNAPSHOT_ARCHIVE_INTERVAL},
         snapshot_config::SnapshotConfig,
@@ -272,6 +272,7 @@ pub struct ValidatorConfig {
     pub ip_echo_server_threads: NonZeroUsize,
     pub replay_forks_threads: NonZeroUsize,
     pub replay_transactions_threads: NonZeroUsize,
+    pub delay_leader_block_for_pending_fork: bool,
 }
 
 impl Default for ValidatorConfig {
@@ -342,6 +343,7 @@ impl Default for ValidatorConfig {
             ip_echo_server_threads: NonZeroUsize::new(1).expect("1 is non-zero"),
             replay_forks_threads: NonZeroUsize::new(1).expect("1 is non-zero"),
             replay_transactions_threads: NonZeroUsize::new(1).expect("1 is non-zero"),
+            delay_leader_block_for_pending_fork: false,
         }
     }
 }
@@ -942,7 +944,7 @@ impl Validator {
                 bank.clone(),
                 None,
                 bank.ticks_per_slot(),
-                &id,
+                config.delay_leader_block_for_pending_fork,
                 blockstore.clone(),
                 blockstore.get_new_shred_signal(0),
                 &leader_schedule_cache,
@@ -2134,11 +2136,13 @@ fn maybe_warp_slot(
             warp_slot,
             solana_accounts_db::accounts_db::CalcAccountsHashDataSource::Storages,
         ));
-        bank_forks.set_root(
-            warp_slot,
-            accounts_background_request_sender,
-            Some(warp_slot),
-        );
+        bank_forks
+            .set_root(
+                warp_slot,
+                accounts_background_request_sender,
+                Some(warp_slot),
+            )
+            .map_err(|err| err.to_string())?;
         leader_schedule_cache.set_root(&bank_forks.root_bank());
 
         let full_snapshot_archive_info = match snapshot_bank_utils::bank_to_full_snapshot_archive(

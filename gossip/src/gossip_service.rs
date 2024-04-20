@@ -63,6 +63,7 @@ impl GossipService {
             Duration::from_millis(1), // coalesce
             false,
             None,
+            false,
         );
         let (consume_sender, listen_receiver) = unbounded();
         let t_socket_consume = cluster_info.clone().start_socket_consume_thread(
@@ -283,7 +284,7 @@ fn spy(
         if let Some(num) = num_nodes {
             // Only consider validators and archives for `num_nodes`
             let mut nodes: Vec<_> = tvu_peers.iter().collect();
-            nodes.sort();
+            nodes.sort_unstable_by_key(|node| node.pubkey());
             nodes.dedup();
 
             if nodes.len() >= num {

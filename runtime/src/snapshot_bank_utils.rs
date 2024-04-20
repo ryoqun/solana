@@ -1,6 +1,7 @@
 use {
     crate::{
         bank::{builtins::BuiltinPrototype, Bank, BankFieldsToDeserialize, BankSlotDelta},
+        runtime_config::RuntimeConfig,
         serde_snapshot::{
             bank_from_streams, bank_to_stream, fields_from_streams,
             BankIncrementalSnapshotPersistence, SerdeStyle,
@@ -36,7 +37,6 @@ use {
         utils::delete_contents_of_path,
     },
     solana_measure::{measure, measure::Measure},
-    solana_program_runtime::runtime_config::RuntimeConfig,
     solana_sdk::{
         clock::Slot,
         feature_set,
@@ -100,9 +100,9 @@ pub fn add_bank_snapshot(
         );
 
         let (_, measure_flush) = measure!(for storage in snapshot_storages {
-            storage
-                .flush()
-                .map_err(|err| AddBankSnapshotError::FlushStorage(err, storage.get_path()))?;
+            storage.flush().map_err(|err| {
+                AddBankSnapshotError::FlushStorage(err, storage.path().to_path_buf())
+            })?;
         });
 
         // We are constructing the snapshot directory to contain the full snapshot state information to allow
