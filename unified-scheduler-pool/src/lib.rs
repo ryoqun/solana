@@ -1337,8 +1337,8 @@ where
                             log_scheduler!(state_change);
                         }
 
-                        is_finished = state_machine.has_no_active_task()
-                            && (session_ending || thread_suspending);
+                        is_finished = (session_ending || thread_suspending)
+                            && state_machine.has_no_active_task();
                     }
 
                     if session_ending {
