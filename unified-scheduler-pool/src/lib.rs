@@ -2048,7 +2048,7 @@ mod tests {
             fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(
                 _pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>,
             ) -> Self {
-                unreachable!();
+                Self
             }
 
             fn handle(
@@ -2139,7 +2139,7 @@ mod tests {
             fn create<T: SpawnableScheduler<Self, DefaultScheduleExecutionArg>>(
                 _pool: &SchedulerPool<T, Self, DefaultScheduleExecutionArg>,
             ) -> Self {
-                unreachable!();
+                Self
             }
 
             fn handle(
