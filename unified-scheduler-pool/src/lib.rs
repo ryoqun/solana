@@ -1217,25 +1217,27 @@ where
 
                 while !thread_suspending {
                     match new_task_receiver.recv() {
-                    Ok(NewTaskPayload::OpenSubchannel(context)) => {
-                        info!("received context");
-                        slot = context.bank().slot();
-                        // signal about new SchedulingContext to handler threads
-                        runnable_task_sender
-                            .send_chained_channel(context, handler_count)
-                            .unwrap();
-                        retired_task_sender
-                            .send(RetiredTaskPayload::OpenSubchannel(()))
-                            .unwrap();
-                        log_scheduler!("S:started");
-                    }
-                    aa => {
-                        info!("received other: {aa:?}");
-                        assert!(!thread_suspending);
-                        thread_suspending = true;
-                        log_scheduler!("T:suspending1");
-                        continue;
-                    }
+                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                            info!("received context");
+                            slot = context.bank().slot();
+                            // signal about new SchedulingContext to handler threads
+                            runnable_task_sender
+                                .send_chained_channel(context, handler_count)
+                                .unwrap();
+                            retired_task_sender
+                                .send(RetiredTaskPayload::OpenSubchannel(()))
+                                .unwrap();
+                            log_scheduler!("S:started");
+                        }
+                        Err(_) => {
+                            assert!(!thread_suspending);
+                            thread_suspending = true;
+                            log_scheduler!("T:suspending1");
+                            continue;
+                        }
+                        Ok(_) => {
+                            unreachable!();
+                        }
                     }
 
                     let mut is_finished = false;
