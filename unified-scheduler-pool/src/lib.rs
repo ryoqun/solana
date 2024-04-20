@@ -1448,7 +1448,8 @@ where
                     }
                     Ok(RetiredTaskPayload::OpenSubchannel(())) => {
                         assert_matches!(
-                            result_with_timings.replace(initialized_result_with_timings()),
+                            accumulator_result_with_timings
+                                .replace(initialized_result_with_timings()),
                             None
                         );
                     }
