@@ -1338,26 +1338,28 @@ where
                         }
                     }
 
-                    match new_task_receiver.recv() {
-                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
-                            slot = context.bank().slot();
-                            // signal about new SchedulingContext to handler threads
-                            runnable_task_sender
-                                .send_chained_channel(context, handler_count)
-                                .unwrap();
-                            retired_task_sender
-                                .send(RetiredTaskPayload::OpenSubchannel(()))
-                                .unwrap();
-                            log_scheduler!("S:started");
-                        }
-                        Err(_) => {
-                            assert!(!thread_suspending);
-                            thread_suspending = true;
-                            log_scheduler!("T:suspending");
-                            continue;
-                        }
-                        Ok(_) => {
-                            unreachable!();
+                    if !thread_suspending {
+                        match new_task_receiver.recv() {
+                            Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                                slot = context.bank().slot();
+                                // signal about new SchedulingContext to handler threads
+                                runnable_task_sender
+                                    .send_chained_channel(context, handler_count)
+                                    .unwrap();
+                                retired_task_sender
+                                    .send(RetiredTaskPayload::OpenSubchannel(()))
+                                    .unwrap();
+                                log_scheduler!("S:started");
+                            }
+                            Err(_) => {
+                                assert!(!thread_suspending);
+                                thread_suspending = true;
+                                log_scheduler!("T:suspending");
+                                continue;
+                            }
+                            Ok(_) => {
+                                unreachable!();
+                            }
                         }
                     }
                 }
