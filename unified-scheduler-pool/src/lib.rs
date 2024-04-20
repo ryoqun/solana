@@ -1213,29 +1213,6 @@ where
                 log_scheduler!("T:started");
 
                 while !thread_suspending {
-                    match new_task_receiver.recv() {
-                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
-                            slot = context.bank().slot();
-                            // signal about new SchedulingContext to handler threads
-                            runnable_task_sender
-                                .send_chained_channel(context, handler_count)
-                                .unwrap();
-                            retired_task_sender
-                                .send(RetiredTaskPayload::OpenSubchannel(()))
-                                .unwrap();
-                            log_scheduler!("S:started");
-                        }
-                        Err(_) => {
-                            assert!(!thread_suspending);
-                            thread_suspending = true;
-                            log_scheduler!("T:suspending");
-                            continue;
-                        }
-                        Ok(_) => {
-                            unreachable!();
-                        }
-                    }
-
                     let mut is_finished = false;
                     while !is_finished {
                         // ALL recv selectors are eager-evaluated ALWAYS by current crossbeam impl,
@@ -1360,6 +1337,29 @@ where
                             session_ending = false;
                         }
                     }
+
+                    match new_task_receiver.recv() {
+                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                            slot = context.bank().slot();
+                            // signal about new SchedulingContext to handler threads
+                            runnable_task_sender
+                                .send_chained_channel(context, handler_count)
+                                .unwrap();
+                            retired_task_sender
+                                .send(RetiredTaskPayload::OpenSubchannel(()))
+                                .unwrap();
+                            log_scheduler!("S:started");
+                        }
+                        Err(_) => {
+                            assert!(!thread_suspending);
+                            thread_suspending = true;
+                            log_scheduler!("T:suspending");
+                            continue;
+                        }
+                        Ok(_) => {
+                            unreachable!();
+                        }
+                    }
                 }
 
                 log_scheduler!("T:suspended");
@@ -1447,8 +1447,11 @@ where
                         );
                     }
                     Ok(RetiredTaskPayload::OpenSubchannel(())) => {
-                        accumulator_result_with_timings = Some(initialized_result_with_timings());
-                    },
+                        assert_matches!(
+                            result_with_timings.replace(initialized_result_with_timings()),
+                            None
+                        );
+                    }
                     Ok(RetiredTaskPayload::CloseSubchannel) => {
                         if accumulated_result_sender
                             .send(accumulator_result_with_timings.take())
@@ -1527,12 +1530,13 @@ where
     }
 
     fn start_session(&mut self, context: &SchedulingContext) {
-        self.new_task_sender
-            .send(NewTaskPayload::OpenSubchannel(context.clone()))
-            .unwrap();
         if !self.is_suspended() {
+            self.new_task_sender
+                .send(NewTaskPayload::OpenSubchannel(context.clone()))
+                .unwrap();
             assert_matches!(self.session_result_with_timings, None);
         } else {
+            self.put_session_result_with_timings(initialized_result_with_timings());
             assert_matches!(self.start_or_try_resume_threads(context), Ok(()));
         }
     }
