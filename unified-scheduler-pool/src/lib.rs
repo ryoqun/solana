@@ -19,7 +19,7 @@ use {
     assert_matches::assert_matches,
     cpu_time::ThreadTime,
     crossbeam_channel::{
-        self, bounded, disconnected, never, select_biased, Receiver, RecvError, RecvTimeoutError,
+        self, disconnected, never, select_biased, Receiver, RecvError, RecvTimeoutError,
         SendError, Sender, TryRecvError,
     },
     dashmap::DashMap,
@@ -227,7 +227,7 @@ where
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
 
-        let (scheduler_pool_sender, scheduler_pool_receiver) = bounded(1);
+        let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded(1);
         let (cleaner_sender, cleaner_receiver) = crossbeam_channel::unbounded();
         let (cleaner_exit_signal_sender, cleaner_exit_signal_receiver) =
             crossbeam_channel::unbounded();
@@ -1108,7 +1108,7 @@ where
 
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
-        let (tid_sender, tid_receiver) = bounded(1);
+        let (tid_sender, tid_receiver) = crossbeam_channel::bounded(1);
 
         // High-level flow of new tasks:
         // 1. the replay stage thread send a new task.
