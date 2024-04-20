@@ -852,7 +852,7 @@ where
                 debug!("ensure_thread_manager_resumed(): will start threads...");
                 drop(read);
                 let mut write = self.inner.thread_manager.write().unwrap();
-                write.start_or_try_resume_threads()?;
+                write.start_or_try_resume_threads(context)?;
                 drop(write);
                 was_already_active = false;
             }
@@ -994,7 +994,7 @@ where
         );
     }
 
-    fn start_or_try_resume_threads(&mut self) -> Result<()> {
+    fn start_or_try_resume_threads(&mut self, context: &SchedulingContext) -> Result<()> {
         if !self.is_suspended() {
             // this can't be promoted to panic! as read => write upgrade isn't completely
             // race-free in ensure_thread_manager_resumed()...
@@ -1109,7 +1109,7 @@ where
             crossbeam_channel::unbounded::<Option<ResultWithTimings>>();
 
         let scheduler_id = self.scheduler_id;
-        let mut slot = Slot::max_value();
+        let mut slot = context.bank().slot();
         let (tid_sender, tid_receiver) = bounded(1);
         let mut result_with_timings = self.session_result_with_timings.take();
 
@@ -1534,7 +1534,7 @@ where
         if !self.is_suspended() {
             assert_matches!(self.session_result_with_timings, None);
         } else {
-            assert_matches!(self.start_or_try_resume_threads(), Ok(()));
+            assert_matches!(self.start_or_try_resume_threads(context), Ok(()));
         }
     }
 
