@@ -1528,11 +1528,11 @@ where
     }
 
     fn start_session(&mut self, context: &SchedulingContext) {
+        self.new_task_sender
+            .send(NewTaskPayload::OpenSubchannel(context.clone()))
+            .unwrap();
         if !self.is_suspended() {
             assert_matches!(self.session_result_with_timings, None);
-            self.new_task_sender
-                .send(NewTaskPayload::OpenSubchannel(context.clone()))
-                .unwrap();
         } else {
             self.put_session_result_with_timings(initialized_result_with_timings());
             assert_matches!(self.start_or_try_resume_threads(context), Ok(()));
