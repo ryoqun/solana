@@ -1447,7 +1447,7 @@ where
                         );
                     }
                     Ok(RetiredTaskPayload::OpenSubchannel(())) => {
-                        accumulator_result_with_timings = initialized_result_with_timings();
+                        accumulator_result_with_timings = Some(initialized_result_with_timings());
                     },
                     Ok(RetiredTaskPayload::CloseSubchannel) => {
                         if accumulated_result_sender
