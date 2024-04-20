@@ -454,12 +454,13 @@ impl AncientSlotPubkeys {
             // Any overflow accounts will get written into a new append vec AT 'slot', so they don't need to be unrefed
             let accounts = to_store.get(StorageSelector::Primary);
             if Some(current_ancient.slot()) != self.inner.as_ref().map(|ap| ap.slot) {
-                let pubkeys = current_ancient
+                let mut pubkeys = HashSet::new();
+                current_ancient
                     .accounts_file()
                     .accounts
-                    .account_iter()
-                    .map(|account| *account.pubkey())
-                    .collect::<HashSet<_>>();
+                    .scan_pubkeys(|pubkey| {
+                        pubkeys.insert(*pubkey);
+                    });
                 self.inner = Some(AncientSlotPubkeysInner {
                     pubkeys,
                     slot: current_ancient.slot(),
@@ -823,11 +824,14 @@ impl<'a> LoadedAccountAccessor<'a> {
                             .get_account_shared_data(*offset)
                     .expect("If a storage entry was found in the storage map, it must not have been reset yet")
             }
-            _ => self.check_and_get_loaded_account().take_account(),
+            _ => self.check_and_get_loaded_account(|loaded_account| loaded_account.take_account()),
         }
     }
 
-    fn check_and_get_loaded_account(&mut self) -> LoadedAccount {
+    fn check_and_get_loaded_account<T>(
+        &mut self,
+        callback: impl for<'local> FnMut(LoadedAccount<'local>) -> T,
+    ) -> T {
         // all of these following .expect() and .unwrap() are like serious logic errors,
         // ideal for representing this as rust type system....
 
@@ -838,7 +842,7 @@ impl<'a> LoadedAccountAccessor<'a> {
             LoadedAccountAccessor::Cached(Some(_cached_account)) => {
                 // Cached(Some(x)) variant always produces `Some` for get_loaded_account() since
                 // it just returns the inner `x` without additional fetches
-                self.get_loaded_account().unwrap()
+                self.get_loaded_account(callback).unwrap()
             }
             LoadedAccountAccessor::Stored(Some(_maybe_storage_entry)) => {
                 // If we do find the storage entry, we can guarantee that the storage entry is
@@ -846,19 +850,22 @@ impl<'a> LoadedAccountAccessor<'a> {
                 // was still in the storage map. This means even if the storage entry is removed
                 // from the storage map after we grabbed the storage entry, the recycler should not
                 // reset the storage entry until we drop the reference to the storage entry.
-                self.get_loaded_account()
+                self.get_loaded_account(callback)
                     .expect("If a storage entry was found in the storage map, it must not have been reset yet")
             }
         }
     }
 
-    fn get_loaded_account(&mut self) -> Option<LoadedAccount> {
+    fn get_loaded_account<T>(
+        &mut self,
+        mut callback: impl for<'local> FnMut(LoadedAccount<'local>) -> T,
+    ) -> Option<T> {
         match self {
             LoadedAccountAccessor::Cached(cached_account) => {
                 let cached_account: Cow<'a, CachedAccount> = cached_account.take().expect(
                     "Cache flushed/purged should be handled before trying to fetch account",
                 );
-                Some(LoadedAccount::Cached(cached_account))
+                Some(callback(LoadedAccount::Cached(cached_account)))
             }
             LoadedAccountAccessor::Stored(maybe_storage_entry) => {
                 // storage entry may not be present if slot was cleaned up in
@@ -868,8 +875,10 @@ impl<'a> LoadedAccountAccessor<'a> {
                     .as_ref()
                     .and_then(|(storage_entry, offset)| {
                         storage_entry
-                            .get_stored_account_meta(*offset)
-                            .map(LoadedAccount::Stored)
+                            .accounts
+                            .get_stored_account_meta_callback(*offset, |account| {
+                                callback(LoadedAccount::Stored(account))
+                            })
                     })
             }
         }
@@ -1130,10 +1139,6 @@ impl AccountStorageEntry {
         self.accounts.flush()
     }
 
-    fn get_stored_account_meta(&self, offset: usize) -> Option<StoredAccountMeta> {
-        Some(self.accounts.get_stored_account_meta(offset)?.0)
-    }
-
     fn get_account_shared_data(&self, offset: usize) -> Option<AccountSharedData> {
         self.accounts.get_account_shared_data(offset)
     }
@@ -1311,7 +1316,7 @@ pub struct AccountsDb {
 
     write_cache_limit_bytes: Option<u64>,
 
-    sender_bg_hasher: Option<Sender<CachedAccount>>,
+    sender_bg_hasher: Option<Sender<Vec<CachedAccount>>>,
     read_only_accounts_cache: ReadOnlyAccountsCache,
 
     /// distribute the accounts across storage lists
@@ -2747,17 +2752,19 @@ impl AccountsDb {
         }
     }
 
-    fn background_hasher(receiver: Receiver<CachedAccount>) {
+    fn background_hasher(receiver: Receiver<Vec<CachedAccount>>) {
         info!("Background account hasher has started");
         loop {
             let result = receiver.recv();
             match result {
-                Ok(account) => {
-                    // if we hold the only ref, then this account doesn't need to be hashed, we ignore this account and it will disappear
-                    if Arc::strong_count(&account) > 1 {
-                        // this will cause the hash to be calculated and store inside account if it needs to be calculated
-                        let _ = (*account).hash();
-                    };
+                Ok(accounts) => {
+                    for account in accounts {
+                        // if we hold the only ref, then this account doesn't need to be hashed, we ignore this account and it will disappear
+                        if Arc::strong_count(&account) > 1 {
+                            // this will cause the hash to be calculated and store inside account if it needs to be calculated
+                            let _ = (*account).hash();
+                        };
+                    }
                 }
                 Err(err) => {
                     info!("Background account hasher is stopping because: {err}");
@@ -4722,8 +4729,9 @@ impl AccountsDb {
             |pubkey, (account_info, slot)| {
                 let account_slot = self
                     .get_account_accessor(slot, pubkey, &account_info.storage_location())
-                    .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
+                    .get_loaded_account(|loaded_account| {
+                        (pubkey, loaded_account.take_account(), slot)
+                    });
                 scan_func(account_slot)
             },
             config,
@@ -4745,12 +4753,10 @@ impl AccountsDb {
             metric_name,
             ancestors,
             |pubkey, (account_info, slot)| {
-                if let Some(loaded_account) = self
-                    .get_account_accessor(slot, pubkey, &account_info.storage_location())
-                    .get_loaded_account()
-                {
-                    scan_func(pubkey, loaded_account, slot);
-                }
+                self.get_account_accessor(slot, pubkey, &account_info.storage_location())
+                    .get_loaded_account(|loaded_account| {
+                        scan_func(pubkey, loaded_account, slot);
+                    });
             },
             config,
         );
@@ -4785,8 +4791,9 @@ impl AccountsDb {
                 // For details, see the comment in retry_to_get_account_accessor()
                 if let Some(account_slot) = self
                     .get_account_accessor(slot, pubkey, &account_info.storage_location())
-                    .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot))
+                    .get_loaded_account(|loaded_account| {
+                        (pubkey, loaded_account.take_account(), slot)
+                    })
                 {
                     scan_func(Some(account_slot))
                 }
@@ -4824,8 +4831,9 @@ impl AccountsDb {
             |pubkey, (account_info, slot)| {
                 let account_slot = self
                     .get_account_accessor(slot, pubkey, &account_info.storage_location())
-                    .get_loaded_account()
-                    .map(|loaded_account| (pubkey, loaded_account.take_account(), slot));
+                    .get_loaded_account(|loaded_account| {
+                        (pubkey, loaded_account.take_account(), slot)
+                    });
                 scan_func(account_slot)
             },
             config,
@@ -4890,7 +4898,7 @@ impl AccountsDb {
                 .storage
                 .get_slot_storage_entry_shrinking_in_progress_ok(slot)
             {
-                storage.accounts.account_iter().for_each(|account| {
+                storage.accounts.scan_accounts(|account| {
                     let loaded_account = LoadedAccount::Stored(account);
                     let data = (scan_account_storage_data
                         == ScanAccountStorageData::DataRefForStorage)
@@ -5410,8 +5418,8 @@ impl AccountsDb {
             max_root,
             load_hint,
         )?;
-        let loaded_account = account_accessor.check_and_get_loaded_account();
-        Some(loaded_account.loaded_hash())
+        account_accessor
+            .check_and_get_loaded_account(|loaded_account| Some(loaded_account.loaded_hash()))
     }
 
     fn get_account_accessor<'a>(
@@ -6382,7 +6390,7 @@ impl AccountsDb {
                 Box::new(std::iter::empty())
             };
 
-        txn_iter
+        let (account_infos, cached_accounts) = txn_iter
             .enumerate()
             .map(|(i, txn)| {
                 let mut account_info = AccountInfo::default();
@@ -6401,17 +6409,20 @@ impl AccountsDb {
 
                     let cached_account =
                         self.accounts_cache.store(slot, pubkey, account_shared_data);
-                    // hash this account in the bg
-                    match &self.sender_bg_hasher {
-                        Some(ref sender) => {
-                            let _ = sender.send(cached_account);
-                        }
-                        None => (),
-                    };
-                });
-                account_info
+                    (account_info, cached_account)
+                })
             })
-            .collect()
+            .unzip();
+
+        // hash this accounts in bg
+        match &self.sender_bg_hasher {
+            Some(ref sender) => {
+                let _ = sender.send(cached_accounts);
+            }
+            None => (),
+        };
+
+        account_infos
     }
 
     fn store_accounts_to<'a: 'c, 'b, 'c>(
@@ -6531,7 +6542,7 @@ impl AccountsDb {
         &self,
         max_slot: Slot,
         config: &CalcAccountsHashConfig<'_>,
-    ) -> Result<(AccountsHash, u64), AccountsHashVerificationError> {
+    ) -> (AccountsHash, u64) {
         let mut collect = Measure::start("collect");
         let keys: Vec<_> = self
             .accounts_index
@@ -6572,28 +6583,25 @@ impl AccountsDb {
                                             pubkey,
                                             &account_info.storage_location(),
                                         )
-                                        .get_loaded_account()
-                                        .map(
-                                            |loaded_account| {
-                                                let mut loaded_hash = loaded_account.loaded_hash();
-                                                let balance = loaded_account.lamports();
-                                                let hash_is_missing =
-                                                    loaded_hash == AccountHash(Hash::default());
-                                                if hash_is_missing {
-                                                    let computed_hash = Self::hash_account_data(
-                                                        loaded_account.lamports(),
-                                                        loaded_account.owner(),
-                                                        loaded_account.executable(),
-                                                        loaded_account.rent_epoch(),
-                                                        loaded_account.data(),
-                                                        loaded_account.pubkey(),
-                                                    );
-                                                    loaded_hash = computed_hash;
-                                                }
-                                                sum += balance as u128;
-                                                loaded_hash.0
-                                            },
-                                        )
+                                        .get_loaded_account(|loaded_account| {
+                                            let mut loaded_hash = loaded_account.loaded_hash();
+                                            let balance = loaded_account.lamports();
+                                            let hash_is_missing =
+                                                loaded_hash == AccountHash(Hash::default());
+                                            if hash_is_missing {
+                                                let computed_hash = Self::hash_account_data(
+                                                    loaded_account.lamports(),
+                                                    loaded_account.owner(),
+                                                    loaded_account.executable(),
+                                                    loaded_account.rent_epoch(),
+                                                    loaded_account.data(),
+                                                    loaded_account.pubkey(),
+                                                );
+                                                loaded_hash = computed_hash;
+                                            }
+                                            sum += balance as u128;
+                                            loaded_hash.0
+                                        })
                                     },
                                 )
                                 .flatten()
@@ -6625,7 +6633,7 @@ impl AccountsDb {
         );
 
         let accounts_hash = AccountsHash(accumulated_hash);
-        Ok((accounts_hash, total_lamports))
+        (accounts_hash, total_lamports)
     }
 
     /// This is only valid to call from tests.
@@ -6956,7 +6964,7 @@ impl AccountsDb {
         data_source: CalcAccountsHashDataSource,
         slot: Slot,
         config: &CalcAccountsHashConfig<'_>,
-    ) -> Result<(AccountsHash, u64), AccountsHashVerificationError> {
+    ) -> (AccountsHash, u64) {
         match data_source {
             CalcAccountsHashDataSource::Storages => {
                 if self.accounts_cache.contains_any_slots(slot) {
@@ -6999,9 +7007,9 @@ impl AccountsDb {
         slot: Slot,
         config: CalcAccountsHashConfig<'_>,
         expected_capitalization: Option<u64>,
-    ) -> Result<(AccountsHash, u64), AccountsHashVerificationError> {
+    ) -> (AccountsHash, u64) {
         let (accounts_hash, total_lamports) =
-            self.calculate_accounts_hash(data_source, slot, &config)?;
+            self.calculate_accounts_hash(data_source, slot, &config);
         if debug_verify {
             // calculate the other way (store or non-store) and verify results match.
             let data_source_other = match data_source {
@@ -7009,14 +7017,14 @@ impl AccountsDb {
                 CalcAccountsHashDataSource::Storages => CalcAccountsHashDataSource::IndexForTests,
             };
             let (accounts_hash_other, total_lamports_other) =
-                self.calculate_accounts_hash(data_source_other, slot, &config)?;
+                self.calculate_accounts_hash(data_source_other, slot, &config);
 
             let success = accounts_hash == accounts_hash_other
                 && total_lamports == total_lamports_other
                 && total_lamports == expected_capitalization.unwrap_or(total_lamports);
             assert!(success, "calculate_accounts_hash_with_verify mismatch. hashes: {}, {}; lamports: {}, {}; expected lamports: {:?}, data source: {:?}, slot: {}", accounts_hash.0, accounts_hash_other.0, total_lamports, total_lamports_other, expected_capitalization, data_source, slot);
         }
-        Ok((accounts_hash, total_lamports))
+        (accounts_hash, total_lamports)
     }
 
     /// run the accounts hash calculation and store the results
@@ -7032,23 +7040,19 @@ impl AccountsDb {
         rent_collector: &RentCollector,
         is_startup: bool,
     ) -> (AccountsHash, u64) {
-        let check_hash = false;
-        let (accounts_hash, total_lamports) = self
-            .calculate_accounts_hash_with_verify(
-                data_source,
-                debug_verify,
-                slot,
-                CalcAccountsHashConfig {
-                    use_bg_thread_pool: !is_startup,
-                    check_hash,
-                    ancestors: Some(ancestors),
-                    epoch_schedule,
-                    rent_collector,
-                    store_detailed_debug_info_on_failure: false,
-                },
-                expected_capitalization,
-            )
-            .unwrap(); // unwrap here will never fail since check_hash = false
+        let (accounts_hash, total_lamports) = self.calculate_accounts_hash_with_verify(
+            data_source,
+            debug_verify,
+            slot,
+            CalcAccountsHashConfig {
+                use_bg_thread_pool: !is_startup,
+                ancestors: Some(ancestors),
+                epoch_schedule,
+                rent_collector,
+                store_detailed_debug_info_on_failure: false,
+            },
+            expected_capitalization,
+        );
         self.set_accounts_hash(slot, (accounts_hash, total_lamports));
         (accounts_hash, total_lamports)
     }
@@ -7060,13 +7064,13 @@ impl AccountsDb {
         storages: &SortedStorages<'_>,
         slot: Slot,
         stats: HashStats,
-    ) -> Result<(AccountsHash, /*capitalization*/ u64), AccountsHashVerificationError> {
-        let accounts_hash = self.calculate_accounts_hash_from_storages(config, storages, stats)?;
+    ) -> (AccountsHash, /*capitalization*/ u64) {
+        let accounts_hash = self.calculate_accounts_hash_from_storages(config, storages, stats);
         let old_accounts_hash = self.set_accounts_hash(slot, accounts_hash);
         if let Some(old_accounts_hash) = old_accounts_hash {
             warn!("Accounts hash was already set for slot {slot}! old: {old_accounts_hash:?}, new: {accounts_hash:?}");
         }
-        Ok(accounts_hash)
+        accounts_hash
     }
 
     /// Calculate the incremental accounts hash for `storages` and save the results at `slot`
@@ -7076,16 +7080,15 @@ impl AccountsDb {
         storages: &SortedStorages<'_>,
         slot: Slot,
         stats: HashStats,
-    ) -> Result<(IncrementalAccountsHash, /*capitalization*/ u64), AccountsHashVerificationError>
-    {
+    ) -> (IncrementalAccountsHash, /*capitalization*/ u64) {
         let incremental_accounts_hash =
-            self.calculate_incremental_accounts_hash(config, storages, stats)?;
+            self.calculate_incremental_accounts_hash(config, storages, stats);
         let old_incremental_accounts_hash =
             self.set_incremental_accounts_hash(slot, incremental_accounts_hash);
         if let Some(old_incremental_accounts_hash) = old_incremental_accounts_hash {
             warn!("Incremental accounts hash was already set for slot {slot}! old: {old_incremental_accounts_hash:?}, new: {incremental_accounts_hash:?}");
         }
-        Ok(incremental_accounts_hash)
+        incremental_accounts_hash
     }
 
     /// Set the accounts hash for `slot`
@@ -7190,7 +7193,7 @@ impl AccountsDb {
         bins: usize,
         bin_range: &Range<usize>,
         config: &CalcAccountsHashConfig<'_>,
-    ) -> Result<Vec<CacheHashDataFileReference>, AccountsHashVerificationError> {
+    ) -> Vec<CacheHashDataFileReference> {
         assert!(bin_range.start < bins);
         assert!(bin_range.end <= bins);
         assert!(bin_range.start < bin_range.end);
@@ -7227,7 +7230,7 @@ impl AccountsDb {
         time.stop();
         stats.scan_time_total_us += time.as_us();
 
-        Ok(result)
+        result
     }
 
     fn sort_slot_storage_scan(accum: &mut BinnedHashData) -> u64 {
@@ -7273,17 +7276,17 @@ impl AccountsDb {
         config: &CalcAccountsHashConfig<'_>,
         storages: &SortedStorages<'_>,
         stats: HashStats,
-    ) -> Result<(AccountsHash, u64), AccountsHashVerificationError> {
+    ) -> (AccountsHash, u64) {
         let (accounts_hash, capitalization) = self._calculate_accounts_hash_from_storages(
             config,
             storages,
             stats,
             CalcAccountsHashKind::Full,
-        )?;
+        );
         let AccountsHashKind::Full(accounts_hash) = accounts_hash else {
             panic!("calculate_accounts_hash_from_storages must return a FullAccountsHash");
         };
-        Ok((accounts_hash, capitalization))
+        (accounts_hash, capitalization)
     }
 
     /// Calculate the incremental accounts hash
@@ -7299,18 +7302,17 @@ impl AccountsDb {
         config: &CalcAccountsHashConfig<'_>,
         storages: &SortedStorages<'_>,
         stats: HashStats,
-    ) -> Result<(IncrementalAccountsHash, /* capitalization */ u64), AccountsHashVerificationError>
-    {
+    ) -> (IncrementalAccountsHash, /* capitalization */ u64) {
         let (accounts_hash, capitalization) = self._calculate_accounts_hash_from_storages(
             config,
             storages,
             stats,
             CalcAccountsHashKind::Incremental,
-        )?;
+        );
         let AccountsHashKind::Incremental(incremental_accounts_hash) = accounts_hash else {
             panic!("calculate_incremental_accounts_hash must return an IncrementalAccountsHash");
         };
-        Ok((incremental_accounts_hash, capitalization))
+        (incremental_accounts_hash, capitalization)
     }
 
     fn _calculate_accounts_hash_from_storages(
@@ -7319,7 +7321,7 @@ impl AccountsDb {
         storages: &SortedStorages<'_>,
         mut stats: HashStats,
         kind: CalcAccountsHashKind,
-    ) -> Result<(AccountsHashKind, u64), AccountsHashVerificationError> {
+    ) -> (AccountsHashKind, u64) {
         let total_time = Measure::start("");
         let _guard = self.active_stats.activate(ActiveStatItem::Hash);
         let storages_start_slot = storages.range().start;
@@ -7363,7 +7365,7 @@ impl AccountsDb {
                 PUBKEY_BINS_FOR_CALCULATING_HASHES,
                 &bounds,
                 config,
-            )?;
+            );
 
             let cache_hash_data_files = cache_hash_data_file_references
                 .iter()
@@ -7394,7 +7396,7 @@ impl AccountsDb {
                 }
             };
             info!("calculate_accounts_hash_from_storages: slot: {slot}, {accounts_hash:?}, capitalization: {capitalization}");
-            Ok((accounts_hash, capitalization))
+            (accounts_hash, capitalization)
         };
 
         let result = if use_bg_thread_pool {
@@ -7422,7 +7424,6 @@ impl AccountsDb {
     ) -> Result<(), AccountsHashVerificationError> {
         let calc_config = CalcAccountsHashConfig {
             use_bg_thread_pool: config.use_bg_thread_pool,
-            check_hash: false,
             ancestors: Some(config.ancestors),
             epoch_schedule: config.epoch_schedule,
             rent_collector: config.rent_collector,
@@ -7440,7 +7441,7 @@ impl AccountsDb {
                 &calc_config,
                 &sorted_storages,
                 HashStats::default(),
-            )?;
+            );
             let found_incremental_accounts_hash = self
                 .get_incremental_accounts_hash(slot)
                 .ok_or(AccountsHashVerificationError::MissingAccountsHash)?;
@@ -7461,7 +7462,7 @@ impl AccountsDb {
                     slot,
                     calc_config,
                     None,
-                )?;
+                );
 
             if calculated_lamports != total_lamports {
                 warn!(
@@ -8559,8 +8560,7 @@ impl AccountsDb {
         rent_collector: &RentCollector,
         storage_info: &StorageSizeAndCountMap,
     ) -> SlotIndexGenerationInfo {
-        let mut accounts = storage.accounts.account_iter();
-        if accounts.next().is_none() {
+        if storage.accounts.get_account_sizes(&[0]).is_empty() {
             return SlotIndexGenerationInfo::default();
         }
         let secondary = !self.account_indexes.is_empty();
@@ -9062,20 +9062,21 @@ impl AccountsDb {
                             let mut accessor = LoadedAccountAccessor::Stored(
                                 maybe_storage_entry.map(|entry| (entry, account_info.offset())),
                             );
-                            let loaded_account = accessor.check_and_get_loaded_account();
-                            let data_len = loaded_account.data_len();
-                            accounts_data_len_from_duplicates += data_len;
-                            if let Some(lamports_to_top_off) = Self::stats_for_rent_payers(
-                                pubkey,
-                                loaded_account.lamports(),
-                                data_len,
-                                loaded_account.rent_epoch(),
-                                loaded_account.executable(),
-                                rent_collector,
-                            ) {
-                                removed_rent_paying += 1;
-                                removed_top_off += lamports_to_top_off;
-                            }
+                            accessor.check_and_get_loaded_account(|loaded_account| {
+                                let data_len = loaded_account.data_len();
+                                accounts_data_len_from_duplicates += data_len;
+                                if let Some(lamports_to_top_off) = Self::stats_for_rent_payers(
+                                    pubkey,
+                                    loaded_account.lamports(),
+                                    data_len,
+                                    loaded_account.rent_epoch(),
+                                    loaded_account.executable(),
+                                    rent_collector,
+                                ) {
+                                    removed_rent_paying += 1;
+                                    removed_top_off += lamports_to_top_off;
+                                }
+                            });
                         });
                     }
                 }
@@ -9522,8 +9523,7 @@ pub mod tests {
             stats: &mut crate::accounts_hash::HashStats,
             bins: usize,
             bin_range: &Range<usize>,
-            check_hash: bool,
-        ) -> Result<Vec<CacheHashDataFile>, AccountsHashVerificationError> {
+        ) -> Vec<CacheHashDataFile> {
             let temp_dir = TempDir::new().unwrap();
             let accounts_hash_cache_path = temp_dir.path().to_path_buf();
             self.scan_snapshot_stores_with_cache(
@@ -9532,17 +9532,12 @@ pub mod tests {
                 stats,
                 bins,
                 bin_range,
-                &CalcAccountsHashConfig {
-                    check_hash,
-                    ..CalcAccountsHashConfig::default()
-                },
+                &CalcAccountsHashConfig::default(),
             )
-            .map(|references| {
-                references
-                    .iter()
-                    .map(|reference| reference.map().unwrap())
-                    .collect::<Vec<_>>()
-            })
+            .iter()
+            .map(CacheHashDataFileReference::map)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap()
         }
 
         fn get_storage_for_slot(&self, slot: Slot) -> Option<Arc<AccountStorageEntry>> {
@@ -9970,9 +9965,7 @@ pub mod tests {
         let bounds = Range { start: 2, end: 2 };
         let accounts_db = AccountsDb::new_single_for_tests();
 
-        accounts_db
-            .scan_snapshot_stores(&empty_storages(), &mut stats, 2, &bounds, false)
-            .unwrap();
+        accounts_db.scan_snapshot_stores(&empty_storages(), &mut stats, 2, &bounds);
     }
     #[test]
     #[should_panic(expected = "bin_range.end <= bins")]
@@ -9981,9 +9974,7 @@ pub mod tests {
         let bounds = Range { start: 1, end: 3 };
 
         let accounts_db = AccountsDb::new_single_for_tests();
-        accounts_db
-            .scan_snapshot_stores(&empty_storages(), &mut stats, 2, &bounds, false)
-            .unwrap();
+        accounts_db.scan_snapshot_stores(&empty_storages(), &mut stats, 2, &bounds);
     }
 
     #[test]
@@ -9993,9 +9984,7 @@ pub mod tests {
         let bounds = Range { start: 1, end: 0 };
 
         let accounts_db = AccountsDb::new_single_for_tests();
-        accounts_db
-            .scan_snapshot_stores(&empty_storages(), &mut stats, 2, &bounds, false)
-            .unwrap();
+        accounts_db.scan_snapshot_stores(&empty_storages(), &mut stats, 2, &bounds);
     }
 
     fn sample_storages_and_account_in_slot(
@@ -10186,18 +10175,15 @@ pub mod tests {
         let bins = 1;
         let mut stats = HashStats::default();
 
-        accounts_db
-            .scan_snapshot_stores(
-                &get_storage_refs(&storages),
-                &mut stats,
-                bins,
-                &Range {
-                    start: 0,
-                    end: bins,
-                },
-                true, // checking hash here
-            )
-            .unwrap();
+        accounts_db.scan_snapshot_stores(
+            &get_storage_refs(&storages),
+            &mut stats,
+            bins,
+            &Range {
+                start: 0,
+                end: bins,
+            },
+        );
     }
 
     define_accounts_db_test!(test_accountsdb_scan_snapshot_stores, |accounts_db| {
@@ -10214,34 +10200,28 @@ pub mod tests {
         let bins = 1;
         let mut stats = HashStats::default();
 
-        let result = accounts_db
-            .scan_snapshot_stores(
-                &get_storage_refs(&storages),
-                &mut stats,
-                bins,
-                &Range {
-                    start: 0,
-                    end: bins,
-                },
-                true, // checking hash here
-            )
-            .unwrap();
+        let result = accounts_db.scan_snapshot_stores(
+            &get_storage_refs(&storages),
+            &mut stats,
+            bins,
+            &Range {
+                start: 0,
+                end: bins,
+            },
+        );
         assert_scan(result, vec![vec![raw_expected.clone()]], bins, 0, bins);
 
         let bins = 2;
         let accounts_db = AccountsDb::new_single_for_tests();
-        let result = accounts_db
-            .scan_snapshot_stores(
-                &get_storage_refs(&storages),
-                &mut stats,
-                bins,
-                &Range {
-                    start: 0,
-                    end: bins,
-                },
-                false,
-            )
-            .unwrap();
+        let result = accounts_db.scan_snapshot_stores(
+            &get_storage_refs(&storages),
+            &mut stats,
+            bins,
+            &Range {
+                start: 0,
+                end: bins,
+            },
+        );
         let mut expected = vec![Vec::new(); bins];
         expected[0].push(raw_expected[0]);
         expected[0].push(raw_expected[1]);
@@ -10251,18 +10231,15 @@ pub mod tests {
 
         let bins = 4;
         let accounts_db = AccountsDb::new_single_for_tests();
-        let result = accounts_db
-            .scan_snapshot_stores(
-                &get_storage_refs(&storages),
-                &mut stats,
-                bins,
-                &Range {
-                    start: 0,
-                    end: bins,
-                },
-                false,
-            )
-            .unwrap();
+        let result = accounts_db.scan_snapshot_stores(
+            &get_storage_refs(&storages),
+            &mut stats,
+            bins,
+            &Range {
+                start: 0,
+                end: bins,
+            },
+        );
         let mut expected = vec![Vec::new(); bins];
         expected[0].push(raw_expected[0]);
         expected[1].push(raw_expected[1]);
@@ -10272,18 +10249,15 @@ pub mod tests {
 
         let bins = 256;
         let accounts_db = AccountsDb::new_single_for_tests();
-        let result = accounts_db
-            .scan_snapshot_stores(
-                &get_storage_refs(&storages),
-                &mut stats,
-                bins,
-                &Range {
-                    start: 0,
-                    end: bins,
-                },
-                false,
-            )
-            .unwrap();
+        let result = accounts_db.scan_snapshot_stores(
+            &get_storage_refs(&storages),
+            &mut stats,
+            bins,
+            &Range {
+                start: 0,
+                end: bins,
+            },
+        );
         let mut expected = vec![Vec::new(); bins];
         expected[0].push(raw_expected[0]);
         expected[127].push(raw_expected[1]);
@@ -10305,18 +10279,15 @@ pub mod tests {
                 SortedStorages::new_debug(&storage_data[..], 0, MAX_ITEMS_PER_CHUNK as usize + 1);
 
             let mut stats = HashStats::default();
-            let result = accounts_db
-                .scan_snapshot_stores(
-                    &sorted_storages,
-                    &mut stats,
-                    bins,
-                    &Range {
-                        start: 0,
-                        end: bins,
-                    },
-                    false,
-                )
-                .unwrap();
+            let result = accounts_db.scan_snapshot_stores(
+                &sorted_storages,
+                &mut stats,
+                bins,
+                &Range {
+                    start: 0,
+                    end: bins,
+                },
+            );
 
             assert_scan(result, vec![vec![raw_expected]], bins, 0, bins);
         }
@@ -10331,18 +10302,15 @@ pub mod tests {
             // just the first bin of 2
             let bins = 2;
             let half_bins = bins / 2;
-            let result = accounts_db
-                .scan_snapshot_stores(
-                    &get_storage_refs(&storages),
-                    &mut stats,
-                    bins,
-                    &Range {
-                        start: 0,
-                        end: half_bins,
-                    },
-                    false,
-                )
-                .unwrap();
+            let result = accounts_db.scan_snapshot_stores(
+                &get_storage_refs(&storages),
+                &mut stats,
+                bins,
+                &Range {
+                    start: 0,
+                    end: half_bins,
+                },
+            );
             let mut expected = vec![Vec::new(); half_bins];
             expected[0].push(raw_expected[0]);
             expected[0].push(raw_expected[1]);
@@ -10350,18 +10318,15 @@ pub mod tests {
 
             // just the second bin of 2
             let accounts_db = AccountsDb::new_single_for_tests();
-            let result = accounts_db
-                .scan_snapshot_stores(
-                    &get_storage_refs(&storages),
-                    &mut stats,
-                    bins,
-                    &Range {
-                        start: 1,
-                        end: bins,
-                    },
-                    false,
-                )
-                .unwrap();
+            let result = accounts_db.scan_snapshot_stores(
+                &get_storage_refs(&storages),
+                &mut stats,
+                bins,
+                &Range {
+                    start: 1,
+                    end: bins,
+                },
+            );
 
             let mut expected = vec![Vec::new(); half_bins];
             let starting_bin_index = 0;
@@ -10374,18 +10339,15 @@ pub mod tests {
             let accounts_db = AccountsDb::new_single_for_tests();
 
             for (bin, expected_item) in raw_expected.iter().enumerate().take(bins) {
-                let result = accounts_db
-                    .scan_snapshot_stores(
-                        &get_storage_refs(&storages),
-                        &mut stats,
-                        bins,
-                        &Range {
-                            start: bin,
-                            end: bin + 1,
-                        },
-                        false,
-                    )
-                    .unwrap();
+                let result = accounts_db.scan_snapshot_stores(
+                    &get_storage_refs(&storages),
+                    &mut stats,
+                    bins,
+                    &Range {
+                        start: bin,
+                        end: bin + 1,
+                    },
+                );
                 let mut expected = vec![Vec::new(); 1];
                 expected[0].push(*expected_item);
                 assert_scan(result, vec![expected], bins, bin, 1);
@@ -10396,18 +10358,15 @@ pub mod tests {
             let range = 1;
             for bin in 0..bins {
                 let accounts_db = AccountsDb::new_single_for_tests();
-                let result = accounts_db
-                    .scan_snapshot_stores(
-                        &get_storage_refs(&storages),
-                        &mut stats,
-                        bins,
-                        &Range {
-                            start: bin,
-                            end: bin + range,
-                        },
-                        false,
-                    )
-                    .unwrap();
+                let result = accounts_db.scan_snapshot_stores(
+                    &get_storage_refs(&storages),
+                    &mut stats,
+                    bins,
+                    &Range {
+                        start: bin,
+                        end: bin + range,
+                    },
+                );
                 let mut expected = vec![];
                 if let Some(index) = bin_locations.iter().position(|&r| r == bin) {
                     expected = vec![Vec::new(); range];
@@ -10441,18 +10400,15 @@ pub mod tests {
             let mut stats = HashStats::default();
             let range = 1;
             let start = 127;
-            let result = accounts_db
-                .scan_snapshot_stores(
-                    &sorted_storages,
-                    &mut stats,
-                    bins,
-                    &Range {
-                        start,
-                        end: start + range,
-                    },
-                    false,
-                )
-                .unwrap();
+            let result = accounts_db.scan_snapshot_stores(
+                &sorted_storages,
+                &mut stats,
+                bins,
+                &Range {
+                    start,
+                    end: start + range,
+                },
+            );
             assert_eq!(result.len(), 1); // 2 chunks, but 1 is empty so not included
             let mut expected = vec![Vec::new(); range];
             expected[0].push(raw_expected[1]);
@@ -10468,13 +10424,11 @@ pub mod tests {
         |db| {
             let (storages, _size, _slot_expected) = sample_storage();
 
-            let result = db
-                .calculate_accounts_hash_from_storages(
-                    &CalcAccountsHashConfig::default(),
-                    &get_storage_refs(&storages),
-                    HashStats::default(),
-                )
-                .unwrap();
+            let result = db.calculate_accounts_hash_from_storages(
+                &CalcAccountsHashConfig::default(),
+                &get_storage_refs(&storages),
+                HashStats::default(),
+            );
             let expected_hash =
                 Hash::from_str("GKot5hBsd81kMupNCXHaqbhv3huEbxAFMLnpcX2hniwn").unwrap();
             let expected_accounts_hash = AccountsHash(expected_hash);
@@ -10492,13 +10446,11 @@ pub mod tests {
                 |item| &item.hash.0,
             );
             let sum = raw_expected.iter().map(|item| item.lamports).sum();
-            let result = db
-                .calculate_accounts_hash_from_storages(
-                    &CalcAccountsHashConfig::default(),
-                    &get_storage_refs(&storages),
-                    HashStats::default(),
-                )
-                .unwrap();
+            let result = db.calculate_accounts_hash_from_storages(
+                &CalcAccountsHashConfig::default(),
+                &get_storage_refs(&storages),
+                HashStats::default(),
+            );
 
             let expected_accounts_hash = AccountsHash(expected_hash);
             assert_eq!(result, (expected_accounts_hash, sum));
@@ -10812,7 +10764,11 @@ pub mod tests {
         let pubkey2 = solana_sdk::pubkey::new_rand();
         let mark_alive = false;
         let storage = sample_storage_with_entries(&tf, slot_expected, &pubkey1, mark_alive);
-        let lamports = storage.accounts.account_iter().next().unwrap().lamports();
+        let lamports = storage
+            .accounts
+            .get_account_shared_data(0)
+            .unwrap()
+            .lamports();
         let calls = Arc::new(AtomicU64::new(0));
         let mut scanner = TestScanSimple {
             current_slot: 0,
@@ -12220,7 +12176,6 @@ pub mod tests {
         fn default() -> Self {
             Self {
                 use_bg_thread_pool: false,
-                check_hash: false,
                 ancestors: None,
                 epoch_schedule: &EPOCH_SCHEDULE,
                 rent_collector: &RENT_COLLECTOR,
@@ -14372,10 +14327,7 @@ pub mod tests {
         run_test_shrink_unref(true)
     }
 
-    #[test]
-    fn test_partial_clean() {
-        solana_logger::setup();
-        let db = AccountsDb::new_single_for_tests();
+    define_accounts_db_test!(test_partial_clean, |db| {
         let account_key1 = Pubkey::new_unique();
         let account_key2 = Pubkey::new_unique();
         let account1 = AccountSharedData::new(1, 0, AccountSharedData::default().owner());
@@ -14384,8 +14336,7 @@ pub mod tests {
         let account4 = AccountSharedData::new(4, 0, AccountSharedData::default().owner());
 
         // Store accounts into slots 0 and 1
-        db.store_uncached(0, &[(&account_key1, &account1)]);
-        db.store_uncached(0, &[(&account_key2, &account1)]);
+        db.store_uncached(0, &[(&account_key1, &account1), (&account_key2, &account1)]);
         db.store_uncached(1, &[(&account_key1, &account2)]);
         db.calculate_accounts_delta_hash(0);
         db.calculate_accounts_delta_hash(1);
@@ -14407,8 +14358,7 @@ pub mod tests {
         db.add_root_and_flush_write_cache(0);
 
         // store into slot 2
-        db.store_uncached(2, &[(&account_key2, &account3)]);
-        db.store_uncached(2, &[(&account_key1, &account3)]);
+        db.store_uncached(2, &[(&account_key2, &account3), (&account_key1, &account3)]);
         db.calculate_accounts_delta_hash(2);
         db.clean_accounts_for_tests();
         db.print_accounts_stats("post-clean2");
@@ -14432,7 +14382,7 @@ pub mod tests {
 
         assert!(db.storage.is_empty_entry(0));
         assert!(!db.storage.is_empty_entry(1));
-    }
+    });
 
     const RACY_SLEEP_MS: u64 = 10;
     const RACE_TIME: u64 = 5;
@@ -16592,11 +16542,10 @@ pub mod tests {
     ) -> Vec<(Pubkey, AccountSharedData)> {
         storages
             .flat_map(|storage| {
-                let vec = storage
-                    .accounts
-                    .account_iter()
-                    .map(|account| (*account.pubkey(), account.to_account_shared_data()))
-                    .collect::<Vec<_>>();
+                let mut vec = Vec::default();
+                storage.accounts.scan_accounts(|account| {
+                    vec.push((*account.pubkey(), account.to_account_shared_data()));
+                });
                 // make sure scan_pubkeys results match
                 // Note that we assume traversals are both in the same order, but this doesn't have to be true.
                 let mut compare = Vec::default();
@@ -16994,11 +16943,14 @@ pub mod tests {
                         if count_marked_dead >= dead_accounts {
                             break;
                         }
-                        let original = original.accounts.account_iter().next().unwrap();
+                        let original_pubkey = original
+                            .accounts
+                            .get_stored_account_meta_callback(0, |account| *account.pubkey())
+                            .unwrap();
                         let slot = ancient_slot + 1 + (count_marked_dead as Slot);
                         _ = db.purge_keys_exact(
                             [(
-                                *original.pubkey(),
+                                original_pubkey,
                                 vec![slot].into_iter().collect::<HashSet<_>>(),
                             )]
                             .iter(),
@@ -17035,16 +16987,19 @@ pub mod tests {
                     "normal_slots: {num_normal_slots}, dead_accounts: {dead_accounts}"
                 );
                 for original in &originals {
-                    let original = original.accounts.account_iter().next().unwrap();
-
-                    let i = after_stored_accounts
-                        .iter()
-                        .enumerate()
-                        .find_map(|(i, stored_ancient)| {
-                            (stored_ancient.pubkey() == original.pubkey()).then_some({
-                                assert!(accounts_equal(stored_ancient, &original));
-                                i
-                            })
+                    let i = original
+                        .accounts
+                        .get_stored_account_meta_callback(0, |original| {
+                            after_stored_accounts
+                                .iter()
+                                .enumerate()
+                                .find_map(|(i, stored_ancient)| {
+                                    (stored_ancient.pubkey() == original.pubkey()).then_some({
+                                        assert!(accounts_equal(stored_ancient, &original));
+                                        i
+                                    })
+                                })
+                                .expect("did not find account")
                         })
                         .expect("did not find account");
                     after_stored_accounts.remove(i);
@@ -17526,13 +17481,11 @@ pub mod tests {
             accounts_db.clean_accounts(Some(slot - 1), false, None, &EpochSchedule::default());
             let (storages, _) = accounts_db.get_snapshot_storages(..=slot);
             let storages = SortedStorages::new(&storages);
-            accounts_db
-                .calculate_accounts_hash_from_storages(
-                    &CalcAccountsHashConfig::default(),
-                    &storages,
-                    HashStats::default(),
-                )
-                .unwrap()
+            accounts_db.calculate_accounts_hash_from_storages(
+                &CalcAccountsHashConfig::default(),
+                &storages,
+                HashStats::default(),
+            )
         };
         assert_eq!(full_accounts_hash.1, 1_110);
         let full_accounts_hash_slot = slot;
@@ -17599,13 +17552,11 @@ pub mod tests {
             let (storages, _) =
                 accounts_db.get_snapshot_storages(full_accounts_hash_slot + 1..=slot);
             let storages = SortedStorages::new(&storages);
-            accounts_db
-                .calculate_incremental_accounts_hash(
-                    &CalcAccountsHashConfig::default(),
-                    &storages,
-                    HashStats::default(),
-                )
-                .unwrap()
+            accounts_db.calculate_incremental_accounts_hash(
+                &CalcAccountsHashConfig::default(),
+                &storages,
+                HashStats::default(),
+            )
         };
         assert_eq!(incremental_accounts_hash.1, 1_100_000);
 
