@@ -503,7 +503,6 @@ impl ExecutedTask {
 // Note that the above properties can be upheld only when this is used inside MPSC or SPSC channels
 // (i.e. the consumer side needs to be single threaded). For the multiple consumer cases,
 // ChainedChannel can be used instead.
-#[derive(Debug)]
 enum SubchanneledPayload<P1, P2> {
     Payload(P1),
     OpenSubchannel(P2),
@@ -1218,7 +1217,6 @@ where
                 while !thread_suspending {
                     match new_task_receiver.recv() {
                         Ok(NewTaskPayload::OpenSubchannel(context)) => {
-                            info!("received context");
                             slot = context.bank().slot();
                             // signal about new SchedulingContext to handler threads
                             runnable_task_sender
@@ -1232,7 +1230,7 @@ where
                         Err(_) => {
                             assert!(!thread_suspending);
                             thread_suspending = true;
-                            log_scheduler!("T:suspending1");
+                            log_scheduler!("T:suspending");
                             continue;
                         }
                         Ok(_) => {
@@ -1315,7 +1313,7 @@ where
                                         // never() should pose no possibility of missed messages.
                                         new_task_receiver = never();
 
-                                        "T:suspending2"
+                                        "T:suspending"
                                     }
                                 }
                             },
