@@ -1441,10 +1441,8 @@ where
             move || 'outer: loop {
                 match retired_task_receiver.recv_timeout(Duration::from_millis(40)) {
                     Ok(RetiredTaskPayload::Payload(executed_task)) => {
-                        let accumulator_result_with_timings =
-                            accumulator_result_with_timings.as_mut().unwrap();
                         Self::accumulate_result_with_timings(
-                            accumulator_result_with_timings,
+                            accumulator_result_with_timings.as_mut().unwrap(),
                             executed_task,
                         );
                     }
