@@ -1442,12 +1442,17 @@ where
             move || 'outer: loop {
                 match retired_task_receiver.recv_timeout(Duration::from_millis(40)) {
                     Ok(RetiredTaskPayload::Payload(executed_task)) => {
-                        let accumulator_result_with_timings = accumulator_result_with_timings.as_mut().unwrap();
-                        Self::accumulate_result_with_timings(accumulator_result_with_timings, executed_task);
+                        let accumulator_result_with_timings =
+                            accumulator_result_with_timings.as_mut().unwrap();
+                        Self::accumulate_result_with_timings(
+                            accumulator_result_with_timings,
+                            executed_task,
+                        );
                     }
                     Ok(RetiredTaskPayload::OpenSubchannel(())) => {
                         assert_matches!(
-                            accumulator_result_with_timings.replace(initialized_result_with_timings()),
+                            accumulator_result_with_timings
+                                .replace(initialized_result_with_timings()),
                             None
                         );
                     }
