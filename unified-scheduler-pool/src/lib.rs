@@ -1110,7 +1110,6 @@ where
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
         let (tid_sender, tid_receiver) = bounded(1);
-        let mut result_with_timings = self.session_result_with_timings.take();
 
         // High-level flow of new tasks:
         // 1. the replay stage thread send a new task.
@@ -1365,7 +1364,7 @@ where
                 }
 
                 log_scheduler!("T:suspended");
-                let result_with_timings = if session_ending {
+                let scheduler_result_with_timings = if session_ending {
                     None
                 } else {
                     retired_task_sender
@@ -1377,7 +1376,7 @@ where
                     "solScheduler thread is terminating at: {:?}",
                     thread::current()
                 );
-                result_with_timings
+                scheduler_result_with_timings
             }
         };
 
@@ -1437,22 +1436,24 @@ where
             }
         };
 
+        let mut accumulator_result_with_timings = self.session_result_with_timings.take();
+
         let accumulator_main_loop = || {
             move || 'outer: loop {
                 match retired_task_receiver.recv_timeout(Duration::from_millis(40)) {
                     Ok(RetiredTaskPayload::Payload(executed_task)) => {
-                        let result_with_timings = result_with_timings.as_mut().unwrap();
-                        Self::accumulate_result_with_timings(result_with_timings, executed_task);
+                        let accumulator_result_with_timings = accumulator_result_with_timings.as_mut().unwrap();
+                        Self::accumulate_result_with_timings(accumulator_result_with_timings, executed_task);
                     }
                     Ok(RetiredTaskPayload::OpenSubchannel(())) => {
                         assert_matches!(
-                            result_with_timings.replace(initialized_result_with_timings()),
+                            accumulator_result_with_timings.replace(initialized_result_with_timings()),
                             None
                         );
                     }
                     Ok(RetiredTaskPayload::CloseSubchannel) => {
                         if accumulated_result_sender
-                            .send(result_with_timings.take())
+                            .send(accumulator_result_with_timings.take())
                             .is_err()
                         {
                             break 'outer;
