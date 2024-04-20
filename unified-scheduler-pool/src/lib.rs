@@ -1446,7 +1446,9 @@ where
                             executed_task,
                         );
                     }
-                    Ok(RetiredTaskPayload::OpenSubchannel(())) => {}
+                    Ok(RetiredTaskPayload::OpenSubchannel(())) => {
+                        accumulator_result_with_timings.replace(initialized_result_with_timings());
+                    },
                     Ok(RetiredTaskPayload::CloseSubchannel) => {
                         if accumulated_result_sender
                             .send(accumulator_result_with_timings.take())
