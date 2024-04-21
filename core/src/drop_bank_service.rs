@@ -57,7 +57,7 @@ pub mod tests {
         solana_ledger::genesis_utils::create_genesis_config,
         solana_program_runtime::timings::ExecuteTimings,
         solana_runtime::{
-            accounts_background_service::AbsRequestSender, bank_forks::BankForks,
+            accounts_background_service::AbsRequestSender, bank::Bank, bank_forks::BankForks,
             genesis_utils::GenesisConfigInfo, prioritization_fee_cache::PrioritizationFeeCache,
         },
         solana_sdk::{
@@ -69,10 +69,11 @@ pub mod tests {
         solana_unified_scheduler_pool::{
             DefaultTaskHandler, HandlerContext, PooledScheduler, SchedulerPool, TaskHandler,
         },
-        std::{collections::HashMap, sync::Mutex},
+        std::{
+            collections::HashMap,
+            sync::{Arc, Mutex},
+        },
     };
-    use std::sync::Arc;
-    use solana_runtime::bank::Bank;
 
     #[test]
     fn test_scheduler_waited_by_drop_bank_service() {
