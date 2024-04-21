@@ -7568,6 +7568,7 @@ dependencies = [
  "dashmap",
  "derivative",
  "log",
+ "qualifier_attr",
  "solana-ledger",
  "solana-logger",
  "solana-program-runtime",
