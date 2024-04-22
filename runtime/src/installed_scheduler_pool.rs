@@ -216,8 +216,8 @@ impl WaitReason {
 ///
 /// It brings type-safety against accidental mixing of bank and scheduler with different slots,
 /// which is a pretty dangerous condition. Also, it guarantees to call wait_for_termination() via
-/// ::drop() inside BankForks::set_root()'s pruning, perfectly matching to Arc<Bank>'s lifetime by
-/// piggybacking on the pruning.
+/// ::drop() by DropBankService, which receives Vec<BankWithScheduler> from BankForks::set_root()'s
+/// pruning, mostly matching to Arc<Bank>'s lifetime by piggybacking on the pruning.
 ///
 /// Semantically, a scheduler is tightly coupled with a particular bank. But scheduler wasn't put
 /// into Bank fields to avoid circular-references (a scheduler needs to refer to its accompanied
