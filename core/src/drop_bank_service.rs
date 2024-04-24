@@ -21,7 +21,7 @@ impl DropBankService {
                     // BankWithScheduler::drop() could block on transaction execution if unified
                     // scheduler is installed. As a historical context, it's dropped early inside
                     // the replaying stage not here and that caused a deadlock for BankForks.
-                    drop::<Vec<BankWithScheduler>>(banks);
+                    drop(banks);
                     dropped_banks_time.stop();
                     if dropped_banks_time.as_ms() > 10 {
                         datapoint_info!(
