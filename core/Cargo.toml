@@ -14,7 +14,6 @@ edition = { workspace = true }
 codecov = { repository = "solana-labs/solana", branch = "master", service = "github" }
 
 [dependencies]
-qualifier_attr = { workspace = true }
 base64 = { workspace = true }
 bincode = { workspace = true }
 bs58 = { workspace = true }
@@ -32,6 +31,7 @@ lru = { workspace = true }
 min-max-heap = { workspace = true }
 num_enum = { workspace = true }
 prio-graph = { workspace = true }
+qualifier_attr = { workspace = true }
 quinn = { workspace = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
