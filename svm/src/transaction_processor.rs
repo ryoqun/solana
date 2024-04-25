@@ -292,14 +292,17 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
 
         execution_time.stop();
 
-        const SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE: u8 = 90;
-        self.program_cache
-            .write()
-            .unwrap()
-            .evict_using_2s_random_selection(
-                Percentage::from(SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE),
-                self.slot,
-            );
+        use rand::Rng;
+        if rand::thread_rng().gen_range(0..1000) == 0 {
+            const SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE: u8 = 90;
+            self.program_cache
+                .write()
+                .unwrap()
+                .evict_using_2s_random_selection(
+                    Percentage::from(SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE),
+                    self.slot,
+                );
+        }
 
         debug!(
             "load: {}us execute: {}us txs_len={}",
