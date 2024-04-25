@@ -864,7 +864,6 @@ fn main() {
                 .takes_value(true)
                 .possible_values(BlockVerificationMethod::cli_names())
                 .global(true)
-                .hidden(hidden_unless_forced())
                 .help(BlockVerificationMethod::cli_message()),
         )
         .arg(
@@ -874,7 +873,6 @@ fn main() {
                 .takes_value(true)
                 .validator(|s| is_within_range(s, 1..))
                 .global(true)
-                .hidden(hidden_unless_forced())
                 .help(DefaultSchedulerPool::cli_message()),
         )
         .arg(
