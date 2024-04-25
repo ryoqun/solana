@@ -725,6 +725,10 @@ impl ProgramCacheForTxBatch {
             self.replenish(*key, entry.clone());
         })
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
+    }
 }
 
 pub enum ProgramCacheMatchCriteria {
