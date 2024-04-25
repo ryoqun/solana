@@ -639,6 +639,7 @@ pub struct ProgramCacheForTxBatch {
     pub latest_root_epoch: Epoch,
     pub hit_max_limit: bool,
     pub loaded_missing: bool,
+    pub merged_modified: bool,
 }
 
 impl ProgramCacheForTxBatch {
@@ -656,6 +657,7 @@ impl ProgramCacheForTxBatch {
             latest_root_epoch,
             hit_max_limit: false,
             loaded_missing: false,
+            merged_modified: false,
         }
     }
 
@@ -672,6 +674,7 @@ impl ProgramCacheForTxBatch {
             latest_root_epoch: cache.latest_root_epoch,
             hit_max_limit: false,
             loaded_missing: false,
+            merged_modified: false,
         }
     }
 
@@ -725,6 +728,7 @@ impl ProgramCacheForTxBatch {
 
     pub fn merge(&mut self, other: &Self) {
         other.entries.iter().for_each(|(key, entry)| {
+            self.merged_modified = true;
             self.replenish(*key, entry.clone());
         })
     }

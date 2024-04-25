@@ -293,10 +293,12 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         execution_time.stop();
 
         // Skip eviction when there's no chance this particular tx batch has increased the size of
-        // ProgramCache entries. Note that this flag is deliberately defined, so that there's still
-        // at least one other batch, which will evict the program cache, even after the occurrences
-        // of cooperative loading.
-        if programs_loaded_for_tx_batch.borrow().loaded_missing {
+        // ProgramCache entries. Note that loaded_missing is deliberately defined, so that there's
+        // still at least one other batch, which will evict the program cache, even after the
+        // occurrences of cooperative loading.
+        if programs_loaded_for_tx_batch.borrow().loaded_missing
+            || programs_loaded_for_tx_batch.borrow().merged_modified
+        {
             const SHRINK_LOADED_PROGRAMS_TO_PERCENTAGE: u8 = 90;
             self.program_cache
                 .write()
