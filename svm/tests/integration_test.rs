@@ -23,7 +23,6 @@ use {
         bpf_loader_upgradeable::{self, UpgradeableLoaderState},
         clock::{Clock, Epoch, Slot, UnixTimestamp},
         epoch_schedule::EpochSchedule,
-        fee::FeeStructure,
         hash::Hash,
         instruction::AccountMeta,
         pubkey::Pubkey,
@@ -35,9 +34,8 @@ use {
         account_loader::TransactionCheckResult,
         runtime_config::RuntimeConfig,
         transaction_error_metrics::TransactionErrorMetrics,
-        transaction_processor::{
-            ExecutionRecordingConfig, TransactionBatchProcessor, TransactionProcessingCallback,
-        },
+        transaction_processing_callback::TransactionProcessingCallback,
+        transaction_processor::{ExecutionRecordingConfig, TransactionBatchProcessor},
         transaction_results::TransactionExecutionResult,
     },
     std::{
@@ -439,7 +437,6 @@ fn svm_integration() {
         EXECUTION_SLOT,
         EXECUTION_EPOCH,
         EpochSchedule::default(),
-        FeeStructure::default(),
         Arc::new(RuntimeConfig::default()),
         program_cache.clone(),
         HashSet::default(),

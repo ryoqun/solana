@@ -259,8 +259,8 @@ impl WaitReason {
 ///
 /// It brings type-safety against accidental mixing of bank and scheduler with different slots,
 /// which is a pretty dangerous condition. Also, it guarantees to call wait_for_termination() via
-/// ::drop() inside BankForks::set_root()'s pruning, perfectly matching to Arc<Bank>'s lifetime by
-/// piggybacking on the pruning.
+/// ::drop() by DropBankService, which receives Vec<BankWithScheduler> from BankForks::set_root()'s
+/// pruning, mostly matching to Arc<Bank>'s lifetime by piggybacking on the pruning.
 ///
 /// Semantically, a scheduler is tightly coupled with a particular bank. But scheduler wasn't put
 /// into Bank fields to avoid circular-references (a scheduler needs to refer to its accompanied
@@ -403,9 +403,10 @@ impl BankWithSchedulerInner {
         reason: WaitReason,
     ) -> Option<ResultWithTimings> {
         debug!(
-            "wait_for_scheduler_termination(slot: {}, reason: {:?}): started...",
+            "wait_for_scheduler_termination(slot: {}, reason: {:?}): started at {:?}...",
             bank.slot(),
             reason,
+            std::thread::current(),
         );
 
         let mut scheduler = scheduler.write().unwrap();
@@ -422,11 +423,12 @@ impl BankWithSchedulerInner {
                 (true, None)
             };
         debug!(
-            "wait_for_scheduler_termination(slot: {}, reason: {:?}): was_noop: {:?} finished with: {:?}...",
+            "wait_for_scheduler_termination(slot: {}, reason: {:?}): noop: {:?}, result: {:?} at {:?}...",
             bank.slot(),
             reason,
             was_noop,
             result_with_timings.as_ref().map(|(result, _)| result),
+            std::thread::current(),
         );
 
         result_with_timings

@@ -354,6 +354,11 @@ where
         self.cleaner_sender.send(thread_manager).unwrap();
     }
 
+    #[cfg(feature = "dev-context-only-utils")]
+    pub fn pooled_scheduler_count(&self) -> usize {
+        self.scheduler_inners.lock().expect("not poisoned").len()
+    }
+
     pub fn default_handler_count() -> usize {
         Self::calculate_default_handler_count(
             thread::available_parallelism()

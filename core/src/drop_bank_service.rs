@@ -17,6 +17,10 @@ impl DropBankService {
                 for banks in bank_receiver.iter() {
                     let len = banks.len();
                     let mut dropped_banks_time = Measure::start("drop_banks");
+                    // Drop BankWithScheduler with no alive lock to avoid deadlocks. That's because
+                    // BankWithScheduler::drop() could block on transaction execution if unified
+                    // scheduler is installed. As a historical context, it's dropped early inside
+                    // the replaying stage not here and that caused a deadlock for BankForks.
                     drop(banks);
                     dropped_banks_time.stop();
                     if dropped_banks_time.as_ms() > 10 {
