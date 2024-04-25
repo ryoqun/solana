@@ -4162,7 +4162,7 @@ impl Bank {
                 programs_modified_by_tx,
             } = execution_result
             {
-                if details.status.is_ok() {
+                if details.status.is_ok() && !programs_modified_by_tx.is_empty() {
                     let mut cache = self.transaction_processor.program_cache.write().unwrap();
                     cache.merge(programs_modified_by_tx);
                 }

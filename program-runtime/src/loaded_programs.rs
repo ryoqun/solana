@@ -638,6 +638,7 @@ pub struct ProgramCacheForTxBatch {
     /// The epoch of the last rerooting
     pub latest_root_epoch: Epoch,
     pub hit_max_limit: bool,
+    pub loaded_missing: bool,
 }
 
 impl ProgramCacheForTxBatch {
@@ -654,6 +655,7 @@ impl ProgramCacheForTxBatch {
             upcoming_environments,
             latest_root_epoch,
             hit_max_limit: false,
+            loaded_missing: false,
         }
     }
 
@@ -669,6 +671,7 @@ impl ProgramCacheForTxBatch {
             upcoming_environments: cache.get_upcoming_environments_for_epoch(epoch),
             latest_root_epoch: cache.latest_root_epoch,
             hit_max_limit: false,
+            loaded_missing: false,
         }
     }
 
@@ -724,6 +727,10 @@ impl ProgramCacheForTxBatch {
         other.entries.iter().for_each(|(key, entry)| {
             self.replenish(*key, entry.clone());
         })
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
     }
 }
 
