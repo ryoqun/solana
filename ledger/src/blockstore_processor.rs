@@ -341,8 +341,7 @@ fn process_batches(
         // scheduling always succeeds here without being blocked on actual transaction executions.
         // The transaction execution errors will be collected via the blocking fn called
         // BankWithScheduler::wait_for_completed_scheduler(), if any.
-        schedule_batches_for_execution(bank, batches);
-        Ok(())
+        schedule_batches_for_execution(bank, batches)
     } else {
         debug!(
             "process_batches()/rebatch_and_execute_batches({} batches)",
@@ -364,7 +363,7 @@ fn process_batches(
 fn schedule_batches_for_execution(
     bank: &BankWithScheduler,
     batches: &[TransactionBatchWithIndexes],
-) {
+) -> Result<()> {
     for TransactionBatchWithIndexes {
         batch,
         transaction_indexes,
@@ -375,8 +374,9 @@ fn schedule_batches_for_execution(
                 .sanitized_transactions()
                 .iter()
                 .zip(transaction_indexes.iter()),
-        );
+        )?;
     }
+    Ok(())
 }
 
 fn rebatch_transactions<'a>(
@@ -4766,7 +4766,7 @@ pub mod tests {
         mocked_scheduler
             .expect_schedule_execution()
             .times(txs.len())
-            .returning(|_| ());
+            .returning(|_| Ok(()));
         mocked_scheduler
             .expect_wait_for_termination()
             .with(mockall::predicate::eq(true))
