@@ -29,14 +29,14 @@ use {
         bank::Bank,
         installed_scheduler_pool::{
             InstalledScheduler, InstalledSchedulerBox, InstalledSchedulerPool,
-            InstalledSchedulerPoolArc, ResultWithTimings, SchedulerId, SchedulingContext,
-            UninstalledScheduler, UninstalledSchedulerBox,
+            InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult, SchedulerId,
+            SchedulingContext, UninstalledScheduler, UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
     },
     solana_sdk::{
         pubkey::Pubkey,
-        transaction::{Result, SanitizedTransaction},
+        transaction::{Result, SanitizedTransaction, TransactionError},
     },
     solana_unified_scheduler_logic::{SchedulingStateMachine, Task, UsageQueue},
     solana_vote::vote_sender_types::ReplayVoteSender,
@@ -955,11 +955,20 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
         &self.context
     }
 
-    fn schedule_execution(&self, &(transaction, index): &(&SanitizedTransaction, usize)) {
+    fn schedule_execution(
+        &self,
+        &(transaction, index): &(&SanitizedTransaction, usize),
+    ) -> ScheduleResult {
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
         self.inner.thread_manager.send_task(task);
+        // Return hard-coded Ok for now; Upcoming pr will implement this properly.
+        Ok(())
+    }
+
+    fn recover_error_after_abort(&mut self) -> TransactionError {
+        todo!("in later pr...");
     }
 
     fn wait_for_termination(
@@ -1186,7 +1195,7 @@ mod tests {
 
         assert_eq!(bank.transaction_count(), 0);
         let scheduler = pool.take_scheduler(context);
-        scheduler.schedule_execution(&(tx0, 0));
+        scheduler.schedule_execution(&(tx0, 0)).unwrap();
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
         assert_eq!(bank.transaction_count(), 1);
@@ -1219,7 +1228,7 @@ mod tests {
                 genesis_config.hash(),
             ));
         assert_eq!(bank.transaction_count(), 0);
-        scheduler.schedule_execution(&(bad_tx, 0));
+        scheduler.schedule_execution(&(bad_tx, 0)).unwrap();
         // simulate the task-sending thread is stalled for some reason.
         std::thread::sleep(std::time::Duration::from_secs(1));
         assert_eq!(bank.transaction_count(), 0);
@@ -1237,7 +1246,9 @@ mod tests {
                 .result,
             Ok(_)
         );
-        scheduler.schedule_execution(&(good_tx_after_bad_tx, 1));
+        scheduler
+            .schedule_execution(&(good_tx_after_bad_tx, 1))
+            .unwrap();
         scheduler.pause_for_recent_blockhash();
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
@@ -1330,8 +1341,12 @@ mod tests {
 
         // Stall handling tx0 and tx1
         let lock_to_stall = LOCK_TO_STALL.lock().unwrap();
-        scheduler.schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX));
-        scheduler.schedule_execution(&(tx1, BLOCKED_TRANSACTION_INDEX));
+        scheduler
+            .schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX))
+            .unwrap();
+        scheduler
+            .schedule_execution(&(tx1, BLOCKED_TRANSACTION_INDEX))
+            .unwrap();
 
         // Wait a bit for the scheduler thread to decide to block tx1
         std::thread::sleep(std::time::Duration::from_secs(1));
@@ -1405,7 +1420,7 @@ mod tests {
             .take(10000)
         {
             let scheduler = pool.take_scheduler(context.clone());
-            scheduler.schedule_execution(&(dummy_tx, index));
+            scheduler.schedule_execution(&(dummy_tx, index)).unwrap();
             scheduler.wait_for_termination(false).1.return_to_pool();
         }
     }
@@ -1445,7 +1460,10 @@ mod tests {
             &self.2
         }
 
-        fn schedule_execution(&self, &(transaction, index): &(&SanitizedTransaction, usize)) {
+        fn schedule_execution(
+            &self,
+            &(transaction, index): &(&SanitizedTransaction, usize),
+        ) -> ScheduleResult {
             let transaction_and_index = (transaction.clone(), index);
             let context = self.context().clone();
             let pool = self.3.clone();
@@ -1468,6 +1486,12 @@ mod tests {
                 );
                 (result, timings)
             }));
+
+            Ok(())
+        }
+
+        fn recover_error_after_abort(&mut self) -> TransactionError {
+            unimplemented!();
         }
 
         fn wait_for_termination(
@@ -1573,7 +1597,8 @@ mod tests {
         assert_eq!(bank.transaction_count(), 0);
 
         // schedule but not immediately execute transaction
-        bank.schedule_transaction_executions([(&very_old_valid_tx, &0)].into_iter());
+        bank.schedule_transaction_executions([(&very_old_valid_tx, &0)].into_iter())
+            .unwrap();
         // this calls register_recent_blockhash internally
         bank.fill_bank_with_ticks_for_tests();
 
