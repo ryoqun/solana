@@ -25,14 +25,15 @@ use {
     log::*,
     solana_program_runtime::timings::ExecuteTimings,
     solana_sdk::{
+        clock::Slot,
         hash::Hash,
-        slot_history::Slot,
         transaction::{Result, SanitizedTransaction},
     },
     std::{
         fmt::Debug,
         ops::Deref,
         sync::{Arc, RwLock},
+        thread,
     },
 };
 #[cfg(feature = "dev-context-only-utils")]
@@ -105,7 +106,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     fn schedule_execution<'a>(
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
-    );
+    ) -> Result<()>;
 
     /// Wait for a scheduler to terminate after processing.
     ///
@@ -290,7 +291,7 @@ impl BankWithScheduler {
     pub fn schedule_transaction_executions<'a>(
         &self,
         transactions_with_indexes: impl ExactSizeIterator<Item = (&'a SanitizedTransaction, &'a usize)>,
-    ) {
+    ) -> Result<()> {
         trace!(
             "schedule_transaction_executions(): {} txs",
             transactions_with_indexes.len()
@@ -300,8 +301,10 @@ impl BankWithScheduler {
         let scheduler = scheduler_guard.as_ref().unwrap();
 
         for (sanitized_transaction, &index) in transactions_with_indexes {
-            scheduler.schedule_execution(&(sanitized_transaction, index));
+            scheduler.schedule_execution(&(sanitized_transaction, index))?;
         }
+
+        Ok(())
     }
 
     // take needless &mut only to communicate its semantic mutability to humans...
@@ -356,7 +359,7 @@ impl BankWithSchedulerInner {
             "wait_for_scheduler_termination(slot: {}, reason: {:?}): started at {:?}...",
             bank.slot(),
             reason,
-            std::thread::current(),
+            thread::current(),
         );
 
         let mut scheduler = scheduler.write().unwrap();
@@ -378,14 +381,14 @@ impl BankWithSchedulerInner {
             reason,
             was_noop,
             result_with_timings.as_ref().map(|(result, _)| result),
-            std::thread::current(),
+            thread::current(),
         );
 
         result_with_timings
     }
 
     fn drop_scheduler(&self) {
-        if std::thread::panicking() {
+        if thread::panicking() {
             error!(
                 "BankWithSchedulerInner::drop_scheduler(): slot: {} skipping due to already panicking...",
                 self.bank.slot(),
@@ -573,11 +576,12 @@ mod tests {
                 mocked
                     .expect_schedule_execution()
                     .times(1)
-                    .returning(|(_, _)| ());
+                    .returning(|(_, _)| Ok(()));
             }),
         );
 
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
-        bank.schedule_transaction_executions([(&tx0, &0)].into_iter());
+        bank.schedule_transaction_executions([(&tx0, &0)].into_iter())
+            .unwrap();
     }
 }

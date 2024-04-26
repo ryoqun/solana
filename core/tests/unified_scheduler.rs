@@ -32,6 +32,8 @@ use {
     std::{
         collections::HashMap,
         sync::{Arc, Mutex},
+        thread::sleep,
+        time::Duration,
     },
 };
 
@@ -55,7 +57,7 @@ fn test_scheduler_waited_by_drop_bank_service() {
             info!("Stalling at StallingHandler::handle()...");
             *LOCK_TO_STALL.lock().unwrap();
             // Wait a bit for the replay stage to prune banks
-            std::thread::sleep(std::time::Duration::from_secs(3));
+            sleep(Duration::from_secs(3));
             info!("Now entering into DefaultTaskHandler::handle()...");
 
             DefaultTaskHandler::handle(result, timings, bank, transaction, index, handler_context);
@@ -107,7 +109,9 @@ fn test_scheduler_waited_by_drop_bank_service() {
     // Delay transaction execution to ensure transaction execution happens after termintion has
     // been started
     let lock_to_stall = LOCK_TO_STALL.lock().unwrap();
-    pruned_bank.schedule_transaction_executions([(&tx, &0)].into_iter());
+    pruned_bank
+        .schedule_transaction_executions([(&tx, &0)].into_iter())
+        .unwrap();
     drop(pruned_bank);
     assert_eq!(pool_raw.pooled_scheduler_count(), 0);
     drop(lock_to_stall);
