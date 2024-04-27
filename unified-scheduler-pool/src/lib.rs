@@ -2030,10 +2030,9 @@ mod tests {
             Ok(_)
         );
         sleep(Duration::from_secs(3));
-        assert_matches!(
-            scheduler.schedule_execution(&(good_tx_after_bad_tx, 1)),
-            Err(_)
-        );
+        scheduler
+            .schedule_execution(&(good_tx_after_bad_tx, 1))
+            .unwrap_err();
         error!("last pause!");
         scheduler.pause_for_recent_blockhash();
         // transaction_count should remain same as scheduler should be bailing out.
