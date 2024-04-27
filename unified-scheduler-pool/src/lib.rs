@@ -62,11 +62,12 @@ type AtomicSchedulerId = AtomicU64;
 // contains some internal fields, whose types aren't available in solana-runtime (currently
 // TransactionStatusSender; also, PohRecorder in the future)...
 #[derive(Debug)]
-pub struct SchedulerPool<
+pub struct SchedulerPool<S, TH, SEA>
+where
     S: SpawnableScheduler<TH, SEA>,
     TH: TaskHandler<SEA>,
     SEA: ScheduleExecutionArg,
-> {
+{
     scheduler_inners: Mutex<Vec<S::Inner>>,
     handler_count: usize,
     handler_context: HandlerContext,
@@ -1782,7 +1783,12 @@ mod tests {
             system_transaction,
             transaction::{SanitizedTransaction, TransactionError},
         },
-        std::{mem, sync::Arc, thread::JoinHandle},
+        std::{
+            mem,
+            sync::Arc,
+            thread::{self, sleep, JoinHandle},
+            time::Duration,
+        },
     };
 
     #[test]
@@ -1972,7 +1978,7 @@ mod tests {
 
         assert_eq!(bank.transaction_count(), 0);
         let scheduler = pool.take_scheduler(context);
-        assert_matches!(scheduler.schedule_execution(&(tx0, 0)), Ok(()));
+        scheduler.schedule_execution(&(tx0, 0)).unwrap();
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
         assert_eq!(bank.transaction_count(), 1);
@@ -2005,9 +2011,9 @@ mod tests {
                 genesis_config.hash(),
             ));
         assert_eq!(bank.transaction_count(), 0);
-        assert_matches!(scheduler.schedule_execution(&(bad_tx, 0)), Ok(()));
+        scheduler.schedule_execution(&(bad_tx, 0)).unwrap();
         // simulate the task-sending thread is stalled for some reason.
-        thread::sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(1));
         assert_eq!(bank.transaction_count(), 0);
 
         let good_tx_after_bad_tx =
@@ -2023,7 +2029,7 @@ mod tests {
                 .result,
             Ok(_)
         );
-        thread::sleep(Duration::from_secs(3));
+        sleep(Duration::from_secs(3));
         assert_matches!(
             scheduler.schedule_execution(&(good_tx_after_bad_tx, 1)),
             Err(_)
@@ -2131,7 +2137,7 @@ mod tests {
             .unwrap();
 
         // Wait a bit for the scheduler thread to decide to block tx1
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        sleep(Duration::from_secs(1));
 
         // Resume handling by unlocking LOCK_TO_STALL
         drop(lock_to_stall);
@@ -2264,7 +2270,7 @@ mod tests {
             self.1.lock().unwrap().push(thread::spawn(move || {
                 // intentionally sleep to simulate race condition where register_recent_blockhash
                 // is handle before finishing executing scheduled transactions
-                thread::sleep(Duration::from_secs(1));
+                sleep(Duration::from_secs(1));
 
                 let mut result = Ok(());
                 let mut timings = ExecuteTimings::default();
@@ -2383,21 +2389,21 @@ mod tests {
         let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<
-            AsyncScheduler<TRIGGER_RACE_CONDITION>,
-            DefaultTaskHandler,
-            DefaultScheduleExecutionArg,
-        >::new_dyn(None, None, None, None, ignored_prioritization_fee_cache);
+        let pool = SchedulerPool::<AsyncScheduler<TRIGGER_RACE_CONDITION>, _, _>::new_dyn(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
         let scheduler = pool.take_scheduler(context);
 
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_eq!(bank.transaction_count(), 0);
 
         // schedule but not immediately execute transaction
-        assert_matches!(
-            bank.schedule_transaction_executions([(&very_old_valid_tx, &0)].into_iter()),
-            Ok(())
-        );
+        bank.schedule_transaction_executions([(&very_old_valid_tx, &0)].into_iter())
+            .unwrap();
         // this calls register_recent_blockhash internally
         bank.fill_bank_with_ticks_for_tests();
 

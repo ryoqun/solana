@@ -35,6 +35,7 @@ use {
         fmt::Debug,
         ops::Deref,
         sync::{Arc, RwLock},
+        thread,
     },
 };
 #[cfg(feature = "dev-context-only-utils")]
@@ -406,7 +407,7 @@ impl BankWithSchedulerInner {
             "wait_for_scheduler_termination(slot: {}, reason: {:?}): started at {:?}...",
             bank.slot(),
             reason,
-            std::thread::current(),
+            thread::current(),
         );
 
         let mut scheduler = scheduler.write().unwrap();
@@ -428,14 +429,14 @@ impl BankWithSchedulerInner {
             reason,
             was_noop,
             result_with_timings.as_ref().map(|(result, _)| result),
-            std::thread::current(),
+            thread::current(),
         );
 
         result_with_timings
     }
 
     fn drop_scheduler(&self) {
-        if std::thread::panicking() {
+        if thread::panicking() {
             error!(
                 "BankWithSchedulerInner::drop_scheduler(): slot: {} skipping due to already panicking...",
                 self.bank.slot(),
@@ -635,9 +636,7 @@ mod tests {
         );
 
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
-        assert_matches!(
-            bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
-            Ok(())
-        );
+        bank.schedule_transaction_executions([(&tx0, &0)].into_iter())
+            .unwrap();
     }
 }
