@@ -6415,7 +6415,6 @@ dependencies = [
  "itertools",
  "log",
  "percentage",
- "rand 0.8.5",
  "rustc_version",
  "serde",
  "solana-frozen-abi",
