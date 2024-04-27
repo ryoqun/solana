@@ -3076,7 +3076,7 @@ impl Bank {
 
     pub fn is_blockhash_valid(&self, hash: &Hash) -> bool {
         let blockhash_queue = self.blockhash_queue.read().unwrap();
-        blockhash_queue.is_hash_valid(hash)
+        blockhash_queue.is_hash_valid_for_age(hash, MAX_PROCESSING_AGE)
     }
 
     pub fn get_minimum_balance_for_rent_exemption(&self, data_len: usize) -> u64 {
@@ -3162,7 +3162,7 @@ impl Bank {
         // length is made variable by epoch
         blockhash_queue
             .get_hash_age(blockhash)
-            .map(|age| self.slot + blockhash_queue.get_max_age() as u64 - age)
+            .map(|age| self.slot + MAX_PROCESSING_AGE as u64 - age)
     }
 
     pub fn get_blockhash_last_valid_block_height(&self, blockhash: &Hash) -> Option<Slot> {
@@ -3171,7 +3171,7 @@ impl Bank {
         // length is made variable by epoch
         blockhash_queue
             .get_hash_age(blockhash)
-            .map(|age| self.block_height + blockhash_queue.get_max_age() as u64 - age)
+            .map(|age| self.block_height + MAX_PROCESSING_AGE as u64 - age)
     }
 
     pub fn confirmed_last_blockhash(&self) -> Hash {
@@ -4156,6 +4156,7 @@ impl Bank {
 
         let mut store_executors_which_were_deployed_time =
             Measure::start("store_executors_which_were_deployed_time");
+        let mut cache = None;
         for execution_result in &execution_results {
             if let TransactionExecutionResult::Executed {
                 details,
@@ -4163,11 +4164,15 @@ impl Bank {
             } = execution_result
             {
                 if details.status.is_ok() && !programs_modified_by_tx.is_empty() {
-                    let mut cache = self.transaction_processor.program_cache.write().unwrap();
-                    cache.merge(programs_modified_by_tx);
+                    cache
+                        .get_or_insert_with(|| {
+                            self.transaction_processor.program_cache.write().unwrap()
+                        })
+                        .merge(programs_modified_by_tx);
                 }
             }
         }
+        drop(cache);
         store_executors_which_were_deployed_time.stop();
         saturating_add_assign!(
             timings.execute_accessories.update_executors_us,

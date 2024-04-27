@@ -5530,6 +5530,7 @@ dependencies = [
  "rustc_version 0.4.0",
  "seqlock",
  "serde",
+ "serde_bytes",
  "serde_derive",
  "smallvec",
  "solana-accounts-db",
@@ -7829,6 +7830,25 @@ dependencies = [
 [[package]]
 name = "solana-zk-sdk"
 version = "2.0.0"
+dependencies = [
+ "aes-gcm-siv",
+ "base64 0.22.0",
+ "bincode",
+ "curve25519-dalek",
+ "itertools",
+ "lazy_static",
+ "merlin",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "sha3 0.9.1",
+ "solana-program",
+ "solana-sdk",
+ "subtle",
+ "thiserror",
+ "tiny-bip39",
+ "zeroize",
+]
 
 [[package]]
 name = "solana-zk-token-proof-program"
