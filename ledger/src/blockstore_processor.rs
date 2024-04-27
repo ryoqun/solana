@@ -445,9 +445,7 @@ fn rebatch_and_execute_batches(
     {
         let mut cost_tracker = bank.write_cost_tracker().unwrap();
         for tx_cost in &tx_costs {
-            cost_tracker
-                .try_add(tx_cost)
-                .map_err(TransactionError::from)?;
+            cost_tracker.try_add(tx_cost)?;
         }
     }
 
@@ -2149,6 +2147,7 @@ pub mod tests {
             instruction::{Instruction, InstructionError},
             native_token::LAMPORTS_PER_SOL,
             pubkey::Pubkey,
+            scheduling::SchedulingMode,
             signature::{Keypair, Signer},
             system_instruction::SystemError,
             system_transaction,
@@ -4751,7 +4750,7 @@ pub mod tests {
             ..
         } = create_genesis_config_with_leader(500, &dummy_leader_pubkey, 100);
         let bank = Arc::new(Bank::new_for_tests(&genesis_config));
-        let context = SchedulingContext::new(bank.clone());
+        let context = SchedulingContext::new(SchedulingMode::BlockVerification, bank.clone());
 
         let txs = create_test_transactions(&mint_keypair, &genesis_config.hash());
 

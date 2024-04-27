@@ -27,9 +27,11 @@ use {
     solana_sdk::{
         clock::Slot,
         hash::Hash,
+        scheduling::{SchedulingMode, WithSchedulingMode},
         transaction::{Result, SanitizedTransaction},
     },
     std::{
+        borrow::Borrow,
         fmt::Debug,
         ops::Deref,
         sync::{Arc, RwLock},
@@ -39,8 +41,9 @@ use {
 #[cfg(feature = "dev-context-only-utils")]
 use {mockall::automock, qualifier_attr::qualifiers};
 
-pub trait InstalledSchedulerPool: Send + Sync + Debug {
-    fn take_scheduler(&self, context: SchedulingContext) -> InstalledSchedulerBox;
+pub trait InstalledSchedulerPool<SEA: ScheduleExecutionArg>: Send + Sync + Debug {
+    fn take_scheduler(&self, context: SchedulingContext) -> Box<dyn InstalledScheduler<SEA>>;
+    fn uninstalled_from_bank_forks(self: Arc<Self>);
 }
 
 #[cfg_attr(doc, aquamarine::aquamarine)]
@@ -98,14 +101,14 @@ pub trait InstalledSchedulerPool: Send + Sync + Debug {
     feature = "dev-context-only-utils",
     allow(unused_attributes, clippy::needless_lifetimes)
 )]
-pub trait InstalledScheduler: Send + Sync + Debug + 'static {
+pub trait InstalledScheduler<SEA: ScheduleExecutionArg>: Send + Sync + Debug + 'static {
     fn id(&self) -> SchedulerId;
     fn context(&self) -> &SchedulingContext;
 
     // Calling this is illegal as soon as wait_for_termination is called.
     fn schedule_execution<'a>(
         &'a self,
-        transaction_with_index: &'a (&'a SanitizedTransaction, usize),
+        transaction_with_index: SEA::TransactionWithIndex<'a>,
     ) -> Result<()>;
 
     /// Wait for a scheduler to terminate after processing.
@@ -136,12 +139,46 @@ pub trait UninstalledScheduler: Send + Sync + Debug + 'static {
     fn return_to_pool(self: Box<Self>);
 }
 
-pub type InstalledSchedulerBox = Box<dyn InstalledScheduler>;
+pub type InstalledSchedulerBox = Box<dyn InstalledScheduler<DefaultScheduleExecutionArg>>;
 pub type UninstalledSchedulerBox = Box<dyn UninstalledScheduler>;
 
-pub type InstalledSchedulerPoolArc = Arc<dyn InstalledSchedulerPool>;
+pub type InstalledSchedulerPoolArc<SEA> = Arc<dyn InstalledSchedulerPool<SEA>>;
 
 pub type SchedulerId = u64;
+
+pub trait WithTransactionAndIndex: Send + Sync + Debug {
+    fn with_transaction_and_index<R>(
+        &self,
+        callback: impl FnOnce(&SanitizedTransaction, usize) -> R,
+    ) -> R;
+}
+
+impl<
+        T: Send + Sync + Debug + Borrow<SanitizedTransaction>,
+        U: Send + Sync + Debug + Borrow<usize>,
+        Z: Send + Sync + Debug + Deref<Target = (T, U)>,
+    > WithTransactionAndIndex for Z
+{
+    fn with_transaction_and_index<R>(
+        &self,
+        callback: impl FnOnce(&SanitizedTransaction, usize) -> R,
+    ) -> R {
+        callback(self.0.borrow(), *self.1.borrow())
+    }
+}
+
+pub trait ScheduleExecutionArg: Send + Sync + Debug + 'static {
+    // GAT is used to make schedule_execution parametric even supporting references
+    // under the object-safety req. of InstalledScheduler trait...
+    type TransactionWithIndex<'tx>: WithTransactionAndIndex;
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct DefaultScheduleExecutionArg;
+
+impl ScheduleExecutionArg for DefaultScheduleExecutionArg {
+    type TransactionWithIndex<'tx> = &'tx (&'tx SanitizedTransaction, usize);
+}
 
 /// A small context to propagate a bank and its scheduling mode to the scheduler subsystem.
 ///
@@ -154,13 +191,19 @@ pub type SchedulerId = u64;
 /// `SchedulingContext`s.
 #[derive(Clone, Debug)]
 pub struct SchedulingContext {
-    // mode: SchedulingMode, // this will be added later.
+    mode: SchedulingMode,
     bank: Arc<Bank>,
 }
 
+impl WithSchedulingMode for SchedulingContext {
+    fn mode(&self) -> SchedulingMode {
+        self.mode
+    }
+}
+
 impl SchedulingContext {
-    pub fn new(bank: Arc<Bank>) -> Self {
-        Self { bank }
+    pub fn new(mode: SchedulingMode, bank: Arc<Bank>) -> Self {
+        Self { mode, bank }
     }
 
     pub fn bank(&self) -> &Arc<Bank> {
@@ -247,9 +290,14 @@ impl BankWithScheduler {
     pub(crate) fn new(bank: Arc<Bank>, scheduler: Option<InstalledSchedulerBox>) -> Self {
         if let Some(bank_in_context) = scheduler
             .as_ref()
-            .map(|scheduler| scheduler.context().bank())
+            .map(|scheduler| scheduler.context().bank().clone())
         {
-            assert!(Arc::ptr_eq(&bank, bank_in_context));
+            assert!(
+                Arc::ptr_eq(&bank, &bank_in_context),
+                "different bank!? {} {}",
+                bank.slot(),
+                bank_in_context.slot()
+            );
         }
 
         Self {
@@ -441,7 +489,7 @@ mod tests {
     fn setup_mocked_scheduler_with_extra(
         bank: Arc<Bank>,
         is_dropped_flags: impl Iterator<Item = bool>,
-        f: Option<impl Fn(&mut MockInstalledScheduler)>,
+        f: Option<impl Fn(&mut MockInstalledScheduler<DefaultScheduleExecutionArg>)>,
     ) -> InstalledSchedulerBox {
         let mut mock = MockInstalledScheduler::new();
         let seq = Arc::new(Mutex::new(Sequence::new()));
@@ -449,7 +497,10 @@ mod tests {
         mock.expect_context()
             .times(1)
             .in_sequence(&mut seq.lock().unwrap())
-            .return_const(SchedulingContext::new(bank));
+            .return_const(SchedulingContext::new(
+                SchedulingMode::BlockVerification,
+                bank,
+            ));
 
         for wait_reason in is_dropped_flags {
             let seq_cloned = seq.clone();
@@ -485,7 +536,7 @@ mod tests {
         setup_mocked_scheduler_with_extra(
             bank,
             is_dropped_flags,
-            None::<fn(&mut MockInstalledScheduler) -> ()>,
+            None::<fn(&mut MockInstalledScheduler<DefaultScheduleExecutionArg>) -> ()>,
         )
     }
 
@@ -541,12 +592,14 @@ mod tests {
             Some(setup_mocked_scheduler_with_extra(
                 bank,
                 [false].into_iter(),
-                Some(|mocked: &mut MockInstalledScheduler| {
-                    mocked
-                        .expect_pause_for_recent_blockhash()
-                        .times(1)
-                        .returning(|| ());
-                }),
+                Some(
+                    |mocked: &mut MockInstalledScheduler<DefaultScheduleExecutionArg>| {
+                        mocked
+                            .expect_pause_for_recent_blockhash()
+                            .times(1)
+                            .returning(|| ());
+                    },
+                ),
             )),
         );
         goto_end_of_slot_with_scheduler(&bank);
@@ -572,12 +625,14 @@ mod tests {
         let mocked_scheduler = setup_mocked_scheduler_with_extra(
             bank.clone(),
             [true].into_iter(),
-            Some(|mocked: &mut MockInstalledScheduler| {
-                mocked
-                    .expect_schedule_execution()
-                    .times(1)
-                    .returning(|(_, _)| Ok(()));
-            }),
+            Some(
+                |mocked: &mut MockInstalledScheduler<DefaultScheduleExecutionArg>| {
+                    mocked
+                        .expect_schedule_execution()
+                        .times(1)
+                        .returning(|(_, _)| Ok(()));
+                },
+            ),
         );
 
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
