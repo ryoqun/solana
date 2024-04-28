@@ -843,7 +843,7 @@ where
                                 Self::accumulate_result_with_timings(result_with_timings, executed_task);
                                 if result_with_timings.0.is_err() {
                                     session_result_sender.send(None).unwrap();
-                                    return result_with_timings.0;
+                                    return result_with_timings.0.clone();
                                 }
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
@@ -879,7 +879,7 @@ where
                                 Self::accumulate_result_with_timings(result_with_timings, executed_task);
                                 if result_with_timings.0.is_err() {
                                     session_result_sender.send(None).unwrap();
-                                    return result_with_timings.0;
+                                    return result_with_timings.0.clone();
                                 }
                             },
                         };
