@@ -1048,6 +1048,7 @@ where
             self.inner.usage_queue_loader.load(pubkey)
         });
         if let Err(()) = self.inner.thread_manager.read().unwrap().send_task(task) {
+            self.inner.thread_manager.write().unwrap().ensure_join_after_abort()
         }
         Ok(())
     }
