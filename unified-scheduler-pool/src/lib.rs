@@ -962,9 +962,9 @@ where
             debug!("joining...: {:?}", thread);
             () = thread.join().unwrap();
         }
-        if let Some(result) = scheduler_thread.join().unwrap() {
-            self.put_session_result_with_timings((result, Default::default()));
-        }
+        let result = scheduler_thread.join().unwrap();
+        self.put_session_result_with_timings((result.clone(), Default::default()));
+        result
     }
 
     fn end_session(&mut self) {
