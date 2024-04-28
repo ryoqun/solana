@@ -138,7 +138,7 @@ where
             }
         };
 
-        // Correct pool termation will be implemented ater
+        // Currently not joined... Proper pool termation will be implemented later
         thread::Builder::new()
             .name("solScCleaner".to_owned())
             .spawn(cleaner_main_loop())
@@ -944,7 +944,9 @@ where
                     &mut task,
                     &pool.handler_context,
                 );
-                sender.send(task).unwrap();
+                if let Err(_) = sender.send(task) {
+                    break;
+                }
             }
         };
 
