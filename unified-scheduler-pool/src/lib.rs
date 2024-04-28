@@ -926,7 +926,7 @@ where
                     recv(runnable_task_receiver.for_select()) -> message => {
                         let Ok(message) = message else {
                             break;
-                        }
+                        };
                         if let Some(task) = runnable_task_receiver.after_select(message) {
                             (task, &finished_blocked_task_sender)
                         } else {
