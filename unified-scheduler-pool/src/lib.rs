@@ -43,17 +43,15 @@ use {
     std::{
         fmt::Debug,
         marker::PhantomData,
+        mem,
         sync::{
             atomic::{AtomicU64, Ordering::Relaxed},
             Arc, Mutex, OnceLock, RwLock, Weak,
         },
-        thread::{self, JoinHandle},
+        thread::{self, sleep, JoinHandle},
+        time::{Duration, Instant},
     },
 };
-use std::thread::sleep;
-use std::time::Duration;
-use std::mem;
-use std::time::Instant;
 
 type AtomicSchedulerId = AtomicU64;
 
@@ -116,18 +114,28 @@ where
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
 
-        let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded::<Arc<Self>>(1);
+        let (scheduler_pool_sender, scheduler_pool_receiver) =
+            crossbeam_channel::bounded::<Arc<Self>>(1);
 
         let cleaner_main_loop = || {
             move || {
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
                     sleep(Duration::from_secs(10));
-                    let mut inners: Vec<_> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
+                    let mut inners: Vec<_> =
+                        mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
-                    inners.retain(|(_inner, pooled_at)| now.duration_since(*pooled_at) < Duration::from_secs(180));
-                    scheduler_pool.scheduler_inners.lock().unwrap().extend(inners);
-                    drop(mem::take(&mut *scheduler_pool.trashed_scheduler_inners.lock().unwrap()));
+                    inners.retain(|(_inner, pooled_at)| {
+                        now.duration_since(*pooled_at) < Duration::from_secs(180)
+                    });
+                    scheduler_pool
+                        .scheduler_inners
+                        .lock()
+                        .unwrap()
+                        .extend(inners);
+                    drop(mem::take(
+                        &mut *scheduler_pool.trashed_scheduler_inners.lock().unwrap(),
+                    ));
                 }
             }
         };
@@ -201,7 +209,8 @@ where
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
         // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
         // returned recently
-        if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop() {
+        if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop()
+        {
             S::from_inner(inner, context)
         } else {
             S::spawn(self.self_arc(), context)
@@ -532,8 +541,8 @@ where
     TH: TaskHandler,
 {
     fn is_trashed(&self) -> bool {
-        self.usage_queue_loader.usage_queue_count() > 200_000 ||
-            self.thread_manager.read().unwrap().is_aborted()
+        self.usage_queue_loader.usage_queue_count() > 200_000
+            || self.thread_manager.read().unwrap().is_aborted()
     }
 }
 
@@ -995,7 +1004,8 @@ where
         }
         debug!("end_session(): will end session...");
 
-        let mut aborted_detected = self.new_task_sender
+        let mut aborted_detected = self
+            .new_task_sender
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
@@ -1096,7 +1106,11 @@ where
         if let Ok(()) = self.inner.thread_manager.read().unwrap().send_task(task) {
             Ok(())
         } else {
-            self.inner.thread_manager.write().unwrap().ensure_join_after_abort()
+            self.inner
+                .thread_manager
+                .write()
+                .unwrap()
+                .ensure_join_after_abort()
         }
     }
 
