@@ -50,6 +50,8 @@ use {
         thread::{self, JoinHandle},
     },
 };
+use std::thread::sleep;
+use std::time::Duration;
 
 type AtomicSchedulerId = AtomicU64;
 
