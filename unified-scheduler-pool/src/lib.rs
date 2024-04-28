@@ -184,7 +184,7 @@ where
         self.scheduler_inners
             .lock()
             .expect("not poisoned")
-            .push(scheduler);
+            .push((scheduler, Instant::now()));
     }
 
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
