@@ -954,6 +954,10 @@ where
     }
 
     fn ensure_join_after_abort(&mut self) -> Result<()> {
+        let Some(scheduler_thread) = self.take_scheduler_thread() else {
+            warn!("suspend(): already suspended...");
+            return;
+        };
         for thread in self.handler_threads.drain(..) {
             debug!("joining...: {:?}", thread);
             () = thread.join().unwrap();
@@ -966,6 +970,10 @@ where
     fn end_session(&mut self) {
         if self.session_result_with_timings.is_some() {
             debug!("end_session(): already result resides within thread manager..");
+            return;
+        }
+        if self.scheduler_thread.is_none() {
+            debug!("end_session(): already joined the aborted threads..");
             return;
         }
         debug!("end_session(): will end session...");
