@@ -528,7 +528,8 @@ where
     TH: TaskHandler,
 {
     fn is_trashed(&self) -> bool {
-        self.thread_manager.read().unwrap().is_aborted()
+        self.usage_queue_loader.usage_queue_count() > 200_000 ||
+            self.thread_manager.read().unwrap().is_aborted()
     }
 }
 
