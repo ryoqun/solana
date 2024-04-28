@@ -963,7 +963,7 @@ where
             () = thread.join().unwrap();
         }
         let result = scheduler_thread.join().unwrap();
-        self.put_session_result_with_timings((result.clone(), Default::default()));
+        self.put_session_result_with_timings((result.clone(), ExecuteTimings::default()));
         result
     }
 
