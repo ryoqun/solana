@@ -134,7 +134,7 @@ where
             .unwrap();
 
         let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
-            scheduler_inners: Mutex::default(),
+            scheduler_inners: Mutex::new(vec![]),
             handler_count,
             handler_context: HandlerContext {
                 log_messages_bytes_limit,
