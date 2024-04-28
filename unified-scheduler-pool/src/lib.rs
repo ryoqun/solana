@@ -65,7 +65,7 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
-    scheduler_inners: Mutex<Vec<S::Inner>>,
+    scheduler_inners: Mutex<(Vec<S::Inner>, Instant)>,
     handler_count: usize,
     handler_context: HandlerContext,
     // weak_self could be elided by changing InstalledScheduler::take_scheduler()'s receiver to
