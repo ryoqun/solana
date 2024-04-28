@@ -127,7 +127,7 @@ where
                         if true {
                             unused_schedulers.push(inners.remove(i));
                         } else {
-                            i += 1
+                            i = i.checked_add(1).unwrap();
                         }
                     }
                 }
