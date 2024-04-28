@@ -116,6 +116,7 @@ where
         assert!(handler_count >= 1);
 
         let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded::<Arc<Self>>(1);
+        let (trashed_scheduler_inner_sender, trashed_scheduler_inner_receiver) = crossbeam_channel::unbounded::<usize>();
 
         let cleaner_main_loop = || {
             move || {
