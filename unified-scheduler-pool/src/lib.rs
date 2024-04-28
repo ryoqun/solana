@@ -979,7 +979,7 @@ where
         }
 
         if aborted_detected {
-            ensure_join_after_abort().unwrap_err();
+            self.ensure_join_after_abort().unwrap_err();
         }
     }
 
