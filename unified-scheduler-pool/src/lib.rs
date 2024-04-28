@@ -954,6 +954,13 @@ where
     }
 
     fn ensure_join_after_abort(&mut self) -> Result<()> {
+        for thread in self.handler_threads.drain(..) {
+            debug!("joining...: {:?}", thread);
+            () = thread.join().unwrap();
+        }
+        if let Some(result) = scheduler_thread.join().unwrap() {
+            self.put_session_result_with_timings((result, Default::default()));
+        }
     }
 
     fn end_session(&mut self) {
