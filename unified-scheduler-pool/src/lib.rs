@@ -77,6 +77,7 @@ where
     // memory increase.
     weak_self: Weak<Self>,
     next_scheduler_id: AtomicSchedulerId,
+    cleaner_thread: JoinHandle<()>,
     _phantom: PhantomData<TH>,
 }
 
@@ -109,6 +110,15 @@ where
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
 
+        let cleaner_main_loop = || {
+                        move || {
+                        }
+        };
+        let cleaner_thread = thread::Builder::new()
+            .name("solScCleaner".to_owned())
+            .spawn(cleaner_main_loop())
+            .unwrap();
+
         Arc::new_cyclic(|weak_self| Self {
             scheduler_inners: Mutex::default(),
             handler_count,
@@ -120,6 +130,7 @@ where
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
+            cleaner_thread,
             _phantom: PhantomData,
         })
     }
