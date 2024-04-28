@@ -975,7 +975,7 @@ where
         result
     }
 
-    fn is_aborted() -> bool {
+    fn is_aborted(&self) -> bool {
         self.scheduler_thread.is_none()
     }
 
