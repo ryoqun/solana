@@ -522,6 +522,13 @@ where
     usage_queue_loader: UsageQueueLoader,
 }
 
+impl<S, TH> PooledSchedulerInner<S, TH>
+where
+    S: SpawnableScheduler<TH>,
+    TH: TaskHandler,
+{
+}
+
 // This type manages the OS threads for scheduling and executing transactions. The term
 // `session` is consistently used to mean a group of Tasks scoped under a single SchedulingContext.
 // This is equivalent to a particular bank for block verification. However, new terms is introduced
