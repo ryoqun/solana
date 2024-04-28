@@ -123,7 +123,7 @@ where
                 loop {
                     sleep(Duration::from_secs(10));
                     let mut inners: Vec<_> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
-                    inners.retain_mut(|(_inner, pooled_since)| pooled_since.elapsed() < Duration::from_secs(180));
+                    inners.retain(|(_inner, pooled_since)| pooled_since.elapsed() < Duration::from_secs(180));
                     scheduler_pool.scheduler_inners.lock().unwrap().extend(inners);
                 }
             }
