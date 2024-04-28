@@ -190,7 +190,7 @@ where
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
         // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
         // returned recently
-        if let Some(inner) = self.scheduler_inners.lock().expect("not poisoned").pop() {
+        if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop() {
             S::from_inner(inner, context)
         } else {
             S::spawn(self.self_arc(), context)
