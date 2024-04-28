@@ -121,7 +121,7 @@ where
                 loop {
                     sleep(Duration::from_secs(10));
                     let inners = scheduler_pool.scheduler_inners.lock().unwrap();
-                    let unused_schedulers = vec![];
+                    let mut unused_schedulers = vec![];
                     let mut i = 0;
                     while i < inners.len() {
                         if true {
