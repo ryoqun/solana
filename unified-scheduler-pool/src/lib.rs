@@ -113,7 +113,7 @@ where
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
 
-        let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded(1);
+        let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded::<Arc<Self>>(1);
 
         let cleaner_main_loop = || {
             move || {
