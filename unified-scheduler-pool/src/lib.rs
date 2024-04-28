@@ -122,15 +122,8 @@ where
                 loop {
                     sleep(Duration::from_secs(10));
                     let mut inners: Vec<S::Inner> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
-                    let mut unused_schedulers = vec![];
-                    let mut i = 0;
-                    while i < inners.len() {
-                        if true {
-                            unused_schedulers.push(inners.remove(i));
-                        } else {
-                            i = i.checked_add(1).unwrap();
-                        }
-                    }
+                    inners.retain_mut(|| true);
+                    scheduler_pool.scheduler_inners.lock().unwrap().append(inners);
                 }
             }
         };
