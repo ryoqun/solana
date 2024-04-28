@@ -152,7 +152,7 @@ where
             cleaner_thread,
             _phantom: PhantomData,
         });
-        scheduler_pool_sender.send(scheduler_pool.clone());
+        scheduler_pool_sender.send(scheduler_pool.clone()).unwrap();
         scheduler_pool
     }
 
