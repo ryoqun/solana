@@ -124,7 +124,7 @@ where
                     sleep(Duration::from_secs(10));
                     let mut inners: Vec<_> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
-                    inners.retain(|(_inner, pooled_at)| now.duration_since(&pooled_at) < Duration::from_secs(180));
+                    inners.retain(|(_inner, pooled_at)| now.duration_since(*pooled_at) < Duration::from_secs(180));
                     scheduler_pool.scheduler_inners.lock().unwrap().extend(inners);
                 }
             }
