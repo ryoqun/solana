@@ -963,12 +963,17 @@ where
         }
         debug!("end_session(): will end session...");
 
-        self.new_task_sender
+        let aborted_detected = self.new_task_sender
             .send(NewTaskPayload::CloseSubchannel)
-            .unwrap();
+            .is_err();
 
-        if let Some(result_with_timings) = self.session_result_receiver.recv().unwrap() {
-            self.put_session_result_with_timings(result_with_timings);
+        if let Ok(maybe_result_with_timings) = self.session_result_receiver.recv() {
+            if let Some(result_with_timings) = maybe_result_with_timings {
+                assert!(!aborted_detected);
+                self.put_session_result_with_timings(result_with_timings);
+            }
+        } else {
+            panic!("never disconnected");
         }
     }
 
