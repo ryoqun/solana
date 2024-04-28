@@ -122,7 +122,7 @@ where
                 loop {
                     sleep(Duration::from_secs(10));
                     let mut inners: Vec<S::Inner> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
-                    inners.retain_mut(|| true);
+                    inners.retain_mut(|_| true);
                     scheduler_pool.scheduler_inners.lock().unwrap().append(inners);
                 }
             }
