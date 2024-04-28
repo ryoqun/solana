@@ -963,7 +963,7 @@ where
         }
         debug!("end_session(): will end session...");
 
-        let aborted_detected = self.new_task_sender
+        let mut aborted_detected = self.new_task_sender
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
@@ -971,9 +971,15 @@ where
             if let Some(result_with_timings) = maybe_result_with_timings {
                 assert!(!aborted_detected);
                 self.put_session_result_with_timings(result_with_timings);
+            } else {
+                aborted_detected = true;
             }
         } else {
             panic!("never disconnected");
+        }
+
+        if aborted_detected {
+            ensure_join_after_abort().unwrap_err();
         }
     }
 
