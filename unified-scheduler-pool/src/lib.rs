@@ -53,6 +53,7 @@ use {
 use std::thread::sleep;
 use std::time::Duration;
 use std::mem;
+use std::time::Instant;
 
 type AtomicSchedulerId = AtomicU64;
 
