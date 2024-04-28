@@ -1047,7 +1047,9 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.inner.thread_manager.read().unwrap().send_task(task)
+        if let Err(()) = self.inner.thread_manager.read().unwrap().send_task(task) {
+        }
+        Ok(())
     }
 
     fn wait_for_termination(
