@@ -841,7 +841,7 @@ where
                                 state_machine.deschedule_task(&executed_task.task);
                                 let result_with_timings = result_with_timings.as_mut().unwrap();
                                 Self::accumulate_result_with_timings(result_with_timings, executed_task);
-                                if result_with_timings.is_err() {
+                                if result_with_timings.0.is_err() {
                                     session_result_sender.send(None).unwrap();
                                     return result_with_timings.0;
                                 }
@@ -877,7 +877,7 @@ where
                                 state_machine.deschedule_task(&executed_task.task);
                                 let result_with_timings = result_with_timings.as_mut().unwrap();
                                 Self::accumulate_result_with_timings(result_with_timings, executed_task);
-                                if result_with_timings.is_err() {
+                                if result_with_timings.0.is_err() {
                                     session_result_sender.send(None).unwrap();
                                     return result_with_timings.0;
                                 }
