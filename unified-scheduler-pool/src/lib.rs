@@ -123,7 +123,6 @@ where
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
                     sleep(Duration::from_secs(10));
-                    while Ok(a)trashed_scheduler_inner_receiver
                     let mut inners: Vec<_> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
                     inners.retain(|(_inner, pooled_at)| now.duration_since(*pooled_at) < Duration::from_secs(180));
