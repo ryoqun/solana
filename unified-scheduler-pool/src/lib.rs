@@ -77,6 +77,7 @@ where
     // memory increase.
     weak_self: Weak<Self>,
     next_scheduler_id: AtomicSchedulerId,
+    #[allow(dead_code)]
     cleaner_thread: JoinHandle<()>,
     _phantom: PhantomData<TH>,
 }
