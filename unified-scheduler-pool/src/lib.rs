@@ -953,6 +953,9 @@ where
             .map_err(|_| ())
     }
 
+    fn ensure_join_after_abort(&mut self) -> ResultWithTimings {
+    }
+
     fn end_session(&mut self) {
         if self.session_result_with_timings.is_some() {
             debug!("end_session(): already result resides within thread manager..");
@@ -1049,8 +1052,9 @@ where
         });
         if let Err(()) = self.inner.thread_manager.read().unwrap().send_task(task) {
             self.inner.thread_manager.write().unwrap().ensure_join_after_abort()
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     fn wait_for_termination(
