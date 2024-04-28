@@ -67,6 +67,7 @@ where
     TH: TaskHandler,
 {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
+    trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     handler_count: usize,
     handler_context: HandlerContext,
     // weak_self could be elided by changing InstalledScheduler::take_scheduler()'s receiver to
@@ -116,18 +117,18 @@ where
         assert!(handler_count >= 1);
 
         let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded::<Arc<Self>>(1);
-        let (trashed_scheduler_inner_sender, trashed_scheduler_inner_receiver) = crossbeam_channel::unbounded::<usize>();
 
         let cleaner_main_loop = || {
             move || {
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
-                    while let Ok(a) = trashed_scheduler_inner_receiver.try_iter() {
-                    }
+                    sleep(Duration::from_secs(10));
+                    while Ok(a)trashed_scheduler_inner_receiver
                     let mut inners: Vec<_> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
                     inners.retain(|(_inner, pooled_at)| now.duration_since(*pooled_at) < Duration::from_secs(180));
                     scheduler_pool.scheduler_inners.lock().unwrap().extend(inners);
+                    let mut trashed_inners: Vec<_> = mem::take(&mut *scheduler_pool.trashed_scheduler_inners.lock().unwrap());
                 }
             }
         };
@@ -138,6 +139,7 @@ where
 
         let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
             scheduler_inners: Mutex::default(),
+            trashed_scheduler_inners: Mutex::default(),
             handler_count,
             handler_context: HandlerContext {
                 log_messages_bytes_limit,
@@ -147,7 +149,6 @@ where
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
-            trashed_scheduler_inner_sender,
             cleaner_thread,
             _phantom: PhantomData,
         });
