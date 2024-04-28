@@ -80,8 +80,6 @@ where
     // memory increase.
     weak_self: Weak<Self>,
     next_scheduler_id: AtomicSchedulerId,
-    #[allow(dead_code)]
-    cleaner_thread: JoinHandle<()>,
     _phantom: PhantomData<TH>,
 }
 
@@ -139,7 +137,9 @@ where
                 }
             }
         };
-        let cleaner_thread = thread::Builder::new()
+
+        // Correct pool termation will be implemented ater
+        thread::Builder::new()
             .name("solScCleaner".to_owned())
             .spawn(cleaner_main_loop())
             .unwrap();
@@ -156,7 +156,6 @@ where
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
-            cleaner_thread,
             _phantom: PhantomData,
         });
         scheduler_pool_sender.send(scheduler_pool.clone()).unwrap();
