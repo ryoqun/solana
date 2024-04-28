@@ -924,7 +924,10 @@ where
             move || loop {
                 let (task, sender) = select! {
                     recv(runnable_task_receiver.for_select()) -> message => {
-                        if let Some(task) = runnable_task_receiver.after_select(message.unwrap()) {
+                        let Ok(message) = message else {
+                            break;
+                        }
+                        if let Some(task) = runnable_task_receiver.after_select(message) {
                             (task, &finished_blocked_task_sender)
                         } else {
                             continue;
@@ -944,7 +947,7 @@ where
                     &mut task,
                     &pool.handler_context,
                 );
-                if let Err(_) = sender.send(task) {
+                if sender.send(task).is_err() {
                     break;
                 }
             }
