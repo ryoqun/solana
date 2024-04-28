@@ -527,6 +527,9 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
+    fn is_trashed(&self) -> bool {
+        false
+    }
 }
 
 // This type manages the OS threads for scheduling and executing transactions. The term
