@@ -121,7 +121,7 @@ where
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
                     sleep(Duration::from_secs(10));
-                    let mut inners = mem::take(scheduler_pool.scheduler_inners.lock().unwrap());
+                    let mut inners = mem::take(&mut scheduler_pool.scheduler_inners.lock().unwrap());
                     let mut unused_schedulers = vec![];
                     let mut i = 0;
                     while i < inners.len() {
