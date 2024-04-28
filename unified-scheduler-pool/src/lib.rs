@@ -550,7 +550,7 @@ where
     session_result_sender: Sender<Option<ResultWithTimings>>,
     session_result_receiver: Receiver<Option<ResultWithTimings>>,
     session_result_with_timings: Option<ResultWithTimings>,
-    scheduler_thread: Option<JoinHandle<()>>,
+    scheduler_thread: Option<JoinHandle<Result<()>>>,
     handler_threads: Vec<JoinHandle<()>>,
 }
 
