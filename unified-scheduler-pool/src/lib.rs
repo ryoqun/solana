@@ -45,7 +45,7 @@ use {
         marker::PhantomData,
         sync::{
             atomic::{AtomicU64, Ordering::Relaxed},
-            Arc, Mutex, OnceLock, Weak,
+            Arc, Mutex, OnceLock, RwLock, Weak,
         },
         thread::{self, JoinHandle},
     },
@@ -518,7 +518,7 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
-    thread_manager: ThreadManager<S, TH>,
+    thread_manager: Arc<RwLock<ThreadManager<S, TH>>>,
     usage_queue_loader: UsageQueueLoader,
 }
 
@@ -561,7 +561,7 @@ where
     fn do_spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
         Self::from_inner(
             PooledSchedulerInner {
-                thread_manager: ThreadManager::new(pool),
+                thread_manager: Arc::new(RwLock::new(ThreadManager::new(pool))),
                 usage_queue_loader: UsageQueueLoader::default(),
             },
             initial_context,
@@ -1001,22 +1001,28 @@ where
     fn into_inner(mut self) -> (ResultWithTimings, Self::Inner) {
         let result_with_timings = {
             let manager = &mut self.inner.thread_manager;
-            manager.end_session();
-            manager.take_session_result_with_timings()
+            manager.write().unwrap().end_session();
+            manager.write().unwrap().take_session_result_with_timings()
         };
         (result_with_timings, self.inner)
     }
 
-    fn from_inner(mut inner: Self::Inner, context: SchedulingContext) -> Self {
-        inner.thread_manager.start_session(&context);
+    fn from_inner(inner: Self::Inner, context: SchedulingContext) -> Self {
+        inner
+            .thread_manager
+            .write()
+            .unwrap()
+            .start_session(&context);
         Self { inner, context }
     }
 
     fn spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
-        let mut scheduler = Self::do_spawn(pool, initial_context);
+        let scheduler = Self::do_spawn(pool, initial_context);
         scheduler
             .inner
             .thread_manager
+            .write()
+            .unwrap()
             .start_threads(&scheduler.context);
         scheduler
     }
@@ -1027,7 +1033,7 @@ where
     TH: TaskHandler,
 {
     fn id(&self) -> SchedulerId {
-        self.inner.thread_manager.scheduler_id
+        self.inner.thread_manager.read().unwrap().scheduler_id
     }
 
     fn context(&self) -> &SchedulingContext {
@@ -1041,7 +1047,7 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.inner.thread_manager.send_task(task)
+        self.inner.thread_manager.read().unwrap().send_task(task)
     }
 
     fn wait_for_termination(
@@ -1053,7 +1059,7 @@ where
     }
 
     fn pause_for_recent_blockhash(&mut self) {
-        self.inner.thread_manager.end_session();
+        self.inner.thread_manager.write().unwrap().end_session();
     }
 }
 
@@ -1063,10 +1069,11 @@ where
     TH: TaskHandler,
 {
     fn return_to_pool(self: Box<Self>) {
+        let pool = self.thread_manager.write().unwrap().pool.clone();
         if self.is_trashed() {
-            self.thread_manager.pool.clone().trash_scheduler(*self)
+            pool.clone().trash_scheduler(*self)
         } else {
-            self.thread_manager.pool.clone().return_scheduler(*self)
+            pool.clone().return_scheduler(*self)
         }
     }
 }
