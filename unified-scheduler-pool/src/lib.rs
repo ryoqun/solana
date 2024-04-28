@@ -489,6 +489,10 @@ impl UsageQueueLoader {
     pub fn load(&self, address: Pubkey) -> UsageQueue {
         self.usage_queues.entry(address).or_default().clone()
     }
+
+    pub fn usage_queue_count(&self) -> usize {
+        self.usage_queues.len()
+    }
 }
 
 // (this is slow needing atomic mem reads. However, this can be turned into a lot faster
