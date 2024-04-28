@@ -185,17 +185,17 @@ where
     }
 
     fn return_scheduler(&self, scheduler: S::Inner) {
-        if scheduler.is_trashed() {
-            self.trashed_scheduler_inners
-                .lock()
-                .expect("not poisoned")
-                .push(scheduler);
-        } else {
-            self.scheduler_inners
-                .lock()
-                .expect("not poisoned")
-                .push((scheduler, Instant::now()));
-        }
+        self.scheduler_inners
+            .lock()
+            .expect("not poisoned")
+            .push((scheduler, Instant::now()));
+    }
+
+    fn trash_scheduler(&self, scheduler: S::Inner) {
+        self.trashed_scheduler_inners
+            .lock()
+            .expect("not poisoned")
+            .push(scheduler);
     }
 
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
