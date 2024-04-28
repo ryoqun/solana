@@ -976,7 +976,7 @@ where
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
             .send(NewTaskPayload::OpenSubchannel(context.clone()))
-            .unwrap();
+            .expect("no actual use after aborted");
     }
 }
 
