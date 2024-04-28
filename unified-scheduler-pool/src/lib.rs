@@ -946,7 +946,7 @@ where
             .collect();
     }
 
-    fn send_task(&self, task: Task) -> std::result::Result<usize, usize> {
+    fn send_task(&self, task: Task) -> std::result::Result<(), ()> {
         debug!("send_task()");
         self.new_task_sender
             .send(NewTaskPayload::Payload(task))
