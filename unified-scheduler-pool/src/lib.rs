@@ -953,7 +953,7 @@ where
             .map_err(|_| ())
     }
 
-    fn ensure_join_after_abort(&mut self) -> ResultWithTimings {
+    fn ensure_join_after_abort(&mut self) -> Result<()> {
     }
 
     fn end_session(&mut self) {
