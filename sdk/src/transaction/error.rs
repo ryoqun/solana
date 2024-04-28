@@ -173,9 +173,6 @@ pub enum TransactionError {
     /// Program cache hit max limit.
     #[error("Program cache hit max limit")]
     ProgramCacheHitMaxLimit,
-
-    /// Program execution is cancelled on a malformed block
-    ProcessingCancelled,
 }
 
 impl From<SanitizeError> for TransactionError {
