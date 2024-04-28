@@ -975,12 +975,16 @@ where
         result
     }
 
+    fn is_aborted() -> bool {
+        self.scheduler_thread.is_none()
+    }
+
     fn end_session(&mut self) {
         if self.session_result_with_timings.is_some() {
             debug!("end_session(): already result resides within thread manager..");
             return;
         }
-        if self.scheduler_thread.is_none() {
+        if self.is_aborted() {
             debug!("end_session(): already joined the aborted threads..");
             return;
         }
