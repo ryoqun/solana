@@ -950,6 +950,7 @@ where
         debug!("send_task()");
         self.new_task_sender
             .send(NewTaskPayload::Payload(task))
+            .map_err(|_| ())
     }
 
     fn end_session(&mut self) {
