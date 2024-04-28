@@ -528,7 +528,7 @@ where
     TH: TaskHandler,
 {
     fn is_trashed(&self) -> bool {
-        false
+        self.thread_manager.read().unwrap().is_aborted()
     }
 }
 
