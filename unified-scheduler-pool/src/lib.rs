@@ -946,11 +946,10 @@ where
             .collect();
     }
 
-    fn send_task(&self, task: Task) {
+    fn send_task(&self, task: Task) -> std::result::Result<usize, usize> {
         debug!("send_task()");
         self.new_task_sender
             .send(NewTaskPayload::Payload(task))
-            .unwrap()
     }
 
     fn end_session(&mut self) {
@@ -1041,8 +1040,7 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.inner.thread_manager.send_task(task);
-        Ok(())
+        self.inner.thread_manager.send_task(task)
     }
 
     fn wait_for_termination(
