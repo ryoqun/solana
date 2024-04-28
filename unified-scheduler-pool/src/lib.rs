@@ -117,7 +117,7 @@ where
 
         let cleaner_main_loop = || {
             move || {
-                let scheduler_pool = scheduler_pool_receiver.recv().unwrap();
+                let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
                     sleep(Duration::from_secs(10));
                 }
@@ -142,7 +142,7 @@ where
             cleaner_thread,
             _phantom: PhantomData,
         });
-        scheduler_pool_receiver.send(scheduler_pool.clone());
+        scheduler_pool_sender.send(scheduler_pool.clone());
         scheduler_pool
     }
 
