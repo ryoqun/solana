@@ -1054,7 +1054,11 @@ where
     TH: TaskHandler,
 {
     fn return_to_pool(self: Box<Self>) {
-        self.thread_manager.pool.clone().return_scheduler(*self)
+        if self.is_trashed() {
+            self.thread_manager.pool.clone().trash_scheduler(*self)
+        } else {
+            self.thread_manager.pool.clone().return_scheduler(*self)
+        }
     }
 }
 
