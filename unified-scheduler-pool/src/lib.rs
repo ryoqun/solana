@@ -111,16 +111,22 @@ where
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
 
+        let (scheduler_pool_sender, scheduler_pool_receiver) = crossbeam_channel::bounded(1);
+
         let cleaner_main_loop = || {
-                        move || {
-                        }
+            move || {
+                let scheduler_pool = scheduler_pool_receiver.recv().unwrap();
+                loop {
+                    sleep(Duration::from_secs(10));
+                }
+            }
         };
         let cleaner_thread = thread::Builder::new()
             .name("solScCleaner".to_owned())
             .spawn(cleaner_main_loop())
             .unwrap();
 
-        Arc::new_cyclic(|weak_self| Self {
+        let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
             scheduler_inners: Mutex::default(),
             handler_count,
             handler_context: HandlerContext {
@@ -133,7 +139,9 @@ where
             next_scheduler_id: AtomicSchedulerId::default(),
             cleaner_thread,
             _phantom: PhantomData,
-        })
+        });
+        scheduler_pool_receiver.send(scheduler_pool.clone());
+        scheduler_pool
     }
 
     // This apparently-meaningless wrapper is handy, because some callers explicitly want
