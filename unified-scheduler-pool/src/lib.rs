@@ -66,7 +66,7 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
-    scheduler_inners: Mutex<(Vec<S::Inner>, Instant)>,
+    scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
     handler_count: usize,
     handler_context: HandlerContext,
     // weak_self could be elided by changing InstalledScheduler::take_scheduler()'s receiver to
@@ -134,7 +134,7 @@ where
             .unwrap();
 
         let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
-            scheduler_inners: Mutex::new(vec![]),
+            scheduler_inners: Mutex::default(),
             handler_count,
             handler_context: HandlerContext {
                 log_messages_bytes_limit,
