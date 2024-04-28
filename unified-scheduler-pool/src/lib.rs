@@ -956,7 +956,7 @@ where
     fn ensure_join_after_abort(&mut self) -> Result<()> {
         let Some(scheduler_thread) = self.scheduler_thread.take() else {
             warn!("suspend(): already suspended...");
-            return;
+            return self.session_result_with_timings.0.clone();
         };
         for thread in self.handler_threads.drain(..) {
             debug!("joining...: {:?}", thread);
