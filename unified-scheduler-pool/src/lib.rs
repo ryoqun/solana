@@ -122,7 +122,7 @@ where
             move || {
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
-                    while Ok(a) = trashed_scheduler_inner_receiver.try_iter() {
+                    while let Ok(a) = trashed_scheduler_inner_receiver.try_iter() {
                     }
                     let mut inners: Vec<_> = mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
