@@ -518,7 +518,7 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
-    thread_manager: Arc<RwLock<ThreadManager<S, TH>>>,
+    thread_manager: RwLock<ThreadManager<S, TH>>,
     usage_queue_loader: UsageQueueLoader,
 }
 
@@ -561,7 +561,7 @@ where
     fn do_spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
         Self::from_inner(
             PooledSchedulerInner {
-                thread_manager: Arc::new(RwLock::new(ThreadManager::new(pool))),
+                thread_manager: RwLock::new(ThreadManager::new(pool)),
                 usage_queue_loader: UsageQueueLoader::default(),
             },
             initial_context,
