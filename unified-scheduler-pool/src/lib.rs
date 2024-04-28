@@ -954,7 +954,7 @@ where
     }
 
     fn ensure_join_after_abort(&mut self) -> Result<()> {
-        let Some(scheduler_thread) = self.take_scheduler_thread() else {
+        let Some(scheduler_thread) = self.scheduler_thread.take() else {
             warn!("suspend(): already suspended...");
             return;
         };
