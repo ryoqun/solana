@@ -955,7 +955,7 @@ where
                                     }
                                     Err(RecvError) => {
                                         // mostly likely is that this scheduler is dropped for
-                                        // pruned blocks... 
+                                        // pruned blocks...
                                         return Ok(());
                                     }
                                 }
@@ -1400,7 +1400,6 @@ mod tests {
             Box::new(scheduler).wait_for_termination(false),
             ((Ok(()), _), _)
         );
-        sleep(Duration::from_secs(5));
     }
 
     #[test]
@@ -1424,8 +1423,6 @@ mod tests {
         let scheduler = pool.take_scheduler(new_context.clone());
         assert_eq!(scheduler_id, scheduler.id());
         assert!(Arc::ptr_eq(scheduler.context().bank(), new_bank));
-
-        sleep(Duration::from_secs(5));
     }
 
     #[test]
