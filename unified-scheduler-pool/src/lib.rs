@@ -829,7 +829,10 @@ where
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
         let scheduler_id = self.scheduler_id;
-        let mut result_with_timings = self.session_result_with_timings.take().unwrap_or_else(initialized_result_with_timings);
+        let mut result_with_timings = self
+            .session_result_with_timings
+            .take()
+            .unwrap_or_else(initialized_result_with_timings);
 
         // High-level flow of new tasks:
         // 1. the replay stage thread send a new task.
@@ -840,7 +843,10 @@ where
         // 6. the scheduler thread post-processes the executed task.
         let scheduler_main_loop = || {
             let handler_count = self.pool.handler_count;
-            let session_result_sender = self.session_result_sender.take().expect("no 2nd start_threads()");
+            let session_result_sender = self
+                .session_result_sender
+                .take()
+                .expect("no 2nd start_threads()");
             let new_task_receiver = self
                 .new_task_receiver
                 .take()
@@ -910,7 +916,7 @@ where
                             .unwrap();
                     } else {
                         // maybe drop is called; rather proper shutdown timing....
-                        let _  = session_result_sender.send(result_with_timings);
+                        let _ = session_result_sender.send(result_with_timings);
                         return;
                     }
 
@@ -1001,9 +1007,7 @@ where
 
                     if session_ending {
                         state_machine.reinitialize();
-                        session_result_sender
-                            .send(result_with_timings)
-                            .unwrap();
+                        session_result_sender.send(result_with_timings).unwrap();
                         result_with_timings = initialized_result_with_timings();
                         session_ending = false;
                     }
@@ -1093,7 +1097,10 @@ where
         () = scheduler_thread.join().unwrap();
 
         if let Ok(result_with_timings) = self.session_result_receiver.try_recv() {
-            debug!("ensure_join_after_abort(): result: {:?}", result_with_timings.0);
+            debug!(
+                "ensure_join_after_abort(): result: {:?}",
+                result_with_timings.0
+            );
             //assert!(!aborted_detected);
             self.put_session_result_with_timings(result_with_timings);
         }
