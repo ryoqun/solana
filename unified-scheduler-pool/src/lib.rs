@@ -157,23 +157,24 @@ where
                     let Some(scheduler_pool) = scheduler_pool.upgrade() else {
                         break;
                     };
-                    let mut inners: Vec<_> =
-                        mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
+                    let Ok(scheduler_inners) = scheduler_pool.scheduler_inners.lock() {
+                        break;
+                    };
+                    let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
                     let now = Instant::now();
                     let old_inner_count = inners.len();
                     inners.retain(|(_inner, pooled_at)| {
                         now.duration_since(*pooled_at) <= max_pooling_duration
                     });
                     let new_inner_count = inners.len();
-                    scheduler_pool
-                        .scheduler_inners
-                        .lock()
-                        .unwrap()
-                        .extend(inners);
+                    scheduler_inners.extend(inners);
 
-                    let trashed_inners: Vec<_> = mem::take(
-                        &mut *scheduler_pool.trashed_scheduler_inners.lock().unwrap(),
-                    );
+                    let Ok(trashed_scheduler_inners) = scheduler_pool.trashed_scheduler_inners.lock() else {
+                        break;
+                    };
+                    let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
+                    drop(trashed_scheduler_inners);
+
                     let trashed_inner_count = trashed_inners.len();
                     drop(trashed_inners);
 
