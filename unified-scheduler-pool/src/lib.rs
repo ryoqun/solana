@@ -120,6 +120,11 @@ where
             move || {
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
+                    trace!("thread is started: {:?}", thread::current());
+                    defer! {
+                        trace!("thread is terminated: {:?}", thread::current());
+                    }
+
                     sleep(Duration::from_secs(1));
 
                     let Some(scheduler_pool) = scheduler_pool.upgrade() else {
