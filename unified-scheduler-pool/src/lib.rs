@@ -117,6 +117,7 @@ where
             replay_vote_sender,
             prioritization_fee_cache,
             Duration::from_secs(10),
+            Duration::from_secs(180),
         )
     }
 
@@ -127,6 +128,7 @@ where
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
         pool_cleaner_interval: Duration,
+        max_pooling_duration: Duration,
     ) -> Arc<Self> {
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
@@ -153,7 +155,7 @@ where
                     let now = Instant::now();
                     let old_inner_count = inners.len();
                     inners.retain(|(_inner, pooled_at)| {
-                        now.duration_since(*pooled_at) < Duration::from_secs(180)
+                        now.duration_since(*pooled_at) <= max_pooling_duration
                     });
                     let new_inner_count = inners.len();
                     scheduler_pool
