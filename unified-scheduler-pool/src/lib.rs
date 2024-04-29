@@ -1575,7 +1575,7 @@ mod tests {
         sleep(Duration::from_secs(5));
         assert_matches!(
             scheduler.schedule_execution(&(good_tx_after_bad_tx, 1)),
-            Err(SchedulerAborted),
+            Err(SchedulerAborted)
         );
         scheduler.pause_for_recent_blockhash();
         // transaction_count should remain same as scheduler should be bailing out.
