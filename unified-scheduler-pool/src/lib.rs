@@ -1457,8 +1457,9 @@ mod tests {
         let bank = setup_dummy_fork_graph(bank);
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool =
-            DefaultSchedulerPool::new_dyn(None, None, None, None, ignored_prioritization_fee_cache);
+        let pool_raw =
+            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1));
+        let pool = pool_raw.clone();
         let context = SchedulingContext::new(bank.clone());
         let mut scheduler = pool.take_scheduler(context);
 
