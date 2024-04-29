@@ -798,6 +798,12 @@ where
             // like syscalls, VDSO, and even memory (de)allocation should be avoided at all costs
             // by design or by means of offloading at the last resort.
             move || {
+                trace!("thread is started: {:?}", thread::current());
+
+                defer! {
+                    trace!("thread is terminated: {:?}", thread::current());
+                }
+
                 let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
                 let dummy_receiver = |trigger| {
                     if trigger {
@@ -921,35 +927,39 @@ where
             let finished_blocked_task_sender = finished_blocked_task_sender.clone();
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
-            move || loop {
-                let (task, sender) = select! {
-                    recv(runnable_task_receiver.for_select()) -> message => {
-                        let Ok(message) = message else {
-                            break;
-                        };
-                        if let Some(task) = runnable_task_receiver.after_select(message) {
-                            (task, &finished_blocked_task_sender)
-                        } else {
-                            continue;
-                        }
-                    },
-                    recv(runnable_task_receiver.aux_for_select()) -> task => {
-                        if let Ok(task) = task {
-                            (task, &finished_idle_task_sender)
-                        } else {
-                            continue;
-                        }
-                    },
-                };
-                let mut task = ExecutedTask::new_boxed(task);
-                Self::execute_task_with_handler(
-                    runnable_task_receiver.context().bank(),
-                    &mut task,
-                    &pool.handler_context,
-                );
-                if sender.send(task).is_err() {
-                    break;
+            move || {
+                trace!("thread is started: {:?}", thread::current());
+                loop {
+                    let (task, sender) = select! {
+                        recv(runnable_task_receiver.for_select()) -> message => {
+                            let Ok(message) = message else {
+                                break;
+                            };
+                            if let Some(task) = runnable_task_receiver.after_select(message) {
+                                (task, &finished_blocked_task_sender)
+                            } else {
+                                continue;
+                            }
+                        },
+                        recv(runnable_task_receiver.aux_for_select()) -> task => {
+                            if let Ok(task) = task {
+                                (task, &finished_idle_task_sender)
+                            } else {
+                                continue;
+                            }
+                        },
+                    };
+                    let mut task = ExecutedTask::new_boxed(task);
+                    Self::execute_task_with_handler(
+                        runnable_task_receiver.context().bank(),
+                        &mut task,
+                        &pool.handler_context,
+                    );
+                    if sender.send(task).is_err() {
+                        break;
+                    }
                 }
+                trace!("thread is terminated: {:?}", thread::current());
             }
         };
 
