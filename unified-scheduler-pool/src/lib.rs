@@ -98,6 +98,7 @@ pub type DefaultSchedulerPool =
 
 // Roughtly 16 bytes * 200_000 = NNNNN
 const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 200_000;
+const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
 
 impl<S, TH> SchedulerPool<S, TH>
 where
@@ -121,7 +122,7 @@ where
             replay_vote_sender,
             prioritization_fee_cache,
             Duration::from_secs(10),
-            Duration::from_secs(180),
+            DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
         )
     }
@@ -1283,6 +1284,22 @@ mod tests {
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool_raw =
             DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1), DEFAULT_MAX_USAGE_QUEUE_COUNT);
+        let pool = pool_raw.clone();
+        let bank = Arc::new(Bank::default_for_tests());
+        let context = SchedulingContext::new(bank);
+        let scheduler = pool.do_take_scheduler(context);
+        pool.return_scheduler(scheduler.into_inner().1);
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
+        sleep(Duration::from_secs(5));
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
+    }
+
+    fn test_scheduler_overgrown_drop() {
+        solana_logger::setup();
+
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool_raw =
+            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), DEFAULT_MAX_POOLING_DURATION, 1);
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
