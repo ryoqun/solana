@@ -207,7 +207,7 @@ where
 
                         old_inner_count
                             .checked_sub(new_inner_count)
-                            .expect("new isn't larger")
+                            .expect("new_inner_count isn't larger")
                     };
 
                     let trashed_inner_count = {
@@ -645,10 +645,10 @@ where
     pool: Arc<SchedulerPool<S, TH>>,
     new_task_sender: Sender<NewTaskPayload>,
     new_task_receiver: Option<Receiver<NewTaskPayload>>,
-    session_result_sender: Sender<Option<ResultWithTimings>>,
-    session_result_receiver: Receiver<Option<ResultWithTimings>>,
+    session_result_sender: Option<Sender<ResultWithTimings>>,
+    session_result_receiver: Receiver<ResultWithTimings>,
     session_result_with_timings: Option<ResultWithTimings>,
-    scheduler_thread: Option<JoinHandle<Result<()>>>,
+    scheduler_thread: Option<JoinHandle<()>>,
     handler_threads: Vec<JoinHandle<()>>,
 }
 
@@ -840,7 +840,7 @@ where
         // 6. the scheduler thread post-processes the executed task.
         let scheduler_main_loop = || {
             let handler_count = self.pool.handler_count;
-            let session_result_sender = self.session_result_sender.clone();
+            let session_result_sender = self.session_result_sender.take().expect("no 2nd start_threads()");
             let new_task_receiver = self
                 .new_task_receiver
                 .take()
@@ -947,8 +947,10 @@ where
                                 let result_with_timings = result_with_timings.as_mut().unwrap();
                                 Self::accumulate_result_with_timings(result_with_timings, executed_task);
                                 if result_with_timings.0.is_err() {
-                                    session_result_sender.send(None).unwrap();
-                                    return result_with_timings.0.clone();
+                                    // todo: unless we precisely specify drop order;
+                                    // session_result_receiver could be dead still....
+                                    let _  = session_result_sender.send(result_with_timings.clone());
+                                    return;
                                 }
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
@@ -990,8 +992,10 @@ where
                                 let result_with_timings = result_with_timings.as_mut().unwrap();
                                 Self::accumulate_result_with_timings(result_with_timings, executed_task);
                                 if result_with_timings.0.is_err() {
-                                    session_result_sender.send(None).unwrap();
-                                    return result_with_timings.0.clone();
+                                    // todo: unless we precisely specify drop order;
+                                    // session_result_receiver could be dead still....
+                                    let _ = session_result_sender.send(result_with_timings.clone());
+                                    return;
                                 }
                             },
                         };
@@ -1086,7 +1090,7 @@ where
     fn ensure_join_after_abort(&mut self) -> Result<()> {
         trace!("ensure_join_after_abort() is called");
         let Some(scheduler_thread) = self.scheduler_thread.take() else {
-            warn!("suspend(): already suspended...");
+            warn!("ensure_join_after_abort(): already joined...");
             return self.session_result_with_timings.as_mut().unwrap().0.clone();
         };
         for thread in self.handler_threads.drain(..) {
