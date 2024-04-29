@@ -313,10 +313,11 @@ impl BankWithScheduler {
             {
                 drop(scheduler_guard);
                 let mut scheduler_guard = self.inner.scheduler.write().unwrap();
-                return Err(scheduler_guard
+                let recovered_error = scheduler_guard
                     .as_mut()
                     .unwrap()
-                    .recover_error_after_abort());
+                    .recover_error_after_abort();
+                return Err(recovered_error);
             }
         }
 
