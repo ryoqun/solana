@@ -1249,7 +1249,7 @@ mod tests {
         let context = SchedulingContext::new(bank);
         let scheduler = pool.take_scheduler(context);
         pool.return_scheduler(scheduler);
-        assert_eq!(pool_raw.scheduler_inners.len(), 1);
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
     }
 
     #[test]
