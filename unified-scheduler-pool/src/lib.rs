@@ -1261,6 +1261,7 @@ mod tests {
             Box::new(scheduler).wait_for_termination(false),
             ((Ok(()), _), _)
         );
+        sleep(Duration::from_secs(5));
     }
 
     #[test]
