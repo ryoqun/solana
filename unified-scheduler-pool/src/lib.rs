@@ -169,7 +169,9 @@ where
                     let new_inner_count = inners.len();
                     scheduler_inners.extend(inners);
 
-                    let Ok(mut trashed_scheduler_inners) = scheduler_pool.trashed_scheduler_inners.lock() else {
+                    let Ok(mut trashed_scheduler_inners) =
+                        scheduler_pool.trashed_scheduler_inners.lock()
+                    else {
                         break;
                     };
                     let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
@@ -178,7 +180,11 @@ where
                     let trashed_inner_count = trashed_inners.len();
                     drop(trashed_inners);
 
-                    info!("Scheduler pool cleaner: dropped {} inners, {} trashed inners", old_inner_count - new_inner_count, trashed_inner_count)
+                    info!(
+                        "Scheduler pool cleaner: dropped {} inners, {} trashed inners",
+                        old_inner_count - new_inner_count,
+                        trashed_inner_count
+                    )
                 }
             }
         };
@@ -204,7 +210,9 @@ where
             max_usage_queue_count,
             _phantom: PhantomData,
         });
-        scheduler_pool_sender.send(Arc::downgrade(&scheduler_pool)).unwrap();
+        scheduler_pool_sender
+            .send(Arc::downgrade(&scheduler_pool))
+            .unwrap();
         scheduler_pool
     }
 
@@ -596,7 +604,13 @@ where
     TH: TaskHandler,
 {
     fn is_trashed(&self) -> bool {
-        self.usage_queue_loader.usage_queue_count() > self.thread_manager.read().unwrap().pool.max_usage_queue_count
+        self.usage_queue_loader.usage_queue_count()
+            > self
+                .thread_manager
+                .read()
+                .unwrap()
+                .pool
+                .max_usage_queue_count
             || self.thread_manager.read().unwrap().is_aborted()
     }
 }
@@ -1283,8 +1297,16 @@ mod tests {
         solana_logger::setup();
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool_raw =
-            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1), DEFAULT_MAX_USAGE_QUEUE_COUNT);
+        let pool_raw = DefaultSchedulerPool::do_new(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+            Duration::from_secs(1),
+            Duration::from_secs(1),
+            DEFAULT_MAX_USAGE_QUEUE_COUNT,
+        );
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
@@ -1300,15 +1322,29 @@ mod tests {
         solana_logger::setup();
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool_raw =
-            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), DEFAULT_MAX_POOLING_DURATION, 1);
+        let pool_raw = DefaultSchedulerPool::do_new(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+            Duration::from_secs(1),
+            DEFAULT_MAX_POOLING_DURATION,
+            1,
+        );
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
         let scheduler = pool.do_take_scheduler(context);
 
-        scheduler.inner.usage_queue_loader.load(Pubkey::new_unique());
-        scheduler.inner.usage_queue_loader.load(Pubkey::new_unique());
+        scheduler
+            .inner
+            .usage_queue_loader
+            .load(Pubkey::new_unique());
+        scheduler
+            .inner
+            .usage_queue_loader
+            .load(Pubkey::new_unique());
         Box::new(scheduler.into_inner().1).return_to_pool();
 
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
@@ -1489,8 +1525,16 @@ mod tests {
         let bank = setup_dummy_fork_graph(bank);
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool_raw =
-            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1), DEFAULT_MAX_USAGE_QUEUE_COUNT);
+        let pool_raw = DefaultSchedulerPool::do_new(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+            Duration::from_secs(1),
+            Duration::from_secs(1),
+            DEFAULT_MAX_USAGE_QUEUE_COUNT,
+        );
         let pool = pool_raw.clone();
         let context = SchedulingContext::new(bank.clone());
         let mut scheduler = pool.take_scheduler(context);
