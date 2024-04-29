@@ -1193,12 +1193,15 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.inner
+        let thread_manager = self.inner
             .thread_manager
             .read()
             .unwrap()
+
+        thread_manager
             .send_task(task)
-            .or_else(|_| {
+            .or_else(move |_| {
+                drop(thread_manager);
                 warn!("send_task failed....");
                 self.inner
                     .thread_manager
