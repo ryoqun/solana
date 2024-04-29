@@ -893,7 +893,7 @@ where
                                             runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
                                     }
-                                    Ok(NewTaskPayload::CloseSubchannel) | Err(3) => {
+                                    Ok(NewTaskPayload::CloseSubchannel) | Err(RecvError) => {
                                         session_ending = true;
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context)) => {
