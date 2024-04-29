@@ -1084,12 +1084,19 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_after_abort(&mut self) -> Result<()> {
+    fn ensure_join_after_abort(&mut self) -> TransactionError {
         trace!("ensure_join_after_abort() is called");
         let Some(scheduler_thread) = self.scheduler_thread.take() else {
             warn!("ensure_join_after_abort(): already joined...");
-            return self.session_result_with_timings.as_mut().unwrap().0.clone();
+            return self
+                .session_result_with_timings
+                .as_mut()
+                .unwrap()
+                .0
+                .clone()
+                .unwrap_err();
         };
+
         for thread in self.handler_threads.drain(..) {
             debug!("joining...: {:?}", thread);
             () = thread.join().unwrap();
@@ -1101,11 +1108,16 @@ where
                 "ensure_join_after_abort(): result: {:?}",
                 result_with_timings.0
             );
-            //assert!(!aborted_detected);
             self.put_session_result_with_timings(result_with_timings);
         }
 
-        return self.session_result_with_timings.as_mut().unwrap().0.clone();
+        return self
+            .session_result_with_timings
+            .as_mut()
+            .unwrap()
+            .0
+            .clone()
+            .unwrap_err();
     }
 
     fn is_aborted(&self) -> bool {
@@ -1123,20 +1135,20 @@ where
         }
         debug!("end_session(): will end session...");
 
-        let aborted_detected = self
+        let abort_detected = self
             .new_task_sender
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
         if let Ok(result_with_timings) = self.session_result_receiver.recv() {
-            //assert!(!aborted_detected);
+            //assert!(!abort_detected);
             self.put_session_result_with_timings(result_with_timings);
         } else {
             panic!("never disconnected");
         }
 
-        if aborted_detected {
-            self.ensure_join_after_abort().unwrap_err();
+        if abort_detected {
+            self.ensure_join_after_abort();
         }
     }
 
@@ -1216,10 +1228,7 @@ where
     }
 
     fn recover_error_after_abort(&mut self) -> TransactionError {
-        self.inner
-            .thread_manager
-            .ensure_join_after_abort()
-            .unwrap_err()
+        self.inner.thread_manager.ensure_join_after_abort()
     }
 
     fn wait_for_termination(
