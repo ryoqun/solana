@@ -613,14 +613,11 @@ where
     }
 
     fn is_trashed(&self) -> bool {
-        self.usage_queue_loader.usage_queue_count()
-            > self
-                .thread_manager
-                .read()
-                .unwrap()
-                .pool
-                .max_usage_queue_count
-            || self.thread_manager.read().unwrap().is_aborted()
+        let thread_manager = self.thread_manager.read().expect("not poisoned");
+        let max_usage_queue_count = thread_manager.pool.max_usage_queue_count;
+
+        self.usage_queue_loader.usage_queue_count() > max_usage_queue_count
+            || thread_manager.is_aborted()
     }
 }
 
