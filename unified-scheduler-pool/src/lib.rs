@@ -1306,6 +1306,7 @@ mod tests {
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
         let scheduler = pool.do_take_scheduler(context);
+        scheduler.usage_queue_loader.load(Pubkey::default());
         Box::new(scheduler.into_inner().1).return_to_pool();
         /*
         assert_matches!(
