@@ -56,21 +56,6 @@ use {
 
 type AtomicSchedulerId = AtomicU64;
 
-macro_rules! trace_thread {
-    ($label1:expr, $label2:expr) => {
-        trace!("thread is started{}{}: {:?}", $label1, $label2, thread::current());
-        defer! {
-            trace!("thread is terminated{}{}: {:?}", $label1, $label2, thread::current());
-        }
-    };
-    ($id:expr) => {
-        trace_thread!("(id: ", format!("{}", $id));
-    };
-    () => {
-        trace_thread!("", "");
-    };
-}
-
 // SchedulerPool must be accessed as a dyn trait from solana-runtime, because SchedulerPool
 // contains some internal fields, whose types aren't available in solana-runtime (currently
 // TransactionStatusSender; also, PohRecorder in the future)...
@@ -115,6 +100,22 @@ const DEFAULT_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(10);
 const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
 // Roughtly 16 bytes * 200_000 = NNNNN
 const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 200_000;
+
+macro_rules! trace_thread {
+    ($label1:expr, $label2:expr) => {
+        trace!("thread is started{}{}: {:?}", $label1, $label2, thread::current());
+        defer! {
+            trace!("thread is terminated{}{}: {:?}", $label1, $label2, thread::current());
+        }
+    };
+    ($id:expr) => {
+        trace_thread!("(id: ", format!("{}", $id));
+    };
+    () => {
+        trace_thread!("", "");
+    };
+}
+
 
 impl<S, TH> SchedulerPool<S, TH>
 where
@@ -1008,10 +1009,7 @@ where
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
             move || {
-                trace!("thread is started: {:?}", thread::current());
-                defer! {
-                    trace!("thread is terminated: {:?}", thread::current());
-                }
+                trace_thread!(scheduler_id);
 
                 loop {
                     let (task, sender) = select! {
