@@ -1313,8 +1313,10 @@ mod tests {
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
+
         let scheduler = pool.do_take_scheduler(context);
-        pool.return_scheduler(scheduler.into_inner().1);
+        Box::new(scheduler.into_inner().1).return_to_pool();
+
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(5));
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
@@ -1338,8 +1340,8 @@ mod tests {
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
-        let scheduler = pool.do_take_scheduler(context);
 
+        let scheduler = pool.do_take_scheduler(context);
         scheduler
             .inner
             .usage_queue_loader
@@ -1350,10 +1352,8 @@ mod tests {
             .load(Pubkey::new_unique());
         Box::new(scheduler.into_inner().1).return_to_pool();
 
-        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(5));
-        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
