@@ -96,9 +96,10 @@ pub struct HandlerContext {
 pub type DefaultSchedulerPool =
     SchedulerPool<PooledScheduler<DefaultTaskHandler>, DefaultTaskHandler>;
 
+const DEFAULT_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(10);
+const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
 // Roughtly 16 bytes * 200_000 = NNNNN
 const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 200_000;
-const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
 
 impl<S, TH> SchedulerPool<S, TH>
 where
@@ -121,7 +122,7 @@ where
             transaction_status_sender,
             replay_vote_sender,
             prioritization_fee_cache,
-            Duration::from_secs(10),
+            DEFAULT_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
         )
