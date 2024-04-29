@@ -128,17 +128,24 @@ where
                     let mut inners: Vec<_> =
                         mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
+                    let old_inner_count = inners.len();
                     inners.retain(|(_inner, pooled_at)| {
                         now.duration_since(*pooled_at) < Duration::from_secs(180)
                     });
+                    let new_inner_count = inners.len();
                     scheduler_pool
                         .scheduler_inners
                         .lock()
                         .unwrap()
                         .extend(inners);
-                    drop(mem::take(
+
+                    let trashed_inners: Vec<_> = mem::take(
                         &mut *scheduler_pool.trashed_scheduler_inners.lock().unwrap(),
-                    ));
+                    );
+                    let trashed_inner_count = trashed_inners.len();
+                    drop(trashed_inners);
+
+                    info!("Scheduler pool cleaner: dropped {} inners, {} trashed inners", old_inner_count - new_inner_count, trashed_inner_count)
                 }
             }
         };
@@ -1250,6 +1257,7 @@ mod tests {
         let scheduler = pool.do_take_scheduler(context);
         pool.return_scheduler(scheduler.into_inner().1);
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
+        sleep(Duration::from_secs(5));
     }
 
     #[test]
