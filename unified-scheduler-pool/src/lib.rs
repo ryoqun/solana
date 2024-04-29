@@ -54,6 +54,7 @@ use {
     },
 };
 use solana_runtime::installed_scheduler_pool::ScheduleResult;
+use solana_runtime::installed_scheduler_pool::SchedulerAborted;
 
 type AtomicSchedulerId = AtomicU64;
 
