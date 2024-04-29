@@ -1192,13 +1192,18 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.inner.thread_manager.read().unwrap().send_task(task).or_else(|_|
-            self.inner
-                .thread_manager
-                .write()
-                .unwrap()
-                .ensure_join_after_abort()
-        )
+        self.inner
+            .thread_manager
+            .read()
+            .unwrap()
+            .send_task(task)
+            .or_else(|_| {
+                self.inner
+                    .thread_manager
+                    .write()
+                    .unwrap()
+                    .ensure_join_after_abort()
+            })
     }
 
     fn wait_for_termination(
@@ -1561,6 +1566,7 @@ mod tests {
                 .result,
             Ok(_)
         );
+        sleep(Duration::from_secs(5));
         scheduler
             .schedule_execution(&(good_tx_after_bad_tx, 1))
             .unwrap();
