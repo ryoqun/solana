@@ -159,7 +159,7 @@ where
             next_scheduler_id: AtomicSchedulerId::default(),
             _phantom: PhantomData,
         });
-        scheduler_pool_sender.send(scheduler_pool.clone()).unwrap();
+        scheduler_pool_sender.send(Arc::downgrade(&scheduler_pool)).unwrap();
         scheduler_pool
     }
 
@@ -1212,7 +1212,7 @@ mod tests {
 
         // this indirectly proves that there should be circular link because there's only one Arc
         // at this moment now
-        assert_eq!((Arc::strong_count(&pool), Arc::weak_count(&pool)), (2, 1));
+        assert_eq!((Arc::strong_count(&pool), Arc::weak_count(&pool)), (1, 2));
         let debug = format!("{pool:#?}");
         assert!(!debug.is_empty());
     }
