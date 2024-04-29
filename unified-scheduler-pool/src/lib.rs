@@ -130,6 +130,7 @@ where
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
         pool_cleaner_interval: Duration,
         max_pooling_duration: Duration,
+        max_usage_queue_count: usize,
     ) -> Arc<Self> {
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
@@ -194,6 +195,7 @@ where
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
+            max_usage_queue_count,
             _phantom: PhantomData,
         });
         scheduler_pool_sender.send(Arc::downgrade(&scheduler_pool)).unwrap();
