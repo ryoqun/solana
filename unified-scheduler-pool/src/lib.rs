@@ -183,16 +183,16 @@ where
             move || {
                 trace_thread!();
 
-                let scheduler_pool = weak_scheduler_pool;
                 loop {
                     sleep(pool_cleaner_interval);
 
-                    let Some(scheduler_pool) = scheduler_pool.upgrade() else {
+                    let Some(scheduler_pool) = weak_scheduler_pool.upgrade() else {
                         break;
                     };
 
                     let idle_inner_count = {
-                        let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
+                        let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock()
+                        else {
                             break;
                         };
 
@@ -227,8 +227,7 @@ where
 
                     info!(
                         "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
-                        idle_inner_count,
-                        trashed_inner_count,
+                        idle_inner_count, trashed_inner_count,
                     )
                 }
             }
