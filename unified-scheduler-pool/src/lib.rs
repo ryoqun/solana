@@ -1379,10 +1379,10 @@ mod tests {
 
         let (result_with_timings, scheduler1) = scheduler1.into_inner();
         assert_matches!(result_with_timings, (Ok(()), _));
-        pool.return_scheduler(scheduler1);
+        pool.return_scheduler(scheduler1, false);
         let (result_with_timings, scheduler2) = scheduler2.into_inner();
         assert_matches!(result_with_timings, (Ok(()), _));
-        pool.return_scheduler(scheduler2);
+        pool.return_scheduler(scheduler2, false);
 
         let scheduler3 = pool.do_take_scheduler(context.clone());
         assert_eq!(scheduler_id2, scheduler3.id());
