@@ -215,7 +215,9 @@ where
 
                     info!(
                         "Scheduler pool cleaner: dropped {} inners, {} trashed inners",
-                        old_inner_count.checked_sub(new_inner_count).expect("new isn't larger"),
+                        old_inner_count
+                            .checked_sub(new_inner_count)
+                            .expect("new isn't larger"),
                         trashed_inner_count
                     )
                 }
@@ -832,7 +834,10 @@ where
         let scheduler_main_loop = || {
             let handler_count = self.pool.handler_count;
             let session_result_sender = self.session_result_sender.clone();
-            let new_task_receiver = self.new_task_receiver.take().unwrap();
+            let new_task_receiver = self
+                .new_task_receiver
+                .take()
+                .expect("no 2nd start_threads()");
 
             let mut session_ending = false;
 
@@ -965,6 +970,8 @@ where
                                     Err(RecvError) => {
                                         // mostly likely is that this scheduler is dropped for
                                         // pruned blocks...
+                                        // can't send something to session_result_sender because
+                                        // the receiver could be dead already.
                                         return Ok(());
                                     }
                                 }
