@@ -47,6 +47,7 @@ pub trait InstalledSchedulerPool: Send + Sync + Debug {
 
 #[derive(Debug)]
 pub struct SchedulerAborted;
+pub type ScheduleResult = std::result::Result<(), SchedulerAborted>;
 
 #[cfg_attr(doc, aquamarine::aquamarine)]
 /// Schedules, executes, and commits transactions under encapsulated implementation
@@ -111,7 +112,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     fn schedule_execution<'a>(
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
-    ) -> std::result::Result<(), SchedulerAborted>;
+    ) -> ScheduleResult;
 
     fn recover_error_after_abort(
         &mut self,

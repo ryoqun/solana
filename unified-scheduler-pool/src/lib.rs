@@ -1202,7 +1202,7 @@ where
     fn schedule_execution(
         &self,
         &(transaction, index): &(&SanitizedTransaction, usize),
-    ) -> Result<()> {
+    ) -> ScheduleResult {
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
