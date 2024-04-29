@@ -62,10 +62,10 @@ macro_rules! trace_thread {
         defer! {
             trace!("thread is terminated: {:?}{}{}", thread::current(), $label, $value);
         }
-    },
+    };
     () => {
         trace_thread!("", "");
-    }
+    };
 }
 
 // SchedulerPool must be accessed as a dyn trait from solana-runtime, because SchedulerPool
