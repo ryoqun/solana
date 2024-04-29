@@ -111,7 +111,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     ) -> Result<()>;
 
     fn recover_error_after_abort(
-        mut self,
+        &mut self,
     ) -> TransactionError {
         panic!();
     }
