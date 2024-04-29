@@ -264,7 +264,6 @@ where
 
     fn return_scheduler(&self, scheduler: S::Inner, should_trash: bool) {
         if should_trash {
-            info!("trashing scheduler (id: {})...", scheduler.id());
             self.trashed_scheduler_inners
                 .lock()
                 .expect("not poisoned")
@@ -1231,7 +1230,11 @@ where
 {
     fn return_to_pool(self: Box<Self>) {
         let pool = self.thread_manager.pool.clone();
-        pool.clone().return_scheduler(*self, self.is_trashed());
+        let should_trash = self.is_trashed();
+        if should_trash {
+            info!("trashing scheduler (id: {})...", self.id());
+        }
+        pool.clone().return_scheduler(*self, should_trash);
     }
 }
 
