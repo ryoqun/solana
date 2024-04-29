@@ -30,14 +30,14 @@ use {
         bank::Bank,
         installed_scheduler_pool::{
             InstalledScheduler, InstalledSchedulerBox, InstalledSchedulerPool,
-            InstalledSchedulerPoolArc, ResultWithTimings, SchedulerId, SchedulingContext,
-            UninstalledScheduler, UninstalledSchedulerBox,
+            InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult, SchedulerAborted,
+            SchedulerId, SchedulingContext, UninstalledScheduler, UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
     },
     solana_sdk::{
         pubkey::Pubkey,
-        transaction::{Result, SanitizedTransaction},
+        transaction::{Result, SanitizedTransaction, TransactionError},
     },
     solana_unified_scheduler_logic::{SchedulingStateMachine, Task, UsageQueue},
     solana_vote::vote_sender_types::ReplayVoteSender,
@@ -53,9 +53,6 @@ use {
         time::{Duration, Instant},
     },
 };
-use solana_runtime::installed_scheduler_pool::ScheduleResult;
-use solana_runtime::installed_scheduler_pool::SchedulerAborted;
-use solana_sdk::transaction::TransactionError;
 
 type AtomicSchedulerId = AtomicU64;
 
@@ -1213,9 +1210,7 @@ where
         thread_manager.send_task(task)
     }
 
-    fn recover_error_after_abort(
-        &mut self,
-    ) -> TransactionError {
+    fn recover_error_after_abort(&mut self) -> TransactionError {
         self.inner
             .thread_manager
             .write()
@@ -1832,9 +1827,7 @@ mod tests {
             Ok(())
         }
 
-        fn recover_error_after_abort(
-            &mut self,
-        ) -> TransactionError {
+        fn recover_error_after_abort(&mut self) -> TransactionError {
             unimplemented!();
         }
 

@@ -27,7 +27,7 @@ use {
     solana_sdk::{
         clock::Slot,
         hash::Hash,
-        transaction::{Result, SanitizedTransaction},
+        transaction::{Result, SanitizedTransaction, TransactionError},
     },
     std::{
         fmt::Debug,
@@ -36,8 +36,6 @@ use {
         thread,
     },
 };
-use solana_sdk::transaction::TransactionError;
-
 #[cfg(feature = "dev-context-only-utils")]
 use {mockall::automock, qualifier_attr::qualifiers};
 
@@ -114,9 +112,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
     ) -> ScheduleResult;
 
-    fn recover_error_after_abort(
-        &mut self,
-    ) -> TransactionError;
+    fn recover_error_after_abort(&mut self) -> TransactionError;
 
     /// Wait for a scheduler to terminate after processing.
     ///
@@ -311,10 +307,16 @@ impl BankWithScheduler {
         let scheduler = scheduler_guard.as_ref().unwrap();
 
         for (sanitized_transaction, &index) in transactions_with_indexes {
-            if scheduler.schedule_execution(&(sanitized_transaction, index)).is_err() {
+            if scheduler
+                .schedule_execution(&(sanitized_transaction, index))
+                .is_err()
+            {
                 drop(scheduler_guard);
                 let mut scheduler_guard = self.inner.scheduler.write().unwrap();
-                return Err(scheduler_guard.as_mut().unwrap().recover_error_after_abort());
+                return Err(scheduler_guard
+                    .as_mut()
+                    .unwrap()
+                    .recover_error_after_abort());
             }
         }
 
