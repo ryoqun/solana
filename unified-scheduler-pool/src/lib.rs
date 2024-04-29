@@ -706,22 +706,20 @@ where
         );
     }
 
+    #[must_use]
     fn accumulate_result_with_timings(
         (result, timings): &mut ResultWithTimings,
         executed_task: Box<ExecutedTask>,
-    ) {
+    ) -> bool {
+        timings.accumulate(&executed_task.result_with_timings.1);
         match executed_task.result_with_timings.0 {
-            Ok(()) => {}
+            Ok(()) => false,
             Err(error) => {
                 error!("error is detected while accumulating....: {error:?}");
-                // Override errors intentionally for simplicity, not retaining the
-                // first error unlike the block verification in the
-                // blockstore_processor. This will be addressed with more
-                // full-fledged impl later.
                 *result = Err(error);
+                true
             }
         }
-        timings.accumulate(&executed_task.result_with_timings.1);
     }
 
     fn take_session_result_with_timings(&mut self) -> ResultWithTimings {
@@ -947,8 +945,7 @@ where
                                 let executed_task = executed_task.expect("alive handler");
 
                                 state_machine.deschedule_task(&executed_task.task);
-                                Self::accumulate_result_with_timings(&mut result_with_timings, executed_task);
-                                if result_with_timings.0.is_err() {
+                                if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
                                     // todo: unless we precisely specify drop order;
                                     // session_result_receiver could be dead still....
                                     let _  = session_result_sender.send(result_with_timings);
@@ -992,8 +989,7 @@ where
                                 let executed_task = executed_task.expect("alive handler");
 
                                 state_machine.deschedule_task(&executed_task.task);
-                                Self::accumulate_result_with_timings(&mut result_with_timings, executed_task);
-                                if result_with_timings.0.is_err() {
+                                if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
                                     // todo: unless we precisely specify drop order;
                                     // session_result_receiver could be dead still....
                                     let _ = session_result_sender.send(result_with_timings);
