@@ -57,11 +57,14 @@ use {
 type AtomicSchedulerId = AtomicU64;
 
 macro_rules! trace_thread {
-    () => {
-        trace!("thread is started: {:?}", thread::current());
+    ($label:expr, $value:expr) => {
+        trace!("thread is started: {:?}{}{}", thread::current(), $label, $value);
         defer! {
-            trace!("thread is terminated: {:?}", thread::current());
+            trace!("thread is terminated: {:?}{}{}", thread::current(), $label, $value);
         }
+    }
+    () => {
+        trace_thread!("", "");
     }
 }
 
