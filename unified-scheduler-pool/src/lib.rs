@@ -838,7 +838,8 @@ where
                             None
                         );
                     } else {
-                        break;
+                        // maybe drop is called; rather proper shutdown timing....
+                        return Ok(());
                     }
 
                     let mut is_finished = false;
