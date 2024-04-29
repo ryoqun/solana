@@ -116,7 +116,7 @@ where
             transaction_status_sender,
             replay_vote_sender,
             prioritization_fee_cache,
-            Duration::from_secs(1),
+            Duration::from_secs(10),
         )
     }
 
