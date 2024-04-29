@@ -1248,7 +1248,7 @@ mod tests {
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
         let scheduler = pool.take_scheduler(context);
-        pool.return_scheduler(scheduler);
+        pool.return_scheduler(scheduler.into_inner());
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
     }
 
