@@ -161,14 +161,29 @@ where
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
 
-        let (scheduler_pool_sender, scheduler_pool_receiver) =
-            crossbeam_channel::bounded::<Weak<Self>>(1);
+        let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
+            scheduler_inners: Mutex::default(),
+            trashed_scheduler_inners: Mutex::default(),
+            handler_count,
+            handler_context: HandlerContext {
+                log_messages_bytes_limit,
+                transaction_status_sender,
+                replay_vote_sender,
+                prioritization_fee_cache,
+            },
+            weak_self: weak_self.clone(),
+            next_scheduler_id: AtomicSchedulerId::default(),
+            max_usage_queue_count,
+            _phantom: PhantomData,
+        });
+
+        let weak_scheduler_pool = Arc::downgrade(&scheduler_pool);
 
         let cleaner_main_loop = || {
             move || {
                 trace_thread!();
 
-                let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
+                let scheduler_pool = weak_scheduler_pool;
                 loop {
                     sleep(pool_cleaner_interval);
 
@@ -207,30 +222,12 @@ where
             }
         };
 
-        // Currently not joined... Proper pool termination will be implemented later
+        // No need to join; the spanwed main loop will gracefully exit.
         thread::Builder::new()
             .name("solScCleaner".to_owned())
             .spawn(cleaner_main_loop())
             .unwrap();
 
-        let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
-            scheduler_inners: Mutex::default(),
-            trashed_scheduler_inners: Mutex::default(),
-            handler_count,
-            handler_context: HandlerContext {
-                log_messages_bytes_limit,
-                transaction_status_sender,
-                replay_vote_sender,
-                prioritization_fee_cache,
-            },
-            weak_self: weak_self.clone(),
-            next_scheduler_id: AtomicSchedulerId::default(),
-            max_usage_queue_count,
-            _phantom: PhantomData,
-        });
-        scheduler_pool_sender
-            .send(Arc::downgrade(&scheduler_pool))
-            .unwrap();
         scheduler_pool
     }
 
