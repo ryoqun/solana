@@ -53,6 +53,7 @@ use {
         time::{Duration, Instant},
     },
 };
+use solana_runtime::installed_scheduler_pool::ScheduleResult;
 
 type AtomicSchedulerId = AtomicU64;
 
