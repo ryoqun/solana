@@ -200,7 +200,7 @@ where
                         let old_inner_count = inners.len();
                         // this loop should be fast because still the lock is held
                         inners.retain(|(_inner, ref pooled_at)| {
-                            now.duration_since(*pooled_at) <= max_pooling_duration
+                            now.duration_since(pooled_at) <= max_pooling_duration
                         });
                         let new_inner_count = inners.len();
                         scheduler_inners.extend(inners);
