@@ -682,7 +682,7 @@ where
             pool,
             new_task_sender,
             new_task_receiver: Some(new_task_receiver),
-            session_result_sender,
+            session_result_sender: Some(session_result_sender),
             session_result_receiver,
             session_result_with_timings: None,
             scheduler_thread: None,
