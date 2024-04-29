@@ -103,7 +103,12 @@ const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 200_000;
 
 macro_rules! trace_thread {
     ($label1:expr, $label2:expr) => {
-        trace!("thread is started{}{}: {:?}", $label1, $label2, thread::current());
+        trace!(
+            "thread is started{}{}: {:?}",
+            $label1,
+            $label2,
+            thread::current()
+        );
         defer! {
             trace!("thread is terminated{}{}: {:?}", $label1, $label2, thread::current());
         }
@@ -115,7 +120,6 @@ macro_rules! trace_thread {
         trace_thread!("", "");
     };
 }
-
 
 impl<S, TH> SchedulerPool<S, TH>
 where
@@ -1201,22 +1205,17 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        let thread_manager = self.inner
-            .thread_manager
-            .read()
-            .unwrap();
+        let thread_manager = self.inner.thread_manager.read().unwrap();
 
-        thread_manager
-            .send_task(task)
-            .or_else(move |_| {
-                drop(thread_manager);
-                warn!("send_task failed....");
-                self.inner
-                    .thread_manager
-                    .write()
-                    .unwrap()
-                    .ensure_join_after_abort()
-            })
+        thread_manager.send_task(task).or_else(move |_| {
+            drop(thread_manager);
+            warn!("send_task failed....");
+            self.inner
+                .thread_manager
+                .write()
+                .unwrap()
+                .ensure_join_after_abort()
+        })
     }
 
     fn wait_for_termination(
