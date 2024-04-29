@@ -161,10 +161,7 @@ where
 
         let cleaner_main_loop = || {
             move || {
-                trace!("thread is started: {:?}", thread::current());
-                defer! {
-                    trace!("thread is terminated: {:?}", thread::current());
-                }
+                trace_thread!();
 
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
