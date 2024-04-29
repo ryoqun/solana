@@ -982,7 +982,7 @@ where
                                         // pruned blocks...
                                         // can't send something to session_result_sender because
                                         // the receiver could be dead already.
-                                        let _  = session_result_sender.send(result_with_timings.clone());
+                                        let _  = session_result_sender.send(result_with_timings);
                                         return;
                                     }
                                 }
