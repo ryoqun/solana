@@ -535,6 +535,16 @@ where
     usage_queue_loader: UsageQueueLoader,
 }
 
+impl<S, TH> Drop for PooledSchedulerInner<S, HT>
+where
+    S: SpawnableScheduler<TH>,
+    TH: TaskHandler,
+{
+    fn drop(&mut self) {
+        info!("PooledSchedulerInner::drop() is called....");
+    }
+}
+
 impl<S, TH> PooledSchedulerInner<S, TH>
 where
     S: SpawnableScheduler<TH>,
