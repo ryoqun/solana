@@ -887,16 +887,16 @@ where
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
 
-                                match message.unwrap() {
-                                    NewTaskPayload::Payload(task) => {
+                                match message {
+                                    Ok(NewTaskPayload::Payload(task)) => {
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
                                     }
-                                    NewTaskPayload::CloseSubchannel => {
+                                    Ok(NewTaskPayload::CloseSubchannel) | Err(3) => {
                                         session_ending = true;
                                     }
-                                    NewTaskPayload::OpenSubchannel(_context) => {
+                                    Ok(NewTaskPayload::OpenSubchannel(_context)) => {
                                         unreachable!();
                                     }
                                 }
