@@ -594,6 +594,10 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
+    fn id(&self) -> SchedulerId {
+        self.thread_manager.read().unwrap().scheduler_id
+    }
+
     fn is_trashed(&self) -> bool {
         self.usage_queue_loader.usage_queue_count()
             > self
@@ -1174,7 +1178,7 @@ where
     TH: TaskHandler,
 {
     fn id(&self) -> SchedulerId {
-        self.inner.thread_manager.read().unwrap().scheduler_id
+        self.inner.id()
     }
 
     fn context(&self) -> &SchedulingContext {
@@ -1220,7 +1224,7 @@ where
     fn return_to_pool(self: Box<Self>) {
         let pool = self.thread_manager.write().unwrap().pool.clone();
         if self.is_trashed() {
-            info!("trashing scheduler (id: {})...", pool.id());
+            info!("trashing scheduler (id: {})...", self.id());
             pool.clone().trash_scheduler(*self)
         } else {
             pool.clone().return_scheduler(*self)
