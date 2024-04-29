@@ -274,7 +274,6 @@ where
                 .expect("not poisoned")
                 .push((scheduler, Instant::now()));
         }
-
     }
 
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
