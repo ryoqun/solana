@@ -1293,6 +1293,8 @@ mod tests {
         assert!(!debug.is_empty());
     }
 
+    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(1);
+
     #[test]
     fn test_scheduler_idle_drop() {
         solana_logger::setup();
@@ -1304,7 +1306,7 @@ mod tests {
             None,
             None,
             ignored_prioritization_fee_cache,
-            Duration::from_secs(1),
+            SHORTENED_POOL_CLEANER_INTERVAL,
             Duration::from_secs(1),
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
         );
@@ -1329,7 +1331,7 @@ mod tests {
             None,
             None,
             ignored_prioritization_fee_cache,
-            Duration::from_secs(1),
+            SHORTENED_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             1,
         );
@@ -1532,8 +1534,8 @@ mod tests {
             None,
             None,
             ignored_prioritization_fee_cache,
-            Duration::from_secs(1),
-            Duration::from_secs(1),
+            SHORTENED_POOL_CLEANER_INTERVAL,
+            DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
         );
         let pool = pool_raw.clone();
