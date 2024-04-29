@@ -21,6 +21,7 @@ use {
     dashmap::DashMap,
     derivative::Derivative,
     log::*,
+    scopeguard::defer,
     solana_ledger::blockstore_processor::{
         execute_batch, TransactionBatchWithIndexes, TransactionStatusSender,
     },
@@ -52,7 +53,6 @@ use {
         time::{Duration, Instant},
     },
 };
-use scopeguard::defer;
 
 type AtomicSchedulerId = AtomicU64;
 
@@ -943,7 +943,7 @@ where
 
             move || {
                 trace!("thread is started: {:?}", thread::current());
-                defer ! {
+                defer! {
                     trace!("thread is terminated: {:?}", thread::current());
                 }
 
