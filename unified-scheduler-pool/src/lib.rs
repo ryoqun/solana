@@ -1121,8 +1121,12 @@ where
     }
 
     fn is_aborted(&self) -> bool {
-        assert!(self.handler_threads.is_empty());
-        self.scheduler_thread.is_none()
+        if self.scheduler_thread.is_none() {
+            assert!(self.handler_threads.is_empty());
+            true
+        } else {
+            false
+        }
     }
 
     fn end_session(&mut self) {
