@@ -1139,6 +1139,7 @@ where
     fn return_to_pool(self: Box<Self>) {
         let pool = self.thread_manager.write().unwrap().pool.clone();
         if self.is_trashed() {
+            error!("trashing scheduler...");
             pool.clone().trash_scheduler(*self)
         } else {
             pool.clone().return_scheduler(*self)
