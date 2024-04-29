@@ -81,6 +81,7 @@ where
     // memory increase.
     weak_self: Weak<Self>,
     next_scheduler_id: AtomicSchedulerId,
+    max_usage_queue_count: usize,
     _phantom: PhantomData<TH>,
 }
 
