@@ -1310,16 +1310,6 @@ mod tests {
         scheduler.inner.usage_queue_loader.load(Pubkey::new_unique());
         scheduler.inner.usage_queue_loader.load(Pubkey::new_unique());
         Box::new(scheduler.into_inner().1).return_to_pool();
-        /*
-        assert_matches!(
-            Box::new(scheduler).wait_for_termination(false),
-            ((Ok(()), _), _)
-        );
-        */
-        /*
-        let bank = BankWithScheduler::new(bank, Some(scheduler));
-        assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
-        */
 
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
