@@ -908,10 +908,6 @@ where
                         runnable_task_sender
                             .send_chained_channel(context, handler_count)
                             .unwrap();
-                        assert_eq!(
-                            result_with_timings,
-                            initialized_result_with_timings(),
-                        );
                     } else {
                         // maybe drop is called; rather proper shutdown timing....
                         let _  = session_result_sender.send(result_with_timings);
