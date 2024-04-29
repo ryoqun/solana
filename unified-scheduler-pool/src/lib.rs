@@ -262,18 +262,19 @@ where
         self.next_scheduler_id.fetch_add(1, Relaxed)
     }
 
-    fn return_scheduler(&self, scheduler: S::Inner) {
-        self.scheduler_inners
-            .lock()
-            .expect("not poisoned")
-            .push((scheduler, Instant::now()));
-    }
+    fn return_scheduler(&self, scheduler: S::Inner, should_trash: bool) {
+        if should_trash {
+            self.trashed_scheduler_inners
+                .lock()
+                .expect("not poisoned")
+                .push(scheduler);
+        } else {
+            self.scheduler_inners
+                .lock()
+                .expect("not poisoned")
+                .push((scheduler, Instant::now()));
+        }
 
-    fn trash_scheduler(&self, scheduler: S::Inner) {
-        self.trashed_scheduler_inners
-            .lock()
-            .expect("not poisoned")
-            .push(scheduler);
     }
 
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
