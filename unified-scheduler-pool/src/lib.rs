@@ -1074,7 +1074,7 @@ where
             () = thread.join().unwrap();
         }
         let result = scheduler_thread.join().unwrap();
-        debgu!("ensure_join_after_abort(): result: {:?}", result);
+        debug!("ensure_join_after_abort(): result: {:?}", result);
         self.put_session_result_with_timings((result.clone(), ExecuteTimings::default()));
         result
     }
