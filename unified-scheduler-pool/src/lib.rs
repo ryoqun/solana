@@ -1294,6 +1294,7 @@ mod tests {
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
     }
 
+    #[test]
     fn test_scheduler_overgrown_drop() {
         solana_logger::setup();
 
