@@ -1567,14 +1567,14 @@ mod tests {
             ));
         // make sure this tx is really a good one to execute.
         assert_matches!(
-            bank.simulate_transaction_unchecked(good_tx_after_bad_tx, false)
-                .result,
-            Err(solana_sdk::transaction::TransactionError::AccountNotFound)
+            bank.simulate_transaction_unchecked(good_tx_after_bad_tx, false).result,
+            Ok(_)
         );
         sleep(Duration::from_secs(5));
-        scheduler
-            .schedule_execution(&(good_tx_after_bad_tx, 1))
-            .unwrap();
+        assert_matches!(
+            scheduler.schedule_execution(&(good_tx_after_bad_tx, 1)),
+            Err(solana_sdk::transaction::TransactionError::AccountNotFound)
+        );
         scheduler.pause_for_recent_blockhash();
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
