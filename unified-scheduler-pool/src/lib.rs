@@ -121,6 +121,9 @@ where
                 let scheduler_pool = scheduler_pool_receiver.into_iter().next().unwrap();
                 loop {
                     sleep(Duration::from_secs(10));
+                    let Some(scheduler_pool) = scheduler_pool.upgrade() else {
+                        break;
+                    }
                     let mut inners: Vec<_> =
                         mem::take(&mut *scheduler_pool.scheduler_inners.lock().unwrap());
                     let now = Instant::now();
