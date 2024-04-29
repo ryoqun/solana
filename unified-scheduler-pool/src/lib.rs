@@ -1594,7 +1594,7 @@ mod tests {
         sleep(Duration::from_secs(5));
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
-            bank.schedule_transaction_executions([(&good_tx_after_bad_tx, &1)].into_iner()),
+            bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iner()),
             Err(TransactionError::AccountNotFound)
         );
         // transaction_count should remain same as scheduler should be bailing out.
