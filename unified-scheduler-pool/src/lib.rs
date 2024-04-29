@@ -1173,7 +1173,7 @@ where
     }
 
     fn spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
-        let scheduler = Self::do_spawn(pool, initial_context);
+        let mut scheduler = Self::do_spawn(pool, initial_context);
         scheduler
             .inner
             .thread_manager
