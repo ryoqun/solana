@@ -1116,7 +1116,7 @@ where
         }
         debug!("end_session(): will end session...");
 
-        let mut aborted_detected = self
+        let aborted_detected = self
             .new_task_sender
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
