@@ -62,7 +62,7 @@ macro_rules! trace_thread {
         defer! {
             trace!("thread is terminated: {:?}{}{}", thread::current(), $label, $value);
         }
-    }
+    },
     () => {
         trace_thread!("", "");
     }
