@@ -1569,7 +1569,7 @@ mod tests {
         assert_matches!(
             bank.simulate_transaction_unchecked(good_tx_after_bad_tx, false)
                 .result,
-            Err(solana_sdk::transaction::TransactionError::AccountNotFound),
+            Err(solana_sdk::transaction::TransactionError::AccountNotFound)
         );
         sleep(Duration::from_secs(5));
         scheduler
