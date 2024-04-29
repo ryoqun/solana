@@ -311,7 +311,7 @@ impl BankWithScheduler {
             if scheduler.schedule_execution(&(sanitized_transaction, index)).is_err() {
                 drop(scheduler_guard);
                 let mut scheduler_guard = self.inner.scheduler.write().unwrap();
-                return Err(scheduler_guard.as_ref().unwrap().recover_error_after_abort());
+                return Err(scheduler_guard.as_mut().unwrap().recover_error_after_abort());
             }
         }
 
