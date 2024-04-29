@@ -866,7 +866,7 @@ where
                         // to measure _actual_ cpu usage easily with the select approach.
                         select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
-                                let executed_task = executed_task.unwrap();
+                                let executed_task = executed_task.expect("alive handler");
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 let result_with_timings = result_with_timings.as_mut().unwrap();
@@ -902,7 +902,7 @@ where
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
-                                let executed_task = executed_task.unwrap();
+                                let executed_task = executed_task.expect("alive handler");
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 let result_with_timings = result_with_timings.as_mut().unwrap();
