@@ -1104,6 +1104,8 @@ where
             //assert!(!aborted_detected);
             self.put_session_result_with_timings(result_with_timings);
         }
+
+        return self.session_result_with_timings.as_mut().unwrap().0.clone();
     }
 
     fn is_aborted(&self) -> bool {
