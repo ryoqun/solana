@@ -1216,7 +1216,12 @@ where
     fn recover_error_after_abort(
         &mut self,
     ) -> TransactionError {
-        unimplemented!();
+        self.inner
+            .thread_manager
+            .write()
+            .unwrap()
+            .ensure_join_after_abort()
+            .unwrap_err()
     }
 
     fn wait_for_termination(
@@ -1830,12 +1835,7 @@ mod tests {
         fn recover_error_after_abort(
             &mut self,
         ) -> TransactionError {
-            self.inner
-                .thread_manager
-                .write()
-                .unwrap()
-                .ensure_join_after_abort()
-                .unwrap_err()
+            unimplemented!();
         }
 
         fn wait_for_termination(
