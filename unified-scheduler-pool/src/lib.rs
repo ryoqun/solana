@@ -109,7 +109,7 @@ macro_rules! trace_thread {
         }
     };
     ($id:expr) => {
-        trace_thread!("(id: ", format!("{}", $id));
+        trace_thread!(" (id: ", format!("{})", $id));
     };
     () => {
         trace_thread!("", "");
