@@ -96,6 +96,9 @@ pub struct HandlerContext {
 pub type DefaultSchedulerPool =
     SchedulerPool<PooledScheduler<DefaultTaskHandler>, DefaultTaskHandler>;
 
+// Roughtly 16 bytes * 200_000 = NNNNN
+const DEFAULT_MAX_USAGE_QUEUE_COUNT = 200_000;
+
 impl<S, TH> SchedulerPool<S, TH>
 where
     S: SpawnableScheduler<TH>,
@@ -119,6 +122,7 @@ where
             prioritization_fee_cache,
             Duration::from_secs(10),
             Duration::from_secs(180),
+            DEFAULT_MAX_USAGE_QUEUE_COUNT,
         )
     }
 
@@ -1278,7 +1282,7 @@ mod tests {
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool_raw =
-            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1));
+            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1), DEFAULT_MAX_USAGE_QUEUE_COUNT);
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
@@ -1461,7 +1465,7 @@ mod tests {
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool_raw =
-            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1));
+            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1), DEFAULT_MAX_USAGE_QUEUE_COUNT);
         let pool = pool_raw.clone();
         let context = SchedulingContext::new(bank.clone());
         let mut scheduler = pool.take_scheduler(context);
