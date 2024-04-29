@@ -624,7 +624,7 @@ where
     scheduler_id: SchedulerId,
     pool: Arc<SchedulerPool<S, TH>>,
     new_task_sender: Sender<NewTaskPayload>,
-    new_task_receiver: Receiver<NewTaskPayload>,
+    new_task_receiver: Option<Receiver<NewTaskPayload>>,
     session_result_sender: Sender<Option<ResultWithTimings>>,
     session_result_receiver: Receiver<Option<ResultWithTimings>>,
     session_result_with_timings: Option<ResultWithTimings>,
@@ -661,7 +661,7 @@ where
             scheduler_id: pool.new_scheduler_id(),
             pool,
             new_task_sender,
-            new_task_receiver,
+            new_task_receiver: Some(new_task_receiver),
             session_result_sender,
             session_result_receiver,
             session_result_with_timings: None,
@@ -820,7 +820,7 @@ where
         let scheduler_main_loop = || {
             let handler_count = self.pool.handler_count;
             let session_result_sender = self.session_result_sender.clone();
-            let new_task_receiver = self.new_task_receiver.clone();
+            let new_task_receiver = self.new_task_receiver.take().unwrap();
 
             let mut session_ending = false;
 
