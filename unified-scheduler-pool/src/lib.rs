@@ -97,7 +97,7 @@ pub type DefaultSchedulerPool =
     SchedulerPool<PooledScheduler<DefaultTaskHandler>, DefaultTaskHandler>;
 
 // Roughtly 16 bytes * 200_000 = NNNNN
-const DEFAULT_MAX_USAGE_QUEUE_COUNT = 200_000;
+const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 200_000;
 
 impl<S, TH> SchedulerPool<S, TH>
 where
