@@ -1097,10 +1097,13 @@ where
             debug!("joining...: {:?}", thread);
             () = thread.join().unwrap();
         }
-        let result = scheduler_thread.join().unwrap();
-        debug!("ensure_join_after_abort(): result: {:?}", result);
-        self.put_session_result_with_timings((result.clone(), ExecuteTimings::default()));
-        result
+        () = scheduler_thread.join().unwrap();
+
+        if let Ok(result_with_timings) = self.session_result_receiver.try_recv() {
+            debug!("ensure_join_after_abort(): result: {:?}", result);
+            //assert!(!aborted_detected);
+            self.put_session_result_with_timings(result_with_timings);
+        }
     }
 
     fn is_aborted(&self) -> bool {
@@ -1123,13 +1126,9 @@ where
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
-        if let Ok(maybe_result_with_timings) = self.session_result_receiver.recv() {
-            if let Some(result_with_timings) = maybe_result_with_timings {
-                assert!(!aborted_detected);
-                self.put_session_result_with_timings(result_with_timings);
-            } else {
-                aborted_detected = true;
-            }
+        if let Ok(result_with_timings) = self.session_result_receiver.recv() {
+            //assert!(!aborted_detected);
+            self.put_session_result_with_timings(result_with_timings);
         } else {
             panic!("never disconnected");
         }
