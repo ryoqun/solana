@@ -601,7 +601,7 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
-    thread_manager: RwLock<ThreadManager<S, TH>>,
+    thread_manager: ThreadManager<S, TH>,
     usage_queue_loader: UsageQueueLoader,
 }
 
@@ -611,15 +611,14 @@ where
     TH: TaskHandler,
 {
     fn id(&self) -> SchedulerId {
-        self.thread_manager.read().unwrap().scheduler_id
+        self.thread_manager.scheduler_id
     }
 
     fn is_trashed(&self) -> bool {
-        let thread_manager = self.thread_manager.read().expect("not poisoned");
-        let max_usage_queue_count = thread_manager.pool.max_usage_queue_count;
+        let max_usage_queue_count = self.thread_manager.pool.max_usage_queue_count;
 
         self.usage_queue_loader.usage_queue_count() > max_usage_queue_count
-            || thread_manager.is_aborted()
+            || self.thread_manager.is_aborted()
     }
 }
 
@@ -652,7 +651,7 @@ where
     fn do_spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
         Self::from_inner(
             PooledSchedulerInner {
-                thread_manager: RwLock::new(ThreadManager::new(pool)),
+                thread_manager: ThreadManager::new(pool),
                 usage_queue_loader: UsageQueueLoader::default(),
             },
             initial_context,
@@ -1160,8 +1159,8 @@ where
     fn into_inner(mut self) -> (ResultWithTimings, Self::Inner) {
         let result_with_timings = {
             let manager = &mut self.inner.thread_manager;
-            manager.write().unwrap().end_session();
-            manager.write().unwrap().take_session_result_with_timings()
+            manager.end_session();
+            manager.take_session_result_with_timings()
         };
         (result_with_timings, self.inner)
     }
@@ -1169,8 +1168,6 @@ where
     fn from_inner(inner: Self::Inner, context: SchedulingContext) -> Self {
         inner
             .thread_manager
-            .write()
-            .unwrap()
             .start_session(&context);
         Self { inner, context }
     }
@@ -1180,8 +1177,6 @@ where
         scheduler
             .inner
             .thread_manager
-            .write()
-            .unwrap()
             .start_threads(&scheduler.context);
         scheduler
     }
@@ -1206,15 +1201,12 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        let thread_manager = self.inner.thread_manager.read().unwrap();
-        thread_manager.send_task(task)
+        self.thread_manager.send_task(task)
     }
 
     fn recover_error_after_abort(&mut self) -> TransactionError {
         self.inner
             .thread_manager
-            .write()
-            .unwrap()
             .ensure_join_after_abort()
             .unwrap_err()
     }
@@ -1228,7 +1220,7 @@ where
     }
 
     fn pause_for_recent_blockhash(&mut self) {
-        self.inner.thread_manager.write().unwrap().end_session();
+        self.inner.thread_manager.end_session();
     }
 }
 
@@ -1238,7 +1230,7 @@ where
     TH: TaskHandler,
 {
     fn return_to_pool(self: Box<Self>) {
-        let pool = self.thread_manager.write().unwrap().pool.clone();
+        let pool = self.thread_manager.pool.clone();
         if self.is_trashed() {
             info!("trashing scheduler (id: {})...", self.id());
             pool.clone().trash_scheduler(*self)
