@@ -1196,7 +1196,7 @@ where
         let thread_manager = self.inner
             .thread_manager
             .read()
-            .unwrap()
+            .unwrap();
 
         thread_manager
             .send_task(task)
