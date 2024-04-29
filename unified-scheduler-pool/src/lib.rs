@@ -949,7 +949,7 @@ where
                                 if result_with_timings.0.is_err() {
                                     // todo: unless we precisely specify drop order;
                                     // session_result_receiver could be dead still....
-                                    let _  = session_result_sender.send(result_with_timings.clone());
+                                    let _  = session_result_sender.send(result_with_timings);
                                     return;
                                 }
                             },
