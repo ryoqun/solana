@@ -1165,7 +1165,7 @@ where
         (result_with_timings, self.inner)
     }
 
-    fn from_inner(inner: Self::Inner, context: SchedulingContext) -> Self {
+    fn from_inner(mut inner: Self::Inner, context: SchedulingContext) -> Self {
         inner
             .thread_manager
             .start_session(&context);
