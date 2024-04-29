@@ -1008,12 +1008,9 @@ where
                     if session_ending {
                         state_machine.reinitialize();
                         session_result_sender
-                            .send(Some(
-                                result_with_timings
-                                    .take()
-                                    .unwrap_or_else(initialized_result_with_timings),
-                            ))
+                            .send(result_with_timings)
                             .unwrap();
+                        result_with_timings = initialized_result_with_timings();
                         session_ending = false;
                     }
                 }
