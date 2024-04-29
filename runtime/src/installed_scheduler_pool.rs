@@ -108,7 +108,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     fn schedule_execution<'a>(
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
-    ) -> Result<()>;
+    ) -> std::result::Result<(), ()>;
 
     fn recover_error_after_abort(
         &mut self,
