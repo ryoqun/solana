@@ -810,7 +810,6 @@ where
             // by design or by means of offloading at the last resort.
             move || {
                 trace!("thread is started: {:?}", thread::current());
-
                 defer! {
                     trace!("thread is terminated: {:?}", thread::current());
                 }
@@ -940,6 +939,10 @@ where
 
             move || {
                 trace!("thread is started: {:?}", thread::current());
+                defer ! {
+                    trace!("thread is terminated: {:?}", thread::current());
+                }
+
                 loop {
                     let (task, sender) = select! {
                         recv(runnable_task_receiver.for_select()) -> message => {
@@ -970,7 +973,6 @@ where
                         break;
                     }
                 }
-                trace!("thread is terminated: {:?}", thread::current());
             }
         };
 
