@@ -1121,6 +1121,7 @@ where
     }
 
     fn is_aborted(&self) -> bool {
+        assert!(self.handler_threads.is_empty());
         self.scheduler_thread.is_none()
     }
 
