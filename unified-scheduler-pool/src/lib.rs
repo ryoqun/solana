@@ -116,6 +116,7 @@ where
             transaction_status_sender,
             replay_vote_sender,
             prioritization_fee_cache,
+            Duration::from_secs(1),
         )
     }
 
@@ -125,6 +126,7 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+        pool_cleaner_interval: Duration,
     ) -> Arc<Self> {
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
