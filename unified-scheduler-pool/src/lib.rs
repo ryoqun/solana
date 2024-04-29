@@ -1275,7 +1275,7 @@ mod tests {
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool_raw =
-            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1));
+            DefaultSchedulerPool::do_new(None, None, None, None, ignored_prioritization_fee_cache, Duration::from_secs(1), Duration::from_secs(1));
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
         let context = SchedulingContext::new(bank);
@@ -1283,6 +1283,7 @@ mod tests {
         pool.return_scheduler(scheduler.into_inner().1);
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(5));
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
     }
 
     #[test]
