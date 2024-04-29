@@ -1827,6 +1827,12 @@ mod tests {
             Ok(())
         }
 
+        fn recover_error_after_abort(
+            &mut self,
+        ) -> TransactionError {
+            unimplemented!();
+        }
+
         fn wait_for_termination(
             self: Box<Self>,
             _is_dropped: bool,
