@@ -1299,6 +1299,8 @@ mod tests {
         let scheduler = pool.take_scheduler(new_context.clone());
         assert_eq!(scheduler_id, scheduler.id());
         assert!(Arc::ptr_eq(scheduler.context().bank(), new_bank));
+
+        sleep(Duration::from_secs(5));
     }
 
     #[test]
