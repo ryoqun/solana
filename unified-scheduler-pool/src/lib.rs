@@ -1793,7 +1793,7 @@ mod tests {
         fn schedule_execution(
             &self,
             &(transaction, index): &(&SanitizedTransaction, usize),
-        ) -> Result<()> {
+        ) -> ScheduleResult {
             let transaction_and_index = (transaction.clone(), index);
             let context = self.context().clone();
             let pool = self.3.clone();
