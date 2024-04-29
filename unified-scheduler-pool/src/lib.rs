@@ -157,7 +157,7 @@ where
                     let Some(scheduler_pool) = scheduler_pool.upgrade() else {
                         break;
                     };
-                    let Ok(scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
+                    let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
                         break;
                     };
                     let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
