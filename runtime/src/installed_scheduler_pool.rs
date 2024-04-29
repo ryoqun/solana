@@ -116,9 +116,8 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
 
     fn recover_error_after_abort(
         &mut self,
-    ) -> TransactionError {
-        panic!();
-    }
+    ) -> TransactionError;
+
     /// Wait for a scheduler to terminate after processing.
     ///
     /// This function blocks the current thread while waiting for the scheduler to complete all of
