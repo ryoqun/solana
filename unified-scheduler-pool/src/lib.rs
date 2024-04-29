@@ -820,6 +820,7 @@ where
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
+        let scheduler_id = self.scheduler_id;
         let mut result_with_timings = self.session_result_with_timings.take();
 
         // High-level flow of new tasks:
@@ -875,10 +876,7 @@ where
             // like syscalls, VDSO, and even memory (de)allocation should be avoided at all costs
             // by design or by means of offloading at the last resort.
             move || {
-                trace!("thread is started: {:?}", thread::current());
-                defer! {
-                    trace!("thread is terminated: {:?}", thread::current());
-                }
+                trace_thread!(id);
 
                 let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
                 let dummy_receiver = |trigger| {
