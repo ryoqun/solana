@@ -182,7 +182,6 @@ where
 
             move || {
                 trace_thread!();
-
                 loop {
                     sleep(pool_cleaner_interval);
 
