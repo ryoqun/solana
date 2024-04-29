@@ -63,6 +63,9 @@ macro_rules! trace_thread {
             trace!("thread is terminated{}{}: {:?}", $label1, $label2, thread::current());
         }
     };
+    ($id:epxr) => {
+        trace_thread!("(id: ", format!("{}", $id));
+    };
     () => {
         trace_thread!("", "");
     };
