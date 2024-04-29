@@ -914,7 +914,8 @@ where
                         );
                     } else {
                         // maybe drop is called; rather proper shutdown timing....
-                        return Ok(());
+                        let _  = session_result_sender.send(result_with_timings.clone());
+                        return;
                     }
 
                     let mut is_finished = false;
@@ -981,7 +982,8 @@ where
                                         // pruned blocks...
                                         // can't send something to session_result_sender because
                                         // the receiver could be dead already.
-                                        return Ok(());
+                                        let _  = session_result_sender.send(result_with_timings.clone());
+                                        return;
                                     }
                                 }
                             },
