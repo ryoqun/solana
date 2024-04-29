@@ -183,7 +183,7 @@ where
 
                     info!(
                         "Scheduler pool cleaner: dropped {} inners, {} trashed inners",
-                        old_inner_count - new_inner_count,
+                        old_inner_count.checked_sub(new_inner_count).unwrap(),
                         trashed_inner_count
                     )
                 }
