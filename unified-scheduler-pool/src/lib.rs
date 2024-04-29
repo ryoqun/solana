@@ -190,35 +190,45 @@ where
                     let Some(scheduler_pool) = scheduler_pool.upgrade() else {
                         break;
                     };
-                    let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
-                        break;
-                    };
-                    let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
-                    let now = Instant::now();
-                    let old_inner_count = inners.len();
-                    inners.retain(|(_inner, pooled_at)| {
-                        now.duration_since(*pooled_at) <= max_pooling_duration
-                    });
-                    let new_inner_count = inners.len();
-                    scheduler_inners.extend(inners);
 
-                    let Ok(mut trashed_scheduler_inners) =
-                        scheduler_pool.trashed_scheduler_inners.lock()
-                    else {
-                        break;
-                    };
-                    let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
-                    drop(trashed_scheduler_inners);
+                    let idle_inner_count = {
+                        let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
+                            break;
+                        };
 
-                    let trashed_inner_count = trashed_inners.len();
-                    drop(trashed_inners);
+                        let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
+                        let now = Instant::now();
+                        let old_inner_count = inners.len();
+                        // this loop should be fast because still the lock is held
+                        inners.retain(|(_inner, pooled_at)| {
+                            now.duration_since(*pooled_at) <= max_pooling_duration
+                        });
+                        let new_inner_count = inners.len();
+                        scheduler_inners.extend(inners);
 
-                    info!(
-                        "Scheduler pool cleaner: dropped {} inners, {} trashed inners",
                         old_inner_count
                             .checked_sub(new_inner_count)
-                            .expect("new isn't larger"),
+                            .expect("new isn't larger")
+                    }
+
+                    let trashed_inner_count = {
+                        let Ok(mut trashed_scheduler_inners) =
+                            scheduler_pool.trashed_scheduler_inners.lock()
+                        else {
+                            break;
+                        };
+                        let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
+                        drop(trashed_scheduler_inners);
+
+                        let trashed_inner_count = trashed_inners.len();
+                        drop(trashed_inners);
                         trashed_inner_count
+                    }
+
+                    info!(
+                        "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
+                        idle_inner_count,
+                        trashed_inner_count,
                     )
                 }
             }
