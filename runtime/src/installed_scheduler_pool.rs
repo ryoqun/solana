@@ -36,6 +36,8 @@ use {
         thread,
     },
 };
+use solana_sdk::transaction::TransactionError;
+
 #[cfg(feature = "dev-context-only-utils")]
 use {mockall::automock, qualifier_attr::qualifiers};
 
