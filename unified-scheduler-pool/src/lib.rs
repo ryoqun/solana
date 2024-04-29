@@ -1097,7 +1097,7 @@ where
         () = scheduler_thread.join().unwrap();
 
         if let Ok(result_with_timings) = self.session_result_receiver.try_recv() {
-            debug!("ensure_join_after_abort(): result: {:?}", result.0);
+            debug!("ensure_join_after_abort(): result: {:?}", result_with_timings.0);
             //assert!(!aborted_detected);
             self.put_session_result_with_timings(result_with_timings);
         }
