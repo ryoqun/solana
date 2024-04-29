@@ -838,7 +838,7 @@ where
                             None
                         );
                     } else {
-                        unreachable!();
+                        break;
                     }
 
                     let mut is_finished = false;
