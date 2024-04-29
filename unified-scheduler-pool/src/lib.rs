@@ -1238,6 +1238,20 @@ mod tests {
     }
 
     #[test]
+    fn test_scheduler_idle_drop() {
+        solana_logger::setup();
+
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool =
+            DefaultSchedulerPool::new(None, None, None, None, ignored_prioritization_fee_cache);
+        let bank = Arc::new(Bank::default_for_tests());
+        let context = SchedulingContext::new(bank);
+        let scheduler = pool.take_scheduler(context);
+        pool.return_scheduler(scheduler);
+        assert_eq!(pool.scheduler_inners.len(), 1);
+    }
+
+    #[test]
     fn test_scheduler_pool_filo() {
         solana_logger::setup();
 
