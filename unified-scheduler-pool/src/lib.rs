@@ -1562,7 +1562,7 @@ mod tests {
         );
         let pool = pool_raw.clone();
         let context = SchedulingContext::new(bank.clone());
-        let mut scheduler = pool.take_scheduler(context);
+        let scheduler = pool.take_scheduler(context);
 
         let unfunded_keypair = Keypair::new();
         let bad_tx =
