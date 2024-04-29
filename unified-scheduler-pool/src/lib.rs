@@ -991,8 +991,7 @@ where
                                 let executed_task = executed_task.expect("alive handler");
 
                                 state_machine.deschedule_task(&executed_task.task);
-                                let result_with_timings = result_with_timings.as_mut().unwrap();
-                                Self::accumulate_result_with_timings(result_with_timings, executed_task);
+                                Self::accumulate_result_with_timings(&mut result_with_timings, executed_task);
                                 if result_with_timings.0.is_err() {
                                     // todo: unless we precisely specify drop order;
                                     // session_result_receiver could be dead still....
