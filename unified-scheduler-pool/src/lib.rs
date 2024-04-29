@@ -1296,7 +1296,7 @@ mod tests {
     const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(1);
 
     #[test]
-    fn test_scheduler_idle_drop() {
+    fn test_scheduler_drop_idle() {
         solana_logger::setup();
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
@@ -1321,7 +1321,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scheduler_overgrown_drop() {
+    fn test_scheduler_drop_overgrown() {
         solana_logger::setup();
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
