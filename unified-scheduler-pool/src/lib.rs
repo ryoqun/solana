@@ -1509,6 +1509,10 @@ mod tests {
                 _timings
             ))
         );
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
+        assert_eq!(pool_raw.tashed_scheduler_inners.lock().unwrap().len(), 1);
+        sleep(Duration::from_secs(5));
+        assert_eq!(pool_raw.tashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
     #[test]
