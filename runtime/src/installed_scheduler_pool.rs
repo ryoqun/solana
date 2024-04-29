@@ -308,7 +308,10 @@ impl BankWithScheduler {
         let scheduler = scheduler_guard.as_ref().unwrap();
 
         for (sanitized_transaction, &index) in transactions_with_indexes {
-            scheduler.schedule_execution(&(sanitized_transaction, index))?;
+            if scheduler.schedule_execution(&(sanitized_transaction, index)).is_err() {
+                drop(scheduler_guard);
+                return self.inner.scheduler.write().unwrap().recover_error_after_abort();
+            }
         }
 
         Ok(())
