@@ -177,9 +177,9 @@ where
             _phantom: PhantomData,
         });
 
-        let weak_scheduler_pool = Arc::downgrade(&scheduler_pool);
-
         let cleaner_main_loop = || {
+            let weak_scheduler_pool = Arc::downgrade(&scheduler_pool);
+
             move || {
                 trace_thread!();
 
