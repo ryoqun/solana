@@ -52,6 +52,7 @@ use {
         time::{Duration, Instant},
     },
 };
+use scopeguard::defer;
 
 type AtomicSchedulerId = AtomicU64;
 
