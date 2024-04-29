@@ -1166,9 +1166,7 @@ where
     }
 
     fn from_inner(mut inner: Self::Inner, context: SchedulingContext) -> Self {
-        inner
-            .thread_manager
-            .start_session(&context);
+        inner.thread_manager.start_session(&context);
         Self { inner, context }
     }
 
@@ -1588,10 +1586,7 @@ mod tests {
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
             bank.wait_for_completed_scheduler(),
-            Some((
-                Err(TransactionError::AccountNotFound),
-                _timings
-            ))
+            Some((Err(TransactionError::AccountNotFound), _timings))
         );
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(5));
