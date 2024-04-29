@@ -914,7 +914,7 @@ where
                         );
                     } else {
                         // maybe drop is called; rather proper shutdown timing....
-                        let _  = session_result_sender.send(result_with_timings.clone());
+                        let _  = session_result_sender.send(result_with_timings);
                         return;
                     }
 
