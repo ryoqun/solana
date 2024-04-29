@@ -1064,7 +1064,7 @@ where
     }
 
     fn ensure_join_after_abort(&mut self) -> Result<()> {
-        trace!("ensure_join_after_abort()");
+        trace!("ensure_join_after_abort() is called");
         let Some(scheduler_thread) = self.scheduler_thread.take() else {
             warn!("suspend(): already suspended...");
             return self.session_result_with_timings.as_mut().unwrap().0.clone();
@@ -1199,6 +1199,7 @@ where
             .unwrap()
             .send_task(task)
             .or_else(|_| {
+                warn!("send_task failed....");
                 self.inner
                     .thread_manager
                     .write()
