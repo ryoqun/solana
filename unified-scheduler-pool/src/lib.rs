@@ -190,7 +190,7 @@ where
             }
         };
 
-        // Currently not joined... Proper pool termation will be implemented later
+        // Currently not joined... Proper pool termination will be implemented later
         thread::Builder::new()
             .name("solScCleaner".to_owned())
             .spawn(cleaner_main_loop())
@@ -589,16 +589,6 @@ where
     usage_queue_loader: UsageQueueLoader,
 }
 
-impl<S, TH> Drop for PooledSchedulerInner<S, TH>
-where
-    S: SpawnableScheduler<TH>,
-    TH: TaskHandler,
-{
-    fn drop(&mut self) {
-        info!("PooledSchedulerInner::drop() is called....");
-    }
-}
-
 impl<S, TH> PooledSchedulerInner<S, TH>
 where
     S: SpawnableScheduler<TH>,
@@ -960,6 +950,8 @@ where
                                         unreachable!();
                                     }
                                     Err(RecvError) => {
+                                        // mostly likely is that this scheduler is dropped for
+                                        // pruned blocks... 
                                         return Ok(());
                                     }
                                 }
@@ -1122,7 +1114,7 @@ where
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
             .send(NewTaskPayload::OpenSubchannel(context.clone()))
-            .expect("no actual use after aborted");
+            .expect("no new session after aborted");
     }
 }
 
@@ -1228,7 +1220,7 @@ where
     fn return_to_pool(self: Box<Self>) {
         let pool = self.thread_manager.write().unwrap().pool.clone();
         if self.is_trashed() {
-            error!("trashing scheduler...");
+            info!("trashing scheduler (id: {})...", pool.id());
             pool.clone().trash_scheduler(*self)
         } else {
             pool.clone().return_scheduler(*self)
@@ -1273,6 +1265,7 @@ mod tests {
 
         // this indirectly proves that there should be circular link because there's only one Arc
         // at this moment now
+        // the 2 weaks are for the weak_self field and the pool cleaner thread.
         assert_eq!((Arc::strong_count(&pool), Arc::weak_count(&pool)), (1, 2));
         let debug = format!("{pool:#?}");
         assert!(!debug.is_empty());
@@ -1580,6 +1573,7 @@ mod tests {
         // in parallel as part of the normal operation.
         assert_eq!(bank.transaction_count(), 0);
 
+        assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
             bank.wait_for_completed_scheduler(),
@@ -1588,7 +1582,6 @@ mod tests {
                 _timings
             ))
         );
-        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(5));
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
