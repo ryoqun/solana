@@ -1201,7 +1201,7 @@ where
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.thread_manager.send_task(task)
+        self.inner.thread_manager.send_task(task)
     }
 
     fn recover_error_after_abort(&mut self) -> TransactionError {
