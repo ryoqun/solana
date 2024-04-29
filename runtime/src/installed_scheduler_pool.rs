@@ -45,6 +45,7 @@ pub trait InstalledSchedulerPool: Send + Sync + Debug {
     fn take_scheduler(&self, context: SchedulingContext) -> InstalledSchedulerBox;
 }
 
+#[derive(Debug)]
 pub struct SchedulerAborted;
 
 #[cfg_attr(doc, aquamarine::aquamarine)]
