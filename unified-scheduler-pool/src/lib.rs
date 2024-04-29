@@ -56,6 +56,15 @@ use {
 
 type AtomicSchedulerId = AtomicU64;
 
+macro_rules! trace_thread {
+    () => {
+        trace!("thread is started: {:?}", thread::current());
+        defer! {
+            trace!("thread is terminated: {:?}", thread::current());
+        }
+    }
+}
+
 // SchedulerPool must be accessed as a dyn trait from solana-runtime, because SchedulerPool
 // contains some internal fields, whose types aren't available in solana-runtime (currently
 // TransactionStatusSender; also, PohRecorder in the future)...
@@ -1567,7 +1576,8 @@ mod tests {
             ));
         // make sure this tx is really a good one to execute.
         assert_matches!(
-            bank.simulate_transaction_unchecked(good_tx_after_bad_tx, false).result,
+            bank.simulate_transaction_unchecked(good_tx_after_bad_tx, false)
+                .result,
             Ok(_)
         );
         sleep(Duration::from_secs(5));
