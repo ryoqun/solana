@@ -829,7 +829,7 @@ where
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
         let scheduler_id = self.scheduler_id;
-        let mut result_with_timings = self.session_result_with_timings.take();
+        let mut result_with_timings = self.session_result_with_timings.take().unwrap_or_else(initialized_result_with_timings);
 
         // High-level flow of new tasks:
         // 1. the replay stage thread send a new task.
