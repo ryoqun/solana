@@ -1595,7 +1595,7 @@ mod tests {
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
             bank.schedule_transaction_executions([&(good_tx_after_bad_tx, &1)].into_iner()),
-            Err(SchedulerAborted)
+            Err(TransactionError::AccountNotFound)
         );
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
