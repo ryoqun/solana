@@ -169,7 +169,7 @@ where
                     let new_inner_count = inners.len();
                     scheduler_inners.extend(inners);
 
-                    let Ok(trashed_scheduler_inners) = scheduler_pool.trashed_scheduler_inners.lock() else {
+                    let Ok(mut trashed_scheduler_inners) = scheduler_pool.trashed_scheduler_inners.lock() else {
                         break;
                     };
                     let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
