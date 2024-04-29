@@ -1070,11 +1070,11 @@ where
             .collect();
     }
 
-    fn send_task(&self, task: Task) -> std::result::Result<(), ()> {
+    fn send_task(&self, task: Task) -> ScheduleResult {
         debug!("send_task()");
         self.new_task_sender
             .send(NewTaskPayload::Payload(task))
-            .map_err(|_| ())
+            .map_err(|_| SchedulerAborted)
     }
 
     fn ensure_join_after_abort(&mut self) -> Result<()> {
@@ -1208,16 +1208,7 @@ where
             self.inner.usage_queue_loader.load(pubkey)
         });
         let thread_manager = self.inner.thread_manager.read().unwrap();
-
-        thread_manager.send_task(task).or_else(move |_| {
-            drop(thread_manager);
-            warn!("send_task failed....");
-            self.inner
-                .thread_manager
-                .write()
-                .unwrap()
-                .ensure_join_after_abort()
-        })
+        thread_manager.send_task(task)
     }
 
     fn wait_for_termination(
