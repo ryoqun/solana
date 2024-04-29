@@ -1592,11 +1592,11 @@ mod tests {
             Ok(_)
         );
         sleep(Duration::from_secs(5));
+        let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
-            scheduler.schedule_execution(&(good_tx_after_bad_tx, 1)),
+            bank.schedule_transaction_executions([&(good_tx_after_bad_tx, &1)].into_iner()),
             Err(SchedulerAborted)
         );
-        scheduler.pause_for_recent_blockhash();
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
         // Also note that bank.transaction_count() is generally racy by nature, because
@@ -1605,7 +1605,6 @@ mod tests {
         assert_eq!(bank.transaction_count(), 0);
 
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
-        let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
             bank.wait_for_completed_scheduler(),
             Some((Err(TransactionError::AccountNotFound), _timings))
