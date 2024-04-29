@@ -1425,7 +1425,7 @@ mod tests {
 
         let scheduler = pool.do_take_scheduler(old_context.clone());
         let scheduler_id = scheduler.id();
-        pool.return_scheduler(scheduler.into_inner().1);
+        pool.return_scheduler(scheduler.into_inner().1, false);
 
         let scheduler = pool.take_scheduler(new_context.clone());
         assert_eq!(scheduler_id, scheduler.id());
