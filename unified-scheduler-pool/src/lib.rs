@@ -209,7 +209,7 @@ where
                         old_inner_count
                             .checked_sub(new_inner_count)
                             .expect("new isn't larger")
-                    }
+                    };
 
                     let trashed_inner_count = {
                         let Ok(mut trashed_scheduler_inners) =
@@ -223,7 +223,7 @@ where
                         let trashed_inner_count = trashed_inners.len();
                         drop(trashed_inners);
                         trashed_inner_count
-                    }
+                    };
 
                     info!(
                         "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
