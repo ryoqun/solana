@@ -202,8 +202,8 @@ where
                         inners.filter(|(_inner, pooled_at)| {
                             now.duration_since(*pooled_at) <= max_pooling_duration
                         });
-                        let new_inner_count = inners.len();
                         scheduler_inners.extend(inners);
+                        let new_inner_count = scheduler_inners.len();
 
                         old_inner_count
                             .checked_sub(new_inner_count)
