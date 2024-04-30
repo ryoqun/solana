@@ -106,12 +106,35 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     fn id(&self) -> SchedulerId;
     fn context(&self) -> &SchedulingContext;
 
-    // Calling this is illegal as soon as wait_for_termination is called.
+    /// Schedule transaction for execution.
+    ///
+    /// This non-blocking function will return immediately without waiting for actual execution.
+    ///
+    /// Calling this is illegal as soon as `wait_for_termination()` is called. It would result in
+    /// fatal logic error.
+    ///
+    /// Note that the returned result could indicate whether the scheduler has been aborted due to
+    /// a previously-scheduled transaction, which is fatal for the block verification. So, almost
+    /// always, this isn't due to the scheduling error of the current transaction itself.  At this
+    /// point, calling this does nothing anymore while it's still safe to do. As soon as notified,
+    /// callers is expected to stop processing upcoming transactions of the same SchedulingContexts
+    /// (i.e. same block). It's expected the aborted scheduler will be disposed cleanly after
+    /// `wait_for_termination()` is called much like not-aborted schedulers.
+    ///
+    /// Caller can acquire the error by calling a separate function called
+    /// `recover_error_after_abort()`, which requires `&mut self`, instead of `&self`. This
+    /// separation and convoluted returned value semantics are intentional to optimize the fast
+    /// code-path of normal transaction scheduling to be multi-threaded at the cost of far slower
+    /// error code-path.
     fn schedule_execution<'a>(
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
     ) -> ScheduleResult;
 
+    /// Return the error which causesd the scheduler to abort.
+    ///
+    /// Note that this must not be called until it's observed that `schedule_execution()` has
+    /// returned `Err(SchedulerAborted)`. Violating this will `panic!()`.
     fn recover_error_after_abort(&mut self) -> TransactionError;
 
     /// Wait for a scheduler to terminate after processing.
@@ -293,6 +316,10 @@ impl BankWithScheduler {
         self.inner.scheduler.read().unwrap().is_some()
     }
 
+    /// Schedules the transaction if the scheduler hasn't been aborted.
+    ///
+    /// If the scheduler has been aborted, this doesn't schedule the transaction, instead just
+    /// return the error of prior scheduled transaction.
     // 'a is needed; anonymous_lifetime_in_impl_trait isn't stabilized yet...
     pub fn schedule_transaction_executions<'a>(
         &self,
