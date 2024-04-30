@@ -101,6 +101,17 @@ const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
 // Rough estimate of max UsageQueueLoader size in bytes:
 //   UsageFromTask * UsageQeueue's capacity * DEFAULT_MAX_USAGE_QUEUE_COUNT
 //   16 bytes      * 128 items              * 262_144 entries               == 512 MiB
+// It's expected that there will be 2 or 3 pooled schedulers constantly when running against
+// mainnnet-beta. That means the total memory consumption for the idle close-to-be-trashed pooled
+// schedulers is set to high: 1.0 ~ 1.5 GiB. This value is chosen to maximize performance under the
+// normal cluster condition to avoid memory reallocation as much as possible. That said, it's not
+// likely this would allow unbounded memory growth when the cluster is unstable or under some kind
+// of attacks. That's because this limit is enforced at every slot and the UsageQueueLoader itself
+// is recreated without any entries, needing to repopulate by means of actual use to eat the
+// memory.
+//
+// Along the lines, this isn't problematic for the development settings (= solana-test-validator),
+// because UsageQueueLoader won't grow that much to begin with.
 const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 262_144;
 
 macro_rules! trace_thread {
