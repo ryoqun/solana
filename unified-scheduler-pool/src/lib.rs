@@ -195,11 +195,11 @@ where
                             break;
                         };
 
-                        let mut inners: Vec<_> = scheduler_inners.drain(..).collect();
+                        let mut inners = scheduler_inners.drain(..);
                         let now = Instant::now();
                         let old_inner_count = inners.len();
                         // this loop should be fast because still the lock is held
-                        inners.retain(|(_inner, pooled_at)| {
+                        inners.filter(|(_inner, pooled_at)| {
                             now.duration_since(*pooled_at) <= max_pooling_duration
                         });
                         let new_inner_count = inners.len();
