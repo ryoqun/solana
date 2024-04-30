@@ -1146,9 +1146,8 @@ where
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
-        if let Ok(result_with_timings) = self.session_result_receiver.recv().unwrap() {
-            self.put_session_result_with_timings(result_with_timings);
-        }
+        let result_with_timings = self.session_result_receiver.recv().unwrap();
+        self.put_session_result_with_timings(result_with_timings);
 
         if abort_detected {
             self.ensure_join_after_abort(true);
