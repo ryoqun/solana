@@ -1091,8 +1091,8 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_after_abort(&mut self, from_end_session: bool) -> TransactionError {
-        trace!("ensure_join_after_abort() is called");
+    fn ensure_join_threads_after_abort(&mut self, from_end_session: bool) -> TransactionError {
+        trace!("ensure_join_threads_after_abort() is called");
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
@@ -1103,17 +1103,16 @@ where
             if !from_end_session {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
                 debug!(
-                    "ensure_join_after_abort(): result: {:?}",
+                    "ensure_join_threads_after_abort(): err: {:?}",
                     result_with_timings.0
                 );
                 self.put_session_result_with_timings(result_with_timings);
             }
         } else {
-            warn!("ensure_join_after_abort(): already joined...");
+            warn!("ensure_join_threads_after_abort(): already joined...");
         };
 
-        self
-            .session_result_with_timings
+        self.session_result_with_timings
             .as_mut()
             .unwrap()
             .0
@@ -1150,7 +1149,7 @@ where
         self.put_session_result_with_timings(result_with_timings);
 
         if abort_detected {
-            self.ensure_join_after_abort(true);
+            self.ensure_join_threads_after_abort(true);
         }
     }
 
@@ -1230,7 +1229,9 @@ where
     }
 
     fn recover_error_after_abort(&mut self) -> TransactionError {
-        self.inner.thread_manager.ensure_join_after_abort(false)
+        self.inner
+            .thread_manager
+            .ensure_join_threads_after_abort(false)
     }
 
     fn wait_for_termination(
@@ -1256,7 +1257,10 @@ where
         if should_trash {
             info!("trashing scheduler (id: {})...", self.id());
         }
-        self.thread_manager.pool.clone().return_scheduler(*self, should_trash);
+        self.thread_manager
+            .pool
+            .clone()
+            .return_scheduler(*self, should_trash);
     }
 }
 
