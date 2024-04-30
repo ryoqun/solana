@@ -1113,7 +1113,7 @@ where
                 self.put_session_result_with_timings(result_with_timings);
             }
         } else {
-            warn!("ensure_join_threads_after_abort(): already joined...");
+            warn!("ensure_join_threads_after_abort(): skipping; already joined...");
         };
 
         self.session_result_with_timings
@@ -1135,11 +1135,10 @@ where
 
     fn end_session(&mut self) {
         if self.session_result_with_timings.is_some() {
-            debug!("end_session(): already result resides within thread manager..");
+            debug!("end_session(): skipping; already result resides within thread manager..");
             return;
-        }
-        if self.is_aborted() {
-            debug!("end_session(): already joined the aborted threads..");
+        } else if self.is_aborted() {
+            debug!("end_session(): skipping; already joined the aborted threads..");
             return;
         }
         debug!("end_session(): will end session...");
