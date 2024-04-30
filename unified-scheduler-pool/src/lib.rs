@@ -1014,8 +1014,7 @@ where
 
                     if session_ending {
                         state_machine.reinitialize();
-                        session_result_sender.send(result_with_timings).unwrap();
-                        result_with_timings = initialized_result_with_timings();
+                        session_result_sender.send(mem::replace(&mut result_with_timings, initialized_result_with_timings())).unwrap();
                         session_ending = false;
                     }
                 }
@@ -1145,6 +1144,8 @@ where
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
+        // Even if abort is detected, it's guaranteed that the scheduler thread puts the last
+        // message into the session_result_sender before terminating.
         let result_with_timings = self.session_result_receiver.recv().unwrap();
         self.put_session_result_with_timings(result_with_timings);
 
