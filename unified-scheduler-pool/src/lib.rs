@@ -1091,40 +1091,35 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_after_abort(&mut self) -> TransactionError {
+    fn ensure_join_after_abort(&mut self, from_end_session: bool) -> TransactionError {
         trace!("ensure_join_after_abort() is called");
-        let Some(scheduler_thread) = self.scheduler_thread.take() else {
+        if let Some(scheduler_thread) = self.scheduler_thread.take() {
+            for thread in self.handler_threads.drain(..) {
+                debug!("joining...: {:?}", thread);
+                () = thread.join().unwrap();
+            }
+            () = scheduler_thread.join().unwrap();
+
+            if !from_end_session {
+                if let Ok(result_with_timings) = self.session_result_receiver.recv().unwrap() {
+                    debug!(
+                        "ensure_join_after_abort(): result: {:?}",
+                        result_with_timings.0
+                    );
+                    self.put_session_result_with_timings(result_with_timings);
+                }
+            }
+        } else {
             warn!("ensure_join_after_abort(): already joined...");
-            return self
-                .session_result_with_timings
-                .as_mut()
-                .unwrap()
-                .0
-                .clone()
-                .unwrap_err();
         };
 
-        for thread in self.handler_threads.drain(..) {
-            debug!("joining...: {:?}", thread);
-            () = thread.join().unwrap();
-        }
-        () = scheduler_thread.join().unwrap();
-
-        if let Ok(result_with_timings) = self.session_result_receiver.try_recv() {
-            debug!(
-                "ensure_join_after_abort(): result: {:?}",
-                result_with_timings.0
-            );
-            self.put_session_result_with_timings(result_with_timings);
-        }
-
-        return self
+        self
             .session_result_with_timings
             .as_mut()
             .unwrap()
             .0
             .clone()
-            .unwrap_err();
+            .unwrap_err()
     }
 
     fn is_aborted(&self) -> bool {
@@ -1152,15 +1147,12 @@ where
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
-        if let Ok(result_with_timings) = self.session_result_receiver.recv() {
-            //assert!(!abort_detected);
+        if let Ok(result_with_timings) = self.session_result_receiver.recv().unwrap() {
             self.put_session_result_with_timings(result_with_timings);
-        } else {
-            panic!("never disconnected");
         }
 
         if abort_detected {
-            self.ensure_join_after_abort();
+            self.ensure_join_after_abort(true);
         }
     }
 
@@ -1240,7 +1232,7 @@ where
     }
 
     fn recover_error_after_abort(&mut self) -> TransactionError {
-        self.inner.thread_manager.ensure_join_after_abort()
+        self.inner.thread_manager.ensure_join_after_abort(false)
     }
 
     fn wait_for_termination(
