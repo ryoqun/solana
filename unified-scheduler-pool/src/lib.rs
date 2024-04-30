@@ -195,15 +195,15 @@ where
                             break;
                         };
 
-                        let mut inners = scheduler_inners.drain(..);
+                        let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
                         let now = Instant::now();
                         let old_inner_count = inners.len();
                         // this loop should be fast because still the lock is held
-                        inners.filter(|(_inner, pooled_at)| {
+                        inners.retain(|(_inner, pooled_at)| {
                             now.duration_since(*pooled_at) <= max_pooling_duration
                         });
-                        scheduler_inners.extend(inners.collect::<Vec<_>>());
-                        let new_inner_count = scheduler_inners.len();
+                        let new_inner_count = inners.len();
+                        scheduler_inners.extend(inners);
 
                         old_inner_count
                             .checked_sub(new_inner_count)
@@ -827,10 +827,8 @@ where
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
         let scheduler_id = self.scheduler_id;
-        let mut result_with_timings = self
-            .session_result_with_timings
-            .take()
-            .unwrap_or_else(initialized_result_with_timings);
+        assert_matches!(self.session_result_with_timings, None);
+        let mut result_with_timings = initialized_result_with_timings();
 
         // High-level flow of new tasks:
         // 1. the replay stage thread send a new task.
