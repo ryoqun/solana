@@ -98,8 +98,10 @@ pub type DefaultSchedulerPool =
 
 const DEFAULT_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(10);
 const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
-// Roughtly 16 bytes * 200_000 = NNNNN
-const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 200_000;
+// Rough estimate of max UsageQueueLoader size in bytes:
+//   UsageFromTask * UsageQeueue's capacity * DEFAULT_MAX_USAGE_QUEUE_COUNT
+//   16 bytes      * 128 items              * 262_144 entries               == 512 MiB
+const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 262_144;
 
 macro_rules! trace_thread {
     ($label1:expr, $label2:expr) => {
