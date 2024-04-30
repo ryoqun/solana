@@ -1251,12 +1251,11 @@ where
     TH: TaskHandler,
 {
     fn return_to_pool(self: Box<Self>) {
-        let pool = self.thread_manager.pool.clone();
         let should_trash = self.is_trashed();
         if should_trash {
             info!("trashing scheduler (id: {})...", self.id());
         }
-        pool.clone().return_scheduler(*self, should_trash);
+        self.thread_manager.pool.clone().return_scheduler(*self, should_trash);
     }
 }
 
