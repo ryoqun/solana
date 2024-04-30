@@ -1101,13 +1101,12 @@ where
             () = scheduler_thread.join().unwrap();
 
             if !from_end_session {
-                if let Ok(result_with_timings) = self.session_result_receiver.recv().unwrap() {
-                    debug!(
-                        "ensure_join_after_abort(): result: {:?}",
-                        result_with_timings.0
-                    );
-                    self.put_session_result_with_timings(result_with_timings);
-                }
+                let result_with_timings = self.session_result_receiver.recv().unwrap();
+                debug!(
+                    "ensure_join_after_abort(): result: {:?}",
+                    result_with_timings.0
+                );
+                self.put_session_result_with_timings(result_with_timings);
             }
         } else {
             warn!("ensure_join_after_abort(): already joined...");
