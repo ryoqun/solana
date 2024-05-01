@@ -837,7 +837,6 @@ where
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             crossbeam_channel::unbounded::<Box<ExecutedTask>>();
 
-        let scheduler_id = self.scheduler_id;
         assert_matches!(self.session_result_with_timings, None);
 
         // High-level flow of new tasks:
