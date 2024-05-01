@@ -1450,7 +1450,7 @@ mod tests {
             // converted to PooledSchedulerInner via ::into_inner();
             drop::<PooledScheduler<_>>(scheduler);
         } else {
-            let (result, scheduler_inner) = scheduler.into_inner();
+            let ((result, _), scheduler_inner) = scheduler.into_inner();
             result.unwrap();
             drop::<PooledSchedulerInner<_, _>>(scheduler_inner); 
         }
