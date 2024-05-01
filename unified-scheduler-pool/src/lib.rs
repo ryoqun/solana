@@ -631,6 +631,9 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
+    fn drop(&mut self) {
+        error!("PooledSchedulerInner::drop()");
+    }
 }
 
 impl<S, TH> PooledSchedulerInner<S, TH>
