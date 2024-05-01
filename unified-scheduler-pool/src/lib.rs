@@ -1131,14 +1131,15 @@ where
 
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
         trace!("ensure_join_threads() is called");
-        fn join_with_panic_message(thread: JoinHandle<()>) {
-            thread.join().map_err(|e| { 
+        fn join_with_panic_message(join_handle: JoinHandle<()>) {
+            let thread = format!("{:?}", join_handle.thread());
+            join_handle.join().map_err(|e| { 
                 let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
                     (Some(&s), _) => s,
                     (_, Some(s)) => s,
                     (None, None) => "<No panic info>",
                 };
-                panic!("{} (from {:?})", panic_message, thread.thread());
+                panic!("{} (from {:?})", panic_message, thread);
             }).unwrap();
         }
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
