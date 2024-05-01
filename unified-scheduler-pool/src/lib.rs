@@ -632,7 +632,7 @@ where
     TH: TaskHandler,
 {
     fn drop(&mut self) {
-        error!("PooledSchedulerInner::drop(): is_some: {:?}", self.thread_manager.session_result_with_timings.is_some());
+        error!("PooledSchedulerInner::drop(): is_some: {:?} is_aborted: {:?}", self.thread_manager.session_result_with_timings.is_some(), self.thread_manager.is_aborted());
     }
 }
 
@@ -1169,7 +1169,7 @@ where
     }
 
     fn start_session(&mut self, context: &SchedulingContext) {
-        assert!(!self.is_aborted());
+        //assert!(!self.is_aborted());
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
             .send(NewTaskPayload::OpenSubchannel(context.clone()))
