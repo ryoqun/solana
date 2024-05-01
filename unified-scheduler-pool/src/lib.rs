@@ -1143,7 +1143,8 @@ where
                                                                             };
                                     eprintln!("Thread panicked with: {}", err_msg);
 
-                    error!("resme!"); str::panic::resume_unwind(e);
+
+                    error!("resme!"); std::panic::resume_unwind(e);
 
                 }).unwrap();
             }
