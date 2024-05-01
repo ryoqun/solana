@@ -1131,7 +1131,7 @@ where
 
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
         trace!("ensure_join_threads() is called");
-        fn join_with_panic_message(thread: usize) {
+        fn join_with_panic_message(thread: JoinHandle<()>) {
             thread.join().map_err(|e| { 
 
                             let err_msg = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
