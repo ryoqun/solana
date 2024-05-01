@@ -1133,22 +1133,20 @@ where
         trace!("ensure_join_threads() is called");
         fn join_with_panic_message(thread: JoinHandle<()>) {
             thread.join().map_err(|e| { 
-
-                            let err_msg = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
-                                            | (Some(&s), _) => s,
-                                                        | (_, Some(s)) => s,
-                                                                    | (None, None) => "<No panic info>",
-                                                                            };
-                            panic!("{}", err_msg);
-                }).unwrap();
+                let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
+                    (Some(&s), _) => s,
+                    (_, Some(s)) => s,
+                    (None, None) => "<No panic info>",
+                };
+                panic!("{}", panic_message);
+            }).unwrap();
         }
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
                 () = join_with_panic_message(thread);
-
             }
-            () = scheduler_thread.join().map_err(std::panic::resume_unwind).unwrap();
+            () = join_with_panic_message(scheduler_thread);
 
             if should_receive_session_result {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
