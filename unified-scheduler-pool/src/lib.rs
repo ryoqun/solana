@@ -1146,7 +1146,7 @@ where
     }
 
     fn ensure_join_threads_after_abort(&mut self, from_end_session: bool) -> TransactionError {
-        self.ensure_join_threads();
+        self.ensure_join_threads(false);
         self.session_result_with_timings
             .as_mut()
             .unwrap()
