@@ -940,16 +940,20 @@ where
                 let mut result_with_timings = initialized_result_with_timings();
 
                 loop {
-                    if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
-                        // signal about new SchedulingContext to handler threads
-                        runnable_task_sender
-                            .send_chained_channel(context, handler_count)
-                            .unwrap();
-                    } else {
-                        // assert against Ok(_)
-                        info!("aaaa");
-                        session_result_sender.send(result_with_timings).unwrap();
-                        return;
+                    match new_task_receiver.recv() {
+                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                            // signal about new SchedulingContext to handler threads
+                            runnable_task_sender
+                                .send_chained_channel(context, handler_count)
+                                .unwrap();
+                        },
+                        Ok(_) => {
+                            unreachable!();
+                        },
+                        Err(_) => {
+                            session_result_sender.send(result_with_timings).unwrap();
+                            return;
+                        },
                     }
 
                     let mut is_finished = false;
