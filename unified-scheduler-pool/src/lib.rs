@@ -1002,22 +1002,22 @@ where
                                             runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
                                     }
-                                    Ok(NewTaskPayload::CloseSubchannel) | Err(RecvError) => {
+                                    Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context)) => {
                                         unreachable!();
                                     }
-                                    /*
                                     Err(RecvError) => {
+                                        session_ending = true;
+                                        new_task_receiver = never();
                                         // mostly likely is that this scheduler is dropped for
                                         // pruned blocks...
                                         // can't send something to session_result_sender because
                                         // the receiver could be dead already.
-                                        let _  = session_result_sender.send(result_with_timings);
-                                        return;
+                                        //let _  = session_result_sender.send(result_with_timings);
+                                        //return;
                                     }
-                                    */
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
