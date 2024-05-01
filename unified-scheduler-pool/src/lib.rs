@@ -867,8 +867,8 @@ where
             let handler_count = self.pool.handler_count;
             let session_result_sender = self.session_result_sender.clone();
             // Taking new_task_receiver here is important to ensure there's a single receiver. In
-            // this way, the replay stage will get .send() failures, after this scheduler thread
-            // died along with the single receiver.
+            // this way, the replay stage will get .send() failures reliably, after this scheduler
+            // thread died along with the single receiver.
             let new_task_receiver = self
                 .new_task_receiver
                 .take()
