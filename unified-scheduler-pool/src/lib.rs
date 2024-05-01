@@ -1132,7 +1132,7 @@ where
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
         trace!("ensure_join_threads() is called");
 
-        fn join_with_panic_message(join_handle: JoinHandle<()>) -> thread::Result {
+        fn join_with_panic_message(join_handle: JoinHandle<()>) -> thread::Result<()> {
             let thread = format!("{:?}", join_handle.thread());
             join_handle
                 .join()
