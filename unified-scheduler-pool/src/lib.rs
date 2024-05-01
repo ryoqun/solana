@@ -1138,7 +1138,7 @@ where
                     (_, Some(s)) => s,
                     (None, None) => "<No panic info>",
                 };
-                panic_any(panic_message);
+                std::panic::panic_any(panic_message);
             }).unwrap();
         }
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
