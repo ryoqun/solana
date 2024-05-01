@@ -340,6 +340,8 @@ impl BankWithScheduler {
                 .is_err()
             {
                 drop(scheduler_guard);
+                // this write locking isn't atomic with the above read lock()
+                // bla bla
                 let mut scheduler_guard = self.inner.scheduler.write().unwrap();
                 let recovered_error = scheduler_guard
                     .as_mut()
@@ -599,7 +601,7 @@ mod tests {
     }
 
     #[test]
-    fn test_schedule_executions() {
+    fn test_schedule_execution_success() {
         solana_logger::setup();
 
         let GenesisConfigInfo {
@@ -628,5 +630,9 @@ mod tests {
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
         bank.schedule_transaction_executions([(&tx0, &0)].into_iter())
             .unwrap();
+    }
+
+    #[test]
+    fn test_schedule_execution_failure() {
     }
 }

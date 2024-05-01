@@ -616,11 +616,14 @@ where
             return;
         }
 
+        // assert that this is called after ::into_inner()
+        assert_matches!(self.session_result_with_timings, None);
+
         // Ensure to initiate thread shutdown via disconnected new_task_receiver by replaing the
         // current new_task_sender with a random one...
         self.new_task_sender = crossbeam_channel::unbounded().0;
-        self.ensure_join_threads(true);
 
+        self.ensure_join_threads(true);
         assert_matches!(self.session_result_with_timings, Some((Ok(_), _)));
     }
 }
@@ -1705,6 +1708,14 @@ mod tests {
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(1));
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_panicked() {
+    }
+
+    #[test]
+    fn test_shortcircuiting() {
     }
 
     #[test]
