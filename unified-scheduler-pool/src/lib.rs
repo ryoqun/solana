@@ -1019,7 +1019,10 @@ where
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
-                                let executed_task = executed_task.expect("alive handler");
+                                let Ok(executed_task) = executed_task else {
+                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                    return;
+                                };
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
