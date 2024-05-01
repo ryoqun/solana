@@ -951,7 +951,9 @@ where
                             unreachable!();
                         }
                         Err(_) => {
-                            session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                            session_result_sender
+                                .send(result_with_timings)
+                                .expect("always outlived receiver");
                             return;
                         }
                     }
@@ -1012,12 +1014,12 @@ where
                                         unreachable!();
                                     }
                                     Err(RecvError) => {
+                                        // mostly likely is that this scheduler is dropped for
+                                        // pruned blocks...
+                                        // don't return; rather start graceful thread shutdown...
                                         session_ending = true;
                                         thread_ending = true;
                                         new_task_receiver = never();
-                                        // mostly likely is that this scheduler is dropped for
-                                        // pruned blocks...
-                                        // don't return start graceful thread shutdown...
                                     }
                                 }
                             },
