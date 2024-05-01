@@ -1413,6 +1413,63 @@ mod tests {
     }
 
     #[test]
+    fn test_scheduler_drop_aborted() {
+        solana_logger::setup();
+
+        #[derive(Debug)]
+        struct FaultyHandler;
+        impl TaskHandler for FaultyHandler {
+            fn handle(
+                result: &mut Result<()>,
+                timings: &mut ExecuteTimings,
+                bank: &Arc<Bank>,
+                transaction: &SanitizedTransaction,
+                index: usize,
+                handler_context: &HandlerContext,
+            ) {
+                *result = Err(TransactionError::AccountNotFound);
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        // tx0 and tx1 is definitely conflicting to write-lock the mint address
+        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = setup_dummy_fork_graph(bank);
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<FaultyHandler>, _>::new_dyn(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context = SchedulingContext::new(bank.clone());
+
+        let scheduler = pool.take_scheduler(context);
+
+        scheduler
+            .schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX))
+            .unwrap();
+        Box::new(scheduler.into_inner().1).return_to_pool();
+    }
+
+    #[test]
+    fn test_scheduler_drop_unhandled_thread_join() {
+    }
+
+    #[test]
     fn test_scheduler_pool_filo() {
         solana_logger::setup();
 
