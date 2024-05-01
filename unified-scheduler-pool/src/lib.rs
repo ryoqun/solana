@@ -1401,7 +1401,8 @@ mod tests {
     }
 
     #[test]
-    fn test_scheduler_drop_aborted() {
+    #[should_panic(expected = "does not match `Some((Ok(_), _))")]
+    fn test_scheduler_drop_unhandled_aborted() {
         solana_logger::setup();
 
         #[derive(Debug)]
