@@ -915,6 +915,10 @@ where
             // like syscalls, VDSO, and even memory (de)allocation should be avoided at all costs
             // by design or by means of offloading at the last resort.
             move || {
+                trace!("scheduler thread");
+                defer! {
+                trace!("scheduler thread ended");
+                }
                 let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
                 let dummy_receiver = |trigger| {
                     if trigger {
