@@ -1456,12 +1456,11 @@ mod tests {
             // converted to PooledSchedulerInner via ::into_inner();
             drop::<PooledScheduler<_>>(scheduler);
         } else {
+            sleep(Duration::from_secs(1));
             let ((result, _), scheduler_inner) = scheduler.into_inner();
             assert_matches!(result, Err(TransactionError::AccountNotFound));
             drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
         }
-
-        sleep(Duration::from_secs(1));
     }
 
     #[test]
