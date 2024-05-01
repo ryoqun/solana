@@ -1163,6 +1163,9 @@ where
             return;
         }
         debug!("end_session(): will end session...");
+        defer! {
+            debug!("end_session(): exit...");
+        }
 
         let mut abort_detected = self
             .new_task_sender
