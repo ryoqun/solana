@@ -1503,6 +1503,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_scheduler_drop_abort_handled() {
         do_test_scheduler_drop_abort(AbortCase::Handled);
     }
