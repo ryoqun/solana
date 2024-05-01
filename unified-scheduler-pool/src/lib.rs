@@ -1135,18 +1135,14 @@ where
 
         fn join_with_panic_message(join_handle: JoinHandle<()>) {
             let thread = format!("{:?}", join_handle.thread());
-            join_handle
-                .join()
-                .map_err(|e| {
-                    let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>())
-                    {
-                        (Some(&s), _) => s,
-                        (_, Some(s)) => s,
-                        (None, None) => "<No panic info>",
-                    };
-                    panic!("{} (From: {})", panic_message, thread);
-                })
-                .unwrap();
+            join_handle.join().map_err(|e| {
+                let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
+                    (Some(&s), _) => s,
+                    (_, Some(s)) => s,
+                    (None, None) => "<No panic info>",
+                };
+                panic!("{} (From: {})", panic_message, thread);
+            })
         }
 
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
