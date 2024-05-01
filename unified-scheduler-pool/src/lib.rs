@@ -1166,6 +1166,7 @@ where
             .is_err();
 
         if abort_detected {
+            trace!("1");
             self.ensure_join_threads_after_abort(true);
             return;
         }
@@ -1176,6 +1177,7 @@ where
         abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
         if abort_detected {
+            trace!("2");
             self.ensure_join_threads_after_abort(false);
         }
     }
