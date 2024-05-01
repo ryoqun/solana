@@ -626,16 +626,6 @@ where
     usage_queue_loader: UsageQueueLoader,
 }
 
-impl<S, TH> Drop for PooledSchedulerInner<S, TH>
-where
-    S: SpawnableScheduler<TH>,
-    TH: TaskHandler,
-{
-    fn drop(&mut self) {
-        error!("PooledSchedulerInner::drop(): is_some: {:?} is_threads_joined: {:?}", self.thread_manager.session_result_with_timings.is_some(), self.thread_manager.is_threads_joined());
-    }
-}
-
 impl<S, TH> Drop for ThreadManager<S, TH>
 where
     S: SpawnableScheduler<TH>,
