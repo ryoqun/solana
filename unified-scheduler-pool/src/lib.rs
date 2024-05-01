@@ -1350,7 +1350,7 @@ mod tests {
         assert!(!debug.is_empty());
     }
 
-    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_millis(1);
+    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(1);
 
     #[test]
     fn test_scheduler_drop_idle() {
