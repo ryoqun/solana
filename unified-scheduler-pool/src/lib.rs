@@ -1521,7 +1521,7 @@ mod tests {
         struct SleepyHandler;
         impl TaskHandler for SleepyHandler {
             fn handle(
-                result: &mut Result<()>,
+                _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
                 _bank: &Arc<Bank>,
                 _transaction: &SanitizedTransaction,
@@ -1562,10 +1562,10 @@ mod tests {
             scheduler.schedule_execution(&(tx, 0)).unwrap();
         }
 
-        // Directly dropping PooledScheduler is illegal unless panicking already, especially
-        // after being aborted. It must be converted to PooledSchedulerInner via
-        // ::into_inner();
+        // Make sure ThreadManager::drop() is properly short-circuiting for non-aborting scheduler.
+        let now = Instant::now();
         drop::<PooledScheduler<_>>(scheduler);
+        asssert!(now.elapsed() < Duration::from_secs(2));
     }
 
     #[test]
