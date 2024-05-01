@@ -549,6 +549,10 @@ mod chained_channel {
             &self.aux_receiver
         }
 
+        pub(super) fn never_receive_from_aux(&mut self) {
+            self.aux_receiver = never();
+        }
+
         pub(super) fn after_select(&mut self, message: ChainedChannel<P, C>) -> Option<P> {
             match message.0 {
                 ChainedChannelPrivate::Payload(payload) => Some(payload),
@@ -1074,7 +1078,7 @@ where
                             if let Ok(task) = task {
                                 (task, &finished_idle_task_sender)
                             } else {
-                                runnable_task_receiver.never_receive_aux();
+                                runnable_task_receiver.never_receive_from_aux();
                                 continue;
                             }
                         },
