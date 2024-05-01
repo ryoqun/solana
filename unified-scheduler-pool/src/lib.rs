@@ -1141,10 +1141,7 @@ where
                                                         | (_, Some(s)) => s,
                                                                     | (None, None) => "<No panic info>",
                                                                             };
-                                    eprintln!("Thread panicked with: {}", err_msg);
-
-
-                    error!("resme!"); std::panic::resume_unwind(e);
+                            panic!(err_msg.to_owned());
 
                 }).unwrap();
             }
