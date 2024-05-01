@@ -1437,8 +1437,7 @@ mod tests {
             ..
         } = create_genesis_config(10_000);
 
-        // tx0 and tx1 is definitely conflicting to write-lock the mint address
-        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+        let tx = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
             &mint_keypair,
             &solana_sdk::pubkey::new_rand(),
             2,
@@ -1456,13 +1455,9 @@ mod tests {
             ignored_prioritization_fee_cache,
         );
         let context = SchedulingContext::new(bank.clone());
-
         let scheduler = pool.do_take_scheduler(context);
-
-        scheduler
-            .schedule_execution(&(tx0, 0))
-            .unwrap();
-        drop(Box::new(scheduler.into_inner().1));
+        scheduler.schedule_execution(&(tx, 0)).unwrap();
+        drop(Box::new(scheduler.into_inner()));
     }
 
     #[test]
