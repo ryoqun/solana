@@ -1415,7 +1415,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scheduler_drop_aborted() {
+    fn test_scheduler_drop_aborted() { loop {
         solana_logger::setup();
 
         #[derive(Debug)]
@@ -1462,7 +1462,7 @@ mod tests {
         drop(scheduler);
         sleep(Duration::from_secs(1));
         //drop(Box::new(scheduler.into_inner()));
-    }
+    } }
 
     #[test]
     fn test_scheduler_drop_unhandled_thread_join() {
