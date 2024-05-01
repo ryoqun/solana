@@ -1174,7 +1174,7 @@ where
         }
         debug!("end_session(): will end session...");
 
-        let abort_detected = self
+        let mut abort_detected = self
             .new_task_sender
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
@@ -1182,6 +1182,11 @@ where
         // Even if abort is detected, it's guaranteed that the scheduler thread puts the last
         // message into the session_result_sender before terminating.
         let result_with_timings = self.session_result_receiver.recv().unwrap();
+        if abort_detected {
+            assert!(result_with_timings.0.is_err());
+        } else {
+            abort_detected = result_with_timings.0.is_err();
+        }
         self.put_session_result_with_timings(result_with_timings);
 
         if abort_detected {
