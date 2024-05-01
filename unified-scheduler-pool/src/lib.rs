@@ -1123,7 +1123,7 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_threads(&mut self, from_end_session: bool) {
+    fn ensure_join_threads(&mut self, aborted_session_result_received: bool) {
         trace!("ensure_join_threads() is called");
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
@@ -1132,7 +1132,7 @@ where
             }
             () = scheduler_thread.join().unwrap();
 
-            if !from_end_session {
+            if !aborted_session_result_received {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
                 debug!(
                     "ensure_join_threads(): err: {:?}",
@@ -1145,8 +1145,8 @@ where
         };
     }
 
-    fn ensure_join_threads_after_abort(&mut self, from_end_session: bool) -> TransactionError {
-        self.ensure_join_threads(false);
+    fn ensure_join_threads_after_abort(&mut self, aborted_session_result_received: bool) -> TransactionError {
+        self.ensure_join_threads(aborted_session_result_received);
         self.session_result_with_timings
             .as_mut()
             .unwrap()
@@ -1179,16 +1179,16 @@ where
             .send(NewTaskPayload::CloseSubchannel)
             .is_err();
 
+        if abort_detected {
+            self.ensure_join_threads_after_abort(false);
+            return;
+        }
+
         // Even if abort is detected, it's guaranteed that the scheduler thread puts the last
         // message into the session_result_sender before terminating.
         let result_with_timings = self.session_result_receiver.recv().unwrap();
-        if abort_detected {
-            assert!(result_with_timings.0.is_err());
-        } else {
-            abort_detected = result_with_timings.0.is_err();
-        }
+        abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
-
         if abort_detected {
             self.ensure_join_threads_after_abort(true);
         }
