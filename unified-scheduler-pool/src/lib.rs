@@ -181,8 +181,7 @@ where
                 };
 
                 let idle_inner_count = {
-                    let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock()
-                    else {
+                    let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
                         break;
                     };
 
@@ -848,9 +847,7 @@ where
         // 6. the scheduler thread post-processes the executed task.
         let scheduler_main_loop = || {
             let handler_count = self.pool.handler_count;
-            let session_result_sender = self
-                .session_result_sender
-                .clone();
+            let session_result_sender = self.session_result_sender.clone();
             let mut new_task_receiver = self
                 .new_task_receiver
                 .take()
