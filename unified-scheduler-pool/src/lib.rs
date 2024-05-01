@@ -1140,13 +1140,13 @@ where
                                                                     | (None, None) => "<No panic info>",
                                                                             };
                             panic!("{}", err_msg);
+                }).unwrap();
         }
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
                 () = join_with_panic_message(thread);
 
-                }).unwrap();
             }
             () = scheduler_thread.join().map_err(std::panic::resume_unwind).unwrap();
 
