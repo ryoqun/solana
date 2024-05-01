@@ -1565,7 +1565,7 @@ mod tests {
         // Make sure ThreadManager::drop() is properly short-circuiting for non-aborting scheduler.
         let now = Instant::now();
         drop::<PooledScheduler<_>>(scheduler);
-        asssert!(now.elapsed() < Duration::from_secs(2));
+        assert!(now.elapsed() < Duration::from_secs(2));
     }
 
     #[test]
