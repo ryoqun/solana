@@ -636,6 +636,16 @@ where
     }
 }
 
+impl<S, TH> ThreadManager<S, TH>
+where
+    S: SpawnableScheduler<TH>,
+    TH: TaskHandler,
+{
+    fn drop(&mut self) {
+        error!("ThreadManager::drop()");
+    }
+}
+
 impl<S, TH> PooledSchedulerInner<S, TH>
 where
     S: SpawnableScheduler<TH>,
@@ -1190,15 +1200,6 @@ where
     fn spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self
     where
         Self: Sized;
-}
-
-impl<TH> Drop for PooledScheduler<TH>
-where
-    TH: TaskHandler,
-{
-    fn drop(&mut self) {
-        unreachable!();
-    }
 }
 
 impl<TH> SpawnableScheduler<TH> for PooledScheduler<TH>
