@@ -1134,7 +1134,18 @@ where
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
-                () = thread.join().map_err(|e| { error!("resme!"); std::panic::resume_unwind(e); }).unwrap();
+                () = thread.join().map_err(|e| { 
+
+                            let err_msg = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
+                                            | (Some(&s), _) => s,
+                                                        | (_, Some(s)) => s,
+                                                                    | (None, None) => "<No panic info>",
+                                                                            };
+                                    eprintln!("Thread panicked with: {}", err_msg);
+
+                    error!("resme!"); str::panic::resume_unwind(e);
+
+                }).unwrap();
             }
             () = scheduler_thread.join().map_err(std::panic::resume_unwind).unwrap();
 
