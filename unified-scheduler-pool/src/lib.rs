@@ -1451,7 +1451,7 @@ mod tests {
             drop::<PooledScheduler<_>>(scheduler);
         } else {
             let ((result, _), scheduler_inner) = scheduler.into_inner();
-            result.unwrap();
+            assert_matches!(result, Err(TransactionError::AccountNotFound));
             drop::<PooledSchedulerInner<_, _>>(scheduler_inner); 
         }
 
