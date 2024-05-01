@@ -638,6 +638,7 @@ where
         }
 
         self.new_task_sender = crossbeam_channel::unbounded().0;
+        info!("dropped new_task_sender");
         self.ensure_join_threads(false);
     }
 }
