@@ -615,12 +615,13 @@ where
         if self.is_threads_joined() {
             return;
         }
-        // If on-stack ThreadManager is being dropped while panicking, it's likely ::into_inner()
-        // isn't called, which is a critical runtime invariant for the following thread shutdown.
-        // Also, the state could be corrupt in other ways too, so just skip it altogether.
+        // If on-stack ThreadManager is being dropped abruptly while panicking, it's likely
+        // ::into_inner() isn't called, which is a critical runtime invariant for the following
+        // thread shutdown.  Also, the state could be corrupt in other ways too, so just skip it
+        // altogether.
         if thread::panicking() {
             error!(
-                "ThreadManager::drop_scheduler(): scheduler_id: {} skipping due to already panicking...",
+                "ThreadManager::drop(): scheduler_id: {} skipping due to already panicking...",
                 self.scheduler_id,
             );
             return;
