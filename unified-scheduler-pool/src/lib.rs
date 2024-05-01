@@ -730,13 +730,16 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 let mut result_with_timings = initialized_result_with_timings();
 
                 loop {
-                    if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
-                        // signal about new SchedulingContext to handler threads
-                        runnable_task_sender
-                            .send_chained_channel(context, handler_count)
-                            .unwrap();
-                    } else {
-                        unreachable!();
+                    match new_task_receiver.recv() {
+                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                            // signal about new SchedulingContext to handler threads
+                            runnable_task_sender
+                                .send_chained_channel(context, handler_count)
+                                .unwrap();
+                        }
+                        _ => {
+                            unreachable!();
+                        }
                     }
 
                     let mut is_finished = false;
