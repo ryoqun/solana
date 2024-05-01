@@ -1084,7 +1084,7 @@ where
                         &pool.handler_context,
                     );
                     if sender.send(task).is_err() {
-                        warn!("scheduler thread aborted...");
+                        warn!("handler_thread: scheduler thread aborted...");
                         break;
                     }
                 }
