@@ -1138,7 +1138,7 @@ where
                     (_, Some(s)) => s,
                     (None, None) => "<No panic info>",
                 };
-                panic("{} (from {:?})", panic_message, thread.thread());
+                panic!("{} (from {:?})", panic_message, thread.thread());
             }).unwrap();
         }
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
