@@ -1448,7 +1448,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<FaultyHandler>, _>::new_dyn(
+        let pool = SchedulerPool::<PooledScheduler<FaultyHandler>, _>::new(
             None,
             None,
             None,
