@@ -934,9 +934,9 @@ where
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
 
-                let mut is_aborting = false;
+                let mut thread_ending = false;
 
-                while !is_aborting {
+                while !thread_ending {
                     if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
                         // signal about new SchedulingContext to handler threads
                         runnable_task_sender
@@ -1008,7 +1008,7 @@ where
                                     }
                                     Err(RecvError) => {
                                         session_ending = true;
-                                        is_aborting = true;
+                                        thread_ending = true;
                                         new_task_receiver = never();
                                         // mostly likely is that this scheduler is dropped for
                                         // pruned blocks...
