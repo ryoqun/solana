@@ -1784,6 +1784,7 @@ mod tests {
         // Also note that bank.transaction_count() is generally racy by nature, because
         // blockstore_processor and unified_scheduler both tend to process non-conflicting batches
         // in parallel as part of the normal operation.
+        sleep(Duration::from_secs(1));
         assert_eq!(bank.transaction_count(), 1);
 
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
