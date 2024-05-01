@@ -1470,7 +1470,7 @@ mod tests {
             }
             AbortCase::UnhandledWhilePanicking => {
                 sleep(Duration::from_secs(1));
-                panic!("should drop scheduler now");
+                panic!("ThreadManager::drop() should be skipped...");
             }
             AbortCase::Handled => {
                 let ((result, _), scheduler_inner) = scheduler.into_inner();
