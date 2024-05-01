@@ -1512,8 +1512,58 @@ mod tests {
     }
 
     #[test]
-    fn test_scheduler_drop_abort_unhandeld_shortcircuiting() {
-        
+    fn test_scheduler_drop_short_circuiting() {
+        solana_logger::setup();
+
+        #[derive(Debug)]
+        struct SleepyHandler;
+        impl TaskHandler for SleepyHandler {
+            fn handle(
+                result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                _bank: &Arc<Bank>,
+                _transaction: &SanitizedTransaction,
+                _index: usize,
+                _handler_context: &HandlerContext,
+            ) {
+                sleep(Duration::from_secs(1));
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = setup_dummy_fork_graph(bank);
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<SleepyHandler>, _>::new(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context = SchedulingContext::new(bank.clone());
+        let scheduler = pool.do_take_scheduler(context);
+
+        for _ in 0..10 {
+            let tx = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                &mint_keypair,
+                &solana_sdk::pubkey::new_rand(),
+                2,
+                genesis_config.hash(),
+            ));
+            scheduler.schedule_execution(&(tx, 0)).unwrap();
+        }
+
+        // Directly dropping PooledScheduler is illegal unless panicking already, especially
+        // after being aborted. It must be converted to PooledSchedulerInner via
+        // ::into_inner();
+        drop::<PooledScheduler<_>>(scheduler);
     }
 
     #[test]
