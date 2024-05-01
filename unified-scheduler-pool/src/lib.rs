@@ -1141,7 +1141,7 @@ where
                                                         | (_, Some(s)) => s,
                                                                     | (None, None) => "<No panic info>",
                                                                             };
-                            panic!(err_msg.to_owned());
+                            panic!("{}", err_msg);
 
                 }).unwrap();
             }
