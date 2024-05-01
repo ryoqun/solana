@@ -1831,6 +1831,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "This panic should be propagated.")]
     fn test_scheduler_schedule_execution_panic() {
         solana_logger::setup();
 
