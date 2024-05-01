@@ -941,6 +941,7 @@ where
                             .unwrap();
                     } else {
                         // assert against Ok(_)
+                        info!("aaaa");
                         session_result_sender.send(result_with_timings).unwrap();
                         return;
                     }
