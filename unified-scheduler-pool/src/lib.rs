@@ -979,6 +979,7 @@ where
                         select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Ok(executed_task) = executed_task.expect("alive handler") else {
+                                    result_with_timings.0 = TransactionError::ProgramCacheHitMaxLimit;
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
@@ -1023,6 +1024,7 @@ where
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
                                 let Ok(executed_task) = executed_task.expect("alive handler") else {
+                                    result_with_timings.0 = TransactionError::ProgramCacheHitMaxLimit;
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
