@@ -1023,7 +1023,7 @@ where
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
                                     // todo: unless we precisely specify drop order;
                                     // session_result_receiver could be dead still....
-                                    let _ = session_result_sender.send(result_with_timings);
+                                    //let _ = session_result_sender.send(result_with_timings);
                                     return;
                                 }
                             },
