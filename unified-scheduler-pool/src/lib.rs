@@ -1829,7 +1829,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<StallingHandler>, _>::new_dyn(
+        let pool = SchedulerPool::<PooledScheduler<PanickingHandler>, _>::new_dyn(
             None,
             None,
             None,
@@ -1841,7 +1841,7 @@ mod tests {
         let scheduler = pool.take_scheduler(context);
 
         scheduler
-            .schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX))
+            .schedule_execution(&(tx0, 0))
             .unwrap();
 
         let bank = BankWithScheduler::new(bank, Some(scheduler));
