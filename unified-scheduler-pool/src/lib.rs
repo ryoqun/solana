@@ -1449,6 +1449,8 @@ mod tests {
             // Directly dropping PooledScheduler is illegal, especially after being aborted. It must be
             // converted to PooledSchedulerInner via ::into_inner();
             drop::<PooledScheduler<_>>(scheduler);
+        } else {
+            scheduler.into_inner();
         }
 
         sleep(Duration::from_secs(1));
@@ -1458,6 +1460,11 @@ mod tests {
     #[should_panic(expected = "does not match `Some((Ok(_), _))")]
     fn test_scheduler_drop_abort_unhandled() {
         do_test_scheduler_drop_abort(true);
+    }
+
+    #[test]
+    fn test_scheduler_drop_abort_handled() {
+        do_test_scheduler_drop_abort(false);
     }
 
     #[test]
