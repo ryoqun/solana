@@ -1192,6 +1192,15 @@ where
         Self: Sized;
 }
 
+impl<TH> Drop for PooledScheduler<TH>
+where
+    TH: TaskHandler,
+{
+    fn drop(&mut self) {
+        unreachable!();
+    }
+}
+
 impl<TH> SpawnableScheduler<TH> for PooledScheduler<TH>
 where
     TH: TaskHandler,
