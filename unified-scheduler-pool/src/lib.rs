@@ -643,6 +643,12 @@ where
 {
     fn drop(&mut self) {
         error!("ThreadManager::drop()");
+        if self.thread_manager.is_threads_joined() {
+            return;
+        }
+
+        self.new_task_sender = crossbeam_channel::unbounded().0;
+        self.ensure_join_threads(false);
     }
 }
 
@@ -944,6 +950,7 @@ where
                             .send_chained_channel(context, handler_count)
                             .unwrap();
                     } else {
+                        // assert against Ok(_)
                         session_result_sender.send(result_with_timings).unwrap();
                         return;
                     }
@@ -1116,7 +1123,7 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_threads(&mut self, from_end_session: bool) -> TransactionError {
+    fn ensure_join_threads(&mut self, from_end_session: bool) {
         trace!("ensure_join_threads() is called");
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
@@ -1136,7 +1143,10 @@ where
         } else {
             warn!("ensure_join_threads(): skipping; already joined...");
         };
+    }
 
+    fn ensure_join_threads_after_abort(&mut self, from_end_session: bool) -> TransactionError {
+        self.ensure_join_threads();
         self.session_result_with_timings
             .as_mut()
             .unwrap()
@@ -1175,7 +1185,7 @@ where
         self.put_session_result_with_timings(result_with_timings);
 
         if abort_detected {
-            self.ensure_join_threads(true);
+            self.ensure_join_threads_after_abort(true);
         }
     }
 
@@ -1258,7 +1268,7 @@ where
     fn recover_error_after_abort(&mut self) -> TransactionError {
         self.inner
             .thread_manager
-            .ensure_join_threads(false)
+            .ensure_join_threads_after_abort(false)
     }
 
     fn wait_for_termination(
