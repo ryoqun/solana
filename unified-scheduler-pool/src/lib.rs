@@ -1477,8 +1477,7 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
-        //drop(scheduler);
-        drop(Box::new(scheduler.into_inner()));
+        drop(scheduler);
         sleep(Duration::from_secs(1));
     }
 
