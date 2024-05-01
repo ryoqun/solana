@@ -632,7 +632,7 @@ where
     TH: TaskHandler,
 {
     fn drop(&mut self) {
-        error!("PooledSchedulerInner::drop(): is_some: {:?} is_aborted: {:?}", self.thread_manager.session_result_with_timings.is_some(), self.thread_manager.is_aborted());
+        error!("PooledSchedulerInner::drop(): is_some: {:?} is_threads_joined: {:?}", self.thread_manager.session_result_with_timings.is_some(), self.thread_manager.is_threads_joined());
     }
 }
 
@@ -659,7 +659,7 @@ where
         let max_usage_queue_count = self.thread_manager.pool.max_usage_queue_count;
 
         self.usage_queue_loader.usage_queue_count() > max_usage_queue_count
-            || self.thread_manager.is_aborted()
+            || self.thread_manager.is_threads_joined()
     }
 }
 
@@ -1115,8 +1115,8 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_threads_after_abort(&mut self, from_end_session: bool) -> TransactionError {
-        trace!("ensure_join_threads_after_abort() is called");
+    fn ensure_join_threads(&mut self, from_end_session: bool) -> TransactionError {
+        trace!("ensure_join_threads() is called");
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
@@ -1127,13 +1127,13 @@ where
             if !from_end_session {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
                 debug!(
-                    "ensure_join_threads_after_abort(): err: {:?}",
+                    "ensure_join_threads(): err: {:?}",
                     result_with_timings.0
                 );
                 self.put_session_result_with_timings(result_with_timings);
             }
         } else {
-            warn!("ensure_join_threads_after_abort(): skipping; already joined...");
+            warn!("ensure_join_threads(): skipping; already joined...");
         };
 
         self.session_result_with_timings
@@ -1144,7 +1144,7 @@ where
             .unwrap_err()
     }
 
-    fn is_aborted(&self) -> bool {
+    fn is_threads_joined(&self) -> bool {
         if self.scheduler_thread.is_none() {
             assert!(self.handler_threads.is_empty());
             true
@@ -1157,7 +1157,7 @@ where
         if self.session_result_with_timings.is_some() {
             debug!("end_session(): skipping; already result resides within thread manager..");
             return;
-        } else if self.is_aborted() {
+        } else if self.is_threads_joined() {
             debug!("end_session(): skipping; already joined the aborted threads..");
             return;
         }
@@ -1174,12 +1174,12 @@ where
         self.put_session_result_with_timings(result_with_timings);
 
         if abort_detected {
-            self.ensure_join_threads_after_abort(true);
+            self.ensure_join_threads(true);
         }
     }
 
     fn start_session(&mut self, context: &SchedulingContext) {
-        //assert!(!self.is_aborted());
+        //assert!(!self.is_threads_joined());
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
             .send(NewTaskPayload::OpenSubchannel(context.clone()))
@@ -1257,7 +1257,7 @@ where
     fn recover_error_after_abort(&mut self) -> TransactionError {
         self.inner
             .thread_manager
-            .ensure_join_threads_after_abort(false)
+            .ensure_join_threads(false)
     }
 
     fn wait_for_termination(
