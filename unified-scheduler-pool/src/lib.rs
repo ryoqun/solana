@@ -615,6 +615,16 @@ where
         if self.is_threads_joined() {
             return;
         }
+        // If on-stack ThreadManager is being dropped while panicking, it's likely ::into_inner()
+        // isn't called, which is a critical runtime invariant for the following thread shutdown.
+        // Also, the state could be corrupt in other ways too, so just skip it altogether.
+        if thread::panicking() {
+            error!(
+                "ThreadManager::drop_scheduler(): scheduler_id: {} skipping due to already panicking...",
+                self.scheduler_id,
+            );
+            return;
+        }
 
         // assert that this is called after ::into_inner()
         assert_matches!(self.session_result_with_timings, None);
@@ -1462,6 +1472,7 @@ mod tests {
 
         match abort_case {
             AbortCase::Unhandled => {
+                // wait a bit for scheculer to abort as ThreadManager::drop() is racy otherwise
                 sleep(Duration::from_secs(1));
                 // Directly dropping PooledScheduler is illegal unless panicking already, especially
                 // after being aborted. It must be converted to PooledSchedulerInner via
@@ -1469,10 +1480,12 @@ mod tests {
                 drop::<PooledScheduler<_>>(scheduler);
             }
             AbortCase::UnhandledWhilePanicking => {
+                // wait a bit for scheculer to abort as ThreadManager::drop() is racy otherwise
                 sleep(Duration::from_secs(1));
                 panic!("ThreadManager::drop() should be skipped...");
             }
             AbortCase::Handled => {
+                // ::into_inner() isn't racy
                 let ((result, _), scheduler_inner) = scheduler.into_inner();
                 assert_matches!(result, Err(TransactionError::AccountNotFound));
                 drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
@@ -1487,6 +1500,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "ThreadManager::drop() should be skipped...")]
     fn test_scheduler_drop_abort_unhandled_while_panicking() {
         do_test_scheduler_drop_abort(AbortCase::UnhandledWhilePanicking);
     }
