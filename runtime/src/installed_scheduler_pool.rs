@@ -115,11 +115,11 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     ///
     /// Note that the returned result could indicate whether the scheduler has been aborted due to
     /// a previously-scheduled transaction, which is fatal for the block verification. So, almost
-    /// always, this isn't due to the scheduling error of the current transaction itself.  At this
+    /// always, this isn't due to the scheduling error of the current transaction itself. At this
     /// point, calling this does nothing anymore while it's still safe to do. As soon as notified,
-    /// callers is expected to stop processing upcoming transactions of the same SchedulingContexts
-    /// (i.e. same block). It's expected the aborted scheduler will be disposed cleanly after
-    /// `wait_for_termination()` is called much like not-aborted schedulers.
+    /// callers is expected to stop processing upcoming transactions of the same
+    /// `SchedulingContext` (i.e. same block). It's expected the aborted scheduler will be disposed
+    /// cleanly after `wait_for_termination()` is called much like not-aborted schedulers.
     ///
     /// Caller can acquire the error by calling a separate function called
     /// `recover_error_after_abort()`, which requires `&mut self`, instead of `&self`. This
