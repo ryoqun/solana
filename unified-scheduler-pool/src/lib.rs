@@ -1002,17 +1002,9 @@ where
                                         unreachable!();
                                     }
                                     Err(RecvError) => {
-                                        // mostly likely is that this scheduler is dropped for
-                                        // pruned blocks...
-                                        // don't return; rather start graceful thread shutdown...
-                                        // not short-cuiting is okay because replay stage can't
-                                        // usually determined to discard blocks until fully
-                                        // replayed
-                                        // Rather gracefully exit
-                                        //session_ending = true;
-                                        //thread_ending = true;
-                                        //new_task_receiver = never();
-                                        // this short-circuiting is tested with test_scheduler_drop_short_circuiting
+                                        // Mostly likely is that this scheduler is dropped for pruned blocks of 
+                                        // abandoned forks...
+                                        // This short-circuiting is tested with test_scheduler_drop_short_circuiting.
                                         session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                         return;
                                     }
