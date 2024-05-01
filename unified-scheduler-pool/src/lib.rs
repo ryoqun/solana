@@ -989,9 +989,15 @@ where
                                         // mostly likely is that this scheduler is dropped for
                                         // pruned blocks...
                                         // don't return; rather start graceful thread shutdown...
-                                        session_ending = true;
-                                        thread_ending = true;
-                                        new_task_receiver = never();
+                                        // not short-cuiting is okay because replay stage can't
+                                        // usually determined to discard blocks until fully
+                                        // replayed
+                                        // Rather gracefully exit
+                                        //session_ending = true;
+                                        //thread_ending = true;
+                                        //new_task_receiver = never();
+                                        session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                        return;
                                     }
                                 }
                             },
