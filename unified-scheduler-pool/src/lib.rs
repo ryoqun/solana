@@ -1134,7 +1134,7 @@ where
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
-                () = thread.join().map_err(std::panic::resume_unwind).unwrap();
+                () = thread.join().map_err(|e| { error!("resme!"); std::panic::resume_unwind(e); }).unwrap();
             }
             () = scheduler_thread.join().map_err(std::panic::resume_unwind).unwrap();
 
