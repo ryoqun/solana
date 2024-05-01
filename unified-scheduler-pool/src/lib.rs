@@ -1456,8 +1456,9 @@ mod tests {
 
         if trigger_panic {
             sleep(Duration::from_secs(1));
-            // Directly dropping PooledScheduler is illegal, especially after being aborted. It must be
-            // converted to PooledSchedulerInner via ::into_inner();
+            // Directly dropping PooledScheduler is illegal unless panicking already, especially
+            // after being aborted. It must be converted to PooledSchedulerInner via
+            // ::into_inner();
             drop::<PooledScheduler<_>>(scheduler);
         } else {
             let ((result, _), scheduler_inner) = scheduler.into_inner();
@@ -1475,6 +1476,11 @@ mod tests {
     #[test]
     fn test_scheduler_drop_abort_handled() {
         do_test_scheduler_drop_abort(false);
+    }
+
+    #[test]
+    fn test_scheduler_drop_abort_unhandeld_shortcircuiting() {
+        
     }
 
     #[test]
