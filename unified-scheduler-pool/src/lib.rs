@@ -1409,7 +1409,13 @@ mod tests {
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
-    fn do_test_scheduler_drop_abort(trigger_panic: bool) {
+    enum AbortCase {
+        Unhandled,
+        UnhandledWhilePanicking,
+        Handled,
+    }
+
+    fn do_test_scheduler_drop_abort(abort_case: AbortCase) {
         solana_logger::setup();
 
         #[derive(Debug)]
@@ -1454,28 +1460,40 @@ mod tests {
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
 
-        if trigger_panic {
-            sleep(Duration::from_secs(1));
-            // Directly dropping PooledScheduler is illegal unless panicking already, especially
-            // after being aborted. It must be converted to PooledSchedulerInner via
-            // ::into_inner();
-            drop::<PooledScheduler<_>>(scheduler);
-        } else {
-            let ((result, _), scheduler_inner) = scheduler.into_inner();
-            assert_matches!(result, Err(TransactionError::AccountNotFound));
-            drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
+        match abort_case {
+            AbortCase::Unhandled => {
+                sleep(Duration::from_secs(1));
+                // Directly dropping PooledScheduler is illegal unless panicking already, especially
+                // after being aborted. It must be converted to PooledSchedulerInner via
+                // ::into_inner();
+                drop::<PooledScheduler<_>>(scheduler);
+            }
+            AbortCase::UnhandledWhilePanicking => {
+                sleep(Duration::from_secs(1));
+                panic!("should drop scheduler now");
+            }
+            AbortCase::Handled => {
+                let ((result, _), scheduler_inner) = scheduler.into_inner();
+                assert_matches!(result, Err(TransactionError::AccountNotFound));
+                drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
+            }
         }
     }
 
     #[test]
     #[should_panic(expected = "does not match `Some((Ok(_), _))")]
     fn test_scheduler_drop_abort_unhandled() {
-        do_test_scheduler_drop_abort(true);
+        do_test_scheduler_drop_abort(AbortCase::Unhandled);
+    }
+
+    #[test]
+    fn test_scheduler_drop_abort_unhandled_while_panicking() {
+        do_test_scheduler_drop_abort(AbortCase::UnhandledWhilePanicking);
     }
 
     #[test]
     fn test_scheduler_drop_abort_handled() {
-        do_test_scheduler_drop_abort(false);
+        do_test_scheduler_drop_abort(AbortCase::Handled);
     }
 
     #[test]
