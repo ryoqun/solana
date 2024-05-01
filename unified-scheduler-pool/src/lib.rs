@@ -1846,7 +1846,7 @@ mod tests {
                 _index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                panic!("this panic should be propagated.");
+                panic!("This panic should be propagated.");
             }
         }
 
@@ -1882,7 +1882,7 @@ mod tests {
             .unwrap();
 
         let bank = BankWithScheduler::new(bank, Some(scheduler));
-        bank.wait_for_completed_scheduler();
+        bank.wait_for_completed_scheduler().unwrap().0.unwrap();
     }
 
     #[test]
