@@ -1334,7 +1334,7 @@ mod tests {
         assert!(!debug.is_empty());
     }
 
-    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(1);
+    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_millis(1);
 
     #[test]
     fn test_scheduler_drop_idle() {
@@ -1348,7 +1348,7 @@ mod tests {
             None,
             ignored_prioritization_fee_cache,
             SHORTENED_POOL_CLEANER_INTERVAL,
-            Duration::from_secs(1),
+            Duration::from_millis(1),
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
         );
         let pool = pool_raw.clone();
@@ -1359,7 +1359,7 @@ mod tests {
         Box::new(scheduler.into_inner().1).return_to_pool();
 
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
-        sleep(Duration::from_secs(5));
+        sleep(Duration::from_secs(1));
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
     }
 
@@ -1394,7 +1394,7 @@ mod tests {
         Box::new(scheduler.into_inner().1).return_to_pool();
 
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
-        sleep(Duration::from_secs(5));
+        sleep(Duration::from_secs(1));
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
@@ -1656,7 +1656,8 @@ mod tests {
                 .result,
             Ok(_)
         );
-        sleep(Duration::from_secs(5));
+        // wait a bit the scheduler thread to abort after receiving Err from the handler thread
+        sleep(Duration::from_secs(1));
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
             bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iter()),
@@ -1675,7 +1676,7 @@ mod tests {
             Some((Err(TransactionError::AccountNotFound), _timings))
         );
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
-        sleep(Duration::from_secs(5));
+        sleep(Duration::from_secs(1));
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
