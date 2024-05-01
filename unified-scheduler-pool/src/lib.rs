@@ -1400,9 +1400,7 @@ mod tests {
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
-    #[test]
-    #[should_panic(expected = "does not match `Some((Ok(_), _))")]
-    fn test_scheduler_drop_abort_unhandled() {
+    fn do_test_scheduler_drop_abort(trigger_panic: bool) {
         solana_logger::setup();
 
         #[derive(Debug)]
@@ -1446,10 +1444,20 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
-        // Directly dropping PooledScheduler is illegal, especially after being aborted. It must be
-        // converted to PooledSchedulerInner via ::into_inner();
-        drop::<PooledScheduler<_>>(scheduler);
+
+        if trigger_panic {
+            // Directly dropping PooledScheduler is illegal, especially after being aborted. It must be
+            // converted to PooledSchedulerInner via ::into_inner();
+            drop::<PooledScheduler<_>>(scheduler);
+        }
+
         sleep(Duration::from_secs(1));
+    }
+
+    #[test]
+    #[should_panic(expected = "does not match `Some((Ok(_), _))")]
+    fn test_scheduler_drop_abort_unhandled() {
+        do_test_scheduler_drop_abort(true);
     }
 
     #[test]
