@@ -317,7 +317,7 @@ impl BankWithScheduler {
         self.inner.scheduler.read().unwrap().is_some()
     }
 
-    /// Schedule the transaction if the scheduler hasn't been aborted.
+    /// Schedule the transaction as long as the scheduler hasn't been aborted.
     ///
     /// If the scheduler has been aborted, this doesn't schedule the transaction, instead just
     /// return the error of prior scheduled transaction.

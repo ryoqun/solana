@@ -679,7 +679,7 @@ where
     pool: Arc<SchedulerPool<S, TH>>,
     new_task_sender: Sender<NewTaskPayload>,
     new_task_receiver: Option<Receiver<NewTaskPayload>>,
-    session_result_sender: Option<Sender<ResultWithTimings>>,
+    session_result_sender: Sender<ResultWithTimings>,
     session_result_receiver: Receiver<ResultWithTimings>,
     session_result_with_timings: Option<ResultWithTimings>,
     scheduler_thread: Option<JoinHandle<()>>,
@@ -716,7 +716,7 @@ where
             pool,
             new_task_sender,
             new_task_receiver: Some(new_task_receiver),
-            session_result_sender: Some(session_result_sender),
+            session_result_sender,
             session_result_receiver,
             session_result_with_timings: None,
             scheduler_thread: None,
@@ -874,8 +874,7 @@ where
             let handler_count = self.pool.handler_count;
             let session_result_sender = self
                 .session_result_sender
-                .take()
-                .expect("no 2nd start_threads()");
+                .clone();
             let mut new_task_receiver = self
                 .new_task_receiver
                 .take()
