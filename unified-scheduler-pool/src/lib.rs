@@ -940,7 +940,7 @@ where
 
                 let mut thread_ending = false;
 
-                while !thread_ending {
+                loop {
                     if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
                         // signal about new SchedulingContext to handler threads
                         runnable_task_sender
@@ -1041,6 +1041,9 @@ where
                             ))
                             .unwrap();
                         session_ending = false;
+                    }
+                    if thread_ending {
+                        break;
                     }
                 }
             }
