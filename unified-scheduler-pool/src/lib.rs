@@ -114,26 +114,6 @@ const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
 // because UsageQueueLoader won't grow that much to begin with.
 const DEFAULT_MAX_USAGE_QUEUE_COUNT: usize = 262_144;
 
-macro_rules! trace_thread {
-    ($label1:expr, $label2:expr) => {
-        trace!(
-            "thread is started{}{}: {:?}",
-            $label1,
-            $label2,
-            thread::current()
-        );
-        defer! {
-            trace!("thread is terminated{}{}: {:?}", $label1, $label2, thread::current());
-        }
-    };
-    ($id:expr) => {
-        trace_thread!(" (scheduler_id: ", format!("{})", $id));
-    };
-    () => {
-        trace_thread!("", "");
-    };
-}
-
 impl<S, TH> SchedulerPool<S, TH>
 where
     S: SpawnableScheduler<TH>,
@@ -193,55 +173,52 @@ where
         let cleaner_main_loop = || {
             let weak_scheduler_pool = Arc::downgrade(&scheduler_pool);
 
-            move || {
-                trace_thread!();
-                loop {
-                    sleep(pool_cleaner_interval);
+            move || loop {
+                sleep(pool_cleaner_interval);
 
-                    let Some(scheduler_pool) = weak_scheduler_pool.upgrade() else {
+                let Some(scheduler_pool) = weak_scheduler_pool.upgrade() else {
+                    break;
+                };
+
+                let idle_inner_count = {
+                    let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock()
+                    else {
                         break;
                     };
 
-                    let idle_inner_count = {
-                        let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock()
-                        else {
-                            break;
-                        };
+                    let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
+                    let now = Instant::now();
+                    let old_inner_count = inners.len();
+                    // this loop should be fast because still the lock is held
+                    inners.retain(|(_inner, pooled_at)| {
+                        now.duration_since(*pooled_at) <= max_pooling_duration
+                    });
+                    let new_inner_count = inners.len();
+                    scheduler_inners.extend(inners);
 
-                        let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
-                        let now = Instant::now();
-                        let old_inner_count = inners.len();
-                        // this loop should be fast because still the lock is held
-                        inners.retain(|(_inner, pooled_at)| {
-                            now.duration_since(*pooled_at) <= max_pooling_duration
-                        });
-                        let new_inner_count = inners.len();
-                        scheduler_inners.extend(inners);
+                    old_inner_count
+                        .checked_sub(new_inner_count)
+                        .expect("new_inner_count isn't larger")
+                };
 
-                        old_inner_count
-                            .checked_sub(new_inner_count)
-                            .expect("new_inner_count isn't larger")
+                let trashed_inner_count = {
+                    let Ok(mut trashed_scheduler_inners) =
+                        scheduler_pool.trashed_scheduler_inners.lock()
+                    else {
+                        break;
                     };
+                    let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
+                    drop(trashed_scheduler_inners);
 
-                    let trashed_inner_count = {
-                        let Ok(mut trashed_scheduler_inners) =
-                            scheduler_pool.trashed_scheduler_inners.lock()
-                        else {
-                            break;
-                        };
-                        let trashed_inners: Vec<_> = mem::take(&mut *trashed_scheduler_inners);
-                        drop(trashed_scheduler_inners);
+                    let trashed_inner_count = trashed_inners.len();
+                    drop(trashed_inners);
+                    trashed_inner_count
+                };
 
-                        let trashed_inner_count = trashed_inners.len();
-                        drop(trashed_inners);
-                        trashed_inner_count
-                    };
-
-                    info!(
-                        "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
-                        idle_inner_count, trashed_inner_count,
-                    )
-                }
+                info!(
+                    "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
+                    idle_inner_count, trashed_inner_count,
+                )
             }
         };
 
@@ -922,8 +899,6 @@ where
             // like syscalls, VDSO, and even memory (de)allocation should be avoided at all costs
             // by design or by means of offloading at the last resort.
             move || {
-                trace_thread!(scheduler_id);
-
                 let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
                 let dummy_receiver = |trigger| {
                     if trigger {
@@ -1059,40 +1034,36 @@ where
             let finished_blocked_task_sender = finished_blocked_task_sender.clone();
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
-            move || {
-                trace_thread!(scheduler_id);
-
-                loop {
-                    let (task, sender) = select! {
-                        recv(runnable_task_receiver.for_select()) -> message => {
-                            let Ok(message) = message else {
-                                break;
-                            };
-                            if let Some(task) = runnable_task_receiver.after_select(message) {
-                                (task, &finished_blocked_task_sender)
-                            } else {
-                                continue;
-                            }
-                        },
-                        recv(runnable_task_receiver.aux_for_select()) -> task => {
-                            if let Ok(task) = task {
-                                (task, &finished_idle_task_sender)
-                            } else {
-                                runnable_task_receiver.never_receive_from_aux();
-                                continue;
-                            }
-                        },
-                    };
-                    let mut task = ExecutedTask::new_boxed(task);
-                    Self::execute_task_with_handler(
-                        runnable_task_receiver.context().bank(),
-                        &mut task,
-                        &pool.handler_context,
-                    );
-                    if sender.send(task).is_err() {
-                        warn!("handler_thread: scheduler thread aborted...");
-                        break;
-                    }
+            move || loop {
+                let (task, sender) = select! {
+                    recv(runnable_task_receiver.for_select()) -> message => {
+                        let Ok(message) = message else {
+                            break;
+                        };
+                        if let Some(task) = runnable_task_receiver.after_select(message) {
+                            (task, &finished_blocked_task_sender)
+                        } else {
+                            continue;
+                        }
+                    },
+                    recv(runnable_task_receiver.aux_for_select()) -> task => {
+                        if let Ok(task) = task {
+                            (task, &finished_idle_task_sender)
+                        } else {
+                            runnable_task_receiver.never_receive_from_aux();
+                            continue;
+                        }
+                    },
+                };
+                let mut task = ExecutedTask::new_boxed(task);
+                Self::execute_task_with_handler(
+                    runnable_task_receiver.context().bank(),
+                    &mut task,
+                    &pool.handler_context,
+                );
+                if sender.send(task).is_err() {
+                    warn!("handler_thread: scheduler thread aborted...");
+                    break;
                 }
             }
         };
