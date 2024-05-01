@@ -1460,6 +1460,7 @@ mod tests {
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
         drop(scheduler);
+        sleep(Duration::from_secs(1));
         //drop(Box::new(scheduler.into_inner()));
     }
 
