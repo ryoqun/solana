@@ -1795,7 +1795,57 @@ mod tests {
     }
 
     #[test]
-    fn test_panicked() {
+    fn test_scheduler_schedule_execution_panic() {
+        solana_logger::setup();
+
+        #[derive(Debug)]
+        struct PanickingHandler;
+        impl TaskHandler for PanickingHandler {
+            fn handle(
+                _result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                _bank: &Arc<Bank>,
+                _transaction: &SanitizedTransaction,
+                _index: usize,
+                _handler_context: &HandlerContext,
+            ) {
+                panic!("bad");
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = setup_dummy_fork_graph(bank);
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<StallingHandler>, _>::new_dyn(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context = SchedulingContext::new(bank.clone());
+
+        let scheduler = pool.take_scheduler(context);
+
+        scheduler
+            .schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX))
+            .unwrap();
+
+        let bank = BankWithScheduler::new(bank, Some(scheduler));
+        bank.wait_for_completed_scheduler();
     }
 
     #[test]
