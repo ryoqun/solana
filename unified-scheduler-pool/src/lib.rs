@@ -1452,7 +1452,7 @@ mod tests {
         } else {
             let (result, scheduler_inner) = scheduler.into_inner();
             result.unwrap();
-            drop::<PooledSchedulerInner<_>>(scheduler_inner); 
+            drop::<PooledSchedulerInner<_, _>>(scheduler_inner); 
         }
 
         sleep(Duration::from_secs(1));
