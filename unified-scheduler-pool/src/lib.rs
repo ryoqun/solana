@@ -1134,9 +1134,9 @@ where
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
-                () = thread.join().unwrap();
+                () = thread.join().map_err(std::panic::resume_unwind).unwrap();
             }
-            () = scheduler_thread.join().unwrap();
+            () = scheduler_thread.join().map_err(std::panic::resume_unwind).unwrap();
 
             if should_receive_session_result {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
