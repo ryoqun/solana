@@ -626,7 +626,7 @@ where
     usage_queue_loader: UsageQueueLoader,
 }
 
-impl Drop for PooledSchedulerInner<S, TH>
+impl<S, TH> Drop for PooledSchedulerInner<S, TH>
 where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
