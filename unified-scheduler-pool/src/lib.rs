@@ -981,9 +981,7 @@ where
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
-                                    // todo: unless we precisely specify drop order;
-                                    // session_result_receiver could be dead still....
-                                    let _  = session_result_sender.send(result_with_timings);
+                                    session_result_sender.send(result_with_timings).unwrap();
                                     return;
                                 }
                             },
@@ -1016,10 +1014,7 @@ where
                                         new_task_receiver = never();
                                         // mostly likely is that this scheduler is dropped for
                                         // pruned blocks...
-                                        // can't send something to session_result_sender because
-                                        // the receiver could be dead already.
-                                        //let _  = session_result_sender.send(result_with_timings);
-                                        //return;
+                                        // don't return start graceful thread shutdown...
                                     }
                                 }
                             },
@@ -1028,8 +1023,6 @@ where
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
-                                    // todo: unless we precisely specify drop order;
-                                    // session_result_receiver could be dead still....
                                     session_result_sender.send(result_with_timings).unwrap();
                                     return;
                                 }
