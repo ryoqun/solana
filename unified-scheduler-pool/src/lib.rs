@@ -1169,6 +1169,7 @@ where
     }
 
     fn start_session(&mut self, context: &SchedulingContext) {
+        assert!(!self.is_aborted());
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
             .send(NewTaskPayload::OpenSubchannel(context.clone()))
