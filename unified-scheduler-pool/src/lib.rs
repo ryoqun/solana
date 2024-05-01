@@ -1452,7 +1452,7 @@ mod tests {
         } else {
             let ((result, _), scheduler_inner) = scheduler.into_inner();
             assert_matches!(result, Err(TransactionError::AccountNotFound));
-            drop::<PooledSchedulerInner<_, _>>(scheduler_inner); 
+            drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
         }
 
         sleep(Duration::from_secs(1));
