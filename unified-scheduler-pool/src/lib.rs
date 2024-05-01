@@ -1462,7 +1462,7 @@ mod tests {
         scheduler
             .schedule_execution(&(tx0, 0))
             .unwrap();
-        Box::new(scheduler.into_inner().1).return_to_pool();
+        drop(Box::new(scheduler.into_inner().1));
     }
 
     #[test]
