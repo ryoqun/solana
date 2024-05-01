@@ -1019,7 +1019,7 @@ where
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
-                                let Ok(executed_task) = executed_task else {
+                                let Ok(executed_task) = executed_task.expect("alive handler") else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
