@@ -1131,6 +1131,7 @@ where
 
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
         trace!("ensure_join_threads() is called");
+
         fn join_with_panic_message(join_handle: JoinHandle<()>) {
             let thread = format!("{:?}", join_handle.thread());
             join_handle.join().map_err(|e| { 
@@ -1139,9 +1140,10 @@ where
                     (_, Some(s)) => s,
                     (None, None) => "<No panic info>",
                 };
-                panic!("{} (from {:?})", panic_message, thread);
+                panic!("{} (from {})", panic_message, thread);
             }).unwrap();
         }
+
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
