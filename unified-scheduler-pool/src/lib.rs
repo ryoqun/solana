@@ -643,7 +643,7 @@ where
 {
     fn drop(&mut self) {
         error!("ThreadManager::drop()");
-        if self.thread_manager.is_threads_joined() {
+        if self.is_threads_joined() {
             return;
         }
 
