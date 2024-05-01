@@ -636,14 +636,14 @@ where
     TH: TaskHandler,
 {
     fn drop(&mut self) {
-        error!("ThreadManager::drop()");
         if self.is_threads_joined() {
             return;
         }
 
+        // Ensure to initiate thread shutdown via disconnected new_task_receiver by replaing the
+        // current new_task_sender with a random one...
         self.new_task_sender = crossbeam_channel::unbounded().0;
-        info!("dropped new_task_sender");
-        self.ensure_join_threads(false);
+        self.ensure_join_threads(true);
     }
 }
 
@@ -946,14 +946,14 @@ where
                             runnable_task_sender
                                 .send_chained_channel(context, handler_count)
                                 .unwrap();
-                        },
+                        }
                         Ok(_) => {
                             unreachable!();
-                        },
+                        }
                         Err(_) => {
-                            session_result_sender.send(result_with_timings).unwrap();
+                            session_result_sender.send(result_with_timings).expect("always outlived receiver");
                             return;
-                        },
+                        }
                     }
 
                     let mut is_finished = false;
@@ -984,7 +984,7 @@ where
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
-                                    session_result_sender.send(result_with_timings).unwrap();
+                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 }
                             },
@@ -1026,7 +1026,7 @@ where
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
-                                    session_result_sender.send(result_with_timings).unwrap();
+                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 }
                             },
@@ -1042,7 +1042,7 @@ where
                                 &mut result_with_timings,
                                 initialized_result_with_timings(),
                             ))
-                            .unwrap();
+                            .expect("always outlived receiver");
                         session_ending = false;
                     }
                     if thread_ending {
@@ -1122,7 +1122,7 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_threads(&mut self, session_result_received: bool) {
+    fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
         trace!("ensure_join_threads() is called");
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
@@ -1131,12 +1131,9 @@ where
             }
             () = scheduler_thread.join().unwrap();
 
-            if !session_result_received {
+            if should_receive_session_result {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
-                debug!(
-                    "ensure_join_threads(): err: {:?}",
-                    result_with_timings.0
-                );
+                debug!("ensure_join_threads(): err: {:?}", result_with_timings.0);
                 self.put_session_result_with_timings(result_with_timings);
             }
         } else {
@@ -1144,8 +1141,11 @@ where
         };
     }
 
-    fn ensure_join_threads_after_abort(&mut self, aborted_session_result_received: bool) -> TransactionError {
-        self.ensure_join_threads(aborted_session_result_received);
+    fn ensure_join_threads_after_abort(
+        &mut self,
+        should_receive_aborted_session_result: bool,
+    ) -> TransactionError {
+        self.ensure_join_threads(should_receive_aborted_session_result);
         self.session_result_with_timings
             .as_mut()
             .unwrap()
@@ -1182,7 +1182,7 @@ where
             .is_err();
 
         if abort_detected {
-            self.ensure_join_threads_after_abort(false);
+            self.ensure_join_threads_after_abort(true);
             return;
         }
 
@@ -1192,7 +1192,7 @@ where
         abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
         if abort_detected {
-            self.ensure_join_threads_after_abort(true);
+            self.ensure_join_threads_after_abort(false);
         }
     }
 
@@ -1275,7 +1275,7 @@ where
     fn recover_error_after_abort(&mut self) -> TransactionError {
         self.inner
             .thread_manager
-            .ensure_join_threads_after_abort(false)
+            .ensure_join_threads_after_abort(true)
     }
 
     fn wait_for_termination(
@@ -1478,10 +1478,6 @@ mod tests {
         //drop(scheduler);
         drop(Box::new(scheduler.into_inner()));
         sleep(Duration::from_secs(1));
-    }
-
-    #[test]
-    fn test_scheduler_drop_unhandled_thread_join() {
     }
 
     #[test]
