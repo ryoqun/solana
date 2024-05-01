@@ -1402,7 +1402,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "does not match `Some((Ok(_), _))")]
-    fn test_scheduler_drop_unhandled_aborted() {
+    fn test_scheduler_drop_abort_unhandled() {
         solana_logger::setup();
 
         #[derive(Debug)]
@@ -1446,8 +1446,8 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
-        // aborted
-        drop(scheduler);
+        // Directly dropping 
+        drop::<usize>(scheduler);
         sleep(Duration::from_secs(1));
     }
 
