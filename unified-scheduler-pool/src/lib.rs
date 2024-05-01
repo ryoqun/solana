@@ -1009,11 +1009,12 @@ where
                                         // usually determined to discard blocks until fully
                                         // replayed
                                         // Rather gracefully exit
-                                        session_ending = true;
-                                        thread_ending = true;
-                                        new_task_receiver = never();
-                                        //session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                        //return;
+                                        //session_ending = true;
+                                        //thread_ending = true;
+                                        //new_task_receiver = never();
+                                        // this short-circuiting is tested with test_scheduler_drop_short_circuiting
+                                        session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                        return;
                                     }
                                 }
                             },
