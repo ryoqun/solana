@@ -1074,6 +1074,7 @@ where
                             if let Ok(task) = task {
                                 (task, &finished_idle_task_sender)
                             } else {
+                                runnable_task_receiver.never_receive_aux();
                                 continue;
                             }
                         },
