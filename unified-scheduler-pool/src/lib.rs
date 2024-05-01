@@ -1446,8 +1446,9 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
-        // Directly dropping 
-        drop::<usize>(scheduler);
+        // Directly dropping PooledScheduler is illegal, especially after being aborted. It must be
+        // converted to PooledSchedulerInner via ::into_inner();
+        drop::<PooledScheduler<_>>(scheduler);
         sleep(Duration::from_secs(1));
     }
 
