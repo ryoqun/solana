@@ -1166,7 +1166,6 @@ where
             .is_err();
 
         if abort_detected {
-            trace!("1");
             self.ensure_join_threads_after_abort(true);
             return;
         }
@@ -1177,8 +1176,7 @@ where
         abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
         if abort_detected {
-            trace!("2");
-            self.ensure_join_threads_after_abort(false);
+            //self.ensure_join_threads_after_abort(false);
         }
     }
 
@@ -1352,7 +1350,7 @@ mod tests {
         assert!(!debug.is_empty());
     }
 
-    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(1);
+    const SHORTENED_POOL_CLEANER_INTERVAL: Duration = Duration::from_millis(1);
 
     #[test]
     fn test_scheduler_drop_idle() {
