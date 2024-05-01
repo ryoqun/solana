@@ -696,6 +696,7 @@ where
 }
 
 struct HandlerPanicked;
+type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 
 impl<S, TH> ThreadManager<S, TH>
 where
@@ -852,9 +853,9 @@ where
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
         // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
-            crossbeam_channel::unbounded::<std::result::Result<Box<ExecutedTask>, HandlerPanicked>>();
+            crossbeam_channel::unbounded::<HandlerResult>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
-            crossbeam_channel::unbounded::<std::result::Result<Box<ExecutedTask>, HandlerPanicked>>();
+            crossbeam_channel::unbounded::<HandlerResult>();
 
         assert_matches!(self.session_result_with_timings, None);
 
@@ -1134,14 +1135,18 @@ where
 
         fn join_with_panic_message(join_handle: JoinHandle<()>) {
             let thread = format!("{:?}", join_handle.thread());
-            join_handle.join().map_err(|e| { 
-                let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
-                    (Some(&s), _) => s,
-                    (_, Some(s)) => s,
-                    (None, None) => "<No panic info>",
-                };
-                panic!("{} (From: {})", panic_message, thread);
-            }).unwrap();
+            join_handle
+                .join()
+                .map_err(|e| {
+                    let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>())
+                    {
+                        (Some(&s), _) => s,
+                        (_, Some(s)) => s,
+                        (None, None) => "<No panic info>",
+                    };
+                    panic!("{} (From: {})", panic_message, thread);
+                })
+                .unwrap();
         }
 
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
@@ -1566,7 +1571,6 @@ mod tests {
             ..
         } = create_genesis_config(10_000);
 
-
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
@@ -1581,12 +1585,13 @@ mod tests {
         let scheduler = pool.do_take_scheduler(context);
 
         for _ in 0..10 {
-            let tx = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                &mint_keypair,
-                &solana_sdk::pubkey::new_rand(),
-                2,
-                genesis_config.hash(),
-            ));
+            let tx =
+                &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                    &mint_keypair,
+                    &solana_sdk::pubkey::new_rand(),
+                    2,
+                    genesis_config.hash(),
+                ));
             scheduler.schedule_execution(&(tx, 0)).unwrap();
         }
 
@@ -1877,17 +1882,14 @@ mod tests {
 
         let scheduler = pool.take_scheduler(context);
 
-        scheduler
-            .schedule_execution(&(tx0, 0))
-            .unwrap();
+        scheduler.schedule_execution(&(tx0, 0)).unwrap();
 
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
     }
 
     #[test]
-    fn test_shortcircuiting() {
-    }
+    fn test_shortcircuiting() {}
 
     #[test]
     fn test_scheduler_schedule_execution_blocked() {

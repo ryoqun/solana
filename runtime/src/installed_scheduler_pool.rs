@@ -633,6 +633,5 @@ mod tests {
     }
 
     #[test]
-    fn test_schedule_execution_failure() {
-    }
+    fn test_schedule_execution_failure() {}
 }
