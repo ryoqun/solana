@@ -1845,7 +1845,7 @@ mod tests {
                 _index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                panic!("bad");
+                panic!("this panic should be propagated.");
             }
         }
 
