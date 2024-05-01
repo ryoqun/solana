@@ -620,6 +620,8 @@ where
         // current new_task_sender with a random one...
         self.new_task_sender = crossbeam_channel::unbounded().0;
         self.ensure_join_threads(true);
+
+        assert_matches!(self.session_result_with_timings, Some((Ok(_), _)));
     }
 }
 
@@ -1443,6 +1445,7 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
+        // aborted
         drop(scheduler);
         sleep(Duration::from_secs(1));
     }
