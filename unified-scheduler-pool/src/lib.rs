@@ -617,7 +617,7 @@ where
         }
         // If on-stack ThreadManager is being dropped abruptly while panicking, it's likely
         // ::into_inner() isn't called, which is a critical runtime invariant for the following
-        // thread shutdown.  Also, the state could be corrupt in other ways too, so just skip it
+        // thread shutdown. Also, the state could be corrupt in other ways too, so just skip it
         // altogether.
         if thread::panicking() {
             error!(
@@ -630,7 +630,7 @@ where
         // assert that this is called after ::into_inner()
         assert_matches!(self.session_result_with_timings, None);
 
-        // Ensure to initiate thread shutdown via disconnected new_task_receiver by replaing the
+        // Ensure to initiate thread shutdown via disconnected new_task_receiver by replacing the
         // current new_task_sender with a random one...
         self.new_task_sender = crossbeam_channel::unbounded().0;
 
