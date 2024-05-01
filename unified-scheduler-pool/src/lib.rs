@@ -872,7 +872,6 @@ where
                 .expect("no 2nd start_threads()");
 
             let mut session_ending = false;
-            let mut thread_ending = false;
 
             // Now, this is the main loop for the scheduler thread, which is a special beast.
             //
@@ -1002,7 +1001,7 @@ where
                                         unreachable!();
                                     }
                                     Err(RecvError) => {
-                                        // Mostly likely is that this scheduler is dropped for pruned blocks of 
+                                        // Mostly likely is that this scheduler is dropped for pruned blocks of
                                         // abandoned forks...
                                         // This short-circuiting is tested with test_scheduler_drop_short_circuiting.
                                         session_result_sender.send(result_with_timings).expect("always outlived receiver");
@@ -1033,9 +1032,6 @@ where
                             ))
                             .expect("always outlived receiver");
                         session_ending = false;
-                    }
-                    if thread_ending {
-                        break;
                     }
                 }
             }
