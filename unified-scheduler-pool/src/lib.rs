@@ -636,7 +636,7 @@ where
     }
 }
 
-impl<S, TH> ThreadManager<S, TH>
+impl<S, TH> Drop for ThreadManager<S, TH>
 where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
