@@ -854,7 +854,8 @@ where
         // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
             crossbeam_channel::unbounded::<HandlerResult>();
-        let (finished_idle_task_sender, finished_idle_task_receiver) = crossbeam_channel::unbounded::<HandlerResult>();
+        let (finished_idle_task_sender, finished_idle_task_receiver) =
+            crossbeam_channel::unbounded::<HandlerResult>();
 
         assert_matches!(self.session_result_with_timings, None);
 
@@ -1134,17 +1135,14 @@ where
 
         fn join_with_panic_message(join_handle: JoinHandle<()>) -> thread::Result<()> {
             let thread = format!("{:?}", join_handle.thread());
-            join_handle
-                .join()
-                .map_err(|e| {
-                    let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>())
-                    {
-                        (Some(&s), _) => s,
-                        (_, Some(s)) => s,
-                        (None, None) => "<No panic info>",
-                    };
-                    panic!("{} (From: {})", panic_message, thread);
-                })
+            join_handle.join().map_err(|e| {
+                let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
+                    (Some(&s), _) => s,
+                    (_, Some(s)) => s,
+                    (None, None) => "<No panic info>",
+                };
+                panic!("{} (From: {})", panic_message, thread);
+            })
         }
 
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
