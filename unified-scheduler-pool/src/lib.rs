@@ -868,6 +868,7 @@ where
             let session_result_sender = self.session_result_sender.clone();
             let new_task_receiver = self
                 .new_task_receiver
+                .clone()
                 .take()
                 .expect("no 2nd start_threads()");
 
