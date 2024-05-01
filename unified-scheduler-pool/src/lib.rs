@@ -1460,7 +1460,7 @@ mod tests {
         let scheduler = pool.take_scheduler(context);
 
         scheduler
-            .schedule_execution(&(tx0, STALLED_TRANSACTION_INDEX))
+            .schedule_execution(&(tx0, 0))
             .unwrap();
         Box::new(scheduler.into_inner().1).return_to_pool();
     }
