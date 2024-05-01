@@ -852,9 +852,9 @@ where
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
         // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
-            crossbeam_channel::unbounded::<Result<Box<ExecutedTask>, HandlerPanicked>();
+            crossbeam_channel::unbounded::<Result<Box<ExecutedTask>, HandlerPanicked>>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
-            crossbeam_channel::unbounded::<Result<Box<ExecutedTask>, HandlerPanicked>();
+            crossbeam_channel::unbounded::<Result<Box<ExecutedTask>, HandlerPanicked>>();
 
         assert_matches!(self.session_result_with_timings, None);
 
