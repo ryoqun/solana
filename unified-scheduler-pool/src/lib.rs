@@ -1133,15 +1133,12 @@ where
         trace!("ensure_join_threads() is called");
         fn join_with_panic_message(thread: JoinHandle<()>) {
             thread.join().map_err(|e| { 
-                /*
                 let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
                     (Some(&s), _) => s,
                     (_, Some(s)) => s,
                     (None, None) => "<No panic info>",
                 };
-                */
-                std::panic::panic_any(e);
-                //std::panic::panic_any(panic_message.to_owned());
+                panic("{} (from {:?})", panic_message, thread.thread());
             }).unwrap();
         }
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
