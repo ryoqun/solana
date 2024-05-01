@@ -118,8 +118,9 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     /// always, this isn't due to the scheduling error of the current transaction itself. At this
     /// point, calling this does nothing anymore while it's still safe to do. As soon as notified,
     /// callers is expected to stop processing upcoming transactions of the same
-    /// `SchedulingContext` (i.e. same block). It's expected the aborted scheduler will be disposed
-    /// cleanly after `wait_for_termination()` is called much like not-aborted schedulers.
+    /// `SchedulingContext` (i.e. same block). It's expected the aborted scheduler will internaly
+    /// be disposed cleanly, not repooled, after `wait_for_termination()` is called much like
+    /// not-aborted schedulers.
     ///
     /// Caller can acquire the error by calling a separate function called
     /// `recover_error_after_abort()`, which requires `&mut self`, instead of `&self`. This
@@ -316,7 +317,7 @@ impl BankWithScheduler {
         self.inner.scheduler.read().unwrap().is_some()
     }
 
-    /// Schedules the transaction if the scheduler hasn't been aborted.
+    /// Schedule the transaction if the scheduler hasn't been aborted.
     ///
     /// If the scheduler has been aborted, this doesn't schedule the transaction, instead just
     /// return the error of prior scheduled transaction.
