@@ -976,8 +976,8 @@ where
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
-                                    //session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                    //return;
+                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                    return;
                                 }
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
@@ -1017,8 +1017,8 @@ where
 
                                 state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
-                                    //session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                    //return;
+                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                    return;
                                 }
                             },
                         };
@@ -1176,7 +1176,7 @@ where
         abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
         if abort_detected {
-            //self.ensure_join_threads_after_abort(false);
+            self.ensure_join_threads_after_abort(false);
         }
     }
 
@@ -1489,21 +1489,18 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     #[should_panic(expected = "does not match `Some((Ok(_), _))")]
     fn test_scheduler_drop_abort_unhandled() {
         do_test_scheduler_drop_abort(AbortCase::Unhandled);
     }
 
     #[test]
-    #[ignore]
     #[should_panic(expected = "ThreadManager::drop() should be skipped...")]
     fn test_scheduler_drop_abort_unhandled_while_panicking() {
         do_test_scheduler_drop_abort(AbortCase::UnhandledWhilePanicking);
     }
 
     #[test]
-    #[ignore]
     fn test_scheduler_drop_abort_handled() {
         do_test_scheduler_drop_abort(AbortCase::Handled);
     }
@@ -1777,7 +1774,7 @@ mod tests {
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(
             bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iter()),
-            Ok(_)//Err(TransactionError::AccountNotFound)
+            Err(TransactionError::AccountNotFound)
         );
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
@@ -1785,7 +1782,7 @@ mod tests {
         // blockstore_processor and unified_scheduler both tend to process non-conflicting batches
         // in parallel as part of the normal operation.
         sleep(Duration::from_secs(1));
-        assert_eq!(bank.transaction_count(), 1);
+        assert_eq!(bank.transaction_count(), 0);
 
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
         assert_matches!(
