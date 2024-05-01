@@ -695,6 +695,8 @@ where
     }
 }
 
+struct HandlerPanicked;
+
 impl<S, TH> ThreadManager<S, TH>
 where
     S: SpawnableScheduler<TH>,
@@ -850,9 +852,9 @@ where
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
         // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
-            crossbeam_channel::unbounded::<Box<ExecutedTask>>();
+            crossbeam_channel::unbounded::<Result<Box<ExecutedTask>, HandlerPanicked>();
         let (finished_idle_task_sender, finished_idle_task_receiver) =
-            crossbeam_channel::unbounded::<Box<ExecutedTask>>();
+            crossbeam_channel::unbounded::<Result<Box<ExecutedTask>, HandlerPanicked>();
 
         assert_matches!(self.session_result_with_timings, None);
 
@@ -1071,13 +1073,22 @@ where
                         }
                     },
                 };
+                defer! {
+                    if thread::panicking() {
+                        if sender.send(Err(HandlerPanicked)).is_ok() {
+                            info!("handler_thread: notified panic...");
+                        } else {
+                            warn!("handler_thread: scheduler thread aborted...");
+                        }
+                    }
+                }
                 let mut task = ExecutedTask::new_boxed(task);
                 Self::execute_task_with_handler(
                     runnable_task_receiver.context().bank(),
                     &mut task,
                     &pool.handler_context,
                 );
-                if sender.send(task).is_err() {
+                if sender.send(Ok(task)).is_err() {
                     warn!("handler_thread: scheduler thread aborted...");
                     break;
                 }
