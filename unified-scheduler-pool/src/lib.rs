@@ -859,6 +859,7 @@ where
                 .expect("no 2nd start_threads()");
 
             let mut session_ending = false;
+            let mut thread_ending = false;
 
             // Now, this is the main loop for the scheduler thread, which is a special beast.
             //
@@ -995,11 +996,11 @@ where
                                         // usually determined to discard blocks until fully
                                         // replayed
                                         // Rather gracefully exit
-                                        //session_ending = true;
-                                        //thread_ending = true;
-                                        //new_task_receiver = never();
-                                        session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                        return;
+                                        session_ending = true;
+                                        thread_ending = true;
+                                        new_task_receiver = never();
+                                        //session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                        //return;
                                     }
                                 }
                             },
@@ -1026,6 +1027,9 @@ where
                             ))
                             .expect("always outlived receiver");
                         session_ending = false;
+                    }
+                    if thread_ending {
+                        break;
                     }
                 }
             }
