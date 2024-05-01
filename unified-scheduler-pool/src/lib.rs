@@ -866,7 +866,7 @@ where
         let scheduler_main_loop = || {
             let handler_count = self.pool.handler_count;
             let session_result_sender = self.session_result_sender.clone();
-            let mut new_task_receiver = self
+            let new_task_receiver = self
                 .new_task_receiver
                 .take()
                 .expect("no 2nd start_threads()");
