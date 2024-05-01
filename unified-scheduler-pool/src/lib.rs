@@ -1123,7 +1123,7 @@ where
             .map_err(|_| SchedulerAborted)
     }
 
-    fn ensure_join_threads(&mut self, aborted_session_result_received: bool) {
+    fn ensure_join_threads(&mut self, session_result_received: bool) {
         trace!("ensure_join_threads() is called");
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
@@ -1132,7 +1132,7 @@ where
             }
             () = scheduler_thread.join().unwrap();
 
-            if !aborted_session_result_received {
+            if !session_result_received {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
                 debug!(
                     "ensure_join_threads(): err: {:?}",
