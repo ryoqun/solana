@@ -878,7 +878,7 @@ where
                 .session_result_sender
                 .take()
                 .expect("no 2nd start_threads()");
-            let new_task_receiver = self
+            let mut new_task_receiver = self
                 .new_task_receiver
                 .take()
                 .expect("no 2nd start_threads()");
