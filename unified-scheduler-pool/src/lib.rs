@@ -1452,11 +1452,11 @@ mod tests {
         scheduler.schedule_execution(&(tx, 0)).unwrap();
 
         if trigger_panic {
+            sleep(Duration::from_secs(1));
             // Directly dropping PooledScheduler is illegal, especially after being aborted. It must be
             // converted to PooledSchedulerInner via ::into_inner();
             drop::<PooledScheduler<_>>(scheduler);
         } else {
-            sleep(Duration::from_secs(1));
             let ((result, _), scheduler_inner) = scheduler.into_inner();
             assert_matches!(result, Err(TransactionError::AccountNotFound));
             drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
