@@ -632,7 +632,7 @@ where
     TH: TaskHandler,
 {
     fn drop(&mut self) {
-        error!("PooledSchedulerInner::drop()");
+        error!("PooledSchedulerInner::drop(): is_some: {:?}", self.thread_manager.session_result_with_timings.is_some());
     }
 }
 
