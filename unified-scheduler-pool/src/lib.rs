@@ -1425,11 +1425,11 @@ mod tests {
         impl TaskHandler for FaultyHandler {
             fn handle(
                 result: &mut Result<()>,
-                timings: &mut ExecuteTimings,
-                bank: &Arc<Bank>,
-                transaction: &SanitizedTransaction,
-                index: usize,
-                handler_context: &HandlerContext,
+                _timings: &mut ExecuteTimings,
+                _bank: &Arc<Bank>,
+                _transaction: &SanitizedTransaction,
+                _index: usize,
+                _handler_context: &HandlerContext,
             ) {
                 *result = Err(TransactionError::AccountNotFound);
             }
@@ -1461,9 +1461,9 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
         scheduler.schedule_execution(&(tx, 0)).unwrap();
-        drop(scheduler);
+        //drop(scheduler);
+        drop(Box::new(scheduler.into_inner()));
         sleep(Duration::from_secs(1));
-        //drop(Box::new(scheduler.into_inner()));
     } }
 
     #[test]
