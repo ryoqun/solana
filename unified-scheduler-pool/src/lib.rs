@@ -612,6 +612,8 @@ where
     TH: TaskHandler,
 {
     fn drop(&mut self) {
+        trace!("ThreadManager::drop() is called...");
+
         if self.is_threads_joined() {
             return;
         }
