@@ -626,6 +626,7 @@ where
     usage_queue_loader: UsageQueueLoader,
 }
 
+/*
 impl<S, TH> Drop for PooledSchedulerInner<S, TH>
 where
     S: SpawnableScheduler<TH>,
@@ -645,6 +646,7 @@ where
         error!("ThreadManager::drop()");
     }
 }
+*/
 
 impl<S, TH> PooledSchedulerInner<S, TH>
 where
