@@ -862,7 +862,6 @@ where
 
         let scheduler_id = self.scheduler_id;
         assert_matches!(self.session_result_with_timings, None);
-        let mut result_with_timings = initialized_result_with_timings();
 
         // High-level flow of new tasks:
         // 1. the replay stage thread send a new task.
@@ -883,6 +882,7 @@ where
                 .expect("no 2nd start_threads()");
 
             let mut session_ending = false;
+            let mut thread_ending = false;
 
             // Now, this is the main loop for the scheduler thread, which is a special beast.
             //
@@ -937,8 +937,7 @@ where
                 let mut state_machine = unsafe {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
-
-                let mut thread_ending = false;
+                let mut result_with_timings = initialized_result_with_timings();
 
                 loop {
                     if let Ok(NewTaskPayload::OpenSubchannel(context)) = new_task_receiver.recv() {
