@@ -1515,7 +1515,9 @@ mod tests {
 
                 // Calling ensure_join_threads() repeatedly should be safe.
                 let dummy_flag = true; // doesn't matter because it's skipped anyway
-                scheduler_inner.thread_manager.ensure_join_threads(dummy_flag);
+                scheduler_inner
+                    .thread_manager
+                    .ensure_join_threads(dummy_flag);
 
                 drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
             }
@@ -1728,7 +1730,7 @@ mod tests {
             mint_keypair,
             ..
         } = create_genesis_config(10_000);
-        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+        let tx = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
             &mint_keypair,
             &solana_sdk::pubkey::new_rand(),
             2,
@@ -1743,7 +1745,7 @@ mod tests {
 
         assert_eq!(bank.transaction_count(), 0);
         let scheduler = pool.take_scheduler(context);
-        scheduler.schedule_execution(&(tx0, 0)).unwrap();
+        scheduler.schedule_execution(&(tx, 0)).unwrap();
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         assert_matches!(bank.wait_for_completed_scheduler(), Some((Ok(()), _)));
         assert_eq!(bank.transaction_count(), 1);
@@ -1849,11 +1851,7 @@ mod tests {
             }
         }
 
-        let GenesisConfigInfo {
-            genesis_config,
-            ..
-        } = create_genesis_config(10_000);
-
+        let GenesisConfigInfo { genesis_config, .. } = create_genesis_config(10_000);
 
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
@@ -1870,13 +1868,16 @@ mod tests {
         let scheduler = pool.take_scheduler(context);
 
         for index_as_sleep_duration in 0..=1 {
-            let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                &Keypair::new(),
-                &solana_sdk::pubkey::new_rand(),
-                2,
-                genesis_config.hash(),
-            ));
-            scheduler.schedule_execution(&(tx0, index_as_sleep_duration)).unwrap();
+            let tx =
+                &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                    &Keypair::new(),
+                    &solana_sdk::pubkey::new_rand(),
+                    2,
+                    genesis_config.hash(),
+                ));
+            scheduler
+                .schedule_execution(&(tx, index_as_sleep_duration))
+                .unwrap();
         }
 
         sleep(Duration::from_secs(2));

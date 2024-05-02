@@ -175,7 +175,9 @@ pub enum TransactionError {
     ProgramCacheHitMaxLimit,
 
     /// Transaction processing is cancelled due to a panic or already aborted scheduler.
-    #[error("Transaction processing hasn't been completed due to a cancellation triggered internally")]
+    #[error(
+        "Transaction processing hasn't been completed due to a cancellation triggered internally"
+    )]
     ProcessingCancelled,
 }
 
