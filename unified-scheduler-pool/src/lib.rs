@@ -749,7 +749,7 @@ where
         timings.accumulate(&executed_task.result_with_timings.1);
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
-            Err(error) => {
+            Err(ref error) => {
                 error!("error is detected while accumulating....: {error:?}");
                 *result = Err(error.clone());
                 Some(executed_task)
