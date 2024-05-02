@@ -1584,7 +1584,7 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
         let scheduler = pool.do_take_scheduler(context);
 
-        for _ in 0..10 {
+        for i in 0..10 {
             let tx =
                 &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                     &mint_keypair,
@@ -1592,7 +1592,7 @@ mod tests {
                     2,
                     genesis_config.hash(),
                 ));
-            scheduler.schedule_execution(&(tx, 0)).unwrap();
+            scheduler.schedule_execution(&(tx, i)).unwrap();
         }
 
         // Make sure ThreadManager::drop() is properly short-circuiting for non-aborting scheduler.
@@ -1893,7 +1893,65 @@ mod tests {
     }
 
     #[test]
-    fn test_shortcircuiting() {}
+    fn test_scheduler_execution_failure_short_circuiting() {
+        solana_logger::setup();
+
+        #[derive(Debug)]
+        struct SleepyFaulyHandler;
+        impl TaskHandler for SleepyHandler {
+            fn handle(
+                result: &mut Result<()>,
+                _timings: &mut ExecuteTimings,
+                _bank: &Arc<Bank>,
+                _transaction: &SanitizedTransaction,
+                index: usize,
+                _handler_context: &HandlerContext,
+            ) {
+                sleep(Duration::from_secs(1));
+                if index == 1 {
+                    *result = Err(TransactionError::AccountNotFound);
+                }
+            }
+        }
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+
+        let bank = Bank::new_for_tests(&genesis_config);
+        let bank = setup_dummy_fork_graph(bank);
+        let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let pool = SchedulerPool::<PooledScheduler<SleepyHandler>, _>::new(
+            None,
+            None,
+            None,
+            None,
+            ignored_prioritization_fee_cache,
+        );
+        let context = SchedulingContext::new(bank.clone());
+        let scheduler = pool.do_take_scheduler(context);
+
+        for i in 0..10 {
+            let tx =
+                &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                    &mint_keypair,
+                    &solana_sdk::pubkey::new_rand(),
+                    2,
+                    genesis_config.hash(),
+                ));
+            scheduler.schedule_execution(&(tx, i)).unwrap();
+        }
+
+        // Make sure bank.wait_for_completed_scheduler() is properly short-circuiting for aborting scheduler.
+        let now = Instant::now();
+        assert_matches!(
+            bank.wait_for_completed_scheduler(),
+            Some((Err(TransactionError::AccountNotFound), _timings))
+        );
+        assert!(now.elapsed() < Duration::from_secs(2));
+    }
 
     #[test]
     fn test_scheduler_schedule_execution_blocked() {
