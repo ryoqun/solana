@@ -1520,12 +1520,12 @@ mod tests {
                 let ((result, _), mut scheduler_inner) = scheduler.into_inner();
                 assert_matches!(result, Err(TransactionError::AccountNotFound));
 
-                // Calling ensure_join_threads_after_abort() repeatedly should be safe.
+                // Calling ensure_join_threads() repeatedly should be safe.
                 let dummy_flag = true; // doesn't matter because it's skipped anyway
                 assert_matches!(
                     scheduler_inner
                         .thread_manager
-                        .ensure_join_threads_after_abort(dummy_flag),
+                        .ensure_join_threads(dummy_flag),
                     TransactionError::AccountNotFound
                 );
 
