@@ -1895,8 +1895,7 @@ mod tests {
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
     }
 
-    #[test]
-    fn test_scheduler_execution_failure_short_circuiting() {
+    fn do_test_scheduler_execution_failure_short_circuiting(call_end_session: bool) {
         solana_logger::setup();
 
         #[derive(Debug)]
@@ -1950,11 +1949,27 @@ mod tests {
         // Make sure bank.wait_for_completed_scheduler() is properly short-circuiting for aborting scheduler.
         let bank = BankWithScheduler::new(bank, Some(Box::new(scheduler)));
         let now = Instant::now();
-        assert_matches!(
-            bank.wait_for_completed_scheduler(),
-            Some((Err(TransactionError::AccountNotFound), _timings))
-        );
+        if call_end_session {
+            assert_matches!(
+                bank.wait_for_completed_scheduler(),
+                Some((Err(TransactionError::AccountNotFound), _timings))
+            );
+        } else {
+            let tx =
+                &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                    &mint_keypair,
+                    &solana_sdk::pubkey::new_rand(),
+                    2,
+                    genesis_config.hash(),
+                ));
+            scheduler.schedule_execution(&(tx, 10)).unwrap();
+        }
         assert!(now.elapsed() < Duration::from_secs(2));
+    }
+
+    #[test]
+    fn test_scheduler_execution_failure_short_circuiting() {
+        do_test_scheduler_execution_failure_short_circuiting(true);
     }
 
     #[test]
