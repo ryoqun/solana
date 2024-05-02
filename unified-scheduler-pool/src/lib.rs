@@ -740,8 +740,12 @@ where
     #[must_use]
     fn accumulate_result_with_timings(
         (result, timings): &mut ResultWithTimings,
-        executed_task: Box<ExecutedTask>,
+        executed_task: HandlerResult,
     ) -> Option<Box<ExecutedTask>> {
+        let Ok(executed_task) = executed_task else {
+            *result.0 = Err(TransactionError::ProgramCacheHitMaxLimit);
+            return None;
+        }
         timings.accumulate(&executed_task.result_with_timings.1);
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
@@ -979,12 +983,7 @@ where
                         // to measure _actual_ cpu usage easily with the select approach.
                         select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
-                                let Ok(executed_task) = executed_task.expect("alive handler") else {
-                                    result_with_timings.0 = Err(TransactionError::ProgramCacheHitMaxLimit);
-                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                    return;
-                                };
-                                let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) else {
+                                let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task.expect("alive handler")) else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
@@ -1023,12 +1022,7 @@ where
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
-                                let Ok(executed_task) = executed_task.expect("alive handler") else {
-                                    result_with_timings.0 = Err(TransactionError::ProgramCacheHitMaxLimit);
-                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                    return;
-                                };
-                                let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) else {
+                                let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task.expect("alive handler")) else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
