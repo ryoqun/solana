@@ -1875,7 +1875,6 @@ mod tests {
             let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                 &Keypair::new(),
                 &solana_sdk::pubkey::new_rand(),
-                &solana_sdk::pubkey::new_rand(),
                 2,
                 genesis_config.hash(),
             ));
