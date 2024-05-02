@@ -652,15 +652,9 @@ mod tests {
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
         let result = bank.schedule_transaction_executions([(&tx0, &0)].into_iter());
         if should_succeed {
-            assert_matches!(
-                result,
-                Ok(())
-            );
+            assert_matches!(result, Ok(()));
         } else {
-            assert_matches!(
-                result,
-                Err(TransactionError::InsufficientFundsForFee)
-            );
+            assert_matches!(result, Err(TransactionError::InsufficientFundsForFee));
         }
     }
 

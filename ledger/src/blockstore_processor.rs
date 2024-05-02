@@ -4773,6 +4773,8 @@ pub mod tests {
                 .times(txs.len())
                 .returning(|(_, _)| Ok(()));
         } else {
+            // mocked_scheduler isn't async; so short-circuiting behavior is quite visible in that
+            // .times(1) is called instead of .times(txs.len()), not like the succeeding case
             mocked_scheduler
                 .expect_schedule_execution()
                 .times(1)
@@ -4811,25 +4813,19 @@ pub mod tests {
         let mut batch_execution_timing = BatchExecutionTiming::default();
         let ignored_prioritization_fee_cache = PrioritizationFeeCache::new(0u64);
         let result = process_batches(
-                    &bank,
-                    &replay_tx_thread_pool,
-                    &[batch_with_indexes],
-                    None,
-                    None,
-                    &mut batch_execution_timing,
-                    None,
-                    &ignored_prioritization_fee_cache
-                );
+            &bank,
+            &replay_tx_thread_pool,
+            &[batch_with_indexes],
+            None,
+            None,
+            &mut batch_execution_timing,
+            None,
+            &ignored_prioritization_fee_cache,
+        );
         if should_succeed {
-            assert_matches!(
-                result,
-                Ok(())
-            );
+            assert_matches!(result, Ok(()));
         } else {
-            assert_matches!(
-                result,
-                Err(TransactionError::InsufficientFundsForFee)
-            );
+            assert_matches!(result, Err(TransactionError::InsufficientFundsForFee));
         }
     }
 
