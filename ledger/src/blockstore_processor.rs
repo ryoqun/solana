@@ -2168,6 +2168,7 @@ pub mod tests {
         std::{collections::BTreeSet, sync::RwLock},
         trees::tr,
     };
+    use solana_runtime::installed_scheduler_pool::SchedulerAborted;
 
     // Convenience wrapper to optionally process blockstore with Secondary access.
     //
@@ -4745,7 +4746,6 @@ pub mod tests {
         assert_eq!(batch3.transaction_indexes, vec![43, 44]);
     }
 
-    #[test]
     fn do_test_schedule_batches_for_execution(should_succeed: bool) {
         solana_logger::setup();
         let dummy_leader_pubkey = solana_sdk::pubkey::new_rand();
