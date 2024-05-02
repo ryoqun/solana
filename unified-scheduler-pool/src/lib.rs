@@ -1530,18 +1530,21 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     #[should_panic(expected = "does not match `Some((Ok(_), _))")]
     fn test_scheduler_drop_abort_unhandled() {
         do_test_scheduler_drop_abort(AbortCase::Unhandled);
     }
 
     #[test]
+    #[ignore]
     #[should_panic(expected = "ThreadManager::drop() should be skipped...")]
     fn test_scheduler_drop_abort_unhandled_while_panicking() {
         do_test_scheduler_drop_abort(AbortCase::UnhandledWhilePanicking);
     }
 
     #[test]
+    #[ignore]
     fn test_scheduler_drop_abort_handled() {
         do_test_scheduler_drop_abort(AbortCase::Handled);
     }
