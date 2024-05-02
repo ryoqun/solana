@@ -2143,7 +2143,8 @@ pub mod tests {
                 self, create_genesis_config_with_vote_accounts, ValidatorVoteKeypairs,
             },
             installed_scheduler_pool::{
-                MockInstalledScheduler, MockUninstalledScheduler, SchedulingContext,
+                MockInstalledScheduler, MockUninstalledScheduler, SchedulerAborted,
+                SchedulingContext,
             },
         },
         solana_sdk::{
@@ -2168,7 +2169,6 @@ pub mod tests {
         std::{collections::BTreeSet, sync::RwLock},
         trees::tr,
     };
-    use solana_runtime::installed_scheduler_pool::SchedulerAborted;
 
     // Convenience wrapper to optionally process blockstore with Secondary access.
     //
@@ -4810,28 +4810,26 @@ pub mod tests {
         let replay_tx_thread_pool = create_thread_pool(1);
         let mut batch_execution_timing = BatchExecutionTiming::default();
         let ignored_prioritization_fee_cache = PrioritizationFeeCache::new(0u64);
+        let result = process_batches(
+                    &bank,
+                    &replay_tx_thread_pool,
+                    &[batch_with_indexes],
+                    None,
+                    None,
+                    &mut batch_execution_timing,
+                    None,
+                    &ignored_prioritization_fee_cache
+                );
         if should_succeed {
-            assert_matches!(process_batches(
-                &bank,
-                &replay_tx_thread_pool,
-                &[batch_with_indexes],
-                None,
-                None,
-                &mut batch_execution_timing,
-                None,
-                &ignored_prioritization_fee_cache
-            ), Ok(()));
+            assert_matches!(
+                result,
+                Ok(())
+            );
         } else {
-            assert_matches!(process_batches(
-                &bank,
-                &replay_tx_thread_pool,
-                &[batch_with_indexes],
-                None,
-                None,
-                &mut batch_execution_timing,
-                None,
-                &ignored_prioritization_fee_cache
-            ), Err(TransactionError::InsufficientFundsForFee));
+            assert_matches!(
+                result,
+                Err(TransactionError::InsufficientFundsForFee)
+            );
         }
     }
 
