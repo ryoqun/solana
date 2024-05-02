@@ -1185,11 +1185,12 @@ where
     }
 
     fn end_session(&mut self) {
-        if self.session_result_with_timings.is_some() {
-            debug!("end_session(): skipping; already result resides within thread manager..");
-            return;
-        } else if self.is_threads_joined() {
+        if self.is_threads_joined() {
+            assert!(self.session_result_with_timings.is_some());
             debug!("end_session(): skipping; already joined the aborted threads..");
+            return;
+        } else if self.session_result_with_timings.is_some() {
+            debug!("end_session(): skipping; already result resides within thread manager..");
             return;
         }
         debug!("end_session(): will end session...");
