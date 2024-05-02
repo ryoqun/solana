@@ -984,12 +984,11 @@ where
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
-
-                                state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 }
+                                state_machine.deschedule_task(&executed_task.task);
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
                                 assert_matches!(dummy, Err(RecvError));
@@ -1029,12 +1028,11 @@ where
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
-
-                                state_machine.deschedule_task(&executed_task.task);
                                 if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 }
+                                state_machine.deschedule_task(&executed_task.task);
                             },
                         };
 
