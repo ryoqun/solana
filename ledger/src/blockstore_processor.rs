@@ -4746,7 +4746,7 @@ pub mod tests {
     }
 
     #[test]
-    fn test_schedule_batches_for_execution() {
+    fn do_test_schedule_batches_for_execution(should_succeed: bool) {
         solana_logger::setup();
         let dummy_leader_pubkey = solana_sdk::pubkey::new_rand();
         let GenesisConfigInfo {
@@ -4767,10 +4767,21 @@ pub mod tests {
             .times(1)
             .in_sequence(&mut seq.lock().unwrap())
             .return_const(context);
-        mocked_scheduler
-            .expect_schedule_execution()
-            .times(txs.len())
-            .returning(|_| Ok(()));
+        if should_succeed {
+            mocked_scheduler
+                .expect_schedule_execution()
+                .times(txs.len())
+                .returning(|(_, _)| Ok(()));
+        } else {
+            mocked_scheduler
+                .expect_schedule_execution()
+                .times(1)
+                .returning(|(_, _)| Err(SchedulerAborted));
+            mocked_scheduler
+                .expect_recover_error_after_abort()
+                .times(1)
+                .returning(|| TransactionError::InsufficientFundsForFee);
+        }
         mocked_scheduler
             .expect_wait_for_termination()
             .with(mockall::predicate::eq(true))
@@ -4799,17 +4810,39 @@ pub mod tests {
         let replay_tx_thread_pool = create_thread_pool(1);
         let mut batch_execution_timing = BatchExecutionTiming::default();
         let ignored_prioritization_fee_cache = PrioritizationFeeCache::new(0u64);
-        assert!(process_batches(
-            &bank,
-            &replay_tx_thread_pool,
-            &[batch_with_indexes],
-            None,
-            None,
-            &mut batch_execution_timing,
-            None,
-            &ignored_prioritization_fee_cache
-        )
-        .is_ok());
+        if should_succeed {
+            assert_matches!(process_batches(
+                &bank,
+                &replay_tx_thread_pool,
+                &[batch_with_indexes],
+                None,
+                None,
+                &mut batch_execution_timing,
+                None,
+                &ignored_prioritization_fee_cache
+            ), Ok(()));
+        } else {
+            assert_matches!(process_batches(
+                &bank,
+                &replay_tx_thread_pool,
+                &[batch_with_indexes],
+                None,
+                None,
+                &mut batch_execution_timing,
+                None,
+                &ignored_prioritization_fee_cache
+            ), Ok(()));
+        }
+    }
+
+    #[test]
+    fn test_schedule_batches_for_execution_success() {
+        do_test_schedule_batches_for_execution(true);
+    }
+
+    #[test]
+    fn test_schedule_batches_for_execution_failure() {
+        do_test_schedule_batches_for_execution(false);
     }
 
     #[test]
