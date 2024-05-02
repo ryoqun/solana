@@ -612,8 +612,7 @@ mod tests {
         assert_matches!(bank.wait_for_completed_scheduler(), Some(_));
     }
 
-    #[test]
-    fn test_schedule_execution_success() {
+    fn do_test_schedule_execution(should_succeed: bool) {
         solana_logger::setup();
 
         let GenesisConfigInfo {
@@ -632,55 +631,45 @@ mod tests {
             bank.clone(),
             [true].into_iter(),
             Some(|mocked: &mut MockInstalledScheduler| {
-                mocked
-                    .expect_schedule_execution()
-                    .times(1)
-                    .returning(|(_, _)| Ok(()));
+                if should_succeed {
+                    mocked
+                        .expect_schedule_execution()
+                        .times(1)
+                        .returning(|(_, _)| Ok(()));
+                } else {
+                    mocked
+                        .expect_schedule_execution()
+                        .times(1)
+                        .returning(|(_, _)| Err(SchedulerAborted));
+                    mocked
+                        .expect_recover_error_after_abort()
+                        .times(1)
+                        .returning(|| TransactionError::InsufficientFundsForFee);
+                }
             }),
         );
 
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
-        assert_matches!(
-            bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
-            Ok(())
-        );
+        if should_succeed {
+            assert_matches!(
+                bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
+                Ok(())
+            );
+        } else {
+            assert_matches!(
+                bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
+                Err(TransactionError::InsufficientFundsForFee)
+            );
+        }
+    }
+
+    #[test]
+    fn test_schedule_execution_success() {
+        do_test_schedule_execution(true);
     }
 
     #[test]
     fn test_schedule_execution_failure() {
-        solana_logger::setup();
-
-        let GenesisConfigInfo {
-            genesis_config,
-            mint_keypair,
-            ..
-        } = create_genesis_config(10_000);
-        let tx0 = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-            &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
-            2,
-            genesis_config.hash(),
-        ));
-        let bank = Arc::new(Bank::new_for_tests(&genesis_config));
-        let mocked_scheduler = setup_mocked_scheduler_with_extra(
-            bank.clone(),
-            [true].into_iter(),
-            Some(|mocked: &mut MockInstalledScheduler| {
-                mocked
-                    .expect_schedule_execution()
-                    .times(1)
-                    .returning(|(_, _)| Err(SchedulerAborted));
-                mocked
-                    .expect_recover_error_after_abort()
-                    .times(1)
-                    .returning(|| TransactionError::InsufficientFundsForFee);
-            }),
-        );
-
-        let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
-        assert_matches!(
-            bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
-            Err(TransactionError::InsufficientFundsForFee)
-        );
+        do_test_schedule_execution(false);
     }
 }
