@@ -1872,7 +1872,7 @@ mod tests {
 
         let scheduler = pool.take_scheduler(context);
 
-        for index_as_sleep_duration in 0..1 {
+        for index_as_sleep_duration in 0..=1 {
             let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                 &Keypair::new(),
                 &solana_sdk::pubkey::new_rand(),
