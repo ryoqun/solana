@@ -741,14 +741,14 @@ where
     fn accumulate_result_with_timings(
         (result, timings): &mut ResultWithTimings,
         executed_task: Box<ExecutedTask>,
-    ) -> bool {
+    ) -> Option<Box<ExecutedTask>> {
         timings.accumulate(&executed_task.result_with_timings.1);
         match executed_task.result_with_timings.0 {
-            Ok(()) => false,
+            Ok(()) => Some(executed_task),
             Err(error) => {
                 error!("error is detected while accumulating....: {error:?}");
                 *result = Err(error);
-                true
+                None
             }
         }
     }
@@ -984,7 +984,7 @@ where
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
-                                if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
+                                if Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 }
@@ -1028,7 +1028,7 @@ where
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 };
-                                if Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) {
+                                if Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
                                 }
