@@ -1882,9 +1882,9 @@ mod tests {
             scheduler.schedule_execution(&(tx0, index_as_sleep_duration)).unwrap();
         }
 
+        sleep(Duration::from_secs(2));
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
-        sleep(Duration::from_secs(2));
     }
 
     #[test]
