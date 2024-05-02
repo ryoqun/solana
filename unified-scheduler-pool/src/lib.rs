@@ -1842,9 +1842,10 @@ mod tests {
                 _timings: &mut ExecuteTimings,
                 _bank: &Arc<Bank>,
                 _transaction: &SanitizedTransaction,
-                _index: usize,
+                index_as_sleep_duration: usize,
                 _handler_context: &HandlerContext,
             ) {
+                sleep(Duration::from_secs(index_as_sleep_duration));
                 panic!("This panic should be propagated.");
             }
         }
@@ -1855,12 +1856,6 @@ mod tests {
             ..
         } = create_genesis_config(10_000);
 
-        let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-            &mint_keypair,
-            &solana_sdk::pubkey::new_rand(),
-            2,
-            genesis_config.hash(),
-        ));
 
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
@@ -1876,10 +1871,19 @@ mod tests {
 
         let scheduler = pool.take_scheduler(context);
 
-        scheduler.schedule_execution(&(tx0, 0)).unwrap();
+        for index_as_sleep_duration in 0..1 {
+            let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+                &mint_keypair,
+                &solana_sdk::pubkey::new_rand(),
+                2,
+                genesis_config.hash(),
+            ));
+            scheduler.schedule_execution(&(tx0, index_as_sleep_duration)).unwrap();
+        }
 
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
+        sleep(Duration::from_secs(2));
     }
 
     #[test]
