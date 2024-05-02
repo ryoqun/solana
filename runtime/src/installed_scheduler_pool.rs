@@ -25,15 +25,14 @@ use {
     log::*,
     solana_program_runtime::timings::ExecuteTimings,
     solana_sdk::{
-        clock::Slot,
         hash::Hash,
-        transaction::{Result, SanitizedTransaction, TransactionError},
+        slot_history::Slot,
+        transaction::{Result, SanitizedTransaction},
     },
     std::{
         fmt::Debug,
         ops::Deref,
         sync::{Arc, RwLock},
-        thread,
     },
 };
 #[cfg(feature = "dev-context-only-utils")]
@@ -418,7 +417,7 @@ impl BankWithSchedulerInner {
             "wait_for_scheduler_termination(slot: {}, reason: {:?}): started at {:?}...",
             bank.slot(),
             reason,
-            thread::current(),
+            std::thread::current(),
         );
 
         let mut scheduler = scheduler.write().unwrap();
@@ -440,14 +439,14 @@ impl BankWithSchedulerInner {
             reason,
             was_noop,
             result_with_timings.as_ref().map(|(result, _)| result),
-            thread::current(),
+            std::thread::current(),
         );
 
         result_with_timings
     }
 
     fn drop_scheduler(&self) {
-        if thread::panicking() {
+        if std::thread::panicking() {
             error!(
                 "BankWithSchedulerInner::drop_scheduler(): slot: {} skipping due to already panicking...",
                 self.bank.slot(),

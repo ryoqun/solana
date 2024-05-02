@@ -60,11 +60,7 @@ type AtomicSchedulerId = AtomicU64;
 // contains some internal fields, whose types aren't available in solana-runtime (currently
 // TransactionStatusSender; also, PohRecorder in the future)...
 #[derive(Debug)]
-pub struct SchedulerPool<S, TH>
-where
-    S: SpawnableScheduler<TH>,
-    TH: TaskHandler,
-{
+pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     handler_count: usize,
@@ -588,20 +584,13 @@ fn initialized_result_with_timings() -> ResultWithTimings {
 }
 
 #[derive(Debug)]
-pub struct PooledScheduler<TH>
-where
-    TH: TaskHandler,
-{
+pub struct PooledScheduler<TH: TaskHandler> {
     inner: PooledSchedulerInner<Self, TH>,
     context: SchedulingContext,
 }
 
 #[derive(Debug)]
-pub struct PooledSchedulerInner<S, TH>
-where
-    S: SpawnableScheduler<TH>,
-    TH: TaskHandler,
-{
+pub struct PooledSchedulerInner<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     thread_manager: ThreadManager<S, TH>,
     usage_queue_loader: UsageQueueLoader,
 }
@@ -664,11 +653,7 @@ where
 // here to mean some continuous time over multiple continuous banks/slots for the block production,
 // which is planned to be implemented in the future.
 #[derive(Debug)]
-struct ThreadManager<S, TH>
-where
-    S: SpawnableScheduler<TH>,
-    TH: TaskHandler,
-{
+struct ThreadManager<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_id: SchedulerId,
     pool: Arc<SchedulerPool<S, TH>>,
     new_task_sender: Sender<NewTaskPayload>,
@@ -680,13 +665,10 @@ where
     handler_threads: Vec<JoinHandle<()>>,
 }
 
-impl<TH> PooledScheduler<TH>
-where
-    TH: TaskHandler,
-{
+impl<TH: TaskHandler> PooledScheduler<TH> {
     fn do_spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
         Self::from_inner(
-            PooledSchedulerInner {
+            PooledSchedulerInner::<Self, TH> {
                 thread_manager: ThreadManager::new(pool),
                 usage_queue_loader: UsageQueueLoader::default(),
             },
@@ -698,11 +680,7 @@ where
 struct HandlerPanicked;
 type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 
-impl<S, TH> ThreadManager<S, TH>
-where
-    S: SpawnableScheduler<TH>,
-    TH: TaskHandler,
-{
+impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     fn new(pool: Arc<SchedulerPool<S, TH>>) -> Self {
         let (new_task_sender, new_task_receiver) = crossbeam_channel::unbounded();
         let (session_result_sender, session_result_receiver) = crossbeam_channel::unbounded();
@@ -1228,10 +1206,7 @@ where
     }
 }
 
-pub trait SpawnableScheduler<TH>: InstalledScheduler
-where
-    TH: TaskHandler,
-{
+pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
     type Inner: Debug + Send + Sync;
 
     fn into_inner(self) -> (ResultWithTimings, Self::Inner);
@@ -1243,10 +1218,7 @@ where
         Self: Sized;
 }
 
-impl<TH> SpawnableScheduler<TH> for PooledScheduler<TH>
-where
-    TH: TaskHandler,
-{
+impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
     type Inner = PooledSchedulerInner<Self, TH>;
 
     fn into_inner(mut self) -> (ResultWithTimings, Self::Inner) {
@@ -1273,10 +1245,7 @@ where
     }
 }
 
-impl<TH> InstalledScheduler for PooledScheduler<TH>
-where
-    TH: TaskHandler,
-{
+impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
     fn id(&self) -> SchedulerId {
         self.inner.id()
     }
@@ -1350,12 +1319,7 @@ mod tests {
             system_transaction,
             transaction::{SanitizedTransaction, TransactionError},
         },
-        std::{
-            mem,
-            sync::Arc,
-            thread::{self, sleep, JoinHandle},
-            time::Duration,
-        },
+        std::{sync::Arc, thread::JoinHandle},
     };
 
     #[test]
@@ -1799,7 +1763,7 @@ mod tests {
         assert_eq!(bank.transaction_count(), 0);
         scheduler.schedule_execution(&(bad_tx, 0)).unwrap();
         // simulate the task-sending thread is stalled for some reason.
-        sleep(Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_secs(1));
         assert_eq!(bank.transaction_count(), 0);
 
         let good_tx_after_bad_tx =
@@ -2037,7 +2001,7 @@ mod tests {
             .unwrap();
 
         // Wait a bit for the scheduler thread to decide to block tx1
-        sleep(Duration::from_secs(1));
+        std::thread::sleep(std::time::Duration::from_secs(1));
 
         // Resume handling by unlocking LOCK_TO_STALL
         drop(lock_to_stall);
@@ -2156,10 +2120,10 @@ mod tests {
             let context = self.context().clone();
             let pool = self.3.clone();
 
-            self.1.lock().unwrap().push(thread::spawn(move || {
+            self.1.lock().unwrap().push(std::thread::spawn(move || {
                 // intentionally sleep to simulate race condition where register_recent_blockhash
                 // is handle before finishing executing scheduled transactions
-                sleep(Duration::from_secs(1));
+                std::thread::sleep(std::time::Duration::from_secs(1));
 
                 let mut result = Ok(());
                 let mut timings = ExecuteTimings::default();
@@ -2187,7 +2151,7 @@ mod tests {
             _is_dropped: bool,
         ) -> (ResultWithTimings, UninstalledSchedulerBox) {
             self.do_wait();
-            let result_with_timings = mem::replace(
+            let result_with_timings = std::mem::replace(
                 &mut *self.0.lock().unwrap(),
                 initialized_result_with_timings(),
             );
@@ -2271,13 +2235,14 @@ mod tests {
         let context = SchedulingContext::new(bank.clone());
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<AsyncScheduler<TRIGGER_RACE_CONDITION>, _>::new_dyn(
-            None,
-            None,
-            None,
-            None,
-            ignored_prioritization_fee_cache,
-        );
+        let pool =
+            SchedulerPool::<AsyncScheduler<TRIGGER_RACE_CONDITION>, DefaultTaskHandler>::new_dyn(
+                None,
+                None,
+                None,
+                None,
+                ignored_prioritization_fee_cache,
+            );
         let scheduler = pool.take_scheduler(context);
 
         let bank = BankWithScheduler::new(bank, Some(scheduler));

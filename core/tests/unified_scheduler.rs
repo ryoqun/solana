@@ -32,8 +32,6 @@ use {
     std::{
         collections::HashMap,
         sync::{Arc, Mutex},
-        thread::sleep,
-        time::Duration,
     },
 };
 
@@ -57,7 +55,7 @@ fn test_scheduler_waited_by_drop_bank_service() {
             info!("Stalling at StallingHandler::handle()...");
             *LOCK_TO_STALL.lock().unwrap();
             // Wait a bit for the replay stage to prune banks
-            sleep(Duration::from_secs(3));
+            std::thread::sleep(std::time::Duration::from_secs(3));
             info!("Now entering into DefaultTaskHandler::handle()...");
 
             DefaultTaskHandler::handle(result, timings, bank, transaction, index, handler_context);
