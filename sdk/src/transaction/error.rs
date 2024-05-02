@@ -173,6 +173,10 @@ pub enum TransactionError {
     /// Program cache hit max limit.
     #[error("Program cache hit max limit")]
     ProgramCacheHitMaxLimit,
+
+    /// Transaction processing is cancelled due to a panic or already aborted scheduler.
+    #[error("Transaction processing hasn't been completed due to a cancellation triggered internally")]
+    ProcessingCancelled,
 }
 
 impl From<SanitizeError> for TransactionError {

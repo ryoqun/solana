@@ -743,7 +743,7 @@ where
         executed_task: HandlerResult,
     ) -> Option<Box<ExecutedTask>> {
         let Ok(executed_task) = executed_task else {
-            *result = Err(TransactionError::ProgramCacheHitMaxLimit);
+            *result = Err(TransactionError::ProcessingCancelled);
             return None;
         };
         timings.accumulate(&executed_task.result_with_timings.1);
@@ -1078,9 +1078,10 @@ where
                     if thread::panicking() {
                         error!("handler thread is panicking: {:?}", thread::current());
                         if sender.send(Err(HandlerPanicked)).is_ok() {
-                            info!("handler_thread: notified panic...");
+                            info!("notified a panic from {:?}", thread::current());
                         } else {
-                            warn!("handler_thread: scheduler thread aborted...");
+                            // it seems that scheduler has been aborted...
+                            warn!("failed to notify a panic from {:?}", thread::current());
                         }
                     }
                 }
