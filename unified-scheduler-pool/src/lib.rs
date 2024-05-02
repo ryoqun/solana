@@ -751,8 +751,8 @@ where
             Ok(()) => Some(executed_task),
             Err(error) => {
                 error!("error is detected while accumulating....: {error:?}");
-                *result = Err(error);
-                None
+                *result = Err(error.clone());
+                Some(executed_task)
             }
         }
     }
@@ -984,8 +984,8 @@ where
                         select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task.expect("alive handler")) else {
-                                    //session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                    //return;
+                                    session_result_sender.send(result_with_timings).expect("always outlived receiver");
+                                    return;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
                             },
