@@ -645,5 +645,34 @@ mod tests {
     }
 
     #[test]
-    fn test_schedule_execution_failure() {}
+    fn test_schedule_execution_failure() {
+        solana_logger::setup();
+
+        let GenesisConfigInfo {
+            genesis_config,
+            mint_keypair,
+            ..
+        } = create_genesis_config(10_000);
+        let tx0 = SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
+            &mint_keypair,
+            &solana_sdk::pubkey::new_rand(),
+            2,
+            genesis_config.hash(),
+        ));
+        let bank = Arc::new(Bank::new_for_tests(&genesis_config));
+        let mocked_scheduler = setup_mocked_scheduler_with_extra(
+            bank.clone(),
+            [true].into_iter(),
+            Some(|mocked: &mut MockInstalledScheduler| {
+                mocked
+                    .expect_schedule_execution()
+                    .times(1)
+                    .returning(|(_, _)| Err(SchedulerAborted));
+            }),
+        );
+
+        let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
+        bank.schedule_transaction_executions([(&tx0, &0)].into_iter())
+            .unwrap();
+    }
 }
