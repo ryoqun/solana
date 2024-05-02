@@ -640,8 +640,10 @@ mod tests {
         );
 
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
-        bank.schedule_transaction_executions([(&tx0, &0)].into_iter())
-            .unwrap();
+        assert_matches!(
+            bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
+            Ok(())
+        );
     }
 
     #[test]
@@ -676,7 +678,9 @@ mod tests {
         );
 
         let bank = BankWithScheduler::new(bank, Some(mocked_scheduler));
-        bank.schedule_transaction_executions([(&tx0, &0)].into_iter())
-            .unwrap();
+        assert_matches!(
+            bank.schedule_transaction_executions([(&tx0, &0)].into_iter()),
+            Err(TransactionError::InsufficientFundsForFee)
+        );
     }
 }
