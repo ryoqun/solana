@@ -4831,7 +4831,7 @@ pub mod tests {
                 &mut batch_execution_timing,
                 None,
                 &ignored_prioritization_fee_cache
-            ), Err(InsufficientFundsForFee));
+            ), Err(TransactionError::InsufficientFundsForFee));
         }
     }
 
