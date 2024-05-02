@@ -1898,7 +1898,7 @@ mod tests {
 
         #[derive(Debug)]
         struct SleepyFaulyHandler;
-        impl TaskHandler for SleepyHandler {
+        impl TaskHandler for SleepyFaulyHandler {
             fn handle(
                 result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -1923,7 +1923,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<SleepyHandler>, _>::new(
+        let pool = SchedulerPool::<PooledScheduler<SleepyFaulyHandler>, _>::new(
             None,
             None,
             None,
