@@ -341,24 +341,24 @@ fn process_batches(
         // Scheduling usually succeeds (immediately returns `Ok(())`) here without being blocked on
         // the actual transaction executions.
         //
-        // As an exception, this code path could propagate the transaction execution _errors_ of
-        // previously-scheduled transactions to notify the replay stage. Then the replay stage will
-        // bail out the further processing of the malformed (possibly malicious) block immediately,
-        // not to waste any system resources. Note that this propagation is of early hints. Even if
-        // errors won't be propagated in this way, they are guaranteed will be collected eventually
-        // via the blocking fn called BankWithScheduler::wait_for_completed_scheduler().
+        // As an exception, this code path could propagate the transaction execution _errors of
+        // previously-scheduled transactions_ to notify the replay stage. Then, the replay stage
+        // will bail out the further processing of the malformed (possibly malicious) block
+        // immediately, not to waste any system resources. Note that this propagation is of early
+        // hints. Even if errors won't be propagated in this way, they are guaranteed to be
+        // propagated eventually via the blocking fn called
+        // BankWithScheduler::wait_for_completed_scheduler().
         //
-        // To recite, the returned error is completely unrelated to the argument's `batches` at tha
-        // hand. While being awkward, the async unified scheduler is abusing this existing error
-        // propagation code path to the replay stage in a way, exploiting the fact that the replay
-        // stage doesn't care _which transaction the returned error is originating from_ for
-        // compatibility and ease of integration. 
+        // To recite, the returned error is completely unrelated to the argument's `batches` at the
+        // hand. While being awkward, the _async_ unified scheduler is abusing this existing error
+        // propagation code path to the replay stage, exploiting the fact that the replay stage
+        // doesn't care _which transaction the returned error is originating from_ for
+        // compatibility and ease of integration.
         //
         // In the future, more proper error propagation mechanism will be introduced once after we
         // fully transition to the unified scheduler for the block verification. That one would be
         // a push based one from the unified scheduler to the replay stage to eliminate the current
-        // overhead (esp. read lock per batch for task submission in
-        // `Bank::schedule_transaction_executions()`).
+        // overhead: 1 read lock per batch in `Bank::schedule_transaction_executions()`.
         schedule_batches_for_execution(bank, batches)
     } else {
         debug!(
