@@ -1075,14 +1075,18 @@ where
                     },
                 };
                 defer! {
-                    if thread::panicking() {
-                        error!("handler thread is panicking: {:?}", thread::current());
-                        if sender.send(Err(HandlerPanicked)).is_ok() {
-                            info!("notified a panic from {:?}", thread::current());
-                        } else {
-                            // it seems that scheduler has been aborted...
-                            warn!("failed to notify a panic from {:?}", thread::current());
-                        }
+                    if !thread::panicking() {
+                        return;
+                    }
+
+                    // The scheduler thread can't detect a panic with disconnected channel errors,
+                    // when there are multiple handler threads. So, send an explicit Err here.
+                    error!("handler thread is panicking: {:?}", thread::current());
+                    if sender.send(Err(HandlerPanicked)).is_ok() {
+                        info!("notified a panic from {:?}", thread::current());
+                    } else {
+                        // it seems that scheduler has been aborted...
+                        warn!("failed to notify a panic from {:?}", thread::current());
                     }
                 }
                 let mut task = ExecutedTask::new_boxed(task);
