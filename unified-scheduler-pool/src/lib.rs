@@ -1518,9 +1518,19 @@ mod tests {
                 panic!("ThreadManager::drop() should be skipped...");
             }
             AbortCase::Handled => {
-                // ::into_inner() isn't racy
-                let ((result, _), scheduler_inner) = scheduler.into_inner();
+                // no sleep; ::into_inner() isn't racy
+                let ((result, _), mut scheduler_inner) = scheduler.into_inner();
                 assert_matches!(result, Err(TransactionError::AccountNotFound));
+
+                // Calling ensure_join_threads_after_abort() repeatedly should be safe.
+                let dummy_flag = true; // doesn't matter because it's skipped anyway
+                assert_matches!(
+                    scheduler_inner
+                        .thread_manager
+                        .ensure_join_threads_after_abort(dummy_flag),
+                    TransactionError::AccountNotFound
+                );
+
                 drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
             }
         }
