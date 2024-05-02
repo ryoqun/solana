@@ -1845,7 +1845,7 @@ mod tests {
                 index_as_sleep_duration: usize,
                 _handler_context: &HandlerContext,
             ) {
-                sleep(Duration::from_secs(index_as_sleep_duration));
+                sleep(Duration::from_secs(index_as_sleep_duration as u64));
                 panic!("This panic should be propagated.");
             }
         }
@@ -1861,7 +1861,7 @@ mod tests {
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool = SchedulerPool::<PooledScheduler<PanickingHandler>, _>::new_dyn(
-            None,
+            Some(2), // fix 2 handlers
             None,
             None,
             None,
