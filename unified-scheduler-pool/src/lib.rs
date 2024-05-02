@@ -987,7 +987,7 @@ where
                                 let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
-                                }
+                                };
                                 state_machine.deschedule_task(&executed_task.task);
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
@@ -1031,7 +1031,7 @@ where
                                 let Some(executed_task) = Self::accumulate_result_with_timings(&mut result_with_timings, executed_task) else {
                                     session_result_sender.send(result_with_timings).expect("always outlived receiver");
                                     return;
-                                }
+                                };
                                 state_machine.deschedule_task(&executed_task.task);
                             },
                         };
