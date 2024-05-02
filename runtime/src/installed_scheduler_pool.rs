@@ -113,36 +113,43 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     /// Calling this is illegal as soon as `wait_for_termination()` is called. It would result in
     /// fatal logic error.
     ///
-    /// Note that the returned result could indicate whether the scheduler has been aborted due to
-    /// a previously-scheduled transaction, which is fatal for the block verification. So, almost
-    /// always, this isn't due to the scheduling error of the current transaction itself. At this
-    /// point, calling this does nothing anymore while it's still safe to do. As soon as notified,
-    /// callers is expected to stop processing upcoming transactions of the same
-    /// `SchedulingContext` (i.e. same block). It's expected the aborted scheduler will internaly
-    /// be disposed cleanly, not repooled, after `wait_for_termination()` is called much like
+    /// Note that the returned result indicates whether the scheduler has been aborted due to a
+    /// previously-scheduled bad transaction, which terminates further block verification. So,
+    /// almost always, the returned error isn't due to the merely scheduling of the current
+    /// transaction itself. At this point, calling this does nothing anymore while it's still safe
+    /// to do. As soon as notified, callers is expected to stop processing upcoming transactions of
+    /// the same `SchedulingContext` (i.e. same block). Internally, The aborted scheduler will be
+    /// disposed cleanly, not repooled, after `wait_for_termination()` is called, much like
     /// not-aborted schedulers.
     ///
     /// Caller can acquire the error by calling a separate function called
     /// `recover_error_after_abort()`, which requires `&mut self`, instead of `&self`. This
-    /// separation and convoluted returned value semantics are intentional to optimize the fast
-    /// code-path of normal transaction scheduling to be multi-threaded at the cost of far slower
-    /// error code-path.
+    /// separation and convoluted returned value semantics explained above are intentional to
+    /// optimize the fast code-path of normal transaction scheduling to be multi-threaded at the
+    /// cost of far slower error code-path.
     fn schedule_execution<'a>(
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
     ) -> ScheduleResult;
 
-    /// Return the error which causesd the scheduler to abort.
+    /// Return the error which caused the scheduler to abort.
     ///
     /// Note that this must not be called until it's observed that `schedule_execution()` has
     /// returned `Err(SchedulerAborted)`. Violating this will `panic!()`.
+    ///
+    /// That said, calling this multiple times is completely acceptable after the error observation
+    /// from `schedule_execution()`. While it's not guaranteed, the same `.clone()`-ed errors of
+    /// the first bad transaction are usually returned across invocations,
     fn recover_error_after_abort(&mut self) -> TransactionError;
 
     /// Wait for a scheduler to terminate after processing.
     ///
     /// This function blocks the current thread while waiting for the scheduler to complete all of
     /// the executions for the scheduled transactions and to return the finalized
-    /// `ResultWithTimings`. Along with the result, this function also makes the scheduler itself
+    /// `ResultWithTimings`. This function still blocks for short period of time even in the case
+    /// of aborted schedulers to gracefully shutdown the scheduler (like thread joining).
+    ///
+    /// Along with the result being returned, this function also makes the scheduler itself
     /// uninstalled from the bank by transforming the consumed self.
     ///
     /// If no transaction is scheduled, the result and timing will be `Ok(())` and
@@ -340,8 +347,13 @@ impl BankWithScheduler {
                 .is_err()
             {
                 drop(scheduler_guard);
-                // this write locking isn't atomic with the above read lock()
-                // bla bla
+                // This write lock isn't atomic with the above the read lock. So, another thread
+                // could have called .recover_error_after_abort() while we're literally stuck at
+                // the gaps of these locks (i.e. this comment in source code wise) under extreme
+                // race conditions. Thus, .recover_error_after_abort() is made idempotetnt for that
+                // consideration in mind.
+                //
+                // Lastly, this non-atomic nature is intentional for optimizing the fast code-path
                 let mut scheduler_guard = self.inner.scheduler.write().unwrap();
                 let recovered_error = scheduler_guard
                     .as_mut()
