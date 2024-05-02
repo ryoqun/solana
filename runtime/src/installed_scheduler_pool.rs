@@ -668,6 +668,10 @@ mod tests {
                     .expect_schedule_execution()
                     .times(1)
                     .returning(|(_, _)| Err(SchedulerAborted));
+                mocked
+                    .expect_recover_error_after_abort()
+                    .times(1)
+                    .returning(|(_, _)| Err(TransactionError::InsufficientFundsForFee));
             }),
         );
 
