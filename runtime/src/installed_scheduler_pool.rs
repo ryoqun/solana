@@ -671,7 +671,7 @@ mod tests {
                 mocked
                     .expect_recover_error_after_abort()
                     .times(1)
-                    .returning(|| Err(TransactionError::InsufficientFundsForFee));
+                    .returning(|| TransactionError::InsufficientFundsForFee);
             }),
         );
 
