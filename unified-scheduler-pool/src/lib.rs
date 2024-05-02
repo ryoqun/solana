@@ -1076,6 +1076,7 @@ where
                 };
                 defer! {
                     if thread::panicking() {
+                        error!("handler thread is panicking: {:?}", thread::current());
                         if sender.send(Err(HandlerPanicked)).is_ok() {
                             info!("handler_thread: notified panic...");
                         } else {
