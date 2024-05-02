@@ -1945,7 +1945,7 @@ mod tests {
         }
 
         // Make sure bank.wait_for_completed_scheduler() is properly short-circuiting for aborting scheduler.
-        let bank = BankWithScheduler::new(bank, Some(scheduler));
+        let bank = BankWithScheduler::new(bank, Some(Box::new(scheduler)));
         let now = Instant::now();
         assert_matches!(
             bank.wait_for_completed_scheduler(),
