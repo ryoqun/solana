@@ -743,9 +743,9 @@ where
         executed_task: HandlerResult,
     ) -> Option<Box<ExecutedTask>> {
         let Ok(executed_task) = executed_task else {
-            *result.0 = Err(TransactionError::ProgramCacheHitMaxLimit);
+            *result = Err(TransactionError::ProgramCacheHitMaxLimit);
             return None;
-        }
+        };
         timings.accumulate(&executed_task.result_with_timings.1);
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
