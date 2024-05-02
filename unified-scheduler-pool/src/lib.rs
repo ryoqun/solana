@@ -1212,7 +1212,7 @@ where
         abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
         if abort_detected {
-            self.ensure_join_threads_after_abort(false);
+            //self.ensure_join_threads_after_abort(false);
         }
     }
 
