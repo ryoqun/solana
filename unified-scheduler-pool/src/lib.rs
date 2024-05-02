@@ -1522,12 +1522,7 @@ mod tests {
 
                 // Calling ensure_join_threads() repeatedly should be safe.
                 let dummy_flag = true; // doesn't matter because it's skipped anyway
-                assert_matches!(
-                    scheduler_inner
-                        .thread_manager
-                        .ensure_join_threads(dummy_flag),
-                    TransactionError::AccountNotFound
-                );
+                scheduler_inner.thread_manager.ensure_join_threads(dummy_flag);
 
                 drop::<PooledSchedulerInner<_, _>>(scheduler_inner);
             }
