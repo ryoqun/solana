@@ -749,10 +749,10 @@ where
         timings.accumulate(&executed_task.result_with_timings.1);
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
-            Err(ref error) => {
+            Err(error) => {
                 error!("error is detected while accumulating....: {error:?}");
-                *result = Err(error.clone());
-                Some(executed_task)
+                *result = Err(error);
+                None
             }
         }
     }
@@ -1212,7 +1212,7 @@ where
         abort_detected = result_with_timings.0.is_err();
         self.put_session_result_with_timings(result_with_timings);
         if abort_detected {
-            //self.ensure_join_threads_after_abort(false);
+            self.ensure_join_threads_after_abort(false);
         }
     }
 
@@ -1530,21 +1530,18 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     #[should_panic(expected = "does not match `Some((Ok(_), _))")]
     fn test_scheduler_drop_abort_unhandled() {
         do_test_scheduler_drop_abort(AbortCase::Unhandled);
     }
 
     #[test]
-    #[ignore]
     #[should_panic(expected = "ThreadManager::drop() should be skipped...")]
     fn test_scheduler_drop_abort_unhandled_while_panicking() {
         do_test_scheduler_drop_abort(AbortCase::UnhandledWhilePanicking);
     }
 
     #[test]
-    #[ignore]
     fn test_scheduler_drop_abort_handled() {
         do_test_scheduler_drop_abort(AbortCase::Handled);
     }
@@ -1895,7 +1892,8 @@ mod tests {
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
     }
 
-    fn do_test_scheduler_execution_failure_short_circuiting(call_end_session: bool) {
+    #[test]
+    fn test_scheduler_execution_failure_short_circuiting() {
         solana_logger::setup();
 
         #[derive(Debug)]
@@ -1949,27 +1947,11 @@ mod tests {
         // Make sure bank.wait_for_completed_scheduler() is properly short-circuiting for aborting scheduler.
         let bank = BankWithScheduler::new(bank, Some(Box::new(scheduler)));
         let now = Instant::now();
-        if call_end_session {
-            assert_matches!(
-                bank.wait_for_completed_scheduler(),
-                Some((Err(TransactionError::AccountNotFound), _timings))
-            );
-        } else {
-            let tx =
-                &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                    &mint_keypair,
-                    &solana_sdk::pubkey::new_rand(),
-                    2,
-                    genesis_config.hash(),
-                ));
-            scheduler.schedule_execution(&(tx, 10)).unwrap();
-        }
+        assert_matches!(
+            bank.wait_for_completed_scheduler(),
+            Some((Err(TransactionError::AccountNotFound), _timings))
+        );
         assert!(now.elapsed() < Duration::from_secs(2));
-    }
-
-    #[test]
-    fn test_scheduler_execution_failure_short_circuiting() {
-        do_test_scheduler_execution_failure_short_circuiting(true);
     }
 
     #[test]
