@@ -1873,7 +1873,7 @@ mod tests {
 
         for index_as_sleep_duration in 0..1 {
             let tx0 = &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
-                &mint_keypair,
+                &solana_sdk::pubkey::new_rand(),
                 &solana_sdk::pubkey::new_rand(),
                 2,
                 genesis_config.hash(),
