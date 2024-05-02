@@ -922,10 +922,6 @@ where
             // like syscalls, VDSO, and even memory (de)allocation should be avoided at all costs
             // by design or by means of offloading at the last resort.
             move || {
-                trace!("scheduler thread");
-                defer! {
-                trace!("scheduler thread ended");
-                }
                 let (do_now, dont_now) = (&disconnected::<()>(), &never::<()>());
                 let dummy_receiver = |trigger| {
                     if trigger {
@@ -1192,9 +1188,6 @@ where
             return;
         }
         debug!("end_session(): will end session...");
-        defer! {
-            debug!("end_session(): exit...");
-        }
 
         let mut abort_detected = self
             .new_task_sender
@@ -1858,7 +1851,6 @@ mod tests {
 
         let GenesisConfigInfo {
             genesis_config,
-            mint_keypair,
             ..
         } = create_genesis_config(10_000);
 
