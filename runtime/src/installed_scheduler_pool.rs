@@ -27,7 +27,7 @@ use {
     solana_sdk::{
         hash::Hash,
         slot_history::Slot,
-        transaction::{Result, SanitizedTransaction},
+        transaction::{Result, SanitizedTransaction, TransactionError},
     },
     std::{
         fmt::Debug,
