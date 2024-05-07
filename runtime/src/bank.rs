@@ -41,9 +41,7 @@ use {
         bank::{
             builtins::{BuiltinPrototype, BUILTINS},
             metrics::*,
-            partitioned_epoch_rewards::{
-                EpochRewardCalculateParamInfo, EpochRewardStatus, StakeRewards, VoteRewardsAccounts,
-            },
+            partitioned_epoch_rewards::{EpochRewardStatus, StakeRewards, VoteRewardsAccounts},
         },
         bank_forks::BankForks,
         epoch_stakes::{EpochStakes, NodeVoteAccounts},
@@ -688,12 +686,13 @@ pub struct Bank {
     /// slots to hard fork at
     hard_forks: Arc<RwLock<HardForks>>,
 
-    /// The number of transactions processed without error
+    /// The number of committed transactions since genesis.
     transaction_count: AtomicU64,
 
-    /// The number of non-vote transactions processed without error since the most recent boot from
-    /// snapshot or genesis. This value is not shared though the network, nor retained within
-    /// snapshots, but is preserved in `Bank::new_from_parent`.
+    /// The number of non-vote transactions committed since the most
+    /// recent boot from snapshot or genesis. This value is only stored in
+    /// blockstore for the RPC method "getPerformanceSamples". It is not
+    /// retained within snapshots, but is preserved in `Bank::new_from_parent`.
     non_vote_transaction_count_since_restart: AtomicU64,
 
     /// The number of transaction errors in this slot
@@ -2398,24 +2397,6 @@ impl Bank {
         }
     }
 
-    /// calculate and return some reward calc info to avoid recalculation across functions
-    fn get_epoch_reward_calculate_param_info<'a>(
-        &self,
-        stakes: &'a Stakes<StakeAccount<Delegation>>,
-    ) -> EpochRewardCalculateParamInfo<'a> {
-        let stake_history = stakes.history().clone();
-
-        let stake_delegations = self.filter_stake_delegations(stakes);
-
-        let cached_vote_accounts = stakes.vote_accounts();
-
-        EpochRewardCalculateParamInfo {
-            stake_history,
-            stake_delegations,
-            cached_vote_accounts,
-        }
-    }
-
     /// Load, calculate and payout epoch rewards for stake and vote accounts
     fn pay_validator_rewards_with_thread_pool(
         &mut self,
@@ -3835,13 +3816,14 @@ impl Bank {
                 // replay could occur
                 signature_count += u64::from(tx.message().header().num_required_signatures);
                 executed_transactions_count += 1;
+
+                if !is_vote {
+                    executed_non_vote_transactions_count += 1;
+                }
             }
 
             match execution_result.flattened_result() {
                 Ok(()) => {
-                    if !is_vote {
-                        executed_non_vote_transactions_count += 1;
-                    }
                     executed_with_successful_result_count += 1;
                 }
                 Err(err) => {
@@ -5800,7 +5782,7 @@ impl Bank {
         self.rc
             .accounts
             .accounts_db
-            .update_accounts_hash_with_verify(
+            .update_accounts_hash_with_verify_from(
                 // we have to use the index since the slot could be in the write cache still
                 CalcAccountsHashDataSource::IndexForTests,
                 debug_verify,
@@ -5909,7 +5891,7 @@ impl Bank {
             .rc
             .accounts
             .accounts_db
-            .update_accounts_hash_with_verify(
+            .update_accounts_hash_with_verify_from(
                 data_source,
                 debug_verify,
                 self.slot(),
@@ -5934,7 +5916,7 @@ impl Bank {
                 self.rc
                     .accounts
                     .accounts_db
-                    .update_accounts_hash_with_verify(
+                    .update_accounts_hash_with_verify_from(
                         data_source,
                         debug_verify,
                         self.slot(),

@@ -1042,7 +1042,7 @@ where
                     if session_ending {
                         state_machine.reinitialize();
                         session_result_sender
-                            .send(mem::replace(
+                            .send(std::mem::replace(
                                 &mut result_with_timings,
                                 initialized_result_with_timings(),
                             ))
