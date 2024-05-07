@@ -351,14 +351,15 @@ fn process_batches(
         //
         // To recite, the returned error is completely unrelated to the argument's `batches` at the
         // hand. While being awkward, the _async_ unified scheduler is abusing this existing error
-        // propagation code path to the replay stage, exploiting the fact that the replay stage
-        // doesn't care _which transaction the returned error is originating from_ for
-        // compatibility and ease of integration.
+        // propagation code path to the replay stage for compatibility and ease of integration,
+        // exploiting the fact that the replay stage doesn't care _which transaction the returned
+        // error is originating from_.
         //
         // In the future, more proper error propagation mechanism will be introduced once after we
         // fully transition to the unified scheduler for the block verification. That one would be
         // a push based one from the unified scheduler to the replay stage to eliminate the current
-        // overhead: 1 read lock per batch in `Bank::schedule_transaction_executions()`.
+        // overhead: 1 read lock per batch in
+        // `BankWithScheduler::schedule_transaction_executions()`.
         schedule_batches_for_execution(bank, batches)
     } else {
         debug!(

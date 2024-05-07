@@ -117,7 +117,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     /// almost always, the returned error isn't due to the merely scheduling of the current
     /// transaction itself. At this point, calling this does nothing anymore while it's still safe
     /// to do. As soon as notified, callers is expected to stop processing upcoming transactions of
-    /// the same `SchedulingContext` (i.e. same block). Internally, The aborted scheduler will be
+    /// the same `SchedulingContext` (i.e. same block). Internally, the aborted scheduler will be
     /// disposed cleanly, not repooled, after `wait_for_termination()` is called, much like
     /// not-aborted schedulers.
     ///
@@ -138,7 +138,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     ///
     /// That said, calling this multiple times is completely acceptable after the error observation
     /// from `schedule_execution()`. While it's not guaranteed, the same `.clone()`-ed errors of
-    /// the first bad transaction are usually returned across invocations,
+    /// the first bad transaction are usually returned across invocations.
     fn recover_error_after_abort(&mut self) -> TransactionError;
 
     /// Wait for a scheduler to terminate after processing.
@@ -354,11 +354,8 @@ impl BankWithScheduler {
                 //
                 // Lastly, this non-atomic nature is intentional for optimizing the fast code-path
                 let mut scheduler_guard = self.inner.scheduler.write().unwrap();
-                let recovered_error = scheduler_guard
-                    .as_mut()
-                    .unwrap()
-                    .recover_error_after_abort();
-                return Err(recovered_error);
+                let scheduler = scheduler_guard.as_mut().unwrap();
+                return Err(scheduler.recover_error_after_abort());
             }
         }
 
