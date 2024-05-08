@@ -167,6 +167,7 @@ dependencies = [
  "histogram",
  "itertools 0.12.1",
  "log",
+ "mimalloc",
  "num_cpus",
  "rayon",
  "regex",
@@ -239,6 +240,7 @@ dependencies = [
  "libc",
  "libloading",
  "log",
+ "mimalloc",
  "num_cpus",
  "predicates",
  "rand 0.8.5",
@@ -3205,6 +3207,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a"
 
 [[package]]
+name = "libmimalloc-sys"
+version = "0.1.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81eb4061c0582dedea1cbc7aff2240300dd6982e0239d1c99e65c1dbf4a30ba7"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
 name = "librocksdb-sys"
 version = "0.16.0+8.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3414,6 +3426,15 @@ dependencies = [
  "keccak",
  "rand_core 0.6.4",
  "zeroize",
+]
+
+[[package]]
+name = "mimalloc"
+version = "0.1.41"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f41a2280ded0da56c8cf898babb86e8f10651a34adcfff190ae9a1159c6908d"
+dependencies = [
+ "libmimalloc-sys",
 ]
 
 [[package]]
