@@ -116,16 +116,17 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     /// previously-scheduled bad transaction, which terminates further block verification. So,
     /// almost always, the returned error isn't due to the merely scheduling of the current
     /// transaction itself. At this point, calling this does nothing anymore while it's still safe
-    /// to do. As soon as notified, callers is expected to stop processing upcoming transactions of
-    /// the same `SchedulingContext` (i.e. same block). Internally, the aborted scheduler will be
-    /// disposed cleanly, not repooled, after `wait_for_termination()` is called, much like
+    /// to do. As soon as notified, callers are expected to stop processing upcoming transactions
+    /// of the same `SchedulingContext` (i.e. same block). Internally, the aborted scheduler will
+    /// be disposed cleanly, not repooled, after `wait_for_termination()` is called like
     /// not-aborted schedulers.
     ///
     /// Caller can acquire the error by calling a separate function called
     /// `recover_error_after_abort()`, which requires `&mut self`, instead of `&self`. This
-    /// separation and convoluted returned value semantics explained above are intentional to
+    /// separation and the convoluted returned value semantics explained above are intentional to
     /// optimize the fast code-path of normal transaction scheduling to be multi-threaded at the
-    /// cost of far slower error code-path.
+    /// cost of far slower error code-path while giving implementors increased flexibility by
+    /// having &mut.
     fn schedule_execution<'a>(
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, usize),
