@@ -1576,8 +1576,7 @@ mod tests {
         assert_eq!(bank.transaction_count(), 1);
     }
 
-    #[test]
-    fn test_scheduler_schedule_execution_failure() {
+    fn do_test_scheduler_schedule_execution_failure(extra_tx_after_failure: bool) {
         solana_logger::setup();
 
         let GenesisConfigInfo {
@@ -1631,10 +1630,12 @@ mod tests {
         // wait a bit the scheduler thread to abort after receiving Err from the handler thread
         sleep(Duration::from_secs(1));
         let bank = BankWithScheduler::new(bank, Some(scheduler));
-        assert_matches!(
-            bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iter()),
-            Err(TransactionError::AccountNotFound)
-        );
+        if extra_tx_after_failure {
+            assert_matches!(
+                bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iter()),
+                Err(TransactionError::AccountNotFound)
+            );
+        }
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
         // Also note that bank.transaction_count() is generally racy by nature, because
@@ -1651,6 +1652,16 @@ mod tests {
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
         sleep(Duration::from_secs(1));
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_scheduler_schedule_execution_failure_with_extra_tx() {
+        do_test_scheduler_schedule_execution_failure(true);
+    }
+
+    #[test]
+    fn test_scheduler_schedule_execution_failure_without_extra_tx() {
+        do_test_scheduler_schedule_execution_failure(false);
     }
 
     #[test]
