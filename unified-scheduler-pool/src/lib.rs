@@ -555,7 +555,7 @@ where
     fn drop(&mut self) {
         trace!("ThreadManager::drop() is called...");
 
-        if self.is_threads_joined() {
+        if self.are_threads_joined() {
             return;
         }
         // If on-stack ThreadManager is being dropped abruptly while panicking, it's likely
@@ -592,7 +592,7 @@ where
     }
 
     fn is_trashed(&self) -> bool {
-        self.thread_manager.is_threads_joined()
+        self.thread_manager.are_threads_joined()
     }
 }
 
@@ -1065,7 +1065,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             .unwrap_err()
     }
 
-    fn is_threads_joined(&self) -> bool {
+    fn are_threads_joined(&self) -> bool {
         if self.scheduler_thread.is_none() {
             assert!(self.handler_threads.is_empty());
             true
@@ -1075,7 +1075,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     }
 
     fn end_session(&mut self) {
-        if self.is_threads_joined() {
+        if self.are_threads_joined() {
             assert!(self.session_result_with_timings.is_some());
             debug!("end_session(): skipping; already joined the aborted threads..");
             return;
