@@ -212,8 +212,14 @@ where
         self.next_scheduler_id.fetch_add(1, Relaxed)
     }
 
+    // This fn needs to return immediately due to being part of the blocking
+    // `::wait_for_termination()` call.
     fn return_scheduler(&self, scheduler: S::Inner, should_trash: bool) {
         if should_trash {
+            // Delay drop()-ing this trashed returned scheduler inner by stashing it in
+            // self.trashed_scheduler_inners, which is periodically drained by the `solScCleaner`
+            // thread. Dropping it could take long time (in fact,
+            // PooledSchedulerInner::usage_queue_loader can contain many entries to drop).
             self.trashed_scheduler_inners
                 .lock()
                 .expect("not poisoned")
