@@ -7791,7 +7791,7 @@ dependencies = [
 [[package]]
 name = "solana_rbpf"
 version = "0.8.0"
-source = "git+https://github.com/ryoqun/rbpf?rev=28b63fe631aca9ecd5893290ea29a48f86837cdc#28b63fe631aca9ecd5893290ea29a48f86837cdc"
+source = "git+https://github.com/ryoqun/rbpf?rev=3107f6b77c435fd76837538e309f0e5870119a88#3107f6b77c435fd76837538e309f0e5870119a88"
 dependencies = [
  "byteorder",
  "combine",
