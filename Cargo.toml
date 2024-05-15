@@ -447,6 +447,8 @@ zstd = "0.11.2"
 # for details, see https://github.com/solana-labs/crossbeam/commit/fd279d707025f0e60951e429bf778b4813d1b6bf
 crossbeam-epoch = { git = "https://github.com/solana-labs/crossbeam", rev = "fd279d707025f0e60951e429bf778b4813d1b6bf" }
 
+solana_rbpf = { git = "https://github.com/ryoqun/rbpf", rev = "7347d279be0b3d6f7030eb6b434882e6ff53affe" }
+
 # We include the following crates as our dependencies above from crates.io:
 #
 #  * spl-associated-token-account
