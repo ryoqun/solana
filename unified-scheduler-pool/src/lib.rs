@@ -174,7 +174,7 @@ where
             }
         };
 
-        // No need to join; the spanwed main loop will gracefully exit.
+        // No need to join; the spawned main loop will gracefully exit.
         thread::Builder::new()
             .name("solScCleaner".to_owned())
             .spawn(cleaner_main_loop())
