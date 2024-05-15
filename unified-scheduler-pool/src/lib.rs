@@ -143,7 +143,7 @@ where
             _phantom: PhantomData,
         });
 
-        let cleaner_main_loop = || {
+        let cleaner_main_loop = {
             let weak_scheduler_pool = Arc::downgrade(&scheduler_pool);
 
             move || loop {
@@ -177,7 +177,7 @@ where
         // No need to join; the spawned main loop will gracefully exit.
         thread::Builder::new()
             .name("solScCleaner".to_owned())
-            .spawn(cleaner_main_loop())
+            .spawn(cleaner_main_loop)
             .unwrap();
 
         scheduler_pool
