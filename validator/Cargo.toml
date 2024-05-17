@@ -27,7 +27,6 @@ jsonrpc-ipc-server = { workspace = true }
 lazy_static = { workspace = true }
 libloading = { workspace = true }
 log = { workspace = true }
-mimalloc = { workspace = true }
 num_cpus = { workspace = true }
 rand = { workspace = true }
 rayon = { workspace = true }
@@ -79,7 +78,7 @@ spl-token-2022 = { workspace = true, features = ["no-entrypoint"] }
 tempfile = { workspace = true }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = { workspace = true }
+mimalloc = { workspace = true }
 
 [target."cfg(unix)".dependencies]
 libc = { workspace = true }
