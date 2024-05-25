@@ -53,6 +53,17 @@ use {
     },
 };
 
+mod sleepless_testing;
+use crate::sleepless_testing::BuilderTracked;
+
+#[derive(Debug)]
+enum CheckPoint {
+    NewTask(usize),
+    TaskHandled(usize),
+    SchedulerThreadAborted,
+    TrashedSchedulerCleaned(usize),
+}
+
 type AtomicSchedulerId = AtomicU64;
 
 // SchedulerPool must be accessed as a dyn trait from solana-runtime, because SchedulerPool
@@ -170,14 +181,15 @@ where
                 info!(
                     "Scheduler pool cleaner: dropped {} trashed inners",
                     trashed_inner_count,
-                )
+                );
+                sleepless_testing::at(CheckPoint::TrashedSchedulerCleaned(trashed_inner_count));
             }
         };
 
         // No need to join; the spawned main loop will gracefully exit.
         thread::Builder::new()
             .name("solScCleaner".to_owned())
-            .spawn(cleaner_main_loop)
+            .spawn_tracked(cleaner_main_loop)
             .unwrap();
 
         scheduler_pool
@@ -329,6 +341,7 @@ impl TaskHandler for DefaultTaskHandler {
             handler_context.log_messages_bytes_limit,
             &handler_context.prioritization_fee_cache,
         );
+        sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
 }
 
@@ -933,6 +946,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                                 match message {
                                     Ok(NewTaskPayload::Payload(task)) => {
+                                        sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
@@ -996,6 +1010,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 drop(new_task_receiver);
 
                 // We will now exit this thread finally... Good bye.
+                sleepless_testing::at(CheckPoint::SchedulerThreadAborted);
             }
         };
 
@@ -1042,7 +1057,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         self.scheduler_thread = Some(
             thread::Builder::new()
                 .name("solScheduler".to_owned())
-                .spawn(scheduler_main_loop())
+                .spawn_tracked(scheduler_main_loop())
                 .unwrap(),
         );
 
@@ -1051,7 +1066,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 |thx| {
                     thread::Builder::new()
                         .name(format!("solScHandler{:02}", thx))
-                        .spawn(handler_main_loop())
+                        .spawn_tracked(handler_main_loop())
                         .unwrap()
                 }
             })
@@ -1248,6 +1263,7 @@ where
 mod tests {
     use {
         super::*,
+        crate::sleepless_testing,
         assert_matches::assert_matches,
         solana_runtime::{
             bank::Bank,
@@ -1263,8 +1279,17 @@ mod tests {
             system_transaction,
             transaction::{SanitizedTransaction, TransactionError},
         },
-        std::{sync::Arc, thread::JoinHandle, time::Instant},
+        std::{sync::Arc, thread::JoinHandle},
     };
+
+    #[derive(Debug)]
+    enum TestCheckPoint {
+        BeforeNewTask,
+        AfterTaskHandled,
+        AfterSchedulerThreadAborted,
+        AfterTrashedSchedulerCleaned,
+        BeforeThreadManagerDrop,
+    }
 
     #[test]
     fn test_scheduler_pool_new() {
@@ -1307,6 +1332,14 @@ mod tests {
 
     fn do_test_scheduler_drop_abort(abort_case: AbortCase) {
         solana_logger::setup();
+
+        let _progress = sleepless_testing::setup(match abort_case {
+            AbortCase::Unhandled => &[
+                &CheckPoint::SchedulerThreadAborted,
+                &TestCheckPoint::AfterSchedulerThreadAborted,
+            ],
+            _ => &[],
+        });
 
         #[derive(Debug)]
         struct FaultyHandler;
@@ -1352,20 +1385,18 @@ mod tests {
 
         match abort_case {
             AbortCase::Unhandled => {
-                // wait a bit for scheculer to abort as ThreadManager::drop() is racy otherwise
-                sleep(Duration::from_secs(1));
+                sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
                 // Directly dropping PooledScheduler is illegal unless panicking already, especially
                 // after being aborted. It must be converted to PooledSchedulerInner via
                 // ::into_inner();
                 drop::<PooledScheduler<_>>(scheduler);
             }
             AbortCase::UnhandledWhilePanicking => {
-                // wait a bit for scheculer to abort as ThreadManager::drop() is racy otherwise
-                sleep(Duration::from_secs(1));
+                // no sleepless_testing::at(); panicking special-casing isn't racy
                 panic!("ThreadManager::drop() should be skipped...");
             }
             AbortCase::Handled => {
-                // no sleep; ::into_inner() isn't racy
+                // no sleepless_testing::at(); ::into_inner() isn't racy
                 let ((result, _), mut scheduler_inner) = scheduler.into_inner();
                 assert_matches!(result, Err(TransactionError::AccountNotFound));
 
@@ -1401,9 +1432,18 @@ mod tests {
     fn test_scheduler_drop_short_circuiting() {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(&[
+            &TestCheckPoint::BeforeThreadManagerDrop,
+            &CheckPoint::NewTask(0),
+            &CheckPoint::SchedulerThreadAborted,
+            &TestCheckPoint::AfterSchedulerThreadAborted,
+        ]);
+
+        static TASK_COUNT: Mutex<usize> = Mutex::new(0);
+
         #[derive(Debug)]
-        struct SleepyHandler;
-        impl TaskHandler for SleepyHandler {
+        struct CountingHandler;
+        impl TaskHandler for CountingHandler {
             fn handle(
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -1412,7 +1452,7 @@ mod tests {
                 _index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                sleep(Duration::from_secs(1));
+                *TASK_COUNT.lock().unwrap() += 1;
             }
         }
 
@@ -1425,7 +1465,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<SleepyHandler>, _>::new(
+        let pool = SchedulerPool::<PooledScheduler<CountingHandler>, _>::new(
             None,
             None,
             None,
@@ -1447,9 +1487,10 @@ mod tests {
         }
 
         // Make sure ThreadManager::drop() is properly short-circuiting for non-aborting scheduler.
-        let now = Instant::now();
+        sleepless_testing::at(TestCheckPoint::BeforeThreadManagerDrop);
         drop::<PooledScheduler<_>>(scheduler);
-        assert!(now.elapsed() < Duration::from_secs(2));
+        sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
+        assert!(*TASK_COUNT.lock().unwrap() < 10);
     }
 
     #[test]
@@ -1610,6 +1651,15 @@ mod tests {
     fn do_test_scheduler_schedule_execution_failure(extra_tx_after_failure: bool) {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(&[
+            &CheckPoint::TaskHandled(0),
+            &TestCheckPoint::AfterTaskHandled,
+            &CheckPoint::SchedulerThreadAborted,
+            &TestCheckPoint::AfterSchedulerThreadAborted,
+            &CheckPoint::TrashedSchedulerCleaned(1),
+            &TestCheckPoint::AfterTrashedSchedulerCleaned,
+        ]);
+
         let GenesisConfigInfo {
             genesis_config,
             mint_keypair,
@@ -1641,8 +1691,7 @@ mod tests {
             ));
         assert_eq!(bank.transaction_count(), 0);
         scheduler.schedule_execution(&(bad_tx, 0)).unwrap();
-        // simulate the task-sending thread is stalled for some reason.
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        sleepless_testing::at(TestCheckPoint::AfterTaskHandled);
         assert_eq!(bank.transaction_count(), 0);
 
         let good_tx_after_bad_tx =
@@ -1658,8 +1707,7 @@ mod tests {
                 .result,
             Ok(_)
         );
-        // wait a bit the scheduler thread to abort after receiving Err from the handler thread
-        sleep(Duration::from_secs(1));
+        sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         if extra_tx_after_failure {
             assert_matches!(
@@ -1672,7 +1720,6 @@ mod tests {
         // Also note that bank.transaction_count() is generally racy by nature, because
         // blockstore_processor and unified_scheduler both tend to process non-conflicting batches
         // in parallel as part of the normal operation.
-        sleep(Duration::from_secs(1));
         assert_eq!(bank.transaction_count(), 0);
 
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
@@ -1681,7 +1728,7 @@ mod tests {
             Some((Err(TransactionError::AccountNotFound), _timings))
         );
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
-        sleep(Duration::from_secs(1));
+        sleepless_testing::at(TestCheckPoint::AfterTrashedSchedulerCleaned);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
 
@@ -1699,9 +1746,19 @@ mod tests {
     fn test_scheduler_execution_failure_short_circuiting() {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(&[
+            &TestCheckPoint::BeforeNewTask,
+            &CheckPoint::NewTask(0),
+            &CheckPoint::TaskHandled(0),
+            &CheckPoint::SchedulerThreadAborted,
+            &TestCheckPoint::AfterSchedulerThreadAborted,
+        ]);
+
+        static TASK_COUNT: Mutex<usize> = Mutex::new(0);
+
         #[derive(Debug)]
-        struct SleepyFaulyHandler;
-        impl TaskHandler for SleepyFaulyHandler {
+        struct CountingFaultyHandler;
+        impl TaskHandler for CountingFaultyHandler {
             fn handle(
                 result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -1710,10 +1767,11 @@ mod tests {
                 index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                sleep(Duration::from_secs(1));
+                *TASK_COUNT.lock().unwrap() += 1;
                 if index == 1 {
                     *result = Err(TransactionError::AccountNotFound);
                 }
+                sleepless_testing::at(CheckPoint::TaskHandled(index));
             }
         }
 
@@ -1726,7 +1784,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<SleepyFaulyHandler>, _>::new(
+        let pool = SchedulerPool::<PooledScheduler<CountingFaultyHandler>, _>::new(
             None,
             None,
             None,
@@ -1746,15 +1804,18 @@ mod tests {
                 ));
             scheduler.schedule_execution(&(tx, i)).unwrap();
         }
+        // finally unblock the scheduler thread; otherwise the above schedule_execution could
+        // return SchedulerAborted...
+        sleepless_testing::at(TestCheckPoint::BeforeNewTask);
 
         // Make sure bank.wait_for_completed_scheduler() is properly short-circuiting for aborting scheduler.
         let bank = BankWithScheduler::new(bank, Some(Box::new(scheduler)));
-        let now = Instant::now();
         assert_matches!(
             bank.wait_for_completed_scheduler(),
             Some((Err(TransactionError::AccountNotFound), _timings))
         );
-        assert!(now.elapsed() < Duration::from_secs(2));
+        sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
+        assert!(*TASK_COUNT.lock().unwrap() < 10);
     }
 
     #[test]
