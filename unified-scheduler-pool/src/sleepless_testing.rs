@@ -3,6 +3,7 @@ use std::{
     thread::{JoinHandle, Scope, ScopedJoinHandle},
 };
 
+#[allow(dead_code)]
 pub(crate) trait ScopeTracked<'scope>: Sized {
     fn spawn_tracked<T: Send + 'scope>(
         &'scope self,
@@ -16,6 +17,7 @@ pub(crate) trait BuilderTracked: Sized {
         f: impl FnOnce() -> T + Send + 'static,
     ) -> io::Result<JoinHandle<T>>;
 
+    #[allow(dead_code)]
     fn spawn_scoped_tracked<'scope, 'env, T: Send + 'scope>(
         self,
         scope: &'scope Scope<'scope, 'env>,

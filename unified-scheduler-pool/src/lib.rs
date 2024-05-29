@@ -56,6 +56,8 @@ use {
 mod sleepless_testing;
 use crate::sleepless_testing::BuilderTracked;
 
+// dead_code is false positive; these tuple fields are used via Debug.
+#[allow(dead_code)]
 #[derive(Debug)]
 enum CheckPoint {
     NewTask(usize),
