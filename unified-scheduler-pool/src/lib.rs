@@ -1112,8 +1112,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     if sender.send(Err(HandlerPanicked)).is_ok() {
                         info!("notified a panic from {:?}", thread::current());
                     } else {
-                        // it seems that scheduler has been aborted...
-                        // this is explicitly tested by test_scheduler_schedule_execution_panic
+                        // It seems that scheduler has been aborted...
+                        // This branch is deliberately tested by using 2 transactions with
+                        // different timings in test_scheduler_schedule_execution_panic
                         warn!("failed to notify a panic from {:?}", thread::current());
                     }
                 }
@@ -1932,8 +1933,8 @@ mod tests {
 
         let scheduler = pool.take_scheduler(context);
 
-        // use 2 tx to excersize the channel disconnected case WARN
-        for index_as_sleep_duration in 0..=1 {
+        // Use 2 txes to exercise the channel disconnected case as well.
+        for index_as_sleep_duration in 1..=2 {
             let tx =
                 &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                     &Keypair::new(),
@@ -1941,13 +1942,12 @@ mod tests {
                     2,
                     genesis_config.hash(),
                 ));
-            sleep(Duration::from_millis(400));
             scheduler
                 .schedule_execution(&(tx, index_as_sleep_duration))
                 .unwrap();
         }
 
-        sleep(Duration::from_secs(2));
+        sleep(Duration::from_secs(4));
         let bank = BankWithScheduler::new(bank, Some(scheduler));
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
     }
