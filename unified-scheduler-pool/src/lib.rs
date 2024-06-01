@@ -1939,6 +1939,7 @@ mod tests {
                     2,
                     genesis_config.hash(),
                 ));
+            sleep(Duration::from_millis(200));
             scheduler
                 .schedule_execution(&(tx, index_as_sleep_duration))
                 .unwrap();
