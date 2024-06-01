@@ -118,8 +118,12 @@ fn compile_instructions(ixs: &[Instruction], keys: &[Pubkey]) -> Vec<CompiledIns
 // NOTE: Serialization-related changes must be paired with the custom serialization
 // for versioned messages in the `RemainingLegacyMessage` struct.
 #[wasm_bindgen]
-#[frozen_abi(digest = "2KnLEqfLcTBQqitE22Pp8JYkaqVVbAkGbCfdeHoyxcAU")]
-#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq, Clone, AbiExample)]
+#[cfg_attr(
+    feature = "frozen-abi",
+    frozen_abi(digest = "2KnLEqfLcTBQqitE22Pp8JYkaqVVbAkGbCfdeHoyxcAU"),
+    derive(AbiExample)
+)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Message {
     /// The message header, identifying signed and read-only `account_keys`.
@@ -523,7 +527,14 @@ impl Message {
             .collect()
     }
 
+    #[deprecated(since = "2.0.0", note = "Please use `is_instruction_account` instead")]
     pub fn is_key_passed_to_program(&self, key_index: usize) -> bool {
+        self.is_instruction_account(key_index)
+    }
+
+    /// Returns true if the account at the specified index is an account input
+    /// to some program instruction in this message.
+    pub fn is_instruction_account(&self, key_index: usize) -> bool {
         if let Ok(key_index) = u8::try_from(key_index) {
             self.instructions
                 .iter()
@@ -543,8 +554,12 @@ impl Message {
         }
     }
 
+    #[deprecated(
+        since = "2.0.0",
+        note = "Please use `is_key_called_as_program` and `is_instruction_account` directly"
+    )]
     pub fn is_non_loader_key(&self, key_index: usize) -> bool {
-        !self.is_key_called_as_program(key_index) || self.is_key_passed_to_program(key_index)
+        !self.is_key_called_as_program(key_index) || self.is_instruction_account(key_index)
     }
 
     pub fn program_position(&self, index: usize) -> Option<usize> {
@@ -913,7 +928,7 @@ mod tests {
     }
 
     #[test]
-    fn test_is_key_passed_to_program() {
+    fn test_is_instruction_account() {
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
         let loader2 = Pubkey::new_unique();
@@ -927,13 +942,14 @@ mod tests {
             instructions,
         );
 
-        assert!(message.is_key_passed_to_program(0));
-        assert!(message.is_key_passed_to_program(1));
-        assert!(!message.is_key_passed_to_program(2));
+        assert!(message.is_instruction_account(0));
+        assert!(message.is_instruction_account(1));
+        assert!(!message.is_instruction_account(2));
     }
 
     #[test]
     fn test_is_non_loader_key() {
+        #![allow(deprecated)]
         let key0 = Pubkey::new_unique();
         let key1 = Pubkey::new_unique();
         let loader2 = Pubkey::new_unique();

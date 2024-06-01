@@ -23,7 +23,7 @@ impl std::fmt::Debug for BuiltinPrototype {
     }
 }
 
-#[cfg(RUSTC_WITH_SPECIALIZATION)]
+#[cfg(all(RUSTC_WITH_SPECIALIZATION, feature = "frozen-abi"))]
 impl solana_frozen_abi::abi_example::AbiExample for BuiltinPrototype {
     fn example() -> Self {
         // BuiltinPrototype isn't serializable by definition.
@@ -45,7 +45,6 @@ impl solana_frozen_abi::abi_example::AbiExample for BuiltinPrototype {
 /// features are activated.
 /// These are built-in programs that don't actually exist, but their address
 /// is reserved.
-#[allow(dead_code)] // Removed in later commit
 #[derive(Debug)]
 pub struct StatelessBuiltinPrototype {
     pub(crate) core_bpf_migration_config: Option<CoreBpfMigrationConfig>,

@@ -17,7 +17,7 @@
 use qualifier_attr::qualifiers;
 use {
     assert_matches::assert_matches,
-    crossbeam_channel::{self, never, select, Receiver, RecvError, SendError, Sender},
+    crossbeam_channel::{self, never, select_biased, Receiver, RecvError, SendError, Sender},
     dashmap::DashMap,
     derivative::Derivative,
     log::*,
@@ -53,6 +53,19 @@ use {
         time::{Duration, Instant},
     },
 };
+
+mod sleepless_testing;
+use crate::sleepless_testing::BuilderTracked;
+
+// dead_code is false positive; these tuple fields are used via Debug.
+#[allow(dead_code)]
+#[derive(Debug)]
+enum CheckPoint {
+    NewTask(usize),
+    TaskHandled(usize),
+    SchedulerThreadAborted,
+    TrashedSchedulerCleaned(usize),
+}
 
 type AtomicSchedulerId = AtomicU64;
 
@@ -166,7 +179,7 @@ where
             _phantom: PhantomData,
         });
 
-        let cleaner_main_loop = || {
+        let cleaner_main_loop = {
             let weak_scheduler_pool = Arc::downgrade(&scheduler_pool);
 
             move || loop {
@@ -213,14 +226,15 @@ where
                 info!(
                     "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
                     idle_inner_count, trashed_inner_count,
-                )
+                );
+                sleepless_testing::at(CheckPoint::TrashedSchedulerCleaned(trashed_inner_count));
             }
         };
 
-        // No need to join; the spanwed main loop will gracefully exit.
+        // No need to join; the spawned main loop will gracefully exit.
         thread::Builder::new()
             .name("solScCleaner".to_owned())
-            .spawn(cleaner_main_loop())
+            .spawn_tracked(cleaner_main_loop)
             .unwrap();
 
         scheduler_pool
@@ -255,8 +269,14 @@ where
         self.next_scheduler_id.fetch_add(1, Relaxed)
     }
 
+    // This fn needs to return immediately due to being part of the blocking
+    // `::wait_for_termination()` call.
     fn return_scheduler(&self, scheduler: S::Inner, should_trash: bool) {
         if should_trash {
+            // Delay drop()-ing this trashed returned scheduler inner by stashing it in
+            // self.trashed_scheduler_inners, which is periodically drained by the `solScCleaner`
+            // thread. Dropping it could take long time (in fact,
+            // PooledSchedulerInner::usage_queue_loader can contain many entries to drop).
             self.trashed_scheduler_inners
                 .lock()
                 .expect("not poisoned")
@@ -367,6 +387,7 @@ impl TaskHandler for DefaultTaskHandler {
             handler_context.log_messages_bytes_limit,
             &handler_context.prioritization_fee_cache,
         );
+        sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
 }
 
@@ -603,7 +624,7 @@ where
     fn drop(&mut self) {
         trace!("ThreadManager::drop() is called...");
 
-        if self.is_threads_joined() {
+        if self.are_threads_joined() {
             return;
         }
         // If on-stack ThreadManager is being dropped abruptly while panicking, it's likely
@@ -640,10 +661,27 @@ where
     }
 
     fn is_trashed(&self) -> bool {
-        let max_usage_queue_count = self.thread_manager.pool.max_usage_queue_count;
 
-        self.usage_queue_loader.usage_queue_count() > max_usage_queue_count
-            || self.thread_manager.is_threads_joined()
+        // Schedulers can be regarded as being _trashed_ (thereby will be cleaned up later), if
+        // threads are joined. Remember that unified scheduler _doesn't normally join threads_ even
+        // across different sessions (i.e. different banks) to avoid thread recreation overhead.
+        //
+        // These unusual thread joining happens after the blocked thread (= the replay stage)'s
+        // detection of aborted scheduler thread, which can be interpreted as an immediate signal
+        // about the existence of the transaction error.
+        //
+        // Note that this detection is done internally every time scheduler operations are run
+        // (send_task() and end_session(); or schedule_execution() and wait_for_termination() in
+        // terms of InstalledScheduler). So, it's ensured that the detection is done at least once
+        // for any scheudler which is taken out of the pool.
+        //
+        // Thus, any transaction errors are always handled without loss of information and
+        // the aborted scheduler itself will always be handled as _trashed_ before returning the
+        // scheduler to the pool, considering is_trashed() is checked immediately before that.
+        let did_abort = self.thread_manager.are_threads_joined();
+
+        let max_usage_queue_count = self.thread_manager.pool.max_usage_queue_count;
+        did_abort || self.usage_queue_loader.usage_queue_count() > max_usage_queue_count
     }
 }
 
@@ -801,10 +839,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // isn't implemented. The former is due to complex implementation and the later is due to
         // delayed (NOT real-time) processing, which is against the unified scheduler design goal.
         //
-        // Finally, note that this optimization should be combined with biased select (i.e.
-        // `select_biased!`), which isn't for now... However, consistent performance improvement is
-        // observed just with this priority queuing alone.
-        //
         // Alternatively, more faithful prioritization can be realized by checking blocking
         // statuses of all addresses immediately before sending to the handlers. This would prevent
         // false negatives of the heuristics approach (i.e. the last task of a run doesn't need to
@@ -914,7 +948,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut result_with_timings = initialized_result_with_timings();
 
-                loop {
+                'nonaborted_main_loop: loop {
                     match new_task_receiver.recv() {
                         Ok(NewTaskPayload::OpenSubchannel(context)) => {
                             // signal about new SchedulingContext to handler threads
@@ -926,10 +960,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             unreachable!();
                         }
                         Err(_) => {
-                            session_result_sender
-                                .send(result_with_timings)
-                                .expect("always outlived receiver");
-                            return;
+                            // This unusual condition must be triggered by ThreadManager::drop();
+                            break 'nonaborted_main_loop;
                         }
                     }
 
@@ -942,29 +974,23 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         let dummy_unblocked_task_receiver =
                             dummy_receiver(state_machine.has_unblocked_task());
 
-                        // (Assume this is biased; i.e. select_biased! in this crossbeam pr:
-                        // https://github.com/rust-lang/futures-rs/pull/1976)
-                        //
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
                         // _not-crossbeam-channel_ event sources, precisely at the specified
-                        // precedence among other selectors, while delegating the conrol flow to
+                        // precedence among other selectors, while delegating the control flow to
                         // select_biased!.
                         //
                         // In this way, hot looping is avoided and overall control flow is much
                         // consistent. Note that unified scheduler will go
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
-                        select! {
+                        select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler")
                                 ) else {
-                                    session_result_sender
-                                        .send(result_with_timings)
-                                        .expect("always outlived receiver");
-                                    return;
+                                    break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
                             },
@@ -981,6 +1007,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                                 match message {
                                     Ok(NewTaskPayload::Payload(task)) => {
+                                        sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
                                         }
@@ -995,8 +1022,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         // Mostly likely is that this scheduler is dropped for pruned blocks of
                                         // abandoned forks...
                                         // This short-circuiting is tested with test_scheduler_drop_short_circuiting.
-                                        session_result_sender.send(result_with_timings).expect("always outlived receiver");
-                                        return;
+                                        break 'nonaborted_main_loop;
                                     }
                                 }
                             },
@@ -1005,10 +1031,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler")
                                 ) else {
-                                    session_result_sender
-                                        .send(result_with_timings)
-                                        .expect("always outlived receiver");
-                                    return;
+                                    break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
                             },
@@ -1028,6 +1051,27 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         session_ending = false;
                     }
                 }
+
+                // There are several code-path reaching here out of the preceding unconditional
+                // `loop { ... }` by the use of `break 'nonaborted_main_loop;`. This scheduler
+                // thread will now initiate the termination process, indicating an abnormal abortion,
+                // in order to be handled gracefully by other threads.
+
+                // Firstly, send result_with_timings as-is, because it's expected for us to put the
+                // last result_with_timings into the channel without exception. Usually,
+                // result_with_timings will contain the Err variant at this point, indicating the
+                // occurrence of transaction error.
+                session_result_sender
+                    .send(result_with_timings)
+                    .expect("always outlived receiver");
+
+                // Next, drop `new_task_receiver`. After that, the paired singleton
+                // `new_task_sender` will start to error when called by external threads, resulting
+                // in propagation of thread abortion to the external threads.
+                drop(new_task_receiver);
+
+                // We will now exit this thread finally... Good bye.
+                sleepless_testing::at(CheckPoint::SchedulerThreadAborted);
             }
         };
 
@@ -1038,7 +1082,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
             move || loop {
-                let (task, sender) = select! {
+                let (task, sender) = select_biased! {
                     recv(runnable_task_receiver.for_select()) -> message => {
                         let Ok(message) = message else {
                             break;
@@ -1089,7 +1133,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         self.scheduler_thread = Some(
             thread::Builder::new()
                 .name("solScheduler".to_owned())
-                .spawn(scheduler_main_loop())
+                .spawn_tracked(scheduler_main_loop())
                 .unwrap(),
         );
 
@@ -1098,7 +1142,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 |thx| {
                     thread::Builder::new()
                         .name(format!("solScHandler{:02}", thx))
-                        .spawn(handler_main_loop())
+                        .spawn_tracked(handler_main_loop())
                         .unwrap()
                 }
             })
@@ -1157,8 +1201,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             .unwrap_err()
     }
 
-    fn is_threads_joined(&self) -> bool {
+    fn are_threads_joined(&self) -> bool {
         if self.scheduler_thread.is_none() {
+            // Emptying handler_threads must be an atomic operation with scheduler_thread being
+            // taken.
             assert!(self.handler_threads.is_empty());
             true
         } else {
@@ -1167,7 +1213,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     }
 
     fn end_session(&mut self) {
-        if self.is_threads_joined() {
+        if self.are_threads_joined() {
             assert!(self.session_result_with_timings.is_some());
             debug!("end_session(): skipping; already joined the aborted threads..");
             return;
@@ -1198,7 +1244,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     }
 
     fn start_session(&mut self, context: &SchedulingContext) {
-        //assert!(!self.is_threads_joined());
+        //assert!(!self.are_threads_joined());
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
             .send(NewTaskPayload::OpenSubchannel(context.clone()))
@@ -1289,6 +1335,8 @@ where
     TH: TaskHandler,
 {
     fn return_to_pool(self: Box<Self>) {
+        // Refer to the comment in is_trashed() as to the exact definition of the concept of
+        // _trashed_ and the interaction among different parts of unified scheduler.
         let should_trash = self.is_trashed();
         if should_trash {
             info!("trashing scheduler (id: {})...", self.id());
@@ -1304,6 +1352,7 @@ where
 mod tests {
     use {
         super::*,
+        crate::sleepless_testing,
         assert_matches::assert_matches,
         solana_runtime::{
             bank::Bank,
@@ -1321,6 +1370,15 @@ mod tests {
         },
         std::{sync::Arc, thread::JoinHandle},
     };
+
+    #[derive(Debug)]
+    enum TestCheckPoint {
+        BeforeNewTask,
+        AfterTaskHandled,
+        AfterSchedulerThreadAborted,
+        AfterTrashedSchedulerCleaned,
+        BeforeThreadManagerDrop,
+    }
 
     #[test]
     fn test_scheduler_pool_new() {
@@ -1426,6 +1484,14 @@ mod tests {
     fn do_test_scheduler_drop_abort(abort_case: AbortCase) {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(match abort_case {
+            AbortCase::Unhandled => &[
+                &CheckPoint::SchedulerThreadAborted,
+                &TestCheckPoint::AfterSchedulerThreadAborted,
+            ],
+            _ => &[],
+        });
+
         #[derive(Debug)]
         struct FaultyHandler;
         impl TaskHandler for FaultyHandler {
@@ -1470,20 +1536,18 @@ mod tests {
 
         match abort_case {
             AbortCase::Unhandled => {
-                // wait a bit for scheculer to abort as ThreadManager::drop() is racy otherwise
-                sleep(Duration::from_secs(1));
+                sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
                 // Directly dropping PooledScheduler is illegal unless panicking already, especially
                 // after being aborted. It must be converted to PooledSchedulerInner via
                 // ::into_inner();
                 drop::<PooledScheduler<_>>(scheduler);
             }
             AbortCase::UnhandledWhilePanicking => {
-                // wait a bit for scheculer to abort as ThreadManager::drop() is racy otherwise
-                sleep(Duration::from_secs(1));
+                // no sleepless_testing::at(); panicking special-casing isn't racy
                 panic!("ThreadManager::drop() should be skipped...");
             }
             AbortCase::Handled => {
-                // no sleep; ::into_inner() isn't racy
+                // no sleepless_testing::at(); ::into_inner() isn't racy
                 let ((result, _), mut scheduler_inner) = scheduler.into_inner();
                 assert_matches!(result, Err(TransactionError::AccountNotFound));
 
@@ -1519,9 +1583,18 @@ mod tests {
     fn test_scheduler_drop_short_circuiting() {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(&[
+            &TestCheckPoint::BeforeThreadManagerDrop,
+            &CheckPoint::NewTask(0),
+            &CheckPoint::SchedulerThreadAborted,
+            &TestCheckPoint::AfterSchedulerThreadAborted,
+        ]);
+
+        static TASK_COUNT: Mutex<usize> = Mutex::new(0);
+
         #[derive(Debug)]
-        struct SleepyHandler;
-        impl TaskHandler for SleepyHandler {
+        struct CountingHandler;
+        impl TaskHandler for CountingHandler {
             fn handle(
                 _result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -1530,7 +1603,7 @@ mod tests {
                 _index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                sleep(Duration::from_secs(1));
+                *TASK_COUNT.lock().unwrap() += 1;
             }
         }
 
@@ -1543,7 +1616,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<SleepyHandler>, _>::new(
+        let pool = SchedulerPool::<PooledScheduler<CountingHandler>, _>::new(
             None,
             None,
             None,
@@ -1565,9 +1638,10 @@ mod tests {
         }
 
         // Make sure ThreadManager::drop() is properly short-circuiting for non-aborting scheduler.
-        let now = Instant::now();
+        sleepless_testing::at(TestCheckPoint::BeforeThreadManagerDrop);
         drop::<PooledScheduler<_>>(scheduler);
-        assert!(now.elapsed() < Duration::from_secs(2));
+        sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
+        assert!(*TASK_COUNT.lock().unwrap() < 10);
     }
 
     #[test]
@@ -1725,9 +1799,17 @@ mod tests {
         assert_eq!(bank.transaction_count(), 1);
     }
 
-    #[test]
-    fn test_scheduler_schedule_execution_failure() {
+    fn do_test_scheduler_schedule_execution_failure(extra_tx_after_failure: bool) {
         solana_logger::setup();
+
+        let _progress = sleepless_testing::setup(&[
+            &CheckPoint::TaskHandled(0),
+            &TestCheckPoint::AfterTaskHandled,
+            &CheckPoint::SchedulerThreadAborted,
+            &TestCheckPoint::AfterSchedulerThreadAborted,
+            &CheckPoint::TrashedSchedulerCleaned(1),
+            &TestCheckPoint::AfterTrashedSchedulerCleaned,
+        ]);
 
         let GenesisConfigInfo {
             genesis_config,
@@ -1762,8 +1844,7 @@ mod tests {
             ));
         assert_eq!(bank.transaction_count(), 0);
         scheduler.schedule_execution(&(bad_tx, 0)).unwrap();
-        // simulate the task-sending thread is stalled for some reason.
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        sleepless_testing::at(TestCheckPoint::AfterTaskHandled);
         assert_eq!(bank.transaction_count(), 0);
 
         let good_tx_after_bad_tx =
@@ -1779,19 +1860,19 @@ mod tests {
                 .result,
             Ok(_)
         );
-        // wait a bit the scheduler thread to abort after receiving Err from the handler thread
-        sleep(Duration::from_secs(1));
+        sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
         let bank = BankWithScheduler::new(bank, Some(scheduler));
-        assert_matches!(
-            bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iter()),
-            Err(TransactionError::AccountNotFound)
-        );
+        if extra_tx_after_failure {
+            assert_matches!(
+                bank.schedule_transaction_executions([(good_tx_after_bad_tx, &1)].into_iter()),
+                Err(TransactionError::AccountNotFound)
+            );
+        }
         // transaction_count should remain same as scheduler should be bailing out.
         // That's because we're testing the serialized failing execution case in this test.
         // Also note that bank.transaction_count() is generally racy by nature, because
         // blockstore_processor and unified_scheduler both tend to process non-conflicting batches
         // in parallel as part of the normal operation.
-        sleep(Duration::from_secs(1));
         assert_eq!(bank.transaction_count(), 0);
 
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
@@ -1800,8 +1881,18 @@ mod tests {
             Some((Err(TransactionError::AccountNotFound), _timings))
         );
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
-        sleep(Duration::from_secs(1));
+        sleepless_testing::at(TestCheckPoint::AfterTrashedSchedulerCleaned);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_scheduler_schedule_execution_failure_with_extra_tx() {
+        do_test_scheduler_schedule_execution_failure(true);
+    }
+
+    #[test]
+    fn test_scheduler_schedule_execution_failure_without_extra_tx() {
+        do_test_scheduler_schedule_execution_failure(false);
     }
 
     #[test]
@@ -1863,9 +1954,19 @@ mod tests {
     fn test_scheduler_execution_failure_short_circuiting() {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(&[
+            &TestCheckPoint::BeforeNewTask,
+            &CheckPoint::NewTask(0),
+            &CheckPoint::TaskHandled(0),
+            &CheckPoint::SchedulerThreadAborted,
+            &TestCheckPoint::AfterSchedulerThreadAborted,
+        ]);
+
+        static TASK_COUNT: Mutex<usize> = Mutex::new(0);
+
         #[derive(Debug)]
-        struct SleepyFaulyHandler;
-        impl TaskHandler for SleepyFaulyHandler {
+        struct CountingFaultyHandler;
+        impl TaskHandler for CountingFaultyHandler {
             fn handle(
                 result: &mut Result<()>,
                 _timings: &mut ExecuteTimings,
@@ -1874,10 +1975,11 @@ mod tests {
                 index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                sleep(Duration::from_secs(1));
+                *TASK_COUNT.lock().unwrap() += 1;
                 if index == 1 {
                     *result = Err(TransactionError::AccountNotFound);
                 }
+                sleepless_testing::at(CheckPoint::TaskHandled(index));
             }
         }
 
@@ -1890,7 +1992,7 @@ mod tests {
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
-        let pool = SchedulerPool::<PooledScheduler<SleepyFaulyHandler>, _>::new(
+        let pool = SchedulerPool::<PooledScheduler<CountingFaultyHandler>, _>::new(
             None,
             None,
             None,
@@ -1910,15 +2012,18 @@ mod tests {
                 ));
             scheduler.schedule_execution(&(tx, i)).unwrap();
         }
+        // finally unblock the scheduler thread; otherwise the above schedule_execution could
+        // return SchedulerAborted...
+        sleepless_testing::at(TestCheckPoint::BeforeNewTask);
 
         // Make sure bank.wait_for_completed_scheduler() is properly short-circuiting for aborting scheduler.
         let bank = BankWithScheduler::new(bank, Some(Box::new(scheduler)));
-        let now = Instant::now();
         assert_matches!(
             bank.wait_for_completed_scheduler(),
             Some((Err(TransactionError::AccountNotFound), _timings))
         );
-        assert!(now.elapsed() < Duration::from_secs(2));
+        sleepless_testing::at(TestCheckPoint::AfterSchedulerThreadAborted);
+        assert!(*TASK_COUNT.lock().unwrap() < 10);
     }
 
     #[test]

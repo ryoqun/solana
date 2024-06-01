@@ -29,7 +29,7 @@ fi
 if [[ -n $RUST_NIGHTLY_VERSION ]]; then
   nightly_version="$RUST_NIGHTLY_VERSION"
 else
-  nightly_version=2024-01-05
+  nightly_version=2024-05-02
 fi
 
 
@@ -45,7 +45,7 @@ export ci_docker_image="anzaxyz/ci:rust_${rust_stable}_${rust_nightly}"
     declare toolchain=$1
     if ! cargo +"$toolchain" -V > /dev/null; then
       echo "$0: Missing toolchain? Installing...: $toolchain" >&2
-      rustup install "$toolchain"
+      rustup install "$toolchain" --no-self-update
       cargo +"$toolchain" -V
     fi
   }

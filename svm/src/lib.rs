@@ -5,6 +5,7 @@ pub mod account_loader;
 pub mod account_overrides;
 pub mod account_rent_state;
 pub mod message_processor;
+pub mod nonce_info;
 pub mod program_loader;
 pub mod runtime_config;
 pub mod transaction_account_state_info;
@@ -16,5 +17,6 @@ pub mod transaction_results;
 #[macro_use]
 extern crate solana_metrics;
 
-#[macro_use]
+#[cfg_attr(feature = "frozen-abi", macro_use)]
+#[cfg(feature = "frozen-abi")]
 extern crate solana_frozen_abi_macro;

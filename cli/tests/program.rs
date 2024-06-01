@@ -117,7 +117,6 @@ fn test_cli_program_deploy_non_upgradeable() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 0,
         is_final: true,
         max_len: None,
@@ -167,7 +166,6 @@ fn test_cli_program_deploy_non_upgradeable() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 0,
         is_final: true,
         max_len: None,
@@ -226,7 +224,6 @@ fn test_cli_program_deploy_non_upgradeable() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 0,
         is_final: true,
         max_len: None,
@@ -253,7 +250,6 @@ fn test_cli_program_deploy_non_upgradeable() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: true,
         upgrade_authority_signer_index: 0,
         is_final: true,
         max_len: None,
@@ -326,7 +322,6 @@ fn test_cli_program_deploy_no_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: true,
         max_len: None,
@@ -357,7 +352,6 @@ fn test_cli_program_deploy_no_authority() {
         program_pubkey: Some(program_id),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -427,7 +421,6 @@ fn test_cli_program_deploy_with_authority() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: Some(max_len),
@@ -480,7 +473,6 @@ fn test_cli_program_deploy_with_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: Some(max_len),
@@ -527,7 +519,6 @@ fn test_cli_program_deploy_with_authority() {
         program_pubkey: Some(program_pubkey),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: Some(max_len),
@@ -606,7 +597,6 @@ fn test_cli_program_deploy_with_authority() {
         program_pubkey: Some(program_pubkey),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -689,7 +679,6 @@ fn test_cli_program_deploy_with_authority() {
         program_pubkey: Some(program_pubkey),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -714,7 +703,6 @@ fn test_cli_program_deploy_with_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: true,
         max_len: None,
@@ -834,7 +822,6 @@ fn test_cli_program_upgrade_auto_extend() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -857,7 +844,6 @@ fn test_cli_program_upgrade_auto_extend() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: true,
         max_len: None,
@@ -874,7 +860,10 @@ fn test_cli_program_upgrade_auto_extend() {
          RPC response error -32002: \
          Transaction simulation failed: \
          Error processing Instruction 0: \
-         account data too small for instruction [3 log messages]",
+         account data too small for instruction; 3 log messages:\n  \
+         Program BPFLoaderUpgradeab1e11111111111111111111111 invoke [1]\n  \
+         ProgramData account not large enough\n  \
+         Program BPFLoaderUpgradeab1e11111111111111111111111 failed: account data too small for instruction\n",
     );
 
     // Attempt to upgrade the program with a larger program, this time without
@@ -887,7 +876,6 @@ fn test_cli_program_upgrade_auto_extend() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: true,
         max_len: None,
@@ -978,7 +966,6 @@ fn test_cli_program_close_program() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: Some(max_len),
@@ -1097,7 +1084,6 @@ fn test_cli_program_extend_program() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None, // Use None to check that it defaults to the max length
@@ -1148,7 +1134,6 @@ fn test_cli_program_extend_program() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -1165,7 +1150,10 @@ fn test_cli_program_extend_program() {
          RPC response error -32002: \
          Transaction simulation failed: \
          Error processing Instruction 0: \
-         account data too small for instruction [3 log messages]",
+         account data too small for instruction; 3 log messages:\n  \
+         Program BPFLoaderUpgradeab1e11111111111111111111111 invoke [1]\n  \
+         ProgramData account not large enough\n  \
+         Program BPFLoaderUpgradeab1e11111111111111111111111 failed: account data too small for instruction\n",
     );
 
     // Wait one slot to avoid "Program was deployed in this block already" error
@@ -1192,7 +1180,6 @@ fn test_cli_program_extend_program() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -1556,7 +1543,6 @@ fn test_cli_program_write_buffer() {
         program_pubkey: None,
         buffer_signer_index: Some(1),
         buffer_pubkey: Some(buffer_keypair.pubkey()),
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 0,
         is_final: true,
         max_len: None,
@@ -1687,7 +1673,6 @@ fn test_cli_program_set_buffer_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: Some(buffer_keypair.pubkey()),
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 0,
         is_final: false,
         max_len: None,
@@ -1744,7 +1729,6 @@ fn test_cli_program_set_buffer_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: Some(buffer_keypair.pubkey()),
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: None,
@@ -1831,7 +1815,6 @@ fn test_cli_program_mismatch_buffer_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: Some(buffer_keypair.pubkey()),
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: true,
         max_len: None,
@@ -1860,7 +1843,6 @@ fn test_cli_program_mismatch_buffer_authority() {
         program_pubkey: None,
         buffer_signer_index: None,
         buffer_pubkey: Some(buffer_keypair.pubkey()),
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: true,
         max_len: None,
@@ -1947,7 +1929,6 @@ fn test_cli_program_deploy_with_offline_signing(use_offline_signer_as_fee_payer:
         program_pubkey: Some(program_signer.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1, // must be offline signer for security reasons
         is_final: false,
         max_len: Some(max_program_data_len), // allows for larger program size with future upgrades
@@ -2185,7 +2166,6 @@ fn test_cli_program_show() {
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: Some(max_len),
@@ -2463,7 +2443,6 @@ fn test_cli_program_deploy_with_args(compute_unit_price: Option<u64>, use_rpc: b
         program_pubkey: Some(program_keypair.pubkey()),
         buffer_signer_index: None,
         buffer_pubkey: None,
-        allow_excessive_balance: false,
         upgrade_authority_signer_index: 1,
         is_final: false,
         max_len: Some(max_len),

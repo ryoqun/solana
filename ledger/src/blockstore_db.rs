@@ -153,6 +153,12 @@ pub enum BlockstoreError {
     TransactionIndexOverflow,
     #[error("invalid erasure config")]
     InvalidErasureConfig,
+    #[error("last shred index missing slot {0}")]
+    UnknownLastIndex(Slot),
+    #[error("missing shred slot {0}, index {1}")]
+    MissingShred(Slot, u64),
+    #[error("legacy shred slot {0}, index {1}")]
+    LegacyShred(Slot, u64),
 }
 pub type Result<T> = std::result::Result<T, BlockstoreError>;
 
@@ -431,9 +437,9 @@ impl Rocks {
             AccessType::Secondary => {
                 let secondary_path = path.join("solana-secondary");
                 info!(
-                    "Opening Rocks with secondary (read only) access at: {secondary_path:?}. \
-                    This secondary access could temporarily degrade other accesses, such as \
-                    by agave-validator"
+                    "Opening Rocks with secondary (read only) access at: {secondary_path:?}. This \
+                     secondary access could temporarily degrade other accesses, such as by \
+                     agave-validator"
                 );
                 DB::open_cf_descriptors_as_secondary(
                     &db_options,
@@ -526,7 +532,7 @@ impl Rocks {
             .chain(std::iter::once(DEFAULT_COLUMN_NAME.to_string()))
             .collect();
         detected_cfs.iter().for_each(|cf_name| {
-            if known_cfs.get(cf_name.as_str()).is_none() {
+            if !known_cfs.contains(cf_name.as_str()) {
                 info!("Detected unknown column {cf_name}, opening column with basic options");
                 // This version of the software was unaware of the column, so
                 // it is fair to assume that we will not attempt to read or
@@ -2085,8 +2091,10 @@ fn new_cf_descriptor_fifo<C: 'static + Column + ColumnName>(
         )
     } else {
         panic!(
-            "{} cf_size must be greater than write buffer size {} when using ShredStorageType::RocksFifo.",
-            C::NAME, FIFO_WRITE_BUFFER_SIZE
+            "{} cf_size must be greater than write buffer size {} when using \
+             ShredStorageType::RocksFifo.",
+            C::NAME,
+            FIFO_WRITE_BUFFER_SIZE
         );
     }
 }

@@ -6,7 +6,7 @@ use {
         blockstore::Blockstore,
         blockstore_processor::{TransactionStatusBatch, TransactionStatusMessage},
     },
-    solana_svm::transaction_results::{DurableNonceFee, TransactionExecutionDetails},
+    solana_svm::transaction_results::TransactionExecutionDetails,
     solana_transaction_status::{
         extract_and_fmt_memos, map_inner_instructions, Reward, TransactionStatusMeta,
     },
@@ -99,27 +99,14 @@ impl TransactionStatusService {
                             status,
                             log_messages,
                             inner_instructions,
-                            durable_nonce_fee,
                             return_data,
                             executed_units,
+                            fee_details,
                             ..
                         } = details;
-                        let lamports_per_signature = match durable_nonce_fee {
-                            Some(DurableNonceFee::Valid(lamports_per_signature)) => {
-                                Some(lamports_per_signature)
-                            }
-                            Some(DurableNonceFee::Invalid) => None,
-                            None => bank.get_lamports_per_signature_for_blockhash(
-                                transaction.message().recent_blockhash(),
-                            ),
-                        }
-                        .expect("lamports_per_signature must be available");
-                        let fee = bank.get_fee_for_message_with_lamports_per_signature(
-                            transaction.message(),
-                            lamports_per_signature,
-                        );
                         let tx_account_locks = transaction.get_account_locks_unchecked();
 
+                        let fee = fee_details.total_fee();
                         let inner_instructions = inner_instructions.map(|inner_instructions| {
                             map_inner_instructions(inner_instructions).collect()
                         });
@@ -217,12 +204,10 @@ pub(crate) mod tests {
         solana_sdk::{
             account_utils::StateMut,
             clock::Slot,
+            fee::FeeDetails,
             hash::Hash,
-            instruction::CompiledInstruction,
-            message::{LegacyMessage, Message, MessageHeader, SanitizedMessage},
             nonce::{self, state::DurableNonce},
             nonce_account,
-            nonce_info::{NonceFull, NoncePartial},
             pubkey::Pubkey,
             rent_debits::RentDebits,
             reserved_account_keys::ReservedAccountKeys,
@@ -301,23 +286,6 @@ pub(crate) mod tests {
         system_transaction::transfer(&keypair1, &pubkey1, 42, zero)
     }
 
-    fn build_message() -> Message {
-        Message {
-            header: MessageHeader {
-                num_readonly_signed_accounts: 11,
-                num_readonly_unsigned_accounts: 12,
-                num_required_signatures: 13,
-            },
-            account_keys: vec![Pubkey::new_unique()],
-            recent_blockhash: Hash::new_unique(),
-            instructions: vec![CompiledInstruction {
-                program_id_index: 1,
-                accounts: vec![1, 2, 3],
-                data: vec![4, 5, 6],
-            }],
-        }
-    }
-
     #[test]
     fn test_notify_transaction() {
         let genesis_config = create_genesis_config(2).genesis_config;
@@ -352,10 +320,6 @@ pub(crate) mod tests {
             )))
             .unwrap();
 
-        let message = build_message();
-
-        let rollback_partial = NoncePartial::new(pubkey, nonce_account.clone());
-
         let mut rent_debits = RentDebits::default();
         rent_debits.insert(&pubkey, 123, 456);
 
@@ -363,18 +327,8 @@ pub(crate) mod tests {
             status: Ok(()),
             log_messages: None,
             inner_instructions: None,
-            durable_nonce_fee: Some(DurableNonceFee::from(
-                &NonceFull::from_partial(
-                    &rollback_partial,
-                    &SanitizedMessage::Legacy(LegacyMessage::new(
-                        message,
-                        &ReservedAccountKeys::empty_key_set(),
-                    )),
-                    &[(pubkey, nonce_account)],
-                    &rent_debits,
-                )
-                .unwrap(),
-            )),
+            fee_details: FeeDetails::default(),
+            is_nonce: true,
             return_data: None,
             executed_units: 0,
             accounts_data_len_delta: 0,

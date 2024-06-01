@@ -1335,7 +1335,11 @@ fn execute<'a, 'b: 'a>(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // We dropped the lifetime tracking in the Executor by setting it to 'static,
     // thus we need to reintroduce the correct lifetime of InvokeContext here again.
-    let executable = unsafe { mem::transmute::<_, &'a Executable<InvokeContext<'b>>>(executable) };
+    let executable = unsafe {
+        mem::transmute::<&'a Executable<InvokeContext<'static>>, &'a Executable<InvokeContext<'b>>>(
+            executable,
+        )
+    };
     let log_collector = invoke_context.get_log_collector();
     let transaction_context = &invoke_context.transaction_context;
     let instruction_context = transaction_context.get_current_instruction_context()?;
@@ -1557,7 +1561,6 @@ mod tests {
         solana_program_runtime::{
             invoke_context::mock_process_instruction, with_mock_invoke_context,
         },
-        solana_rbpf::vm::ContextObject,
         solana_sdk::{
             account::{
                 create_account_shared_data_for_test as create_account_for_test, AccountSharedData,
@@ -1573,19 +1576,6 @@ mod tests {
         },
         std::{fs::File, io::Read, ops::Range, sync::atomic::AtomicU64},
     };
-
-    struct TestContextObject {
-        remaining: u64,
-    }
-    impl ContextObject for TestContextObject {
-        fn trace(&mut self, _state: [u64; 12]) {}
-        fn consume(&mut self, amount: u64) {
-            self.remaining = self.remaining.saturating_sub(amount);
-        }
-        fn get_remaining(&self) -> u64 {
-            self.remaining
-        }
-    }
 
     fn process_instruction(
         loader_id: &Pubkey,
