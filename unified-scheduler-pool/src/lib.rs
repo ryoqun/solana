@@ -661,7 +661,6 @@ where
     }
 
     fn is_trashed(&self) -> bool {
-
         // Schedulers can be regarded as being _trashed_ (thereby will be cleaned up later), if
         // threads are joined. Remember that unified scheduler _doesn't normally join threads_ even
         // across different sessions (i.e. different banks) to avoid thread recreation overhead.
