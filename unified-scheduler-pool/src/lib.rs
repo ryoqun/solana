@@ -51,6 +51,7 @@ use {
         thread::{self, sleep, JoinHandle},
         time::{Duration, Instant},
     },
+    vec_extract_if_polyfill::MakeExtractIf,
 };
 
 mod sleepless_testing;
@@ -171,29 +172,22 @@ where
                 };
 
                 let idle_inner_count = {
-                    let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
-                        break;
-                    };
-                    let mut inners = mem::take(&mut *scheduler_inners);
-                    drop(scheduler_inners);
-
                     let now = Instant::now();
-                    let old_inner_count = inners.len();
-                    // retain could take long time because it's dropping schedulers!
-                    inners.retain(|(_inner, pooled_at)| {
-                        now.duration_since(*pooled_at) <= max_pooling_duration
-                    });
-                    let new_inner_count = inners.len();
-
                     let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
                         break;
                     };
-                    scheduler_inners.extend(inners);
+                    // I want to use the fancy ::extract_if() no matter what....
+                    #[allow(unstable_name_collisions)]
+                    let idle_inners = scheduler_inners
+                        .extract_if(|(_inner, pooled_at)| {
+                            now.duration_since(*pooled_at) > max_pooling_duration
+                        })
+                        .collect::<Vec<_>>();
                     drop(scheduler_inners);
 
-                    old_inner_count
-                        .checked_sub(new_inner_count)
-                        .expect("new_inner_count isn't larger")
+                    let idle_inner_count = idle_inners.len();
+                    drop(idle_inners);
+                    idle_inner_count
                 };
 
                 let trashed_inner_count = {
