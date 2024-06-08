@@ -1373,6 +1373,7 @@ mod tests {
         ]);
 
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let shortened_max_pooling_duration = Duration::from_millis(10);
         let pool_raw = DefaultSchedulerPool::do_new(
             None,
             None,
@@ -1380,22 +1381,40 @@ mod tests {
             None,
             ignored_prioritization_fee_cache,
             SHORTENED_POOL_CLEANER_INTERVAL,
-            Duration::from_millis(1),
+            shortened_max_pooling_duration,
         );
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
-        let context = SchedulingContext::new(bank);
+        let context1 = SchedulingContext::new(bank);
+        let context2 = context1.clone();
 
-        let scheduler = pool.do_take_scheduler(context);
-        Box::new(scheduler.into_inner().1).return_to_pool();
+        let old_scheduler = pool.do_take_scheduler(context1);
+        let new_scheduler = pool.do_take_scheduler(context2);
+        let new_scheduler_id = new_scheduler.id();
+        Box::new(old_scheduler.into_inner().1).return_to_pool();
 
-        // Block solScCleaner until we see returned schedler...
-        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
+        // sleepless_testing can't be used; wait a bit here to see real progress of wall time...
+        sleep(shortened_max_pooling_duration * 10);
+        Box::new(new_scheduler.into_inner().1).return_to_pool();
+
+        // Block solScCleaner until we see returned schedlers...
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 2);
         sleepless_testing::at(TestCheckPoint::BeforeIdleSchedulerCleaned);
 
-        // See the idle scheduler gone only after solScCleaner did its job...
+        // See the old (= idle) scheduler gone only after solScCleaner did its job...
         sleepless_testing::at(&TestCheckPoint::AfterIdleSchedulerCleaned);
-        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
+        assert_eq!(
+            pool_raw
+                .scheduler_inners
+                .lock()
+                .unwrap()
+                .first()
+                .as_ref()
+                .map(|(inner, _pooled_at)| inner.id())
+                .unwrap(),
+            new_scheduler_id
+        );
     }
 
     enum AbortCase {
