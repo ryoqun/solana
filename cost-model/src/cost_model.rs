@@ -8,12 +8,9 @@
 use {
     crate::{block_cost_limits::*, transaction_cost::*},
     log::*,
-    solana_program_runtime::{
-        compute_budget::DEFAULT_HEAP_COST,
-        compute_budget_processor::{
-            process_compute_budget_instructions, DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT,
-            MAX_COMPUTE_UNIT_LIMIT,
-        },
+    solana_compute_budget::compute_budget_processor::{
+        process_compute_budget_instructions, DEFAULT_HEAP_COST,
+        DEFAULT_INSTRUCTION_COMPUTE_UNIT_LIMIT, MAX_COMPUTE_UNIT_LIMIT,
     },
     solana_sdk::{
         borsh1::try_from_slice_unchecked,
@@ -156,14 +153,10 @@ impl CostModel {
                     programs_execution_costs = u64::from(compute_budget_limits.compute_unit_limit);
                 }
 
-                if feature_set
-                    .is_active(&include_loaded_accounts_data_size_in_fee_calculation::id())
-                {
-                    loaded_accounts_data_size_cost = FeeStructure::calculate_memory_usage_cost(
-                        usize::try_from(compute_budget_limits.loaded_accounts_bytes).unwrap(),
-                        DEFAULT_HEAP_COST,
-                    )
-                }
+                loaded_accounts_data_size_cost = Self::calculate_loaded_accounts_data_size_cost(
+                    usize::try_from(compute_budget_limits.loaded_accounts_bytes).unwrap(),
+                    feature_set,
+                );
             }
             Err(_) => {
                 programs_execution_costs = 0;
@@ -173,6 +166,17 @@ impl CostModel {
         tx_cost.programs_execution_cost = programs_execution_costs;
         tx_cost.loaded_accounts_data_size_cost = loaded_accounts_data_size_cost;
         tx_cost.data_bytes_cost = data_bytes_len_total / INSTRUCTION_DATA_BYTES_COST;
+    }
+
+    pub fn calculate_loaded_accounts_data_size_cost(
+        loaded_accounts_data_size: usize,
+        feature_set: &FeatureSet,
+    ) -> u64 {
+        if feature_set.is_active(&include_loaded_accounts_data_size_in_fee_calculation::id()) {
+            FeeStructure::calculate_memory_usage_cost(loaded_accounts_data_size, DEFAULT_HEAP_COST)
+        } else {
+            0
+        }
     }
 
     fn calculate_account_data_size_on_deserialized_system_instruction(
@@ -571,7 +575,7 @@ mod tests {
         // default loaded_accounts_data_size_limit
         const DEFAULT_PAGE_COST: u64 = 8;
         let expected_loaded_accounts_data_size_cost =
-            solana_program_runtime::compute_budget_processor::MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES
+            solana_compute_budget::compute_budget_processor::MAX_LOADED_ACCOUNTS_DATA_SIZE_BYTES
                 as u64
                 / ACCOUNT_DATA_COST_PAGE_SIZE
                 * DEFAULT_PAGE_COST;

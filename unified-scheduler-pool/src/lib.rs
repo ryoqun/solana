@@ -34,13 +34,13 @@ use {
             SchedulerId, SchedulingContext, UninstalledScheduler, UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
+        vote_sender_types::ReplayVoteSender,
     },
     solana_sdk::{
         pubkey::Pubkey,
         transaction::{Result, SanitizedTransaction, TransactionError},
     },
     solana_unified_scheduler_logic::{SchedulingStateMachine, Task, UsageQueue},
-    solana_vote::vote_sender_types::ReplayVoteSender,
     std::{
         fmt::Debug,
         marker::PhantomData,
@@ -52,6 +52,7 @@ use {
         thread::{self, sleep, JoinHandle},
         time::{Duration, Instant},
     },
+    vec_extract_if_polyfill::MakeExtractIf,
 };
 
 mod sleepless_testing;
@@ -64,6 +65,7 @@ enum CheckPoint {
     NewTask(usize),
     TaskHandled(usize),
     SchedulerThreadAborted,
+    IdleSchedulerCleaned(usize),
     TrashedSchedulerCleaned(usize),
 }
 
@@ -190,23 +192,30 @@ where
                 };
 
                 let idle_inner_count = {
+                    let now = Instant::now();
+
+                    // Pre-allocate rather large capacity to avoid reallocation inside the lock.
+                    let mut idle_inners = Vec::with_capacity(128);
+
                     let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
                         break;
                     };
+                    // Use the still-unstable Vec::extract_if() even on stable rust toolchain by
+                    // using a polyfill and allowing unstable_name_collisions, because it's
+                    // simplest to code and fastest to run (= O(n); single linear pass and no
+                    // reallocation).
+                    //
+                    // Note that this critical section could block the latency-sensitive replay
+                    // code-path via ::take_scheduler().
+                    #[allow(unstable_name_collisions)]
+                    idle_inners.extend(scheduler_inners.extract_if(|(_inner, pooled_at)| {
+                        now.duration_since(*pooled_at) > max_pooling_duration
+                    }));
+                    drop(scheduler_inners);
 
-                    let mut inners: Vec<_> = mem::take(&mut *scheduler_inners);
-                    let now = Instant::now();
-                    let old_inner_count = inners.len();
-                    // this loop should be fast because still the lock is held
-                    inners.retain(|(_inner, pooled_at)| {
-                        now.duration_since(*pooled_at) <= max_pooling_duration
-                    });
-                    let new_inner_count = inners.len();
-                    scheduler_inners.extend(inners);
-
-                    old_inner_count
-                        .checked_sub(new_inner_count)
-                        .expect("new_inner_count isn't larger")
+                    let idle_inner_count = idle_inners.len();
+                    drop(idle_inners);
+                    idle_inner_count
                 };
 
                 let trashed_inner_count = {
@@ -227,6 +236,7 @@ where
                     "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
                     idle_inner_count, trashed_inner_count,
                 );
+                sleepless_testing::at(CheckPoint::IdleSchedulerCleaned(idle_inner_count));
                 sleepless_testing::at(CheckPoint::TrashedSchedulerCleaned(trashed_inner_count));
             }
         };
@@ -758,7 +768,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         executed_task: HandlerResult,
     ) -> Option<Box<ExecutedTask>> {
         let Ok(executed_task) = executed_task else {
-            *result = Err(TransactionError::ProcessingCancelled);
             return None;
         };
         timings.accumulate(&executed_task.result_with_timings.1);
@@ -1106,16 +1115,16 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         return;
                     }
 
-                    // The scheduler thread can't detect a panic with disconnected channel errors,
-                    // when there are multiple handler threads. So, send an explicit Err here.
-                    error!("handler thread is panicking: {:?}", thread::current());
+                    // The scheduler thread can't detect panics in handler threads with
+                    // disconnected channel errors, unless all of them has died. So, send an
+                    // explicit Err promptly.
+                    let current_thread = thread::current();
+                    error!("handler thread is panicking: {:?}", current_thread);
                     if sender.send(Err(HandlerPanicked)).is_ok() {
-                        info!("notified a panic from {:?}", thread::current());
+                        info!("notified a panic from {:?}", current_thread);
                     } else {
-                        // It seems that scheduler has been aborted...
-                        // This branch is deliberately tested by using 2 transactions with
-                        // different timings in test_scheduler_schedule_execution_panic
-                        warn!("failed to notify a panic from {:?}", thread::current());
+                        // It seems that the scheduler thread has been aborted already...
+                        warn!("failed to notify a panic from {:?}", current_thread);
                     }
                 }
                 let mut task = ExecutedTask::new_boxed(task);
@@ -1161,14 +1170,19 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         trace!("ensure_join_threads() is called");
 
         fn join_with_panic_message(join_handle: JoinHandle<()>) -> thread::Result<()> {
-            let thread = format!("{:?}", join_handle.thread());
-            join_handle.join().map_err(|e| {
+            let thread = join_handle.thread().clone();
+            join_handle.join().inspect_err(|e| {
+                // Always needs to try both types for .downcast_ref(), according to
+                // https://doc.rust-lang.org/1.78.0/std/macro.panic.html:
+                //   a panic can be accessed as a &dyn Any + Send, which contains either a &str or
+                //   String for regular panic!() invocations. (Whether a particular invocation
+                //   contains the payload at type &str or String is unspecified and can change.)
                 let panic_message = match (e.downcast_ref::<&str>(), e.downcast_ref::<String>()) {
                     (Some(&s), _) => s,
                     (_, Some(s)) => s,
                     (None, None) => "<No panic info>",
                 };
-                panic!("{} (From: {})", panic_message, thread);
+                panic!("{} (From: {:?})", panic_message, thread);
             })
         }
 
@@ -1377,8 +1391,12 @@ mod tests {
         BeforeNewTask,
         AfterTaskHandled,
         AfterSchedulerThreadAborted,
+        BeforeIdleSchedulerCleaned,
+        AfterIdleSchedulerCleaned,
+        BeforeTrashedSchedulerCleaned,
         AfterTrashedSchedulerCleaned,
         BeforeThreadManagerDrop,
+        BeforeEndSession,
     }
 
     #[test]
@@ -1418,7 +1436,15 @@ mod tests {
     fn test_scheduler_drop_idle() {
         solana_logger::setup();
 
+        let _progress = sleepless_testing::setup(&[
+            &TestCheckPoint::BeforeIdleSchedulerCleaned,
+            &CheckPoint::IdleSchedulerCleaned(0),
+            &CheckPoint::IdleSchedulerCleaned(1),
+            &TestCheckPoint::AfterIdleSchedulerCleaned,
+        ]);
+
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+        let shortened_max_pooling_duration = Duration::from_millis(10);
         let pool_raw = DefaultSchedulerPool::do_new(
             None,
             None,
@@ -1426,19 +1452,41 @@ mod tests {
             None,
             ignored_prioritization_fee_cache,
             SHORTENED_POOL_CLEANER_INTERVAL,
-            Duration::from_millis(1),
+            shortened_max_pooling_duration,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
         );
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
-        let context = SchedulingContext::new(bank);
+        let context1 = SchedulingContext::new(bank);
+        let context2 = context1.clone();
 
-        let scheduler = pool.do_take_scheduler(context);
-        Box::new(scheduler.into_inner().1).return_to_pool();
+        let old_scheduler = pool.do_take_scheduler(context1);
+        let new_scheduler = pool.do_take_scheduler(context2);
+        let new_scheduler_id = new_scheduler.id();
+        Box::new(old_scheduler.into_inner().1).return_to_pool();
 
+        // sleepless_testing can't be used; wait a bit here to see real progress of wall time...
+        sleep(shortened_max_pooling_duration * 10);
+        Box::new(new_scheduler.into_inner().1).return_to_pool();
+
+        // Block solScCleaner until we see returned schedlers...
+        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 2);
+        sleepless_testing::at(TestCheckPoint::BeforeIdleSchedulerCleaned);
+
+        // See the old (= idle) scheduler gone only after solScCleaner did its job...
+        sleepless_testing::at(&TestCheckPoint::AfterIdleSchedulerCleaned);
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
-        sleep(Duration::from_secs(1));
-        assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 0);
+        assert_eq!(
+            pool_raw
+                .scheduler_inners
+                .lock()
+                .unwrap()
+                .first()
+                .as_ref()
+                .map(|(inner, _pooled_at)| inner.id())
+                .unwrap(),
+            new_scheduler_id
+        );
     }
 
     #[test]
@@ -1808,6 +1856,8 @@ mod tests {
             &TestCheckPoint::AfterTaskHandled,
             &CheckPoint::SchedulerThreadAborted,
             &TestCheckPoint::AfterSchedulerThreadAborted,
+            &TestCheckPoint::BeforeTrashedSchedulerCleaned,
+            &CheckPoint::TrashedSchedulerCleaned(0),
             &CheckPoint::TrashedSchedulerCleaned(1),
             &TestCheckPoint::AfterTrashedSchedulerCleaned,
         ]);
@@ -1881,7 +1931,12 @@ mod tests {
             bank.wait_for_completed_scheduler(),
             Some((Err(TransactionError::AccountNotFound), _timings))
         );
+
+        // Block solScCleaner until we see trashed schedler...
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 1);
+        sleepless_testing::at(TestCheckPoint::BeforeTrashedSchedulerCleaned);
+
+        // See the trashed scheduler gone only after solScCleaner did its job...
         sleepless_testing::at(TestCheckPoint::AfterTrashedSchedulerCleaned);
         assert_eq!(pool_raw.trashed_scheduler_inners.lock().unwrap().len(), 0);
     }
@@ -1902,6 +1957,21 @@ mod tests {
         solana_logger::setup();
 
         #[derive(Debug)]
+        enum PanickingHanlderCheckPoint {
+            BeforeNotifiedPanic,
+            BeforeIgnoredPanic,
+        }
+
+        let progress = sleepless_testing::setup(&[
+            &TestCheckPoint::BeforeNewTask,
+            &CheckPoint::NewTask(0),
+            &PanickingHanlderCheckPoint::BeforeNotifiedPanic,
+            &CheckPoint::SchedulerThreadAborted,
+            &PanickingHanlderCheckPoint::BeforeIgnoredPanic,
+            &TestCheckPoint::BeforeEndSession,
+        ]);
+
+        #[derive(Debug)]
         struct PanickingHandler;
         impl TaskHandler for PanickingHandler {
             fn handle(
@@ -1909,10 +1979,16 @@ mod tests {
                 _timings: &mut ExecuteTimings,
                 _bank: &Arc<Bank>,
                 _transaction: &SanitizedTransaction,
-                index_as_sleep_duration: usize,
+                index: usize,
                 _handler_context: &HandlerContext,
             ) {
-                sleep(Duration::from_secs(index_as_sleep_duration as u64));
+                if index == 0 {
+                    sleepless_testing::at(PanickingHanlderCheckPoint::BeforeNotifiedPanic);
+                } else if index == 1 {
+                    sleepless_testing::at(PanickingHanlderCheckPoint::BeforeIgnoredPanic);
+                } else {
+                    unreachable!();
+                }
                 panic!("This panic should be propagated.");
             }
         }
@@ -1921,9 +1997,15 @@ mod tests {
 
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
+
+        // Use 2 transactions with different timings to deliberately cover the two code paths of
+        // notifying panics in the handler threads, taken conditionally depending on whether the
+        // scheduler thread has been aborted already or not.
+        const TX_COUNT: usize = 2;
+
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool = SchedulerPool::<PooledScheduler<PanickingHandler>, _>::new_dyn(
-            Some(2), // fix 2 handlers
+            Some(TX_COUNT), // fix to use exactly 2 handlers
             None,
             None,
             None,
@@ -1933,22 +2015,26 @@ mod tests {
 
         let scheduler = pool.take_scheduler(context);
 
-        // Use 2 txes to exercise the channel disconnected case as well.
-        for index_as_sleep_duration in 1..=2 {
+        for index in 0..TX_COUNT {
+            // Use 2 non-conflicting txes to exercise the channel disconnected case as well.
             let tx =
                 &SanitizedTransaction::from_transaction_for_tests(system_transaction::transfer(
                     &Keypair::new(),
                     &solana_sdk::pubkey::new_rand(),
-                    2,
+                    1,
                     genesis_config.hash(),
                 ));
-            scheduler
-                .schedule_execution(&(tx, index_as_sleep_duration))
-                .unwrap();
+            scheduler.schedule_execution(&(tx, index)).unwrap();
         }
+        // finally unblock the scheduler thread; otherwise the above schedule_execution could
+        // return SchedulerAborted...
+        sleepless_testing::at(TestCheckPoint::BeforeNewTask);
 
-        sleep(Duration::from_secs(4));
+        sleepless_testing::at(TestCheckPoint::BeforeEndSession);
         let bank = BankWithScheduler::new(bank, Some(scheduler));
+
+        // the outer .unwrap() will panic. so, drop progress now.
+        drop(progress);
         bank.wait_for_completed_scheduler().unwrap().0.unwrap();
     }
 
