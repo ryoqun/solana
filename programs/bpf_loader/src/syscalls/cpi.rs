@@ -2,6 +2,7 @@ use {
     super::*,
     crate::serialization::account_data_region_memory_state,
     scopeguard::defer,
+    solana_measure::measure::Measure,
     solana_program_runtime::invoke_context::SerializedAccountMetadata,
     solana_rbpf::{
         ebpf,
@@ -9,6 +10,7 @@ use {
     },
     solana_sdk::{
         feature_set::enable_bpf_loader_set_authority_checked_ix,
+        saturating_add_assign,
         stable_layout::stable_instruction::StableInstruction,
         syscalls::{
             MAX_CPI_ACCOUNT_INFOS, MAX_CPI_INSTRUCTION_ACCOUNTS, MAX_CPI_INSTRUCTION_DATA_LEN,
@@ -107,7 +109,7 @@ impl<'a, 'b> CallerAccount<'a, 'b> {
         account_metadata: &SerializedAccountMetadata,
     ) -> Result<CallerAccount<'a, 'b>, Error> {
         let direct_mapping = invoke_context
-            .feature_set
+            .get_feature_set()
             .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
         if direct_mapping {
@@ -244,7 +246,7 @@ impl<'a, 'b> CallerAccount<'a, 'b> {
         account_metadata: &SerializedAccountMetadata,
     ) -> Result<CallerAccount<'a, 'b>, Error> {
         let direct_mapping = invoke_context
-            .feature_set
+            .get_feature_set()
             .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
         if direct_mapping {
@@ -452,7 +454,7 @@ impl SyscallInvokeSigned for SyscallInvokeSignedRust {
 
         let ix_data_len = ix.data.len() as u64;
         if invoke_context
-            .feature_set
+            .get_feature_set()
             .is_active(&feature_set::loosen_cpi_size_restriction::id())
         {
             consume_compute_meter(
@@ -666,7 +668,7 @@ impl SyscallInvokeSigned for SyscallInvokeSignedC {
 
         let ix_data_len = ix_c.data_len;
         if invoke_context
-            .feature_set
+            .get_feature_set()
             .is_active(&feature_set::loosen_cpi_size_restriction::id())
         {
             consume_compute_meter(
@@ -866,7 +868,7 @@ where
         .accounts_metadata;
 
     let direct_mapping = invoke_context
-        .feature_set
+        .get_feature_set()
         .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
     for (instruction_account_index, instruction_account) in instruction_accounts.iter().enumerate()
@@ -961,7 +963,7 @@ fn check_instruction_size(
     invoke_context: &mut InvokeContext,
 ) -> Result<(), Error> {
     if invoke_context
-        .feature_set
+        .get_feature_set()
         .is_active(&feature_set::loosen_cpi_size_restriction::id())
     {
         let data_len = data_len as u64;
@@ -998,11 +1000,11 @@ fn check_account_infos(
     invoke_context: &mut InvokeContext,
 ) -> Result<(), Error> {
     if invoke_context
-        .feature_set
+        .get_feature_set()
         .is_active(&feature_set::loosen_cpi_size_restriction::id())
     {
         let max_cpi_account_infos = if invoke_context
-            .feature_set
+            .get_feature_set()
             .is_active(&feature_set::increase_tx_account_lock_limit::id())
         {
             MAX_CPI_ACCOUNT_INFOS
@@ -1041,14 +1043,14 @@ fn check_authorized_program(
             && !(bpf_loader_upgradeable::is_upgrade_instruction(instruction_data)
                 || bpf_loader_upgradeable::is_set_authority_instruction(instruction_data)
                 || (invoke_context
-                    .feature_set
+                    .get_feature_set()
                     .is_active(&enable_bpf_loader_set_authority_checked_ix::id())
                     && bpf_loader_upgradeable::is_set_authority_checked_instruction(
                         instruction_data,
                     ))
                 || bpf_loader_upgradeable::is_close_instruction(instruction_data)))
         || is_precompile(program_id, |feature_id: &Pubkey| {
-            invoke_context.feature_set.is_active(feature_id)
+            invoke_context.get_feature_set().is_active(feature_id)
         })
     {
         return Err(Box::new(SyscallError::ProgramNotSupported(*program_id)));
@@ -1074,6 +1076,10 @@ fn cpi_common<S: SyscallInvokeSigned>(
         invoke_context,
         invoke_context.get_compute_budget().invoke_units,
     )?;
+    if let Some(execute_time) = invoke_context.execute_time.as_mut() {
+        execute_time.stop();
+        saturating_add_assign!(invoke_context.timings.execute_us, execute_time.as_us());
+    }
 
     let instruction = S::translate_instruction(instruction_addr, memory_mapping, invoke_context)?;
     let transaction_context = &invoke_context.transaction_context;
@@ -1122,7 +1128,7 @@ fn cpi_common<S: SyscallInvokeSigned>(
     //
     // Synchronize the callee's account changes so the caller can see them.
     let direct_mapping = invoke_context
-        .feature_set
+        .get_feature_set()
         .is_active(&feature_set::bpf_account_data_direct_mapping::id());
 
     if direct_mapping {
@@ -1159,6 +1165,7 @@ fn cpi_common<S: SyscallInvokeSigned>(
         }
     }
 
+    invoke_context.execute_time = Some(Measure::start("execute"));
     Ok(SUCCESS)
 }
 
@@ -1308,8 +1315,9 @@ fn update_caller_account(
             // never points to an invalid address.
             //
             // Note that the capacity can be smaller than the original length only if the account is
-            // reallocated using the AccountSharedData API directly (deprecated). BorrowedAccount
-            // and CoW don't trigger this, see BorrowedAccount::make_data_mut.
+            // reallocated using the AccountSharedData API directly (deprecated) or using
+            // BorrowedAccount::set_data_from_slice(), which implements an optimization to avoid an
+            // extra allocation.
             let min_capacity = caller_account.original_data_len;
             if callee_account.capacity() < min_capacity {
                 callee_account
@@ -1629,8 +1637,9 @@ mod tests {
                 .map(|a| (a.0, a.1))
                 .collect::<Vec<TransactionAccount>>();
             with_mock_invoke_context!($invoke_context, $transaction_context, transaction_accounts);
-            let feature_set = Arc::make_mut(&mut $invoke_context.feature_set);
+            let mut feature_set = $invoke_context.get_feature_set().clone();
             feature_set.deactivate(&bpf_account_data_direct_mapping::id());
+            $invoke_context.mock_set_feature_set(Arc::new(feature_set));
             $invoke_context
                 .transaction_context
                 .get_next_instruction_context()
@@ -2778,40 +2787,53 @@ mod tests {
     }
 
     fn mock_signers(signers: &[&[u8]], vm_addr: u64) -> (Vec<u8>, MemoryRegion) {
-        let slice_size = mem::size_of::<&[()]>();
-        let size = signers
-            .iter()
-            .fold(slice_size, |size, signer| size + slice_size + signer.len());
-
         let vm_addr = vm_addr as usize;
-        let mut slices_addr = vm_addr + slice_size;
 
-        let mut data = vec![0; size];
-        unsafe {
-            ptr::write_unaligned(
-                data.as_mut_ptr().cast(),
-                slice::from_raw_parts::<&[&[u8]]>(slices_addr as *const _, signers.len()),
-            );
-        }
+        // calculate size
+        let fat_ptr_size_of_slice = mem::size_of::<&[()]>(); // pointer size + length size
+        let singers_length = signers.len();
+        let sum_signers_data_length: usize = signers.iter().map(|s| s.len()).sum();
 
-        let mut signers_addr = slices_addr + signers.len() * slice_size;
+        // init data vec
+        let total_size = fat_ptr_size_of_slice
+            + singers_length * fat_ptr_size_of_slice
+            + sum_signers_data_length;
+        let mut data = vec![0; total_size];
 
-        for signer in signers {
-            unsafe {
-                ptr::write_unaligned(
-                    (data.as_mut_ptr() as usize + slices_addr - vm_addr) as *mut _,
-                    slice::from_raw_parts::<&[u8]>(signers_addr as *const _, signer.len()),
-                );
-            }
-            slices_addr += slice_size;
-            signers_addr += signer.len();
-        }
+        // data is composed by 3 parts
+        // A.
+        // [ singers address, singers length, ...,
+        // B.                                      |
+        //                                         signer1 address, signer1 length, signer2 address ...,
+        //                                         ^ p1 --->
+        // C.                                                                                           |
+        //                                                                                              signer1 data, signer2 data, ... ]
+        //                                                                                              ^ p2 --->
 
-        let slices_addr = vm_addr + slice_size;
-        let mut signers_addr = slices_addr + signers.len() * slice_size;
-        for signer in signers {
-            data[signers_addr - vm_addr..][..signer.len()].copy_from_slice(signer);
-            signers_addr += signer.len();
+        // A.
+        data[..fat_ptr_size_of_slice / 2]
+            .clone_from_slice(&(fat_ptr_size_of_slice + vm_addr).to_le_bytes());
+        data[fat_ptr_size_of_slice / 2..fat_ptr_size_of_slice]
+            .clone_from_slice(&(singers_length).to_le_bytes());
+
+        // B. + C.
+        let (mut p1, mut p2) = (
+            fat_ptr_size_of_slice,
+            fat_ptr_size_of_slice + singers_length * fat_ptr_size_of_slice,
+        );
+        for signer in signers.iter() {
+            let signer_length = signer.len();
+
+            // B.
+            data[p1..p1 + fat_ptr_size_of_slice / 2]
+                .clone_from_slice(&(p2 + vm_addr).to_le_bytes());
+            data[p1 + fat_ptr_size_of_slice / 2..p1 + fat_ptr_size_of_slice]
+                .clone_from_slice(&(signer_length).to_le_bytes());
+            p1 += fat_ptr_size_of_slice;
+
+            // C.
+            data[p2..p2 + signer_length].clone_from_slice(signer);
+            p2 += signer_length;
         }
 
         let region = MemoryRegion::new_writable(data.as_mut_slice(), vm_addr as u64);

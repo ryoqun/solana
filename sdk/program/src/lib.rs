@@ -475,9 +475,11 @@ pub mod alt_bn128;
 pub(crate) mod atomic_u64;
 pub mod big_mod_exp;
 pub mod blake3;
+#[cfg(feature = "borsh")]
 pub mod borsh;
+#[cfg(feature = "borsh")]
 pub mod borsh0_10;
-pub mod borsh0_9;
+#[cfg(feature = "borsh")]
 pub mod borsh1;
 pub mod bpf_loader;
 pub mod bpf_loader_deprecated;
@@ -507,7 +509,6 @@ pub mod log;
 pub mod message;
 pub mod native_token;
 pub mod nonce;
-pub mod poseidon;
 pub mod program;
 pub mod program_error;
 pub mod program_memory;
@@ -646,7 +647,8 @@ pub use solana_sdk_macro::program_pubkey as pubkey;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
+#[cfg_attr(feature = "frozen-abi", macro_use)]
+#[cfg(feature = "frozen-abi")]
 extern crate solana_frozen_abi_macro;
 
 /// Convenience macro for doing integer division where the operation's safety

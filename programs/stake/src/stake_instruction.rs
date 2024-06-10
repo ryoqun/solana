@@ -145,7 +145,7 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
                 &clock,
                 &stake_history,
                 &signers,
-                &invoke_context.feature_set,
+                invoke_context.get_feature_set(),
             )
         }
         StakeInstruction::Split(lamports) => {
@@ -310,7 +310,7 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
             set_lockup(&mut me, &lockup, &signers, &clock)
         }
         StakeInstruction::GetMinimumDelegation => {
-            let feature_set = invoke_context.feature_set.as_ref();
+            let feature_set = invoke_context.get_feature_set();
             let minimum_delegation = crate::get_minimum_delegation(feature_set);
             let minimum_delegation = Vec::from(minimum_delegation.to_le_bytes());
             invoke_context
@@ -335,7 +335,7 @@ declare_process_instruction!(Entrypoint, DEFAULT_COMPUTE_UNITS, |invoke_context|
         StakeInstruction::Redelegate => {
             let mut me = get_stake_account()?;
             if invoke_context
-                .feature_set
+                .get_feature_set()
                 .is_active(&feature_set::stake_redelegate_instruction::id())
             {
                 instruction_context.check_number_of_instruction_accounts(3)?;
@@ -460,7 +460,7 @@ mod tests {
             expected_result,
             Entrypoint::vm,
             |invoke_context| {
-                invoke_context.feature_set = Arc::clone(&feature_set);
+                invoke_context.mock_set_feature_set(Arc::clone(&feature_set));
             },
             |_invoke_context| {},
         )
@@ -2269,7 +2269,7 @@ mod tests {
                     voter_pubkey: vote_address,
                     stake: stake_lamports,
                     activation_epoch: clock.epoch,
-                    deactivation_epoch: std::u64::MAX,
+                    deactivation_epoch: u64::MAX,
                     ..Delegation::default()
                 },
                 credits_observed: vote_state_credits,
@@ -2332,7 +2332,7 @@ mod tests {
         );
         // verify that deactivation has been cleared
         let stake = stake_from(&accounts_2[0]).unwrap();
-        assert_eq!(stake.delegation.deactivation_epoch, std::u64::MAX);
+        assert_eq!(stake.delegation.deactivation_epoch, u64::MAX);
 
         // verify that delegate to a different vote account fails
         // if stake is still active
@@ -2368,7 +2368,7 @@ mod tests {
                     voter_pubkey: vote_address_2,
                     stake: stake_lamports,
                     activation_epoch: clock.epoch,
-                    deactivation_epoch: std::u64::MAX,
+                    deactivation_epoch: u64::MAX,
                     ..Delegation::default()
                 },
                 credits_observed: vote_state_credits,
@@ -6889,11 +6889,11 @@ mod tests {
             Ok(()),
             Entrypoint::vm,
             |invoke_context| {
-                invoke_context.feature_set = Arc::clone(&feature_set);
+                invoke_context.mock_set_feature_set(Arc::clone(&feature_set));
             },
             |invoke_context| {
                 let expected_minimum_delegation =
-                    crate::get_minimum_delegation(&invoke_context.feature_set).to_le_bytes();
+                    crate::get_minimum_delegation(invoke_context.get_feature_set()).to_le_bytes();
                 let actual_minimum_delegation =
                     invoke_context.transaction_context.get_return_data().1;
                 assert_eq!(expected_minimum_delegation, actual_minimum_delegation);

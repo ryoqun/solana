@@ -30,7 +30,11 @@ use {
         optimistically_confirmed_bank_tracker::BankNotificationSender,
         rpc_subscriptions::RpcSubscriptions,
     },
-    solana_runtime::{bank_forks::BankForks, prioritization_fee_cache::PrioritizationFeeCache},
+    solana_runtime::{
+        bank_forks::BankForks,
+        prioritization_fee_cache::PrioritizationFeeCache,
+        vote_sender_types::{ReplayVoteReceiver, ReplayVoteSender},
+    },
     solana_sdk::{clock::Slot, pubkey::Pubkey, quic::NotifyKeyUpdate, signature::Keypair},
     solana_streamer::{
         nonblocking::quic::{DEFAULT_MAX_STREAMS_PER_MS, DEFAULT_WAIT_FOR_CHUNK_TIMEOUT},
@@ -38,7 +42,6 @@ use {
         streamer::StakedNodes,
     },
     solana_turbine::broadcast_stage::{BroadcastStage, BroadcastStageType},
-    solana_vote::vote_sender_types::{ReplayVoteReceiver, ReplayVoteSender},
     std::{
         collections::HashMap,
         net::{SocketAddr, UdpSocket},
@@ -108,6 +111,7 @@ impl Tpu {
         banking_tracer: Arc<BankingTracer>,
         tracer_thread_hdl: TracerThread,
         tpu_enable_udp: bool,
+        tpu_max_connections_per_ipaddr_per_minute: u64,
         prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
         block_production_method: BlockProductionMethod,
         _generator_config: Option<GeneratorConfig>, /* vestigial code for replay invalidator */
@@ -164,6 +168,7 @@ impl Tpu {
             MAX_STAKED_CONNECTIONS,
             MAX_UNSTAKED_CONNECTIONS,
             DEFAULT_MAX_STREAMS_PER_MS,
+            tpu_max_connections_per_ipaddr_per_minute,
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             tpu_coalesce,
         )
@@ -185,6 +190,7 @@ impl Tpu {
             MAX_STAKED_CONNECTIONS.saturating_add(MAX_UNSTAKED_CONNECTIONS),
             0, // Prevent unstaked nodes from forwarding transactions
             DEFAULT_MAX_STREAMS_PER_MS,
+            tpu_max_connections_per_ipaddr_per_minute,
             DEFAULT_WAIT_FOR_CHUNK_TIMEOUT,
             tpu_coalesce,
         )

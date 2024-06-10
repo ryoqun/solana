@@ -5,7 +5,9 @@
 
 use {
     super::{committer::CommitTransactionDetails, BatchedTransactionDetails},
-    solana_cost_model::{cost_model::CostModel, transaction_cost::TransactionCost},
+    solana_cost_model::{
+        cost_model::CostModel, cost_tracker::UpdatedCosts, transaction_cost::TransactionCost,
+    },
     solana_measure::measure::Measure,
     solana_runtime::bank::Bank,
     solana_sdk::{
@@ -104,8 +106,8 @@ impl QosService {
                 match cost {
                     Ok(cost) => {
                         match cost_tracker.try_add(&cost) {
-                            Ok(current_block_cost) => {
-                                debug!("slot {:?}, transaction {:?}, cost {:?}, fit into current block, current block cost {}", bank.slot(), tx, cost, current_block_cost);
+                            Ok(UpdatedCosts{updated_block_cost, updated_costliest_account_cost}) => {
+                                debug!("slot {:?}, transaction {:?}, cost {:?}, fit into current block, current block cost {}, updated costliest account cost {}", bank.slot(), tx, cost, updated_block_cost, updated_costliest_account_cost);
                                 self.metrics.stats.selected_txs_count.fetch_add(1, Ordering::Relaxed);
                                 num_included += 1;
                                 Ok(cost)
@@ -192,14 +194,23 @@ impl QosService {
         let mut cost_tracker = bank.write_cost_tracker().unwrap();
         transaction_cost_results
             .zip(transaction_committed_status)
-            .for_each(|(tx_cost, transaction_committed_details)| {
+            .for_each(|(estimated_tx_cost, transaction_committed_details)| {
                 // Only transactions that the qos service included have to be
                 // checked for update
-                if let Ok(tx_cost) = tx_cost {
-                    if let CommitTransactionDetails::Committed { compute_units } =
-                        transaction_committed_details
+                if let Ok(estimated_tx_cost) = estimated_tx_cost {
+                    if let CommitTransactionDetails::Committed {
+                        compute_units,
+                        loaded_accounts_data_size,
+                    } = transaction_committed_details
                     {
-                        cost_tracker.update_execution_cost(tx_cost, *compute_units)
+                        cost_tracker.update_execution_cost(
+                            estimated_tx_cost,
+                            *compute_units,
+                            CostModel::calculate_loaded_accounts_data_size_cost(
+                                *loaded_accounts_data_size,
+                                &bank.feature_set,
+                            ),
+                        )
                     }
                 }
             });
@@ -243,6 +254,15 @@ impl QosService {
             batched_transaction_details.costs.batched_data_bytes_cost,
             Ordering::Relaxed,
         );
+        self.metrics
+            .stats
+            .estimated_loaded_accounts_data_size_cu
+            .fetch_add(
+                batched_transaction_details
+                    .costs
+                    .batched_loaded_accounts_data_size_cost,
+                Ordering::Relaxed,
+            );
         self.metrics.stats.estimated_programs_execute_cu.fetch_add(
             batched_transaction_details
                 .costs
@@ -330,6 +350,12 @@ impl QosService {
                 saturating_add_assign!(
                     batched_transaction_details.costs.batched_data_bytes_cost,
                     cost.data_bytes_cost()
+                );
+                saturating_add_assign!(
+                    batched_transaction_details
+                        .costs
+                        .batched_loaded_accounts_data_size_cost,
+                    cost.loaded_accounts_data_size_cost()
                 );
                 saturating_add_assign!(
                     batched_transaction_details
@@ -426,6 +452,9 @@ struct QosServiceMetricsStats {
     /// accumulated estimated instruction data Compute Units to be packed into block
     estimated_data_bytes_cu: AtomicU64,
 
+    /// accumulated estimated loaded accounts data size cost to be packed into block
+    estimated_loaded_accounts_data_size_cu: AtomicU64,
+
     /// accumulated estimated program Compute Units to be packed into block
     estimated_programs_execute_cu: AtomicU64,
 
@@ -507,6 +536,13 @@ impl QosServiceMetrics {
                     "estimated_data_bytes_cu",
                     self.stats
                         .estimated_data_bytes_cu
+                        .swap(0, Ordering::Relaxed),
+                    i64
+                ),
+                (
+                    "estimated_loaded_accounts_data_size_cu",
+                    self.stats
+                        .estimated_loaded_accounts_data_size_cu
                         .swap(0, Ordering::Relaxed),
                     i64
                 ),
@@ -696,13 +732,25 @@ mod tests {
         // calculate their costs, apply to cost_tracker
         let transaction_count = 5;
         let keypair = Keypair::new();
-        let transfer_tx = SanitizedTransaction::from_transaction_for_tests(
-            system_transaction::transfer(&keypair, &keypair.pubkey(), 1, Hash::default()),
-        );
+        let loaded_accounts_data_size: usize = 1_000_000;
+        let transaction = solana_sdk::transaction::Transaction::new_unsigned(solana_sdk::message::Message::new(
+            &[
+                solana_sdk::compute_budget::ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(loaded_accounts_data_size as u32),
+                solana_sdk::system_instruction::transfer(&keypair.pubkey(), &solana_sdk::pubkey::Pubkey::new_unique(), 1),
+            ],
+            Some(&keypair.pubkey()),
+        ));
+        let transfer_tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
         let txs: Vec<SanitizedTransaction> = (0..transaction_count)
             .map(|_| transfer_tx.clone())
             .collect();
-        let execute_units_adjustment = 10u64;
+        let execute_units_adjustment: u64 = 10;
+        let loaded_accounts_data_size_adjustment: usize = 32000;
+        let loaded_accounts_data_size_cost_adjustment =
+            CostModel::calculate_loaded_accounts_data_size_cost(
+                loaded_accounts_data_size_adjustment,
+                &bank.feature_set,
+            );
 
         // assert all tx_costs should be applied to cost_tracker if all execution_results are all committed
         {
@@ -728,9 +776,13 @@ mod tests {
                 .map(|tx_cost| CommitTransactionDetails::Committed {
                     compute_units: tx_cost.as_ref().unwrap().programs_execution_cost()
                         + execute_units_adjustment,
+                    loaded_accounts_data_size: loaded_accounts_data_size
+                        + loaded_accounts_data_size_adjustment,
                 })
                 .collect();
-            let final_txs_cost = total_txs_cost + execute_units_adjustment * transaction_count;
+            let final_txs_cost = total_txs_cost
+                + (execute_units_adjustment + loaded_accounts_data_size_cost_adjustment)
+                    * transaction_count;
 
             // All transactions are committed, no costs should be removed
             QosService::remove_costs(qos_cost_results.iter(), Some(&committed_status), &bank);
@@ -818,13 +870,25 @@ mod tests {
         // calculate their costs, apply to cost_tracker
         let transaction_count = 5;
         let keypair = Keypair::new();
-        let transfer_tx = SanitizedTransaction::from_transaction_for_tests(
-            system_transaction::transfer(&keypair, &keypair.pubkey(), 1, Hash::default()),
-        );
+        let loaded_accounts_data_size: usize = 1_000_000;
+        let transaction = solana_sdk::transaction::Transaction::new_unsigned(solana_sdk::message::Message::new(
+            &[
+                solana_sdk::compute_budget::ComputeBudgetInstruction::set_loaded_accounts_data_size_limit(loaded_accounts_data_size as u32),
+                solana_sdk::system_instruction::transfer(&keypair.pubkey(), &solana_sdk::pubkey::Pubkey::new_unique(), 1),
+            ],
+            Some(&keypair.pubkey()),
+        ));
+        let transfer_tx = SanitizedTransaction::from_transaction_for_tests(transaction.clone());
         let txs: Vec<SanitizedTransaction> = (0..transaction_count)
             .map(|_| transfer_tx.clone())
             .collect();
-        let execute_units_adjustment = 10u64;
+        let execute_units_adjustment: u64 = 10;
+        let loaded_accounts_data_size_adjustment: usize = 32000;
+        let loaded_accounts_data_size_cost_adjustment =
+            CostModel::calculate_loaded_accounts_data_size_cost(
+                loaded_accounts_data_size_adjustment,
+                &bank.feature_set,
+            );
 
         // assert only committed tx_costs are applied cost_tracker
         {
@@ -855,6 +919,8 @@ mod tests {
                         CommitTransactionDetails::Committed {
                             compute_units: tx_cost.as_ref().unwrap().programs_execution_cost()
                                 + execute_units_adjustment,
+                            loaded_accounts_data_size: loaded_accounts_data_size
+                                + loaded_accounts_data_size_adjustment,
                         }
                     }
                 })
@@ -869,8 +935,9 @@ mod tests {
             qos_cost_results.iter().enumerate().for_each(|(n, cost)| {
                 if n % 2 != 0 {
                     expected_final_txs_count += 1;
-                    expected_final_block_cost +=
-                        cost.as_ref().unwrap().sum() + execute_units_adjustment;
+                    expected_final_block_cost += cost.as_ref().unwrap().sum()
+                        + execute_units_adjustment
+                        + loaded_accounts_data_size_cost_adjustment;
                 }
             });
             assert_eq!(

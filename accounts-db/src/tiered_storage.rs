@@ -118,9 +118,11 @@ impl TieredStorage {
         }
 
         if format == &HOT_FORMAT {
-            let result = {
+            let stored_accounts_info = {
                 let mut writer = HotStorageWriter::new(&self.path)?;
-                writer.write_accounts(accounts, skip)
+                let stored_accounts_info = writer.write_accounts(accounts, skip)?;
+                writer.flush()?;
+                stored_accounts_info
             };
 
             // panic here if self.reader.get() is not None as self.reader can only be
@@ -131,7 +133,7 @@ impl TieredStorage {
                 .set(TieredStorageReader::new_from_path(&self.path)?)
                 .unwrap();
 
-            result
+            Ok(stored_accounts_info)
         } else {
             Err(TieredStorageError::UnknownFormat(self.path.to_path_buf()))
         }
@@ -171,7 +173,6 @@ mod tests {
         file::TieredStorageMagicNumber,
         footer::TieredStorageFooter,
         hot::HOT_FORMAT,
-        index::IndexOffset,
         solana_sdk::{
             account::{AccountSharedData, ReadableAccount},
             clock::Slot,
@@ -371,7 +372,6 @@ mod tests {
             });
         }
 
-        let mut index_offset = IndexOffset(0);
         let mut verified_accounts = HashSet::new();
         let footer = reader.footer();
 
@@ -404,35 +404,6 @@ mod tests {
         assert_eq!(footer.max_account_address, max_pubkey);
         assert!(!verified_accounts.is_empty());
         assert_eq!(verified_accounts.len(), expected_accounts_map.len());
-
-        // try again with get_stored_account_meta
-        verified_accounts = HashSet::new();
-        min_pubkey = MAX_PUBKEY;
-        max_pubkey = MIN_PUBKEY;
-        while let Some((stored_account_meta, next)) =
-            reader.get_stored_account_meta(index_offset).unwrap()
-        {
-            if let Some(account) = expected_accounts_map.get(stored_account_meta.pubkey()) {
-                verify_test_account_with_footer(
-                    &stored_account_meta,
-                    account,
-                    stored_account_meta.pubkey(),
-                    footer,
-                );
-                verified_accounts.insert(*stored_account_meta.pubkey());
-                if min_pubkey > *stored_account_meta.pubkey() {
-                    min_pubkey = *stored_account_meta.pubkey();
-                }
-                if max_pubkey < *stored_account_meta.pubkey() {
-                    max_pubkey = *stored_account_meta.pubkey();
-                }
-            }
-            index_offset = next;
-        }
-        assert_eq!(footer.min_account_address, min_pubkey);
-        assert_eq!(footer.max_account_address, max_pubkey);
-        assert!(!verified_accounts.is_empty());
-        assert_eq!(verified_accounts.len(), expected_accounts_map.len())
     }
 
     #[test]

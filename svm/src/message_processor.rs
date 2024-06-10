@@ -1,5 +1,4 @@
 use {
-    serde::{Deserialize, Serialize},
     solana_measure::measure::Measure,
     solana_program_runtime::{
         invoke_context::InvokeContext,
@@ -16,10 +15,10 @@ use {
     },
 };
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, serde_derive::Deserialize, serde_derive::Serialize)]
 pub struct MessageProcessor {}
 
-#[cfg(RUSTC_WITH_SPECIALIZATION)]
+#[cfg(all(RUSTC_WITH_SPECIALIZATION, feature = "frozen-abi"))]
 impl ::solana_frozen_abi::abi_example::AbiExample for MessageProcessor {
     fn example() -> Self {
         // MessageProcessor's fields are #[serde(skip)]-ed and not Serialize
@@ -38,7 +37,7 @@ impl MessageProcessor {
         message: &SanitizedMessage,
         program_indices: &[Vec<IndexOfAccount>],
         invoke_context: &mut InvokeContext,
-        timings: &mut ExecuteTimings,
+        execute_timings: &mut ExecuteTimings,
         accumulated_consumed_units: &mut u64,
     ) -> Result<(), TransactionError> {
         debug_assert_eq!(program_indices.len(), message.instructions().len());
@@ -47,8 +46,9 @@ impl MessageProcessor {
             .zip(program_indices.iter())
             .enumerate()
         {
-            let is_precompile =
-                is_precompile(program_id, |id| invoke_context.feature_set.is_active(id));
+            let is_precompile = is_precompile(program_id, |id| {
+                invoke_context.get_feature_set().is_active(id)
+            });
 
             // Fixup the special instructions key if present
             // before the account pre-values are taken care of
@@ -112,23 +112,26 @@ impl MessageProcessor {
                     &instruction_accounts,
                     program_indices,
                     &mut compute_units_consumed,
-                    timings,
+                    execute_timings,
                 );
                 let time = time.end_as_us();
                 *accumulated_consumed_units =
                     accumulated_consumed_units.saturating_add(compute_units_consumed);
-                timings.details.accumulate_program(
+                execute_timings.details.accumulate_program(
                     program_id,
                     time,
                     compute_units_consumed,
                     result.is_err(),
                 );
                 invoke_context.timings = {
-                    timings.details.accumulate(&invoke_context.timings);
+                    execute_timings.details.accumulate(&invoke_context.timings);
                     ExecuteDetailsTimings::default()
                 };
                 saturating_add_assign!(
-                    timings.execute_accessories.process_instructions.total_us,
+                    execute_timings
+                        .execute_accessories
+                        .process_instructions
+                        .total_us,
                     time
                 );
                 result
@@ -145,9 +148,10 @@ impl MessageProcessor {
 mod tests {
     use {
         super::*,
+        solana_compute_budget::compute_budget::ComputeBudget,
         solana_program_runtime::{
-            compute_budget::ComputeBudget,
             declare_process_instruction,
+            invoke_context::EnvironmentConfig,
             loaded_programs::{ProgramCacheEntry, ProgramCacheForTxBatch},
             sysvar_cache::SysvarCache,
         },
@@ -168,7 +172,7 @@ mod tests {
         std::sync::Arc,
     };
 
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, serde_derive::Serialize, serde_derive::Deserialize)]
     enum MockInstruction {
         NoopSuccess,
         NoopFail,
@@ -184,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_process_message_readonly_handling() {
-        #[derive(Serialize, Deserialize)]
+        #[derive(serde_derive::Serialize, serde_derive::Deserialize)]
         enum MockSystemInstruction {
             Correct,
             TransferLamports { lamports: u64 },
@@ -239,8 +243,8 @@ mod tests {
         ];
         let mut transaction_context = TransactionContext::new(accounts, Rent::default(), 1, 3);
         let program_indices = vec![vec![2]];
-        let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
-        programs_loaded_for_tx_batch.replenish(
+        let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
+        program_cache_for_tx_batch.replenish(
             mock_system_program_id,
             Arc::new(ProgramCacheEntry::new_builtin(0, 0, MockBuiltin::vm)),
         );
@@ -272,16 +276,19 @@ mod tests {
         ));
         let sysvar_cache = SysvarCache::default();
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,
@@ -323,16 +330,19 @@ mod tests {
             ]),
         ));
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,
@@ -364,16 +374,19 @@ mod tests {
             ]),
         ));
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,
@@ -393,7 +406,7 @@ mod tests {
 
     #[test]
     fn test_process_message_duplicate_accounts() {
-        #[derive(Serialize, Deserialize)]
+        #[derive(serde_derive::Serialize, serde_derive::Deserialize)]
         enum MockSystemInstruction {
             BorrowFail,
             MultiBorrowMut,
@@ -465,8 +478,8 @@ mod tests {
         ];
         let mut transaction_context = TransactionContext::new(accounts, Rent::default(), 1, 3);
         let program_indices = vec![vec![2]];
-        let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
-        programs_loaded_for_tx_batch.replenish(
+        let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
+        program_cache_for_tx_batch.replenish(
             mock_program_id,
             Arc::new(ProgramCacheEntry::new_builtin(0, 0, MockBuiltin::vm)),
         );
@@ -496,16 +509,19 @@ mod tests {
         ));
         let sysvar_cache = SysvarCache::default();
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,
@@ -532,16 +548,19 @@ mod tests {
             Some(transaction_context.get_key_of_account_at_index(0).unwrap()),
         ));
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,
@@ -565,16 +584,19 @@ mod tests {
             Some(transaction_context.get_key_of_account_at_index(0).unwrap()),
         ));
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,
@@ -653,22 +675,25 @@ mod tests {
             Some(transaction_context.get_key_of_account_at_index(0).unwrap()),
         ));
         let sysvar_cache = SysvarCache::default();
-        let mut programs_loaded_for_tx_batch = ProgramCacheForTxBatch::default();
-        programs_loaded_for_tx_batch.replenish(
+        let mut program_cache_for_tx_batch = ProgramCacheForTxBatch::default();
+        program_cache_for_tx_batch.replenish(
             mock_program_id,
             Arc::new(ProgramCacheEntry::new_builtin(0, 0, MockBuiltin::vm)),
         );
         let mut programs_modified_by_tx = ProgramCacheForTxBatch::default();
+        let environment_config = EnvironmentConfig::new(
+            Hash::default(),
+            Arc::new(FeatureSet::all_enabled()),
+            0,
+            &sysvar_cache,
+        );
         let mut invoke_context = InvokeContext::new(
             &mut transaction_context,
-            &sysvar_cache,
+            &program_cache_for_tx_batch,
+            environment_config,
             None,
             ComputeBudget::default(),
-            &programs_loaded_for_tx_batch,
             &mut programs_modified_by_tx,
-            Arc::new(FeatureSet::all_enabled()),
-            Hash::default(),
-            0,
         );
         let result = MessageProcessor::process_message(
             &message,

@@ -347,12 +347,6 @@ pub fn blockstore_subcommands<'a, 'b>(hidden: bool) -> Vec<App<'a, 'b>> {
             .about("Print all the duplicate slots in the ledger")
             .settings(&hidden)
             .arg(&starting_slot_arg),
-        SubCommand::with_name("json")
-            .about("Print the ledger in JSON format")
-            .settings(&hidden)
-            .arg(&starting_slot_arg)
-            .arg(&ending_slot_arg)
-            .arg(&allow_dead_slots_arg),
         SubCommand::with_name("latest-optimistic-slots")
             .about(
                 "Output up to the most recent <num-slots> optimistic slots with their hashes \
@@ -717,21 +711,6 @@ fn do_blockstore_process_command(ledger_path: &Path, matches: &ArgMatches<'_>) -
                 println!("{slot}");
             }
         }
-        ("json", Some(arg_matches)) => {
-            let starting_slot = value_t_or_exit!(arg_matches, "starting_slot", Slot);
-            let ending_slot = value_t!(arg_matches, "ending_slot", Slot).unwrap_or(Slot::MAX);
-            let allow_dead_slots = arg_matches.is_present("allow_dead_slots");
-            output_ledger(
-                crate::open_blockstore(&ledger_path, arg_matches, AccessType::Secondary),
-                starting_slot,
-                ending_slot,
-                allow_dead_slots,
-                OutputFormat::Json,
-                None,
-                std::u64::MAX,
-                true,
-            );
-        }
         ("latest-optimistic-slots", Some(arg_matches)) => {
             let blockstore =
                 crate::open_blockstore(&ledger_path, arg_matches, AccessType::Secondary);
@@ -858,16 +837,18 @@ fn do_blockstore_process_command(ledger_path: &Path, matches: &ArgMatches<'_>) -
             let num_slots = value_t!(arg_matches, "num_slots", Slot).ok();
             let allow_dead_slots = arg_matches.is_present("allow_dead_slots");
             let only_rooted = arg_matches.is_present("only_rooted");
+            let output_format = OutputFormat::from_matches(arg_matches, "output_format", false);
+
             output_ledger(
                 crate::open_blockstore(&ledger_path, arg_matches, AccessType::Secondary),
                 starting_slot,
                 ending_slot,
                 allow_dead_slots,
-                OutputFormat::Display,
+                output_format,
                 num_slots,
                 verbose_level,
                 only_rooted,
-            );
+            )?;
         }
         ("print-file-metadata", Some(arg_matches)) => {
             let blockstore =
@@ -1038,20 +1019,20 @@ fn do_blockstore_process_command(ledger_path: &Path, matches: &ArgMatches<'_>) -
         ("slot", Some(arg_matches)) => {
             let slots = values_t_or_exit!(arg_matches, "slots", Slot);
             let allow_dead_slots = arg_matches.is_present("allow_dead_slots");
+            let output_format = OutputFormat::from_matches(arg_matches, "output_format", false);
+
             let blockstore =
                 crate::open_blockstore(&ledger_path, arg_matches, AccessType::Secondary);
             for slot in slots {
                 println!("Slot {slot}");
-                if let Err(err) = output_slot(
+                output_slot(
                     &blockstore,
                     slot,
                     allow_dead_slots,
-                    &OutputFormat::Display,
+                    &output_format,
                     verbose_level,
                     &mut HashMap::new(),
-                ) {
-                    eprintln!("{err}");
-                }
+                )?;
             }
         }
         _ => unreachable!(),

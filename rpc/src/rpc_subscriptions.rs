@@ -2,6 +2,7 @@
 
 use {
     crate::{
+        filter::filter_allows,
         optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
         parsed_token_accounts::{get_parsed_token_account, get_parsed_token_accounts},
         rpc_pubsub_service::PubSubConfig,
@@ -416,7 +417,7 @@ fn filter_program_results(
     let keyed_accounts = accounts.into_iter().filter(move |(_, account)| {
         filters
             .iter()
-            .all(|filter_type| filter_type.allows(account))
+            .all(|filter_type| filter_allows(filter_type, account))
     });
     let accounts = if is_known_spl_token_id(&params.pubkey)
         && params.encoding == UiAccountEncoding::JsonParsed
@@ -1153,7 +1154,6 @@ impl RpcSubscriptions {
                 num_signatures_found.load(Ordering::Relaxed),
                 num_signatures_notified.load(Ordering::Relaxed),
             );
-            inc_new_counter_info!("rpc-subscription-notify-bank-or-gossip", total_notified);
             datapoint_info!(
                 "rpc_subscriptions",
                 ("source", source, String),
@@ -1198,22 +1198,6 @@ impl RpcSubscriptions {
                     i64
                 ),
                 ("notifications_time", total_time.as_us() as i64, i64),
-            );
-            inc_new_counter_info!(
-                "rpc-subscription-counter-num_accounts_notified",
-                num_accounts_notified.load(Ordering::Relaxed)
-            );
-            inc_new_counter_info!(
-                "rpc-subscription-counter-num_logs_notified",
-                num_logs_notified.load(Ordering::Relaxed)
-            );
-            inc_new_counter_info!(
-                "rpc-subscription-counter-num_programs_notified",
-                num_programs_notified.load(Ordering::Relaxed)
-            );
-            inc_new_counter_info!(
-                "rpc-subscription-counter-num_signatures_notified",
-                num_signatures_notified.load(Ordering::Relaxed)
             );
         }
     }

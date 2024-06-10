@@ -46,10 +46,10 @@ use {
     solana_runtime::{
         accounts_background_service::AbsRequestSender, bank_forks::BankForks,
         commitment::BlockCommitmentCache, prioritization_fee_cache::PrioritizationFeeCache,
+        vote_sender_types::ReplayVoteSender,
     },
     solana_sdk::{clock::Slot, pubkey::Pubkey, signature::Keypair},
     solana_turbine::retransmit_stage::RetransmitStage,
-    solana_vote::vote_sender_types::ReplayVoteSender,
     std::{
         collections::HashSet,
         net::{SocketAddr, UdpSocket},
@@ -141,7 +141,7 @@ impl Tvu {
         gossip_verified_vote_hash_receiver: GossipVerifiedVoteHashReceiver,
         verified_vote_receiver: VerifiedVoteReceiver,
         replay_vote_sender: ReplayVoteSender,
-        completed_data_sets_sender: CompletedDataSetsSender,
+        completed_data_sets_sender: Option<CompletedDataSetsSender>,
         bank_notification_sender: Option<BankNotificationSenderConfig>,
         duplicate_confirmed_slots_receiver: DuplicateConfirmedSlotsReceiver,
         tvu_config: TvuConfig,
@@ -457,7 +457,6 @@ pub mod tests {
         let (_gossip_verified_vote_hash_sender, gossip_verified_vote_hash_receiver) = unbounded();
         let (_verified_vote_sender, verified_vote_receiver) = unbounded();
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
-        let (completed_data_sets_sender, _completed_data_sets_receiver) = unbounded();
         let (_, gossip_confirmed_slots_receiver) = unbounded();
         let max_complete_transaction_status_slot = Arc::new(AtomicU64::default());
         let max_complete_rewards_slot = Arc::new(AtomicU64::default());
@@ -503,7 +502,7 @@ pub mod tests {
             gossip_verified_vote_hash_receiver,
             verified_vote_receiver,
             replay_vote_sender,
-            completed_data_sets_sender,
+            /*completed_data_sets_sender:*/ None,
             None,
             gossip_confirmed_slots_receiver,
             TvuConfig::default(),

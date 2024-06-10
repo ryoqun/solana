@@ -54,7 +54,8 @@ use {
     solana_ledger::{
         bank_forks_utils,
         blockstore::{
-            Blockstore, BlockstoreError, BlockstoreSignals, CompletedSlotsReceiver, PurgeType,
+            Blockstore, BlockstoreError, PurgeType, MAX_COMPLETED_SLOTS_IN_CHANNEL,
+            MAX_REPLAY_WAKE_UP_SIGNALS,
         },
         blockstore_metric_report_service::BlockstoreMetricReportService,
         blockstore_options::{BlockstoreOptions, BlockstoreRecoveryMode, LedgerColumnOptions},
@@ -120,7 +121,7 @@ use {
     solana_turbine::{self, broadcast_stage::BroadcastStageType},
     solana_unified_scheduler_pool::DefaultSchedulerPool,
     solana_vote_program::vote_state,
-    solana_wen_restart::wen_restart::wait_for_wen_restart,
+    solana_wen_restart::wen_restart::{wait_for_wen_restart, WenRestartConfig},
     std::{
         collections::{HashMap, HashSet},
         net::SocketAddr,
@@ -301,7 +302,7 @@ impl Default for ValidatorConfig {
             repair_validators: None,
             repair_whitelist: Arc::new(RwLock::new(HashSet::default())),
             gossip_validators: None,
-            accounts_hash_interval_slots: std::u64::MAX,
+            accounts_hash_interval_slots: u64::MAX,
             max_genesis_archive_unpacked_size: MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
             wal_recovery_mode: None,
             run_verification: true,
@@ -459,7 +460,7 @@ pub struct Validator {
     validator_exit: Arc<RwLock<Exit>>,
     json_rpc_service: Option<JsonRpcService>,
     pubsub_service: Option<PubSubService>,
-    rpc_completed_slots_service: JoinHandle<()>,
+    rpc_completed_slots_service: Option<JoinHandle<()>>,
     optimistically_confirmed_bank_tracker: Option<OptimisticallyConfirmedBankTracker>,
     transaction_status_service: Option<TransactionStatusService>,
     rewards_recorder_service: Option<RewardsRecorderService>,
@@ -471,7 +472,7 @@ pub struct Validator {
     stats_reporter_service: StatsReporterService,
     gossip_service: GossipService,
     serve_repair_service: ServeRepairService,
-    completed_data_sets_service: CompletedDataSetsService,
+    completed_data_sets_service: Option<CompletedDataSetsService>,
     snapshot_packager_service: Option<SnapshotPackagerService>,
     poh_recorder: Arc<RwLock<PohRecorder>>,
     poh_service: PohService,
@@ -510,6 +511,7 @@ impl Validator {
         use_quic: bool,
         tpu_connection_pool_size: usize,
         tpu_enable_udp: bool,
+        tpu_max_connections_per_ipaddr_per_minute: u64,
         admin_rpc_service_post_init: Arc<RwLock<Option<AdminRpcRequestMetadataPostInit>>>,
     ) -> Result<Self, String> {
         let start_time = Instant::now();
@@ -700,7 +702,6 @@ impl Validator {
             blockstore,
             original_blockstore_root,
             ledger_signal_receiver,
-            completed_slots_receiver,
             leader_schedule_cache,
             starting_snapshot_hashes,
             TransactionHistoryServices {
@@ -926,15 +927,6 @@ impl Validator {
         ));
 
         let max_slots = Arc::new(MaxSlots::default());
-        let (completed_data_sets_sender, completed_data_sets_receiver) =
-            bounded(MAX_COMPLETED_DATA_SETS_IN_CHANNEL);
-        let completed_data_sets_service = CompletedDataSetsService::new(
-            completed_data_sets_receiver,
-            blockstore.clone(),
-            rpc_subscriptions.clone(),
-            exit.clone(),
-            max_slots.clone(),
-        );
 
         let startup_verification_complete;
         let (poh_recorder, entry_receiver, record_receiver) = {
@@ -987,6 +979,9 @@ impl Validator {
         let (
             json_rpc_service,
             pubsub_service,
+            completed_data_sets_sender,
+            completed_data_sets_service,
+            rpc_completed_slots_service,
             optimistically_confirmed_bank_tracker,
             bank_notification_sender,
         ) = if let Some((rpc_addr, rpc_pubsub_addr)) = config.rpc_addrs {
@@ -1032,24 +1027,57 @@ impl Validator {
                 prioritization_fee_cache.clone(),
             )?;
 
-            (
-                Some(json_rpc_service),
-                if !config.rpc_config.full_api {
-                    None
-                } else {
-                    let (trigger, pubsub_service) = PubSubService::new(
-                        config.pubsub_config.clone(),
-                        &rpc_subscriptions,
-                        rpc_pubsub_addr,
-                    );
-                    config
-                        .validator_exit
-                        .write()
-                        .unwrap()
-                        .register_exit(Box::new(move || trigger.cancel()));
+            let pubsub_service = if !config.rpc_config.full_api {
+                None
+            } else {
+                let (trigger, pubsub_service) = PubSubService::new(
+                    config.pubsub_config.clone(),
+                    &rpc_subscriptions,
+                    rpc_pubsub_addr,
+                );
+                config
+                    .validator_exit
+                    .write()
+                    .unwrap()
+                    .register_exit(Box::new(move || trigger.cancel()));
 
-                    Some(pubsub_service)
-                },
+                Some(pubsub_service)
+            };
+
+            let (completed_data_sets_sender, completed_data_sets_service) =
+                if !config.rpc_config.full_api {
+                    (None, None)
+                } else {
+                    let (completed_data_sets_sender, completed_data_sets_receiver) =
+                        bounded(MAX_COMPLETED_DATA_SETS_IN_CHANNEL);
+                    let completed_data_sets_service = CompletedDataSetsService::new(
+                        completed_data_sets_receiver,
+                        blockstore.clone(),
+                        rpc_subscriptions.clone(),
+                        exit.clone(),
+                        max_slots.clone(),
+                    );
+                    (
+                        Some(completed_data_sets_sender),
+                        Some(completed_data_sets_service),
+                    )
+                };
+
+            let rpc_completed_slots_service = if !config.rpc_config.full_api {
+                None
+            } else {
+                let (completed_slots_sender, completed_slots_receiver) =
+                    bounded(MAX_COMPLETED_SLOTS_IN_CHANNEL);
+                blockstore.add_completed_slots_signal(completed_slots_sender);
+
+                Some(RpcCompletedSlotsService::spawn(
+                    completed_slots_receiver,
+                    rpc_subscriptions.clone(),
+                    exit.clone(),
+                ))
+            };
+
+            let optimistically_confirmed_bank_tracker =
                 Some(OptimisticallyConfirmedBankTracker::new(
                     bank_notification_receiver,
                     exit.clone(),
@@ -1058,14 +1086,22 @@ impl Validator {
                     rpc_subscriptions.clone(),
                     confirmed_bank_subscribers,
                     prioritization_fee_cache.clone(),
-                )),
-                Some(BankNotificationSenderConfig {
-                    sender: bank_notification_sender,
-                    should_send_parents: geyser_plugin_service.is_some(),
-                }),
+                ));
+            let bank_notification_sender_config = Some(BankNotificationSenderConfig {
+                sender: bank_notification_sender,
+                should_send_parents: geyser_plugin_service.is_some(),
+            });
+            (
+                Some(json_rpc_service),
+                pubsub_service,
+                completed_data_sets_sender,
+                completed_data_sets_service,
+                rpc_completed_slots_service,
+                optimistically_confirmed_bank_tracker,
+                bank_notification_sender_config,
             )
         } else {
-            (None, None, None, None)
+            (None, None, None, None, None, None, None)
         };
 
         if config.halt_at_slot.is_some() {
@@ -1160,12 +1196,6 @@ impl Validator {
         let (verified_vote_sender, verified_vote_receiver) = unbounded();
         let (gossip_verified_vote_hash_sender, gossip_verified_vote_hash_receiver) = unbounded();
         let (duplicate_confirmed_slot_sender, duplicate_confirmed_slots_receiver) = unbounded();
-
-        let rpc_completed_slots_service = RpcCompletedSlotsService::spawn(
-            completed_slots_receiver,
-            rpc_subscriptions.clone(),
-            exit.clone(),
-        );
 
         let (banking_tracer, tracer_thread) =
             BankingTracer::new((config.banking_trace_dir_byte_limit > 0).then_some((
@@ -1325,7 +1355,7 @@ impl Validator {
             &max_slots,
             block_metadata_notifier,
             config.wait_to_vote_slot,
-            accounts_background_request_sender,
+            accounts_background_request_sender.clone(),
             config.runtime_config.log_messages_bytes_limit,
             json_rpc_service.is_some().then_some(&connection_cache), // for the cache warmer only used for STS for RPC service
             &prioritization_fee_cache,
@@ -1340,16 +1370,20 @@ impl Validator {
 
         if in_wen_restart {
             info!("Waiting for wen_restart phase one to finish");
-            match wait_for_wen_restart(
-                &config.wen_restart_proto_path.clone().unwrap(),
+            match wait_for_wen_restart(WenRestartConfig {
+                wen_restart_path: config.wen_restart_proto_path.clone().unwrap(),
                 last_vote,
-                blockstore.clone(),
-                cluster_info.clone(),
-                bank_forks.clone(),
-                wen_restart_repair_slots.clone(),
-                WAIT_FOR_WEN_RESTART_SUPERMAJORITY_THRESHOLD_PERCENT,
-                exit.clone(),
-            ) {
+                blockstore: blockstore.clone(),
+                cluster_info: cluster_info.clone(),
+                bank_forks: bank_forks.clone(),
+                wen_restart_repair_slots: wen_restart_repair_slots.clone(),
+                wait_for_supermajority_threshold_percent:
+                    WAIT_FOR_WEN_RESTART_SUPERMAJORITY_THRESHOLD_PERCENT,
+                snapshot_config: config.snapshot_config.clone(),
+                accounts_background_request_sender: accounts_background_request_sender.clone(),
+                genesis_config_hash: genesis_config.hash(),
+                exit: exit.clone(),
+            }) {
                 Ok(()) => {
                     return Err("wen_restart phase one completedy".to_string());
                 }
@@ -1395,6 +1429,7 @@ impl Validator {
             banking_tracer,
             tracer_thread,
             tpu_enable_udp,
+            tpu_max_connections_per_ipaddr_per_minute,
             &prioritization_fee_cache,
             config.block_production_method.clone(),
             config.generator_config.clone(),
@@ -1516,9 +1551,11 @@ impl Validator {
             pubsub_service.join().expect("pubsub_service");
         }
 
-        self.rpc_completed_slots_service
-            .join()
-            .expect("rpc_completed_slots_service");
+        if let Some(rpc_completed_slots_service) = self.rpc_completed_slots_service {
+            rpc_completed_slots_service
+                .join()
+                .expect("rpc_completed_slots_service");
+        }
 
         if let Some(optimistically_confirmed_bank_tracker) =
             self.optimistically_confirmed_bank_tracker
@@ -1604,9 +1641,11 @@ impl Validator {
                 .transpose()
                 .unwrap();
         }
-        self.completed_data_sets_service
-            .join()
-            .expect("completed_data_sets_service");
+        if let Some(completed_data_sets_service) = self.completed_data_sets_service {
+            completed_data_sets_service
+                .join()
+                .expect("completed_data_sets_service");
+        }
         if let Some(ip_echo_server) = self.ip_echo_server {
             ip_echo_server.shutdown_background();
         }
@@ -1780,7 +1819,6 @@ fn load_blockstore(
         Arc<Blockstore>,
         Slot,
         Receiver<bool>,
-        CompletedSlotsReceiver,
         LeaderScheduleCache,
         Option<StartingSnapshotHashes>,
         TransactionHistoryServices,
@@ -1818,13 +1856,12 @@ fn load_blockstore(
         check_poh_speed(&genesis_config, None)?;
     }
 
-    let BlockstoreSignals {
-        mut blockstore,
-        ledger_signal_receiver,
-        completed_slots_receiver,
-        ..
-    } = Blockstore::open_with_signal(ledger_path, blockstore_options_from_config(config))
-        .map_err(|err| format!("Failed to open Blockstore: {err:?}"))?;
+    let mut blockstore =
+        Blockstore::open_with_options(ledger_path, blockstore_options_from_config(config))
+            .map_err(|err| format!("Failed to open Blockstore: {err:?}"))?;
+
+    let (ledger_signal_sender, ledger_signal_receiver) = bounded(MAX_REPLAY_WAKE_UP_SIGNALS);
+    blockstore.add_new_shred_signal(ledger_signal_sender);
 
     blockstore.shred_timing_point_sender = poh_timing_point_sender;
     // following boot sequence (esp BankForks) could set root. so stash the original value
@@ -1911,7 +1948,6 @@ fn load_blockstore(
         blockstore,
         original_blockstore_root,
         ledger_signal_receiver,
-        completed_slots_receiver,
         leader_schedule_cache,
         starting_snapshot_hashes,
         transaction_history_services,
@@ -2118,12 +2154,6 @@ fn maybe_warp_slot(
             &config.snapshot_config.full_snapshot_archives_dir,
             &config.snapshot_config.incremental_snapshot_archives_dir,
             config.snapshot_config.archive_format,
-            config
-                .snapshot_config
-                .maximum_full_snapshot_archives_to_retain,
-            config
-                .snapshot_config
-                .maximum_incremental_snapshot_archives_to_retain,
         ) {
             Ok(archive_info) => archive_info,
             Err(e) => return Err(format!("Unable to create snapshot: {e}")),
@@ -2583,6 +2613,7 @@ mod tests {
             DEFAULT_TPU_USE_QUIC,
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
             DEFAULT_TPU_ENABLE_UDP,
+            32, // max connections per IpAddr per minute for test
             Arc::new(RwLock::new(None)),
         )
         .expect("assume successful validator start");
@@ -2668,6 +2699,7 @@ mod tests {
                     DEFAULT_TPU_USE_QUIC,
                     DEFAULT_TPU_CONNECTION_POOL_SIZE,
                     DEFAULT_TPU_ENABLE_UDP,
+                    32, // max connections per IpAddr per minute for test
                     Arc::new(RwLock::new(None)),
                 )
                 .expect("assume successful validator start")

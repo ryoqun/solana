@@ -10,15 +10,13 @@ license = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
-crossbeam-channel = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true, features = ["rc"] }
 serde_derive = { workspace = true }
-solana-frozen-abi = { workspace = true }
-solana-frozen-abi-macro = { workspace = true }
+solana-frozen-abi = { workspace = true, optional = true }
+solana-frozen-abi-macro = { workspace = true, optional = true }
 solana-sdk = { workspace = true }
-solana-vote-program = { workspace = true }
 thiserror = { workspace = true }
 
 [lib]
@@ -37,3 +35,8 @@ rustc_version = { workspace = true }
 
 [features]
 dev-context-only-utils = []
+frozen-abi = [
+    "dep:solana-frozen-abi",
+    "dep:solana-frozen-abi-macro",
+    "solana-sdk/frozen-abi",
+]

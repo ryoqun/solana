@@ -2,9 +2,10 @@
 //!
 //! [keccak]: https://keccak.team/keccak.html
 
+#[cfg(feature = "borsh")]
+use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 use {
     crate::sanitize::Sanitize,
-    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
     sha3::{Digest, Keccak256},
     std::{convert::TryFrom, fmt, mem, str::FromStr},
     thiserror::Error,
@@ -13,23 +14,13 @@ use {
 pub const HASH_BYTES: usize = 32;
 /// Maximum string length of a base58 encoded hash
 const MAX_BASE58_LEN: usize = 44;
-#[derive(
-    Serialize,
-    Deserialize,
-    BorshSerialize,
-    BorshDeserialize,
-    BorshSchema,
-    Clone,
-    Copy,
-    Default,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    AbiExample,
+#[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(BorshSerialize, BorshDeserialize, BorshSchema),
+    borsh(crate = "borsh")
 )]
-#[borsh(crate = "borsh")]
+#[derive(Serialize, Deserialize, Clone, Copy, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
 pub struct Hash(pub [u8; HASH_BYTES]);
 

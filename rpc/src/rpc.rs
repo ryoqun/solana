@@ -1,7 +1,8 @@
 //! The `rpc` module implements the Solana RPC interface.
 use {
     crate::{
-        max_slots::MaxSlots, optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
+        filter::filter_allows, max_slots::MaxSlots,
+        optimistically_confirmed_bank_tracker::OptimisticallyConfirmedBank,
         parsed_token_accounts::*, rpc_cache::LargestAccountsCache, rpc_health::*,
     },
     base64::{prelude::BASE64_STANDARD, Engine},
@@ -10,7 +11,8 @@ use {
     jsonrpc_core::{futures::future, types::error, BoxFuture, Error, Metadata, Result},
     jsonrpc_derive::rpc,
     solana_account_decoder::{
-        parse_token::{is_known_spl_token_id, token_amount_to_ui_amount, UiTokenAmount},
+        parse_account_data::SplTokenAdditionalData,
+        parse_token::{is_known_spl_token_id, token_amount_to_ui_amount_v2, UiTokenAmount},
         UiAccount, UiAccountEncoding, UiDataSliceConfig, MAX_BASE58_BYTES,
     },
     solana_accounts_db::{
@@ -96,7 +98,10 @@ use {
     },
     solana_vote_program::vote_state::{VoteState, MAX_LOCKOUT_HISTORY},
     spl_token_2022::{
-        extension::StateWithExtensions,
+        extension::{
+            interest_bearing_mint::InterestBearingConfig, BaseStateWithExtensions,
+            StateWithExtensions,
+        },
         solana_program::program_pack::Pack,
         state::{Account as TokenAccount, Mint},
     },
@@ -487,6 +492,7 @@ impl JsonRpcRequestProcessor {
         config: Option<RpcAccountInfoConfig>,
         mut filters: Vec<RpcFilterType>,
         with_context: bool,
+        sort_results: bool,
     ) -> Result<OptionalContext<Vec<RpcKeyedAccount>>> {
         let RpcAccountInfoConfig {
             encoding,
@@ -502,11 +508,23 @@ impl JsonRpcRequestProcessor {
         optimize_filters(&mut filters);
         let keyed_accounts = {
             if let Some(owner) = get_spl_token_owner_filter(program_id, &filters) {
-                self.get_filtered_spl_token_accounts_by_owner(&bank, program_id, &owner, filters)?
+                self.get_filtered_spl_token_accounts_by_owner(
+                    &bank,
+                    program_id,
+                    &owner,
+                    filters,
+                    sort_results,
+                )?
             } else if let Some(mint) = get_spl_token_mint_filter(program_id, &filters) {
-                self.get_filtered_spl_token_accounts_by_mint(&bank, program_id, &mint, filters)?
+                self.get_filtered_spl_token_accounts_by_mint(
+                    &bank,
+                    program_id,
+                    &mint,
+                    filters,
+                    sort_results,
+                )?
             } else {
-                self.get_filtered_program_accounts(&bank, program_id, filters)?
+                self.get_filtered_program_accounts(&bank, program_id, filters, sort_results)?
             }
         };
         let accounts = if is_known_spl_token_id(program_id)
@@ -1852,8 +1870,8 @@ impl JsonRpcRequestProcessor {
             .map_err(|_| Error::invalid_params("Invalid param: not a Token account".to_string()))?;
         let mint = &Pubkey::from_str(&token_account.base.mint.to_string())
             .expect("Token account mint should be convertible to Pubkey");
-        let (_, decimals) = get_mint_owner_and_decimals(&bank, mint)?;
-        let balance = token_amount_to_ui_amount(token_account.base.amount, decimals);
+        let (_, data) = get_mint_owner_and_additional_data(&bank, mint)?;
+        let balance = token_amount_to_ui_amount_v2(token_account.base.amount, &data);
         Ok(new_response(&bank, balance))
     }
 
@@ -1875,7 +1893,18 @@ impl JsonRpcRequestProcessor {
             Error::invalid_params("Invalid param: mint could not be unpacked".to_string())
         })?;
 
-        let supply = token_amount_to_ui_amount(mint.base.supply, mint.base.decimals);
+        let interest_bearing_config = mint
+            .get_extension::<InterestBearingConfig>()
+            .map(|x| (*x, bank.clock().unix_timestamp))
+            .ok();
+
+        let supply = token_amount_to_ui_amount_v2(
+            mint.base.supply,
+            &SplTokenAdditionalData {
+                decimals: mint.base.decimals,
+                interest_bearing_config,
+            },
+        );
         Ok(new_response(&bank, supply))
     }
 
@@ -1885,7 +1914,7 @@ impl JsonRpcRequestProcessor {
         commitment: Option<CommitmentConfig>,
     ) -> Result<RpcResponse<Vec<RpcTokenAccountBalance>>> {
         let bank = self.bank(commitment);
-        let (mint_owner, decimals) = get_mint_owner_and_decimals(&bank, mint)?;
+        let (mint_owner, data) = get_mint_owner_and_additional_data(&bank, mint)?;
         if !is_known_spl_token_id(&mint_owner) {
             return Err(Error::invalid_params(
                 "Invalid param: not a Token mint".to_string(),
@@ -1895,7 +1924,7 @@ impl JsonRpcRequestProcessor {
         let mut token_balances =
             BinaryHeap::<Reverse<(u64, Pubkey)>>::with_capacity(NUM_LARGEST_ACCOUNTS);
         for (address, account) in
-            self.get_filtered_spl_token_accounts_by_mint(&bank, &mint_owner, mint, vec![])?
+            self.get_filtered_spl_token_accounts_by_mint(&bank, &mint_owner, mint, vec![], true)?
         {
             let amount = StateWithExtensions::<TokenAccount>::unpack(account.data())
                 .map(|account| account.base.amount)
@@ -1917,11 +1946,13 @@ impl JsonRpcRequestProcessor {
         let token_balances = token_balances
             .into_sorted_vec()
             .into_iter()
-            .map(|Reverse((amount, address))| RpcTokenAccountBalance {
-                address: address.to_string(),
-                amount: token_amount_to_ui_amount(amount, decimals),
+            .map(|Reverse((amount, address))| {
+                Ok(RpcTokenAccountBalance {
+                    address: address.to_string(),
+                    amount: token_amount_to_ui_amount_v2(amount, &data),
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>>>()?;
 
         Ok(new_response(&bank, token_balances))
     }
@@ -1931,6 +1962,7 @@ impl JsonRpcRequestProcessor {
         owner: &Pubkey,
         token_account_filter: TokenAccountsFilter,
         config: Option<RpcAccountInfoConfig>,
+        sort_results: bool,
     ) -> Result<RpcResponse<Vec<RpcKeyedAccount>>> {
         let RpcAccountInfoConfig {
             encoding,
@@ -1959,6 +1991,7 @@ impl JsonRpcRequestProcessor {
             &token_program_id,
             owner,
             filters,
+            sort_results,
         )?;
         let accounts = if encoding == UiAccountEncoding::JsonParsed {
             get_parsed_token_accounts(bank.clone(), keyed_accounts.into_iter()).collect()
@@ -1981,6 +2014,7 @@ impl JsonRpcRequestProcessor {
         delegate: &Pubkey,
         token_account_filter: TokenAccountsFilter,
         config: Option<RpcAccountInfoConfig>,
+        sort_results: bool,
     ) -> Result<RpcResponse<Vec<RpcKeyedAccount>>> {
         let RpcAccountInfoConfig {
             encoding,
@@ -2006,11 +2040,17 @@ impl JsonRpcRequestProcessor {
         ];
         // Optional filter on Mint address, uses mint account index for scan
         let keyed_accounts = if let Some(mint) = mint {
-            self.get_filtered_spl_token_accounts_by_mint(&bank, &token_program_id, &mint, filters)?
+            self.get_filtered_spl_token_accounts_by_mint(
+                &bank,
+                &token_program_id,
+                &mint,
+                filters,
+                sort_results,
+            )?
         } else {
             // Filter on Token Account state
             filters.push(RpcFilterType::TokenAccountState);
-            self.get_filtered_program_accounts(&bank, &token_program_id, filters)?
+            self.get_filtered_program_accounts(&bank, &token_program_id, filters, sort_results)?
         };
         let accounts = if encoding == UiAccountEncoding::JsonParsed {
             get_parsed_token_accounts(bank.clone(), keyed_accounts.into_iter()).collect()
@@ -2034,12 +2074,13 @@ impl JsonRpcRequestProcessor {
         bank: &Bank,
         program_id: &Pubkey,
         mut filters: Vec<RpcFilterType>,
+        sort_results: bool,
     ) -> RpcCustomResult<Vec<(Pubkey, AccountSharedData)>> {
         optimize_filters(&mut filters);
         let filter_closure = |account: &AccountSharedData| {
             filters
                 .iter()
-                .all(|filter_type| filter_type.allows(account))
+                .all(|filter_type| filter_allows(filter_type, account))
         };
         if self
             .config
@@ -2062,7 +2103,7 @@ impl JsonRpcRequestProcessor {
                         // accounts.
                         account.owner() == program_id && filter_closure(account)
                     },
-                    &ScanConfig::default(),
+                    &ScanConfig::new(!sort_results),
                     bank.byte_limit_for_scans(),
                 )
                 .map_err(|e| RpcCustomError::ScanError {
@@ -2071,7 +2112,11 @@ impl JsonRpcRequestProcessor {
         } else {
             // this path does not need to provide a mb limit because we only want to support secondary indexes
             Ok(bank
-                .get_filtered_program_accounts(program_id, filter_closure, &ScanConfig::default())
+                .get_filtered_program_accounts(
+                    program_id,
+                    filter_closure,
+                    &ScanConfig::new(!sort_results),
+                )
                 .map_err(|e| RpcCustomError::ScanError {
                     message: e.to_string(),
                 })?)
@@ -2085,6 +2130,7 @@ impl JsonRpcRequestProcessor {
         program_id: &Pubkey,
         owner_key: &Pubkey,
         mut filters: Vec<RpcFilterType>,
+        sort_results: bool,
     ) -> RpcCustomResult<Vec<(Pubkey, AccountSharedData)>> {
         // The by-owner accounts index checks for Token Account state and Owner address on
         // inclusion. However, due to the current AccountsDb implementation, an account may remain
@@ -2116,16 +2162,16 @@ impl JsonRpcRequestProcessor {
                         account.owner() == program_id
                             && filters
                                 .iter()
-                                .all(|filter_type| filter_type.allows(account))
+                                .all(|filter_type| filter_allows(filter_type, account))
                     },
-                    &ScanConfig::default(),
+                    &ScanConfig::new(!sort_results),
                     bank.byte_limit_for_scans(),
                 )
                 .map_err(|e| RpcCustomError::ScanError {
                     message: e.to_string(),
                 })?)
         } else {
-            self.get_filtered_program_accounts(bank, program_id, filters)
+            self.get_filtered_program_accounts(bank, program_id, filters, sort_results)
         }
     }
 
@@ -2136,6 +2182,7 @@ impl JsonRpcRequestProcessor {
         program_id: &Pubkey,
         mint_key: &Pubkey,
         mut filters: Vec<RpcFilterType>,
+        sort_results: bool,
     ) -> RpcCustomResult<Vec<(Pubkey, AccountSharedData)>> {
         // The by-mint accounts index checks for Token Account state and Mint address on inclusion.
         // However, due to the current AccountsDb implementation, an account may remain in storage
@@ -2166,16 +2213,16 @@ impl JsonRpcRequestProcessor {
                         account.owner() == program_id
                             && filters
                                 .iter()
-                                .all(|filter_type| filter_type.allows(account))
+                                .all(|filter_type| filter_allows(filter_type, account))
                     },
-                    &ScanConfig::default(),
+                    &ScanConfig::new(!sort_results),
                     bank.byte_limit_for_scans(),
                 )
                 .map_err(|e| RpcCustomError::ScanError {
                     message: e.to_string(),
                 })?)
         } else {
-            self.get_filtered_program_accounts(bank, program_id, filters)
+            self.get_filtered_program_accounts(bank, program_id, filters, sort_results)
         }
     }
 
@@ -2353,7 +2400,10 @@ fn encode_account<T: ReadableAccount>(
     data_slice: Option<UiDataSliceConfig>,
 ) -> Result<UiAccount> {
     if (encoding == UiAccountEncoding::Binary || encoding == UiAccountEncoding::Base58)
-        && account.data().len() > MAX_BASE58_BYTES
+        && data_slice
+            .map(|s| min(s.length, account.data().len().saturating_sub(s.offset)))
+            .unwrap_or(account.data().len())
+            > MAX_BASE58_BYTES
     {
         let message = format!("Encoded binary (base 58) data should be less than {MAX_BASE58_BYTES} bytes, please use Base64 encoding.");
         Err(error::Error {
@@ -2492,7 +2542,7 @@ fn get_token_program_id_and_mint(
 ) -> Result<(Pubkey, Option<Pubkey>)> {
     match token_account_filter {
         TokenAccountsFilter::Mint(mint) => {
-            let (mint_owner, _) = get_mint_owner_and_decimals(bank, &mint)?;
+            let (mint_owner, _) = get_mint_owner_and_additional_data(bank, &mint)?;
             if !is_known_spl_token_id(&mint_owner) {
                 return Err(Error::invalid_params(
                     "Invalid param: not a Token mint".to_string(),
@@ -3197,14 +3247,15 @@ pub mod rpc_accounts_scan {
                 program_id_str
             );
             let program_id = verify_pubkey(&program_id_str)?;
-            let (config, filters, with_context) = if let Some(config) = config {
+            let (config, filters, with_context, sort_results) = if let Some(config) = config {
                 (
                     Some(config.account_config),
                     config.filters.unwrap_or_default(),
                     config.with_context.unwrap_or_default(),
+                    config.sort_results.unwrap_or(true),
                 )
             } else {
-                (None, vec![], false)
+                (None, vec![], false, true)
             };
             if filters.len() > MAX_GET_PROGRAM_ACCOUNT_FILTERS {
                 return Err(Error::invalid_params(format!(
@@ -3214,7 +3265,7 @@ pub mod rpc_accounts_scan {
             for filter in &filters {
                 verify_filter(filter)?;
             }
-            meta.get_program_accounts(&program_id, config, filters, with_context)
+            meta.get_program_accounts(&program_id, config, filters, with_context, sort_results)
         }
 
         fn get_largest_accounts(
@@ -3262,7 +3313,7 @@ pub mod rpc_accounts_scan {
             );
             let owner = verify_pubkey(&owner_str)?;
             let token_account_filter = verify_token_account_filter(token_account_filter)?;
-            meta.get_token_accounts_by_owner(&owner, token_account_filter, config)
+            meta.get_token_accounts_by_owner(&owner, token_account_filter, config, true)
         }
 
         fn get_token_accounts_by_delegate(
@@ -3278,7 +3329,7 @@ pub mod rpc_accounts_scan {
             );
             let delegate = verify_pubkey(&delegate_str)?;
             let token_account_filter = verify_token_account_filter(token_account_filter)?;
-            meta.get_token_accounts_by_delegate(&delegate, token_account_filter, config)
+            meta.get_token_accounts_by_delegate(&delegate, token_account_filter, config, true)
         }
     }
 }
@@ -5700,6 +5751,85 @@ pub mod tests {
     }
 
     #[test]
+    fn test_encode_account_does_not_throw_when_slice_larger_than_account() {
+        let data = vec![42; 5];
+        let pubkey = Pubkey::new_unique();
+        let account = AccountSharedData::create(42, data, pubkey, false, 0);
+        let result = encode_account(
+            &account,
+            &pubkey,
+            UiAccountEncoding::Base58,
+            Some(UiDataSliceConfig {
+                length: account.data().len() + 1,
+                offset: 0,
+            }),
+        );
+        assert!(result.is_ok());
+    }
+    #[test]
+    #[should_panic(expected = "should be less than 128 bytes")] // If ever `MAX_BASE58_BYTES` changes, the expected error message will need to be updated.
+    fn test_encode_account_throws_when_data_too_large_to_base58_encode() {
+        let data = vec![42; MAX_BASE58_BYTES + 1];
+        let pubkey = Pubkey::new_unique();
+        let account = AccountSharedData::create(42, data, pubkey, false, 0);
+        let _ = encode_account(&account, &pubkey, UiAccountEncoding::Base58, None).unwrap();
+    }
+
+    #[test]
+    fn test_encode_account_does_not_throw_despite_data_too_large_to_base58_encode_because_dataslice_makes_it_fit(
+    ) {
+        let data = vec![42; MAX_BASE58_BYTES + 1];
+        let pubkey = Pubkey::new_unique();
+        let account = AccountSharedData::create(42, data, pubkey, false, 0);
+        let result = encode_account(
+            &account,
+            &pubkey,
+            UiAccountEncoding::Base58,
+            Some(UiDataSliceConfig {
+                length: MAX_BASE58_BYTES,
+                offset: 1,
+            }),
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_encode_account_does_not_throw_despite_dataslice_being_too_large_to_base58_encode_because_account_is_small_enough_to_fit(
+    ) {
+        let data = vec![42; MAX_BASE58_BYTES];
+        let pubkey = Pubkey::new_unique();
+        let account = AccountSharedData::create(42, data, pubkey, false, 0);
+        let result = encode_account(
+            &account,
+            &pubkey,
+            UiAccountEncoding::Base58,
+            Some(UiDataSliceConfig {
+                length: MAX_BASE58_BYTES + 1,
+                offset: 0,
+            }),
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_encode_account_does_not_throw_despite_account_and_dataslice_being_too_large_to_base58_encode_because_their_intersection_fits(
+    ) {
+        let data = vec![42; MAX_BASE58_BYTES + 1];
+        let pubkey = Pubkey::new_unique();
+        let account = AccountSharedData::create(42, data, pubkey, false, 0);
+        let result = encode_account(
+            &account,
+            &pubkey,
+            UiAccountEncoding::Base58,
+            Some(UiDataSliceConfig {
+                length: MAX_BASE58_BYTES + 1,
+                offset: 1,
+            }),
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_rpc_get_multiple_accounts() {
         let rpc = RpcHandler::start();
         let bank = rpc.working_bank();
@@ -7576,7 +7706,7 @@ pub mod tests {
         rpc.block_commitment_cache
             .write()
             .unwrap()
-            .set_highest_super_majority_root(std::u64::MAX);
+            .set_highest_super_majority_root(u64::MAX);
 
         let request = create_test_request(
             "getBlocks",
@@ -8433,17 +8563,22 @@ pub mod tests {
             let owner = SplTokenPubkey::new_from_array([3; 32]);
             let delegate = SplTokenPubkey::new_from_array([4; 32]);
             let token_account_pubkey = solana_sdk::pubkey::new_rand();
-            let (program_name, account_size, mint_size) = if program_id
+            let amount = 420;
+            let delegated_amount = 30;
+            let rent_exempt_amount = 10;
+            let supply = 500;
+            let decimals = 2;
+            let (program_name, account_size, mint_size, additional_data) = if program_id
                 == solana_inline_spl::token_2022::id()
             {
                 let account_base = TokenAccount {
                     mint,
                     owner,
                     delegate: COption::Some(delegate),
-                    amount: 420,
+                    amount,
                     state: TokenAccountState::Initialized,
-                    is_native: COption::Some(10),
-                    delegated_amount: 30,
+                    is_native: COption::Some(rent_exempt_amount),
+                    delegated_amount,
                     close_authority: COption::Some(owner),
                 };
                 let account_size = ExtensionType::try_calculate_account_len::<TokenAccount>(&[
@@ -8475,12 +8610,13 @@ pub mod tests {
 
                 let mint_size = ExtensionType::try_calculate_account_len::<Mint>(&[
                     ExtensionType::MintCloseAuthority,
+                    ExtensionType::InterestBearingConfig,
                 ])
                 .unwrap();
                 let mint_base = Mint {
                     mint_authority: COption::Some(owner),
-                    supply: 500,
-                    decimals: 2,
+                    supply,
+                    decimals,
                     is_initialized: true,
                     freeze_authority: COption::Some(owner),
                 };
@@ -8496,6 +8632,22 @@ pub mod tests {
                     .unwrap();
                 mint_close_authority.close_authority =
                     OptionalNonZeroPubkey::try_from(Some(owner)).unwrap();
+                let interest_bearing_config = mint_state
+                    .init_extension::<InterestBearingConfig>(true)
+                    .unwrap();
+                interest_bearing_config.initialization_timestamp =
+                    bank.clock().unix_timestamp.saturating_sub(1_000_000).into();
+                interest_bearing_config.pre_update_average_rate = 500.into();
+                interest_bearing_config.last_update_timestamp = bank.clock().unix_timestamp.into();
+                interest_bearing_config.current_rate = 500.into();
+
+                let additional_data = SplTokenAdditionalData {
+                    decimals,
+                    interest_bearing_config: Some((
+                        *interest_bearing_config,
+                        bank.clock().unix_timestamp,
+                    )),
+                };
 
                 let mint_account = AccountSharedData::from(Account {
                     lamports: 111,
@@ -8504,7 +8656,7 @@ pub mod tests {
                     ..Account::default()
                 });
                 bank.store_account(&Pubkey::from_str(&mint.to_string()).unwrap(), &mint_account);
-                ("spl-token-2022", account_size, mint_size)
+                ("spl-token-2022", account_size, mint_size, additional_data)
             } else {
                 let account_size = TokenAccount::get_packed_len();
                 let mut account_data = vec![0; account_size];
@@ -8512,10 +8664,10 @@ pub mod tests {
                     mint,
                     owner,
                     delegate: COption::Some(delegate),
-                    amount: 420,
+                    amount,
                     state: TokenAccountState::Initialized,
-                    is_native: COption::Some(10),
-                    delegated_amount: 30,
+                    is_native: COption::Some(rent_exempt_amount),
+                    delegated_amount,
                     close_authority: COption::Some(owner),
                 };
                 TokenAccount::pack(token_account, &mut account_data).unwrap();
@@ -8532,8 +8684,8 @@ pub mod tests {
                 let mut mint_data = vec![0; mint_size];
                 let mint_state = Mint {
                     mint_authority: COption::Some(owner),
-                    supply: 500,
-                    decimals: 2,
+                    supply,
+                    decimals,
                     is_initialized: true,
                     freeze_authority: COption::Some(owner),
                 };
@@ -8545,7 +8697,11 @@ pub mod tests {
                     ..Account::default()
                 });
                 bank.store_account(&Pubkey::from_str(&mint.to_string()).unwrap(), &mint_account);
-                ("spl-token", account_size, mint_size)
+                let additional_data = SplTokenAdditionalData {
+                    decimals,
+                    interest_bearing_config: None,
+                };
+                ("spl-token", account_size, mint_size, additional_data)
             };
 
             let req = format!(
@@ -8554,6 +8710,11 @@ pub mod tests {
             let res = io.handle_request_sync(&req, meta.clone());
             let result: Value = serde_json::from_str(&res.expect("actual response"))
                 .expect("actual response deserialization");
+            let token_ui_amount = token_amount_to_ui_amount_v2(amount, &additional_data);
+            let delegated_ui_amount =
+                token_amount_to_ui_amount_v2(delegated_amount, &additional_data);
+            let rent_exempt_ui_amount =
+                token_amount_to_ui_amount_v2(rent_exempt_amount, &additional_data);
             let mut expected_value = json!({
                 "program": program_name,
                 "space": account_size,
@@ -8562,27 +8723,12 @@ pub mod tests {
                     "info": {
                         "mint": mint.to_string(),
                         "owner": owner.to_string(),
-                        "tokenAmount": {
-                            "uiAmount": 4.2,
-                            "decimals": 2,
-                            "amount": "420",
-                            "uiAmountString": "4.2",
-                        },
+                        "tokenAmount": json!(token_ui_amount),
                         "delegate": delegate.to_string(),
                         "state": "initialized",
                         "isNative": true,
-                        "rentExemptReserve": {
-                            "uiAmount": 0.1,
-                            "decimals": 2,
-                            "amount": "10",
-                            "uiAmountString": "0.1",
-                        },
-                        "delegatedAmount": {
-                            "uiAmount": 0.3,
-                            "decimals": 2,
-                            "amount": "30",
-                            "uiAmountString": "0.3",
-                        },
+                        "rentExemptReserve": json!(rent_exempt_ui_amount),
+                        "delegatedAmount": json!(delegated_ui_amount),
                         "closeAuthority": owner.to_string(),
                     }
                 }
@@ -8629,6 +8775,16 @@ pub mod tests {
                         "extension": "mintCloseAuthority",
                         "state": {
                             "closeAuthority": owner.to_string(),
+                        }
+                    },
+                    {
+                        "extension": "interestBearingConfig",
+                        "state": {
+                            "currentRate": 500,
+                            "initializationTimestamp": bank.clock().unix_timestamp.saturating_sub(1_000_000),
+                            "lastUpdateTimestamp": bank.clock().unix_timestamp,
+                            "preUpdateAverageRate": 500,
+                            "rateAuthority": null,
                         }
                     }
                 ]);

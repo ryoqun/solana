@@ -957,7 +957,7 @@ fn process_loader_upgradeable_instruction(
         }
         UpgradeableLoaderInstruction::SetAuthorityChecked => {
             if !invoke_context
-                .feature_set
+                .get_feature_set()
                 .is_active(&enable_bpf_loader_set_authority_checked_ix::id())
             {
                 return Err(InstructionError::InvalidInstructionData);
@@ -1335,7 +1335,11 @@ fn execute<'a, 'b: 'a>(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // We dropped the lifetime tracking in the Executor by setting it to 'static,
     // thus we need to reintroduce the correct lifetime of InvokeContext here again.
-    let executable = unsafe { mem::transmute::<_, &'a Executable<InvokeContext<'b>>>(executable) };
+    let executable = unsafe {
+        mem::transmute::<&'a Executable<InvokeContext<'static>>, &'a Executable<InvokeContext<'b>>>(
+            executable,
+        )
+    };
     let log_collector = invoke_context.get_log_collector();
     let transaction_context = &invoke_context.transaction_context;
     let instruction_context = transaction_context.get_current_instruction_context()?;
@@ -1352,7 +1356,7 @@ fn execute<'a, 'b: 'a>(
     #[cfg(all(not(target_os = "windows"), target_arch = "x86_64"))]
     let use_jit = executable.get_compiled_program().is_some();
     let direct_mapping = invoke_context
-        .feature_set
+        .get_feature_set()
         .is_active(&bpf_account_data_direct_mapping::id());
 
     let mut serialize_time = Measure::start("serialize");
@@ -1381,10 +1385,9 @@ fn execute<'a, 'b: 'a>(
         .collect::<Vec<_>>();
 
     let mut create_vm_time = Measure::start("create_vm");
-    let mut execute_time;
     let execution_result = {
         let compute_meter_prev = invoke_context.get_remaining();
-        create_vm!(vm, executable, regions, accounts_metadata, invoke_context,);
+        create_vm!(vm, executable, regions, accounts_metadata, invoke_context);
         let mut vm = match vm {
             Ok(info) => info,
             Err(e) => {
@@ -1394,9 +1397,14 @@ fn execute<'a, 'b: 'a>(
         };
         create_vm_time.stop();
 
-        execute_time = Measure::start("execute");
+        vm.context_object_pointer.execute_time = Some(Measure::start("execute"));
         let (compute_units_consumed, result) = vm.execute_program(executable, !use_jit);
         drop(vm);
+        if let Some(execute_time) = invoke_context.execute_time.as_mut() {
+            execute_time.stop();
+            saturating_add_assign!(invoke_context.timings.execute_us, execute_time.as_us());
+        }
+
         ic_logger_msg!(
             log_collector,
             "Program {} consumed {} of {} compute units",
@@ -1459,7 +1467,6 @@ fn execute<'a, 'b: 'a>(
             _ => Ok(()),
         }
     };
-    execute_time.stop();
 
     fn deserialize_parameters(
         invoke_context: &mut InvokeContext,
@@ -1485,13 +1492,12 @@ fn execute<'a, 'b: 'a>(
     deserialize_time.stop();
 
     // Update the timings
-    let timings = &mut invoke_context.timings;
-    timings.serialize_us = timings.serialize_us.saturating_add(serialize_time.as_us());
-    timings.create_vm_us = timings.create_vm_us.saturating_add(create_vm_time.as_us());
-    timings.execute_us = timings.execute_us.saturating_add(execute_time.as_us());
-    timings.deserialize_us = timings
-        .deserialize_us
-        .saturating_add(deserialize_time.as_us());
+    saturating_add_assign!(invoke_context.timings.serialize_us, serialize_time.as_us());
+    saturating_add_assign!(invoke_context.timings.create_vm_us, create_vm_time.as_us());
+    saturating_add_assign!(
+        invoke_context.timings.deserialize_us,
+        deserialize_time.as_us()
+    );
 
     execute_or_deserialize_result
 }
@@ -1505,7 +1511,7 @@ pub mod test_utils {
     pub fn load_all_invoked_programs(invoke_context: &mut InvokeContext) {
         let mut load_program_metrics = LoadProgramMetrics::default();
         let program_runtime_environment = create_program_runtime_environment_v1(
-            &invoke_context.feature_set,
+            invoke_context.get_feature_set(),
             invoke_context.get_compute_budget(),
             false, /* deployment */
             false, /* debugging_features */
@@ -1557,7 +1563,6 @@ mod tests {
         solana_program_runtime::{
             invoke_context::mock_process_instruction, with_mock_invoke_context,
         },
-        solana_rbpf::vm::ContextObject,
         solana_sdk::{
             account::{
                 create_account_shared_data_for_test as create_account_for_test, AccountSharedData,
@@ -1573,19 +1578,6 @@ mod tests {
         },
         std::{fs::File, io::Read, ops::Range, sync::atomic::AtomicU64},
     };
-
-    struct TestContextObject {
-        remaining: u64,
-    }
-    impl ContextObject for TestContextObject {
-        fn trace(&mut self, _state: [u64; 12]) {}
-        fn consume(&mut self, amount: u64) {
-            self.remaining = self.remaining.saturating_sub(amount);
-        }
-        fn get_remaining(&self) -> u64 {
-            self.remaining
-        }
-    }
 
     fn process_instruction(
         loader_id: &Pubkey,

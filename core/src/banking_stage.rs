@@ -36,9 +36,11 @@ use {
     solana_measure::{measure, measure_us},
     solana_perf::{data_budget::DataBudget, packet::PACKETS_PER_BATCH},
     solana_poh::poh_recorder::{PohRecorder, TransactionRecorder},
-    solana_runtime::{bank_forks::BankForks, prioritization_fee_cache::PrioritizationFeeCache},
+    solana_runtime::{
+        bank_forks::BankForks, prioritization_fee_cache::PrioritizationFeeCache,
+        vote_sender_types::ReplayVoteSender,
+    },
     solana_sdk::timing::AtomicInterval,
-    solana_vote::vote_sender_types::ReplayVoteSender,
     std::{
         cmp, env,
         sync::{
@@ -53,6 +55,7 @@ use {
 // Below modules are pub to allow use by banking_stage bench
 pub mod committer;
 pub mod consumer;
+pub mod forwarder;
 pub mod leader_slot_metrics;
 pub mod qos_service;
 pub mod unprocessed_packet_batches;
@@ -62,12 +65,12 @@ mod consume_worker;
 mod decision_maker;
 mod forward_packet_batches_by_accounts;
 mod forward_worker;
-mod forwarder;
 mod immutable_deserialized_packet;
 mod latest_unprocessed_votes;
 mod leader_slot_timing_metrics;
 mod multi_iterator_scanner;
 mod packet_deserializer;
+mod packet_filter;
 mod packet_receiver;
 mod read_write_account_set;
 #[allow(dead_code)]
@@ -285,6 +288,7 @@ pub struct BatchedTransactionCostDetails {
     pub batched_signature_cost: u64,
     pub batched_write_lock_cost: u64,
     pub batched_data_bytes_cost: u64,
+    pub batched_loaded_accounts_data_size_cost: u64,
     pub batched_programs_execute_cost: u64,
 }
 
@@ -626,7 +630,7 @@ impl BankingStage {
         committer: Committer,
         transaction_recorder: TransactionRecorder,
         log_messages_bytes_limit: Option<usize>,
-        forwarder: Forwarder,
+        mut forwarder: Forwarder,
         unprocessed_transaction_storage: UnprocessedTransactionStorage,
     ) -> JoinHandle<()> {
         let mut packet_receiver = PacketReceiver::new(id, packet_receiver, bank_forks);
@@ -643,7 +647,7 @@ impl BankingStage {
                 Self::process_loop(
                     &mut packet_receiver,
                     &decision_maker,
-                    &forwarder,
+                    &mut forwarder,
                     &consumer,
                     id,
                     unprocessed_transaction_storage,
@@ -655,7 +659,7 @@ impl BankingStage {
     #[allow(clippy::too_many_arguments)]
     fn process_buffered_packets(
         decision_maker: &DecisionMaker,
-        forwarder: &Forwarder,
+        forwarder: &mut Forwarder,
         consumer: &Consumer,
         unprocessed_transaction_storage: &mut UnprocessedTransactionStorage,
         banking_stage_stats: &BankingStageStats,
@@ -724,7 +728,7 @@ impl BankingStage {
     fn process_loop(
         packet_receiver: &mut PacketReceiver,
         decision_maker: &DecisionMaker,
-        forwarder: &Forwarder,
+        forwarder: &mut Forwarder,
         consumer: &Consumer,
         id: u32,
         mut unprocessed_transaction_storage: UnprocessedTransactionStorage,

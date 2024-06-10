@@ -87,7 +87,6 @@ use {
         fs,
         io::Read,
         iter,
-        num::NonZeroUsize,
         path::Path,
         sync::{
             atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -199,7 +198,6 @@ fn test_spend_and_verify_all_nodes_3() {
 
 #[test]
 #[serial]
-#[ignore]
 fn test_local_cluster_signature_subscribe() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
     let num_nodes = 2;
@@ -276,31 +274,6 @@ fn test_local_cluster_signature_subscribe() {
     drop(cluster);
     sig_subscribe_client.shutdown().unwrap();
     assert!(got_received_notification);
-}
-
-#[test]
-#[allow(unused_attributes)]
-#[ignore]
-fn test_spend_and_verify_all_nodes_env_num_nodes() {
-    solana_logger::setup_with_default(RUST_LOG_FILTER);
-    let num_nodes: usize = std::env::var("NUM_NODES")
-        .expect("please set environment variable NUM_NODES")
-        .parse()
-        .expect("could not parse NUM_NODES as a number");
-    let local = LocalCluster::new_with_equal_stakes(
-        num_nodes,
-        DEFAULT_CLUSTER_LAMPORTS,
-        DEFAULT_NODE_STAKE,
-        SocketAddrSpace::Unspecified,
-    );
-    cluster_tests::spend_and_verify_all_nodes(
-        &local.entry_point_info,
-        &local.funding_keypair,
-        num_nodes,
-        HashSet::new(),
-        SocketAddrSpace::Unspecified,
-        &local.connection_cache,
-    );
 }
 
 #[test]
@@ -2135,7 +2108,10 @@ fn test_hard_fork_invalidates_tower() {
         Some(&hard_forks),
     );
 
-    validator_a_info.config.new_hard_forks = hard_fork_slots.clone();
+    validator_a_info
+        .config
+        .new_hard_forks
+        .clone_from(&hard_fork_slots);
     validator_a_info.config.wait_for_supermajority = Some(hard_fork_slot);
     validator_a_info.config.expected_shred_version = Some(expected_shred_version);
 
@@ -2192,7 +2168,7 @@ fn create_snapshot_to_hard_fork(
         ..ProcessOptions::default()
     };
     let ledger_path = blockstore.ledger_path();
-    let genesis_config = open_genesis_config(ledger_path, u64::max_value()).unwrap();
+    let genesis_config = open_genesis_config(ledger_path, u64::MAX).unwrap();
     let snapshot_config = create_simple_snapshot_config(ledger_path);
     let (bank_forks, ..) = bank_forks_utils::load(
         &genesis_config,
@@ -2219,8 +2195,6 @@ fn create_snapshot_to_hard_fork(
         ledger_path,
         ledger_path,
         snapshot_config.archive_format,
-        NonZeroUsize::new(1).unwrap(),
-        NonZeroUsize::new(1).unwrap(),
     )
     .unwrap();
     info!(
@@ -4775,8 +4749,10 @@ fn test_duplicate_with_pruned_ancestor() {
     // Make sure we don't send duplicate votes
     majority_validator_info.config.wait_to_vote_slot = Some(fork_slot + fork_length);
     // Fix the leader schedule so we can produce blocks
-    majority_validator_info.config.fixed_leader_schedule =
-        minority_validator_info.config.fixed_leader_schedule.clone();
+    majority_validator_info
+        .config
+        .fixed_leader_schedule
+        .clone_from(&minority_validator_info.config.fixed_leader_schedule);
     cluster.restart_node(
         &majority_pubkey,
         majority_validator_info,

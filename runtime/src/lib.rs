@@ -34,13 +34,15 @@ pub mod stakes;
 pub mod static_ids;
 pub mod status_cache;
 pub mod transaction_batch;
+pub mod vote_sender_types;
 
 #[macro_use]
 extern crate solana_metrics;
 #[macro_use]
 extern crate serde_derive;
 
-#[macro_use]
+#[cfg_attr(feature = "frozen-abi", macro_use)]
+#[cfg(feature = "frozen-abi")]
 extern crate solana_frozen_abi_macro;
 
 // Don't make crates import the SVM if all they need is this module.

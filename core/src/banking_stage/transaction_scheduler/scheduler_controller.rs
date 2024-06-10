@@ -16,16 +16,15 @@ use {
         consume_worker::ConsumeWorkerMetrics,
         consumer::Consumer,
         decision_maker::{BufferedPacketsDecision, DecisionMaker},
-        forward_packet_batches_by_accounts::ForwardPacketBatchesByAccounts,
         forwarder::Forwarder,
         immutable_deserialized_packet::ImmutableDeserializedPacket,
         packet_deserializer::PacketDeserializer,
         ForwardOption, TOTAL_BUFFERED_PACKETS,
     },
     crossbeam_channel::RecvTimeoutError,
+    solana_compute_budget::compute_budget_processor::process_compute_budget_instructions,
     solana_cost_model::cost_model::CostModel,
     solana_measure::measure_us,
-    solana_program_runtime::compute_budget_processor::process_compute_budget_instructions,
     solana_runtime::{bank::Bank, bank_forks::BankForks},
     solana_sdk::{
         self,
@@ -100,7 +99,7 @@ impl SchedulerController {
             // are different, since new BankingStage will not forward packets.
             // For `Forward` and `ForwardAndHold`, we want to receive packets but will not
             // forward them to the next leader. In this case, `ForwardAndHold` is
-            // indistiguishable from `Hold`.
+            // indistinguishable from `Hold`.
             //
             // `Forward` will drop packets from the buffer instead of forwarding.
             // During receiving, since packets would be dropped from buffer anyway, we can
@@ -217,7 +216,7 @@ impl SchedulerController {
         let fee_check_results: Vec<_> = check_results
             .into_iter()
             .zip(transactions)
-            .map(|((result, _nonce, _lamports), tx)| {
+            .map(|(result, tx)| {
                 result?; // if there's already error do nothing
                 Consumer::check_fee_payer_unlocked(bank, tx.message(), &mut error_counters)
             })
@@ -234,8 +233,6 @@ impl SchedulerController {
         let start = Instant::now();
         let bank = self.bank_forks.read().unwrap().working_bank();
         let feature_set = &bank.feature_set;
-        let mut forwardable_packets =
-            ForwardPacketBatchesByAccounts::new_with_default_batch_limits();
 
         // Pop from the container in chunks, filter using bank checks, then attempt to forward.
         // This doubles as a way to clean the queue as well as forwarding transactions.
@@ -284,7 +281,7 @@ impl SchedulerController {
 
                 // If not already forwarded and can be forwarded, add to forwardable packets.
                 if state.should_forward()
-                    && forwardable_packets.try_add_packet(
+                    && self.forwarder.try_add_packet(
                         sanitized_transaction,
                         immutable_packet,
                         feature_set,
@@ -302,12 +299,9 @@ impl SchedulerController {
         }
 
         // Forward each batch of transactions
-        for batch in forwardable_packets.iter_batches() {
-            let _ = self.forwarder.forward_packets(
-                &ForwardOption::ForwardTransaction,
-                batch.get_forwardable_packets(),
-            );
-        }
+        self.forwarder
+            .forward_batched_packets(&ForwardOption::ForwardTransaction);
+        self.forwarder.clear_batches();
 
         // If we hit the time limit. Drop everything that was not checked/processed.
         // If we cannot run these simple checks in time, then we cannot run them during
@@ -387,10 +381,12 @@ impl SchedulerController {
                 &mut error_counters,
             );
 
-            for ((result, _nonce, _lamports), id) in check_results.into_iter().zip(chunk.iter()) {
+            for (result, id) in check_results.into_iter().zip(chunk.iter()) {
                 if result.is_err() {
                     saturating_add_assign!(num_dropped_on_age_and_status, 1);
                     self.container.remove_by_id(&id.id);
+                } else {
+                    self.container.push_id_into_queue(*id);
                 }
             }
         }
@@ -442,7 +438,10 @@ impl SchedulerController {
 
         let (received_packet_results, receive_time_us) = measure_us!(self
             .packet_receiver
-            .receive_packets(recv_timeout, remaining_queue_capacity, |_| true));
+            .receive_packets(recv_timeout, remaining_queue_capacity, |packet| {
+                packet.check_excessive_precompiles()?;
+                Ok(packet)
+            }));
 
         self.timing_metrics.update(|timing_metrics| {
             saturating_add_assign!(timing_metrics.receive_time_us, receive_time_us);
@@ -536,7 +535,7 @@ impl SchedulerController {
                 .zip(transactions)
                 .zip(fee_budget_limits_vec)
                 .zip(check_results)
-                .filter(|(_, check_result)| check_result.0.is_ok())
+                .filter(|(_, check_result)| check_result.is_ok())
             {
                 saturating_add_assign!(post_transaction_check_count, 1);
                 let transaction_id = self.transaction_id_generator.next();
@@ -654,9 +653,9 @@ mod tests {
         solana_poh::poh_recorder::{PohRecorder, Record, WorkingBankEntry},
         solana_runtime::bank::Bank,
         solana_sdk::{
-            compute_budget::ComputeBudgetInstruction, hash::Hash, message::Message,
-            poh_config::PohConfig, pubkey::Pubkey, signature::Keypair, signer::Signer,
-            system_instruction, system_transaction, transaction::Transaction,
+            compute_budget::ComputeBudgetInstruction, fee_calculator::FeeRateGovernor, hash::Hash,
+            message::Message, poh_config::PohConfig, pubkey::Pubkey, signature::Keypair,
+            signer::Signer, system_instruction, system_transaction, transaction::Transaction,
         },
         std::sync::{atomic::AtomicBool, Arc, RwLock},
         tempfile::TempDir,
@@ -683,10 +682,11 @@ mod tests {
 
     fn create_test_frame(num_threads: usize) -> (TestFrame, SchedulerController) {
         let GenesisConfigInfo {
-            genesis_config,
+            mut genesis_config,
             mint_keypair,
             ..
         } = create_slow_genesis_config(u64::MAX);
+        genesis_config.fee_rate_governor = FeeRateGovernor::new(5000, 0);
         let (bank, bank_forks) = Bank::new_no_wallclock_throttle_for_tests(&genesis_config);
 
         let ledger_path = get_tmp_ledger_path_auto_delete!();
