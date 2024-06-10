@@ -173,16 +173,24 @@ where
 
                 let idle_inner_count = {
                     let now = Instant::now();
+
+                    // Pre-allocate rather large capacity to avoid reallocation inside the lock.
+                    let mut idle_inners = Vec::with_capacity(128);
+
                     let Ok(mut scheduler_inners) = scheduler_pool.scheduler_inners.lock() else {
                         break;
                     };
-                    // I want to use the fancy ::extract_if() no matter what....
+                    // Use the still-unstable Vec::extract_if() even on stable rust toolchain by
+                    // using a polyfill and allowing unstable_name_collisions, because it's
+                    // simplest to code and fastest to run (= O(n); single linear pass and no
+                    // reallocation).
+                    //
+                    // Note that this critical section could block the latency-sensitive replay
+                    // code-path via ::take_scheduler().
                     #[allow(unstable_name_collisions)]
-                    let idle_inners = scheduler_inners
-                        .extract_if(|(_inner, pooled_at)| {
-                            now.duration_since(*pooled_at) > max_pooling_duration
-                        })
-                        .collect::<Vec<_>>();
+                    idle_inners.extend(scheduler_inners.extract_if(|(_inner, pooled_at)| {
+                        now.duration_since(*pooled_at) > max_pooling_duration
+                    }));
                     drop(scheduler_inners);
 
                     let idle_inner_count = idle_inners.len();
