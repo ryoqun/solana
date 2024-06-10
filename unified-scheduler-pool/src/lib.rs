@@ -29,9 +29,10 @@ use {
     solana_runtime::{
         bank::Bank,
         installed_scheduler_pool::{
-            InstalledScheduler, InstalledSchedulerBox, InstalledSchedulerPool,
-            InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult, SchedulerAborted,
-            SchedulerId, SchedulingContext, UninstalledScheduler, UninstalledSchedulerBox,
+            initialized_result_with_timings, InstalledScheduler, InstalledSchedulerBox,
+            InstalledSchedulerPool, InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult,
+            SchedulerAborted, SchedulerId, SchedulingContext, TimeoutListener,
+            UninstalledScheduler, UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
         vote_sender_types::ReplayVoteSender,
@@ -78,6 +79,7 @@ type AtomicSchedulerId = AtomicU64;
 pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
+    timeout_listeners: Mutex<Vec<(TimeoutListener, Instant)>>,
     handler_count: usize,
     handler_context: HandlerContext,
     // weak_self could be elided by changing InstalledScheduler::take_scheduler()'s receiver to
@@ -109,6 +111,7 @@ pub type DefaultSchedulerPool =
 
 const DEFAULT_POOL_CLEANER_INTERVAL: Duration = Duration::from_secs(10);
 const DEFAULT_MAX_POOLING_DURATION: Duration = Duration::from_secs(180);
+const DEFAULT_TIMEOUT_DURATION: Duration = Duration::from_secs(12);
 // Rough estimate of max UsageQueueLoader size in bytes:
 //   UsageFromTask * UsageQueue's capacity * DEFAULT_MAX_USAGE_QUEUE_COUNT
 //   16 bytes      * 128 items             * 262_144 entries               == 512 MiB
@@ -149,6 +152,7 @@ where
             DEFAULT_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
+            DEFAULT_TIMEOUT_DURATION,
         )
     }
 
@@ -161,6 +165,7 @@ where
         pool_cleaner_interval: Duration,
         max_pooling_duration: Duration,
         max_usage_queue_count: usize,
+        timeout_duration: Duration,
     ) -> Arc<Self> {
         let handler_count = handler_count.unwrap_or(Self::default_handler_count());
         assert!(handler_count >= 1);
@@ -168,6 +173,7 @@ where
         let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
             scheduler_inners: Mutex::default(),
             trashed_scheduler_inners: Mutex::default(),
+            timeout_listeners: Mutex::default(),
             handler_count,
             handler_context: HandlerContext {
                 log_messages_bytes_limit,
@@ -191,9 +197,9 @@ where
                     break;
                 };
 
-                let idle_inner_count = {
-                    let now = Instant::now();
+                let now = Instant::now();
 
+                let idle_inner_count = {
                     // Pre-allocate rather large capacity to avoid reallocation inside the lock.
                     let mut idle_inners = Vec::with_capacity(128);
 
@@ -231,6 +237,23 @@ where
                     drop(trashed_inners);
                     trashed_inner_count
                 };
+
+                // Pre-allocate rather large capacity to avoid reallocation inside the lock.
+                let mut expired_listeners = Vec::with_capacity(128);
+                let Ok(mut timeout_listeners) = scheduler_pool.timeout_listeners.lock() else {
+                    break;
+                };
+                #[allow(unstable_name_collisions)]
+                expired_listeners.extend(timeout_listeners.extract_if(
+                    |(_callback, registered_at)| {
+                        now.duration_since(*registered_at) > timeout_duration
+                    },
+                ));
+                drop(timeout_listeners);
+
+                for (timeout_listener, _registered_at) in expired_listeners {
+                    timeout_listener.trigger(scheduler_pool.clone());
+                }
 
                 info!(
                     "Scheduler pool cleaner: dropped {} idle inners, {} trashed inners",
@@ -299,14 +322,23 @@ where
         }
     }
 
+    #[cfg(test)]
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
+        self.do_take_resumed_scheduler(context, initialized_result_with_timings())
+    }
+
+    fn do_take_resumed_scheduler(
+        &self,
+        context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> S {
         // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
         // returned recently
         if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop()
         {
-            S::from_inner(inner, context)
+            S::from_inner(inner, context, result_with_timings)
         } else {
-            S::spawn(self.self_arc(), context)
+            S::spawn(self.self_arc(), context, result_with_timings)
         }
     }
 
@@ -352,8 +384,19 @@ where
     S: SpawnableScheduler<TH>,
     TH: TaskHandler,
 {
-    fn take_scheduler(&self, context: SchedulingContext) -> InstalledSchedulerBox {
-        Box::new(self.do_take_scheduler(context))
+    fn take_resumed_scheduler(
+        &self,
+        context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> InstalledSchedulerBox {
+        Box::new(self.do_take_resumed_scheduler(context, result_with_timings))
+    }
+
+    fn register_timeout_listener(&self, timeout_listener: TimeoutListener) {
+        self.timeout_listeners
+            .lock()
+            .unwrap()
+            .push((timeout_listener, Instant::now()));
     }
 }
 
@@ -427,7 +470,7 @@ enum SubchanneledPayload<P1, P2> {
     CloseSubchannel,
 }
 
-type NewTaskPayload = SubchanneledPayload<Task, SchedulingContext>;
+type NewTaskPayload = SubchanneledPayload<Task, (SchedulingContext, ResultWithTimings)>;
 
 // A tiny generic message type to synchronize multiple threads everytime some contextual data needs
 // to be switched (ie. SchedulingContext), just using a single communication channel.
@@ -610,10 +653,6 @@ fn disconnected<T>() -> Receiver<T> {
     crossbeam_channel::unbounded().1
 }
 
-fn initialized_result_with_timings() -> ResultWithTimings {
-    (Ok(()), ExecuteTimings::default())
-}
-
 #[derive(Debug)]
 pub struct PooledScheduler<TH: TaskHandler> {
     inner: PooledSchedulerInner<Self, TH>,
@@ -718,13 +757,18 @@ struct ThreadManager<S: SpawnableScheduler<TH>, TH: TaskHandler> {
 }
 
 impl<TH: TaskHandler> PooledScheduler<TH> {
-    fn do_spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
+    fn do_spawn(
+        pool: Arc<SchedulerPool<Self, TH>>,
+        initial_context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> Self {
         Self::from_inner(
             PooledSchedulerInner::<Self, TH> {
                 thread_manager: ThreadManager::new(pool),
                 usage_queue_loader: UsageQueueLoader::default(),
             },
             initial_context,
+            result_with_timings,
         )
     }
 }
@@ -963,11 +1007,15 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                 'nonaborted_main_loop: loop {
                     match new_task_receiver.recv() {
-                        Ok(NewTaskPayload::OpenSubchannel(context)) => {
+                        Ok(NewTaskPayload::OpenSubchannel((
+                            new_context,
+                            new_result_with_timings,
+                        ))) => {
                             // signal about new SchedulingContext to handler threads
                             runnable_task_sender
-                                .send_chained_channel(context, handler_count)
+                                .send_chained_channel(new_context, handler_count)
                                 .unwrap();
+                            result_with_timings = new_result_with_timings;
                         }
                         Ok(_) => {
                             unreachable!();
@@ -1028,7 +1076,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
                                     }
-                                    Ok(NewTaskPayload::OpenSubchannel(_context)) => {
+                                    Ok(NewTaskPayload::OpenSubchannel(_context_and_result_with_timings)) => {
                                         unreachable!();
                                     }
                                     Err(RecvError) => {
@@ -1263,10 +1311,17 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         }
     }
 
-    fn start_session(&mut self, context: &SchedulingContext) {
+    fn start_session(
+        &mut self,
+        context: &SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) {
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
-            .send(NewTaskPayload::OpenSubchannel(context.clone()))
+            .send(NewTaskPayload::OpenSubchannel((
+                context.clone(),
+                result_with_timings,
+            )))
             .expect("no new session after aborted");
     }
 }
@@ -1276,9 +1331,17 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
 
     fn into_inner(self) -> (ResultWithTimings, Self::Inner);
 
-    fn from_inner(inner: Self::Inner, context: SchedulingContext) -> Self;
+    fn from_inner(
+        inner: Self::Inner,
+        context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> Self;
 
-    fn spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self
+    fn spawn(
+        pool: Arc<SchedulerPool<Self, TH>>,
+        initial_context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> Self
     where
         Self: Sized;
 }
@@ -1295,13 +1358,23 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         (result_with_timings, self.inner)
     }
 
-    fn from_inner(mut inner: Self::Inner, context: SchedulingContext) -> Self {
-        inner.thread_manager.start_session(&context);
+    fn from_inner(
+        mut inner: Self::Inner,
+        context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> Self {
+        inner
+            .thread_manager
+            .start_session(&context, result_with_timings);
         Self { inner, context }
     }
 
-    fn spawn(pool: Arc<SchedulerPool<Self, TH>>, initial_context: SchedulingContext) -> Self {
-        let mut scheduler = Self::do_spawn(pool, initial_context);
+    fn spawn(
+        pool: Arc<SchedulerPool<Self, TH>>,
+        initial_context: SchedulingContext,
+        result_with_timings: ResultWithTimings,
+    ) -> Self {
+        let mut scheduler = Self::do_spawn(pool, initial_context, result_with_timings);
         scheduler
             .inner
             .thread_manager
@@ -1458,6 +1531,7 @@ mod tests {
             SHORTENED_POOL_CLEANER_INTERVAL,
             shortened_max_pooling_duration,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
+            DEFAULT_TIMEOUT_DURATION,
         );
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
@@ -1515,6 +1589,7 @@ mod tests {
             SHORTENED_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             REDUCED_MAX_USAGE_QUEUE_COUNT,
+            DEFAULT_TIMEOUT_DURATION,
         );
         let pool = pool_raw.clone();
         let bank = Arc::new(Bank::default_for_tests());
@@ -1920,6 +1995,7 @@ mod tests {
             SHORTENED_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
+            DEFAULT_TIMEOUT_DURATION,
         );
         let pool = pool_raw.clone();
         let context = SchedulingContext::new(bank.clone());
@@ -2419,13 +2495,18 @@ mod tests {
             unimplemented!();
         }
 
-        fn from_inner(_inner: Self::Inner, _context: SchedulingContext) -> Self {
+        fn from_inner(
+            _inner: Self::Inner,
+            _context: SchedulingContext,
+            _result_with_timings: ResultWithTimings,
+        ) -> Self {
             unimplemented!();
         }
 
         fn spawn(
             pool: Arc<SchedulerPool<Self, DefaultTaskHandler>>,
             initial_context: SchedulingContext,
+            _result_with_timings: ResultWithTimings,
         ) -> Self {
             AsyncScheduler::<TRIGGER_RACE_CONDITION>(
                 Mutex::new(initialized_result_with_timings()),
