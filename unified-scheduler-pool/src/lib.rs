@@ -1063,9 +1063,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     if sender.send(Err(HandlerPanicked)).is_ok() {
                         info!("notified a panic from {:?}", current_thread);
                     } else {
-                        // It seems that scheduler has been aborted...
-                        // This branch is deliberately tested by using 2 transactions with
-                        // different timings in test_scheduler_schedule_execution_panic
+                        // It seems that the scheduler thread has been aborted already...
                         warn!("failed to notify a panic from {:?}", current_thread);
                     }
                 }
@@ -1834,7 +1832,12 @@ mod tests {
 
         let bank = Bank::new_for_tests(&genesis_config);
         let bank = setup_dummy_fork_graph(bank);
+
+        // Use 2 transactions with different timings to deliberately cover the two code paths of
+        // notifying panics in the handler threads, taken conditionally depending on whether the
+        // scheduler thread has been aborted already or not.
         const TX_COUNT: usize = 2;
+
         let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
         let pool = SchedulerPool::<PooledScheduler<PanickingHandler>, _>::new_dyn(
             Some(TX_COUNT), // fix to use exactly 2 handlers
