@@ -454,6 +454,7 @@ impl BankWithScheduler {
         Ok(())
     }
 
+    #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
     pub(crate) fn create_timeout_listener(&self) -> TimeoutListener {
         self.inner.do_create_timeout_listener()
     }
@@ -502,6 +503,10 @@ impl BankWithSchedulerInner {
                 f(scheduler)
             }
             SchedulerStatus::Stale(_pool, (result, _timings)) if result.is_err() => {
+                trace!(
+                    "with_active_scheduler: bank (slot: {}) has a stale aborted scheduler...",
+                    self.bank.slot(),
+                );
                 Err(SchedulerAborted)
             }
             SchedulerStatus::Stale(_pool, _result_with_timings) => {
@@ -509,9 +514,16 @@ impl BankWithSchedulerInner {
 
                 let context = SchedulingContext::new(self.bank.clone());
                 let mut scheduler = self.scheduler.write().unwrap();
+                trace!("with_active_scheduler: {:?}", scheduler);
                 scheduler.transition_from_stale_to_active(|scheduler_pool, result_with_timings| {
                     scheduler_pool.register_timeout_listener(self.do_create_timeout_listener());
-                    scheduler_pool.take_resumed_scheduler(context, result_with_timings)
+                    let scheduler = scheduler_pool.take_resumed_scheduler(context, result_with_timings);
+                    info!(
+                        "with_active_scheduler: bank (slot: {}) got active, taking scheduler (id: {})",
+                        self.bank.slot(),
+                        scheduler.id(),
+                    );
+                    scheduler
                 });
                 drop(scheduler);
 
@@ -533,11 +545,18 @@ impl BankWithSchedulerInner {
             };
 
             scheduler.maybe_transition_from_active_to_stale(|scheduler| {
+                let id = scheduler.id();
                 let (result_with_timings, uninstalled_scheduler) =
                     scheduler.wait_for_termination(false);
                 uninstalled_scheduler.return_to_pool();
+                info!(
+                    "timeout_listener: bank (slot: {}) got stale, returning scheduler (id: {})",
+                    bank.bank.slot(),
+                    id,
+                );
                 (scheduler_pool, result_with_timings)
-            })
+            });
+            trace!("timeout_listener: {:?}", scheduler);
         })
     }
 
@@ -600,6 +619,10 @@ impl BankWithSchedulerInner {
             was_noop,
             result_with_timings.as_ref().map(|(result, _)| result),
             std::thread::current(),
+        );
+        trace!(
+            "wait_for_scheduler_termination(result_with_timings: {:?})",
+            result_with_timings,
         );
 
         result_with_timings
