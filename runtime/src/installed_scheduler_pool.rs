@@ -290,8 +290,15 @@ impl WaitReason {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum SchedulerStatus {
+    /// Unified scheduler is disabled or installed scheduler is consumed by wait_for_termination().
+    /// Note that transition to Unavailable from {Active, Stale} is one-way (i.e. one-time).
     Unavailable,
+    /// Scheduler is installed into a bank; could be running or just be idling.
+    /// This will be transitioned to Stale after certain time has passed if its bank hasn't frozen.
     Active(InstalledSchedulerBox),
+    /// Scheduler is idling for long time, returning scheduler back to the pool.
+    /// This will be immediately (i.e. transaparently) transitioned to Active as soon as there's
+    /// new transaction to be executed.
     Stale(InstalledSchedulerPoolArc, ResultWithTimings),
 }
 
@@ -308,12 +315,12 @@ impl SchedulerStatus {
         f: impl FnOnce(InstalledSchedulerPoolArc, ResultWithTimings) -> InstalledSchedulerBox,
     ) {
         let Self::Stale(pool, result_with_timings) = mem::replace(self, Self::Unavailable) else {
-            panic!();
+            panic!("transition to Active failed: {self:?}");
         };
         *self = Self::Active(f(pool, result_with_timings));
     }
 
-    pub(crate) fn maybe_transition_from_active_to_stale(
+    fn maybe_transition_from_active_to_stale(
         &mut self,
         f: impl FnOnce(InstalledSchedulerBox) -> (InstalledSchedulerPoolArc, ResultWithTimings),
     ) {
@@ -321,22 +328,22 @@ impl SchedulerStatus {
             return;
         }
         let Self::Active(scheduler) = mem::replace(self, Self::Unavailable) else {
-            panic!();
+            unreachable!("not active: {:?}", self);
         };
         let (pool, result_with_timings) = f(scheduler);
         *self = Self::Stale(pool, result_with_timings);
     }
 
-    pub(crate) fn transition_from_active_to_unavailable(&mut self) -> InstalledSchedulerBox {
+    fn transition_from_active_to_unavailable(&mut self) -> InstalledSchedulerBox {
         let Self::Active(scheduler) = mem::replace(self, Self::Unavailable) else {
-            panic!();
+            panic!("transition to Unavailable failed: {self:?}");
         };
         scheduler
     }
 
-    pub(crate) fn transition_from_stale_to_unavailable(&mut self) -> ResultWithTimings {
+    fn transition_from_stale_to_unavailable(&mut self) -> ResultWithTimings {
         let Self::Stale(_pool, result_with_timings) = mem::replace(self, Self::Unavailable) else {
-            panic!();
+            panic!("transition to Unavailable failed: {self:?}");
         };
         result_with_timings
     }
@@ -423,6 +430,9 @@ impl BankWithScheduler {
     ///
     /// If the scheduler has been aborted, this doesn't schedule the transaction, instead just
     /// return the error of prior scheduled transaction.
+    ///
+    /// Calling this will panic if the installed scheduler is Unavailable (the bank is
+    /// wait_for_termination()-ed or the unified scheduler is disabled in the first place).
     // 'a is needed; anonymous_lifetime_in_impl_trait isn't stabilized yet...
     pub fn schedule_transaction_executions<'a>(
         &self,
@@ -529,7 +539,7 @@ impl BankWithSchedulerInner {
 
                 self.with_active_scheduler(f)
             }
-            SchedulerStatus::Unavailable => panic!(),
+            SchedulerStatus::Unavailable => unreachable!("no installed scheduler"),
         }
     }
 
@@ -545,6 +555,10 @@ impl BankWithSchedulerInner {
             };
 
             scheduler.maybe_transition_from_active_to_stale(|scheduler| {
+                // The scheduler hasn't still been wait_for_termination()-ed after awhile...
+                // Return the installed scheduler back to the scheduler pool as soon as the
+                // scheduler gets idle after executing all currently-scheduled transactions.
+
                 let id = scheduler.id();
                 let (result_with_timings, uninstalled_scheduler) =
                     scheduler.wait_for_termination(false);
@@ -560,6 +574,8 @@ impl BankWithSchedulerInner {
         })
     }
 
+    /// This must not be called until `Err(SchedulerAborted)` is observed. Violating this should
+    /// `panic!()`.
     fn retrieve_error_after_schedule_failure(&self) -> TransactionError {
         let mut scheduler = self.scheduler.write().unwrap();
         match &mut *scheduler {
@@ -567,7 +583,7 @@ impl BankWithSchedulerInner {
             SchedulerStatus::Stale(_pool, (result, _timings)) if result.is_err() => {
                 result.clone().unwrap_err()
             }
-            _ => panic!(),
+            _ => unreachable!("no error in {:?}", self.scheduler),
         }
     }
 
