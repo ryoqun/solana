@@ -294,7 +294,8 @@ pub enum SchedulerStatus {
     /// Note that transition to Unavailable from {Active, Stale} is one-way (i.e. one-time).
     Unavailable,
     /// Scheduler is installed into a bank; could be running or just be idling.
-    /// This will be transitioned to Stale after certain time has passed if its bank hasn't frozen.
+    /// This will be transitioned to Stale after certain time has passed if its bank hasn't been
+    /// frozen.
     Active(InstalledSchedulerBox),
     /// Scheduler is idling for long time, returning scheduler back to the pool.
     /// This will be immediately (i.e. transaparently) transitioned to Active as soon as there's
@@ -547,7 +548,7 @@ impl BankWithSchedulerInner {
                 let scheduler = self.scheduler.read().unwrap();
                 // Re-register a new timeout listener only after acquiring the read lock;
                 // Otherwise, the listener would again put scheduler into Stale before the read
-                // lock, causing panic below.
+                // lock under an extremely-rare race condition, causing panic below.
                 pool.register_timeout_listener(self.do_create_timeout_listener());
                 f(scheduler.active_scheduler())
             }

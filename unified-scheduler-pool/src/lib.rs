@@ -1780,6 +1780,7 @@ mod tests {
 
         let (result, timings) = bank.wait_for_completed_scheduler().unwrap();
         assert_matches!(result, Ok(()));
+        // ResultWithTimings should be carried over across active=>stale=>active transitions.
         assert_eq!(timings.metrics[ExecuteTimingType::CheckUs], 246);
     }
 
