@@ -347,6 +347,13 @@ impl SchedulerStatus {
         };
         result_with_timings
     }
+
+    fn active_scheduler(&self) -> &InstalledSchedulerBox {
+        let SchedulerStatus::Active(active_scheduler) = self else {
+            panic!("not active: {self:?}");
+        };
+        active_scheduler
+    }
 }
 
 /// Very thin wrapper around Arc<Bank>
@@ -519,15 +526,15 @@ impl BankWithSchedulerInner {
                 );
                 Err(SchedulerAborted)
             }
-            SchedulerStatus::Stale(_pool, _result_with_timings) => {
+            SchedulerStatus::Stale(pool, _result_with_timings) => {
+                let pool = pool.clone();
                 drop(scheduler);
 
                 let context = SchedulingContext::new(self.bank.clone());
                 let mut scheduler = self.scheduler.write().unwrap();
                 trace!("with_active_scheduler: {:?}", scheduler);
-                scheduler.transition_from_stale_to_active(|scheduler_pool, result_with_timings| {
-                    scheduler_pool.register_timeout_listener(self.do_create_timeout_listener());
-                    let scheduler = scheduler_pool.take_resumed_scheduler(context, result_with_timings);
+                scheduler.transition_from_stale_to_active(|pool, result_with_timings| {
+                    let scheduler = pool.take_resumed_scheduler(context, result_with_timings);
                     info!(
                         "with_active_scheduler: bank (slot: {}) got active, taking scheduler (id: {})",
                         self.bank.slot(),
@@ -537,7 +544,12 @@ impl BankWithSchedulerInner {
                 });
                 drop(scheduler);
 
-                self.with_active_scheduler(f)
+                let scheduler = self.scheduler.read().unwrap();
+                // Re-register a new timeout listener only after acquiring the read lock;
+                // Otherwise, the listener would again put scheduler into Stale before the read
+                // lock, causing panic below.
+                pool.register_timeout_listener(self.do_create_timeout_listener());
+                f(scheduler.active_scheduler())
             }
             SchedulerStatus::Unavailable => unreachable!("no installed scheduler"),
         }
@@ -545,7 +557,7 @@ impl BankWithSchedulerInner {
 
     fn do_create_timeout_listener(self: &Arc<Self>) -> TimeoutListener {
         let weak_bank = Arc::downgrade(self);
-        TimeoutListener::new(move |scheduler_pool| {
+        TimeoutListener::new(move |pool| {
             let Some(bank) = weak_bank.upgrade() else {
                 return;
             };
@@ -568,7 +580,7 @@ impl BankWithSchedulerInner {
                     bank.bank.slot(),
                     id,
                 );
-                (scheduler_pool, result_with_timings)
+                (pool, result_with_timings)
             });
             trace!("timeout_listener: {:?}", scheduler);
         })
