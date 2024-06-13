@@ -3009,10 +3009,12 @@ impl ReplayStage {
                     .expect("Bank fork progress entry missing for completed bank");
 
                 let replay_stats = bank_progress.replay_stats.clone();
+                let mut is_stats_from_completed_scheduler = false;
 
                 if let Some((result, completed_execute_timings)) =
                     bank.wait_for_completed_scheduler()
                 {
+                    is_stats_from_completed_scheduler = true;
                     let metrics = ExecuteBatchesInternalMetrics::new_with_timings_from_all_threads(
                         completed_execute_timings,
                     );
@@ -3020,7 +3022,7 @@ impl ReplayStage {
                         .write()
                         .unwrap()
                         .batch_execute
-                        .accumulate(metrics);
+                        .accumulate(metrics, is_stats_from_completed_scheduler);
 
                     if let Err(err) = result {
                         let root = bank_forks.read().unwrap().root();
@@ -3219,6 +3221,7 @@ impl ReplayStage {
                     r_replay_progress.num_entries,
                     r_replay_progress.num_shreds,
                     bank_complete_time.as_us(),
+                    is_stats_from_completed_scheduler,
                 );
                 execute_timings.accumulate(&r_replay_stats.batch_execute.totals);
             } else {
