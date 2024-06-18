@@ -80,6 +80,7 @@ use {
         time::{Duration, Instant},
     },
     thiserror::Error,
+    ExecuteTimingType::{NumExecuteBatches, TotalBatchesLen},
 };
 
 pub struct TransactionBatchWithIndexes<'a, 'b> {
@@ -1155,10 +1156,8 @@ impl BatchExecutionTiming {
 
         saturating_add_assign!(*wall_clock_us, new_batch.execute_batches_us);
 
-        use ExecuteTimingType::NumExecuteBatches;
         // These metrics aren't applicable for the unified scheduler
         if !is_unified_scheduler_enabled {
-            use ExecuteTimingType::TotalBatchesLen;
             totals.saturating_add_in_place(TotalBatchesLen, new_batch.total_batches_len);
             totals.saturating_add_in_place(NumExecuteBatches, 1);
         }
