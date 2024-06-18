@@ -1135,11 +1135,20 @@ pub struct BatchExecutionTiming {
 
     /// Wall clock time used by the transaction execution part of pipeline.
     /// [`ConfirmationTiming::replay_elapsed`] includes this time.  In microseconds.
-    pub wall_clock_us: u64,
+    wall_clock_us: u64,
 
     /// Time used to execute transactions, via `execute_batch()`, in the thread that consumed the
-    /// most time.
-    pub slowest_thread: ThreadExecuteTimings,
+    /// most time (in terms of total_thread_us) among rayon threads. Note that the slowest thread
+    /// is determined each time a given group of batches is newly processed. So, this is a coarse
+    /// approximation of wall-time single-threaded linearized metrics, discarding all metrics other
+    /// than the arbitrary set of batches mixed with various transactions, which replayed slowest
+    /// as a whole for each rayon processing session, also after blockstore_processor's rebatching.
+    ///
+    /// When unified scheduler is enabled, this field isn't maintained, because it's not batched at
+    /// all and thus execution is fairly evenly distributed across its worker threads in the
+    /// granularity of individual transactions, meaning single-threaded metrics can reliably
+    /// be derived from dividing replay-slot-stats by the number of threads.
+    slowest_thread: ThreadExecuteTimings,
 }
 
 impl BatchExecutionTiming {
@@ -1154,10 +1163,10 @@ impl BatchExecutionTiming {
             slowest_thread,
         } = self;
 
-        saturating_add_assign!(*wall_clock_us, new_batch.execute_batches_us);
-
-        // These metrics aren't applicable for the unified scheduler
+        // These metric fields aren't applicable for the unified scheduler
         if !is_unified_scheduler_enabled {
+            saturating_add_assign!(*wall_clock_us, new_batch.execute_batches_us);
+
             totals.saturating_add_in_place(TotalBatchesLen, new_batch.total_batches_len);
             totals.saturating_add_in_place(NumExecuteBatches, 1);
         }
@@ -1166,7 +1175,8 @@ impl BatchExecutionTiming {
             totals.accumulate(&thread_times.execute_timings);
         }
 
-        // This metric isn't applicable for the unified scheduler
+        // This whole metric (replay-slot-end-to-end-stats) isn't applicable for the unified
+        // scheduler.
         if !is_unified_scheduler_enabled {
             let slowest = new_batch
                 .execution_timings_per_thread
@@ -1191,25 +1201,17 @@ pub struct ThreadExecuteTimings {
 }
 
 impl ThreadExecuteTimings {
-    pub fn report_stats(&self, slot: Slot, is_unified_scheduler_enabled: bool) {
-        let (total_thread_us, total_transactions_executed) = if is_unified_scheduler_enabled {
-            (None, None)
-        } else {
-            (
-                Some(self.total_thread_us as i64),
-                Some(self.total_transactions_executed as i64),
-            )
-        };
-
+    pub fn report_stats(&self, slot: Slot) {
         lazy! {
             datapoint_info!(
                 "replay-slot-end-to-end-stats",
                 ("slot", slot as i64, i64),
-                ("total_thread_us", total_thread_us, Option<i64>),
-                ("total_transactions_executed", total_transactions_executed, Option<i64>),
+                ("total_thread_us", self.total_thread_us as i64, i64),
+                ("total_transactions_executed", self.total_transactions_executed as i64, i64),
                 // Everything inside the `eager!` block will be eagerly expanded before
                 // evaluation of the rest of the surrounding macro.
-                eager!{report_execute_timings!(self.execute_timings, is_unified_scheduler_enabled)}
+                // Pass false because this code-path is never touched by unified scheduler.
+                eager!{report_execute_timings!(self.execute_timings, false)}
             );
         };
     }
@@ -1302,9 +1304,13 @@ impl ReplaySlotStats {
             );
         };
 
-        self.batch_execute
-            .slowest_thread
-            .report_stats(slot, is_unified_scheduler_enabled);
+        // Skip reporting replay-slot-end-to-end-stats entirely if unified scheduler is enabled,
+        // because the whole metrics itself is only meaningful for rayon-based worker threads.
+        //
+        // See slowest_thread doc comment for details.
+        if !is_unified_scheduler_enabled {
+            self.batch_execute.slowest_thread.report_stats(slot);
+        }
 
         let mut per_pubkey_timings: Vec<_> = self
             .batch_execute
