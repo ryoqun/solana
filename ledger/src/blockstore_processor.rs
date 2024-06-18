@@ -1167,20 +1167,20 @@ impl BatchExecutionTiming {
             totals.accumulate(&thread_times.execute_timings);
         }
 
-        let slowest = new_batch
-            .execution_timings_per_thread
-            .values()
-            .max_by_key(|thread_times| thread_times.total_thread_us);
+        // This metric isn't applicable for the unified scheduler
+        if !is_unified_scheduler_enabled {
+            let slowest = new_batch
+                .execution_timings_per_thread
+                .values()
+                .max_by_key(|thread_times| thread_times.total_thread_us);
 
-        if let Some(slowest) = slowest {
-            slowest_thread.accumulate(slowest);
-            // This metric isn't applicable for the unified scheduler
-            if !is_unified_scheduler_enabled {
+            if let Some(slowest) = slowest {
+                slowest_thread.accumulate(slowest);
                 slowest_thread
                     .execute_timings
                     .saturating_add_in_place(NumExecuteBatches, 1);
-            }
-        };
+            };
+        }
     }
 }
 
