@@ -1145,9 +1145,7 @@ pub struct BatchExecutionTiming {
     /// as a whole for each rayon processing session, also after blockstore_processor's rebatching.
     ///
     /// When unified scheduler is enabled, this field isn't maintained, because it's not batched at
-    /// all and thus execution is fairly evenly distributed across its worker threads in the
-    /// granularity of individual transactions, meaning single-threaded metrics can reliably
-    /// be derived from dividing replay-slot-stats by the number of threads.
+    /// all.
     slowest_thread: ThreadExecuteTimings,
 }
 
