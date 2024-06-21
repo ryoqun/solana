@@ -41,7 +41,6 @@ mod real {
             fmt::Debug,
             sync::{Arc, Condvar, Mutex},
             thread::{current, panicking, JoinHandle, ThreadId},
-            time::Duration,
         },
     };
 
@@ -87,44 +86,35 @@ mod real {
                     trace!("Blocked on {} at {:?}", anchored_check_point, current());
                     // anchor is one of future check points; block the current thread until
                     // that happens
-                    let wait_result;
-                    (current_index, wait_result) = self
+                    current_index = self
                         .condvar
-                        .wait_timeout_while(
-                            current_index,
-                            Duration::from_secs(3),
-                            |&mut current_index| {
-                                let Some(anchored_index) =
-                                    self.anchored_index(current_index, &anchored_check_point)
-                                else {
-                                    // don't wait. seems the progress is made by other threads
-                                    // anchored to the same checkpoint.
-                                    return false;
-                                };
-                                let next_index = self.expected_next_index(current_index);
+                        .wait_while(current_index, |&mut current_index| {
+                            let Some(anchored_index) =
+                                self.anchored_index(current_index, &anchored_check_point)
+                            else {
+                                // don't wait. seems the progress is made by other threads
+                                // anchored to the same checkpoint.
+                                return false;
+                            };
+                            let next_index = self.expected_next_index(current_index);
 
-                                // determine we should wait further or not
-                                match anchored_index.cmp(&next_index) {
-                                    Equal => false,
-                                    Greater => {
-                                        trace!(
-                                            "Re-blocked on {} ({} != {}) at {:?}",
-                                            anchored_check_point,
-                                            anchored_index,
-                                            next_index,
-                                            current()
-                                        );
-                                        true
-                                    }
-                                    Less => unreachable!(),
+                            // determine we should wait further or not
+                            match anchored_index.cmp(&next_index) {
+                                Equal => false,
+                                Greater => {
+                                    trace!(
+                                        "Re-blocked on {} ({} != {}) at {:?}",
+                                        anchored_check_point,
+                                        anchored_index,
+                                        next_index,
+                                        current()
+                                    );
+                                    true
                                 }
-                            },
-                        )
+                                Less => unreachable!(),
+                            }
+                        })
                         .unwrap();
-                    if wait_result.timed_out() {
-                        drop(current_index);
-                        panic!("sleepless_testing timed out!");
-                    }
                     true
                 }
                 Less => unreachable!(),
