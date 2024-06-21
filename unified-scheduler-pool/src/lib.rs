@@ -835,6 +835,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         );
     }
 
+    // This method must take same set of session-related arguments as start_session() to avoid
+    // unneeded channel operations to minimize overhead. Starting threads incurs a very high cost
+    // already... Also, pre-creating threads isn't desirable as well to avoid `Option`-ed types
+    // for type safety.
     fn start_threads(
         &mut self,
         context: SchedulingContext,
@@ -1001,6 +1005,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
 
+                // The following loop maintains and updates ResultWithTimings as its
+                // externally-provieded mutable state for each session in this way:
+                //
+                // 1. Initial result_with_timing is propagated implicitly by the moved variable.
+                // 2. Subsequent result_with_timings are propagated explicitly from
+                //    the new_task_receiver.recv() invocation located at the end of loop.
                 'nonaborted_main_loop: loop {
                     let mut is_finished = false;
                     while !is_finished {
@@ -1093,7 +1103,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             new_context,
                             new_result_with_timings,
                         ))) => {
-                            // signal about new SchedulingContext to handler threads
+                            // We just received subsequent (= not initial) session and about to
+                            // enter into the preceding `while(!is_finished) {...}` loop again.
+                            // Before that, propagate new SchedulingContext to handler threads
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
                                 .unwrap();
@@ -1138,6 +1150,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             let finished_blocked_task_sender = finished_blocked_task_sender.clone();
             let finished_idle_task_sender = finished_idle_task_sender.clone();
 
+            // The following loop maintains and updates SchedulingContext as its
+            // externally-provided state for each session in this way:
+            //
+            // 1. Initial context is propagated implicitly by the moved runnable_task_receiver,
+            //    which is clone()-d just above for this particular thread.
+            // 2. Subsequent contexts are propagated explicitly inside `.after_select()` as part of
+            //    `select_biased!`, which are sent from `.send_chained_channel()` in the scheduler
+            //    thread for all-but-initial sessions.
             move || loop {
                 let (task, sender) = select_biased! {
                     recv(runnable_task_receiver.for_select()) -> message => {
