@@ -1088,7 +1088,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                     // Finalize the current session after asserting it's explicitly requested so.
                     assert!(session_ending);
-                    // Send result firstly because this is blocking the replay code-path.
+                    // Send result first because this is blocking the replay code-path.
                     session_result_sender
                         .send(result_with_timings)
                         .expect("always outlived receiver");
