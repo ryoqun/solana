@@ -160,7 +160,7 @@ if [[ $mode = "check-bins" || $mode = "full" ]]; then
   git clone --depth 1 --no-tags --branch no-no-library-target-error-nightly-2024-05-02  https://github.com/ryoqun/cargo.git cargo-for-dcou
   (
     cd ./cargo-for-dcou
-    cargo build --release
+    cargo "+${rust_nightly}" build --release
   )
   _ PATH="./cargo-for-dcou/target/release:$PATH" cargo "+${rust_nightly}" hack check --lib --bins
 fi
