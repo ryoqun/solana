@@ -157,7 +157,7 @@ fi
 export RUSTFLAGS="-D warnings -Z threads=8 $RUSTFLAGS"
 
 if [[ $mode = "check-bins" || $mode = "full" ]]; then
-  git clone --depth 0 --branch no-no-library-target-error-nightly-2024-05-02  https://github.com/ryoqun/cargo.git cargo-for-dcou
+  git clone --depth 1 --no-tags --branch no-no-library-target-error-nightly-2024-05-02  https://github.com/ryoqun/cargo.git cargo-for-dcou
   (
     cd ./cargo-for-dcou
     cargo build --release
