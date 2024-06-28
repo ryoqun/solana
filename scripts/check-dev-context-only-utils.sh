@@ -157,14 +157,18 @@ fi
 export RUSTFLAGS="-D warnings -Z threads=8 $RUSTFLAGS"
 
 if [[ $mode = "check-bins" || $mode = "full" ]]; then
-  git clone --depth 1 --no-tags --branch no-no-library-target-error-nightly-2024-05-02  https://github.com/ryoqun/cargo.git cargo-for-dcou
+  _ git clone --depth 1 --no-tags \
+    --branch no-no-library-target-error-nightly-2024-05-02 \
+    https://github.com/ryoqun/cargo.git cargo-for-dcou
   (
     cd ./cargo-for-dcou
     _ cargo "+${rust_nightly}" build --release --bin cargo
   )
 
-  # Readd "+${rust_nightly}" once we stop using custom-built one.
-  PATH="./cargo-for-dcou/target/release:$PATH" _ cargo hack check --lib --bins
+  # Remove rustup indirect command invocation once we stop using custom-built
+  # one.
+  PATH="./cargo-for-dcou/target/release:$PATH" _ rustup run "${rust_nightly}" \
+    cargo hack check --lib --bins
 fi
 if [[ $mode = "check-all-targets" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack check --all-targets
