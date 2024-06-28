@@ -161,10 +161,8 @@ if [[ $mode = "check-bins" || $mode = "full" ]]; then
   (
     cd ./cargo-for-dcou
     cargo build --release
-    export PATH="./cargo-for-dcou/target/release:$PATH"
-    _ cargo "+${rust_nightly}" hack check --lib
-    _ cargo "+${rust_nightly}" hack check --bins
   )
+  _ PATH="./cargo-for-dcou/target/release:$PATH" cargo "+${rust_nightly}" hack check --lib --bins
 fi
 if [[ $mode = "check-all-targets" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack check --all-targets
