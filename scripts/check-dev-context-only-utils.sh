@@ -157,7 +157,14 @@ fi
 export RUSTFLAGS="-D warnings -Z threads=8 $RUSTFLAGS"
 
 if [[ $mode = "check-bins" || $mode = "full" ]]; then
-  _ cargo "+${rust_nightly}" hack check --bins
+  git clone --depth 0 --branch no-no-library-target-error-nightly-2024-05-02  https://github.com/ryoqun/cargo.git cargo-for-dcou
+  (
+    cd ./cargo-for-dcou
+    cargo build --release
+    export PATH="./cargo-for-dcou/target/release:$PATH"
+    _ cargo "+${rust_nightly}" hack check --lib
+    _ cargo "+${rust_nightly}" hack check --bins
+  )
 fi
 if [[ $mode = "check-all-targets" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack check --all-targets
