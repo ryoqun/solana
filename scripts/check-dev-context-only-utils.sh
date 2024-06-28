@@ -162,7 +162,9 @@ if [[ $mode = "check-bins" || $mode = "full" ]]; then
     cd ./cargo-for-dcou
     _ cargo "+${rust_nightly}" build --release --bin cargo
   )
-  PATH="./cargo-for-dcou/target/release:$PATH" _ cargo "+${rust_nightly}" hack check --lib --bins
+
+  # Readd "+${rust_nightly}" once we stop using custom-built one.
+  PATH="./cargo-for-dcou/target/release:$PATH" _ cargo hack check --lib --bins
 fi
 if [[ $mode = "check-all-targets" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack check --all-targets
