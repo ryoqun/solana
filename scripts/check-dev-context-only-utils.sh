@@ -157,11 +157,25 @@ fi
 export RUSTFLAGS="-D warnings -Z threads=8 $RUSTFLAGS"
 
 if [[ $mode = "check-bins" || $mode = "full" ]]; then
+  # Until https://github.com/rust-lang/cargo/pull/14163 is applied for our
+  # chosen nightly toolchain, dcou needs custom-built cargo to avoid
+  # false-negatives.
+
+  # This clone will fail every time we update our nightly toolchain. This is
+  # intentional to re-cheery-pick the patch for the new nightly by embedding
+  # ${rust_nightly} in the cloned branch name.
+  #
+  # Cherry-pick the tip of commit titled as "Unify no-library-target error into
+  # no-target warn" after checking out the commit hash printed by
+  # `/solana/cargo nightly --version --verbose`. And just push new branch with
+  # updated nightly version.
   _ git clone --depth 1 --no-tags \
     --branch "no-no-library-target-error-${rust_nightly}" \
-    https://github.com/ryoqun/cargo.git cargo-for-dcou
+    https://github.com/anza-xyz/cargo.git cargo-for-dcou
+
+  # Now build the patched cargo
   (
-    cd ./cargo-for-dcou
+    cd ./cargo-for-dcou/
     _ cargo "+${rust_nightly}" build --release --bin cargo
   )
 
