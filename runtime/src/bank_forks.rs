@@ -230,6 +230,7 @@ impl BankForks {
 
         let bank = Arc::new(bank);
         let bank = if let Some(scheduler_pool) = &self.scheduler_pool {
+            trace!("inserting bank(slot: {}) with scheduler into bank_forks...", bank.slot());
             let context = SchedulingContext::new(bank.clone());
             let scheduler = scheduler_pool.take_scheduler(context);
             let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
