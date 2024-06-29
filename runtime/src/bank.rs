@@ -4907,7 +4907,7 @@ impl Bank {
             Err(err) => return TransactionExecutionResult::NotExecuted(err),
         };
 
-        let (
+        let Some(
             TransactionResults {
                 mut execution_results,
                 ..
@@ -4925,7 +4925,7 @@ impl Bank {
             &mut ExecuteTimings::default(),
             Some(1000 * 1000),
             || {},
-        );
+        ) else { panic!() };
 
         execution_results.remove(0)
     }
