@@ -485,6 +485,10 @@ fn main() {
         poh_recorder
             .write()
             .unwrap()
+            .reset(bank.clone_without_scheduler(), Some((bank.slot(), bank.slot() + 1)));
+        poh_recorder
+            .write()
+            .unwrap()
             .set_bank(bank.clone_with_scheduler(), false);
     }
     let banking_stage = BankingStage::new_num_threads(
