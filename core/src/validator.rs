@@ -178,6 +178,7 @@ pub enum BlockProductionMethod {
     ThreadLocalMultiIterator,
     #[default]
     CentralScheduler,
+    UnifiedScheduler,
 }
 
 impl BlockProductionMethod {
