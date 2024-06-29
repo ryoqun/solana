@@ -174,7 +174,9 @@ pub fn execute_batch(
         timings,
         log_messages_bytes_limit,
         pre_commit_callback,
-    );
+    ) else {
+        return Err(TransactionError::CommitFailed);
+    };
 
     bank_utils::find_and_send_votes(
         batch.sanitized_transactions(),
