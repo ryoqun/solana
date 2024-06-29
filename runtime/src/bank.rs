@@ -4879,10 +4879,10 @@ impl Bank {
         } else {
             vec![]
         };
-        (
+        Some((
             results,
             TransactionBalancesSet::new(pre_balances, post_balances),
-        )
+        ))
     }
 
     /// Process a Transaction. This is used for unit tests and simply calls the vector
