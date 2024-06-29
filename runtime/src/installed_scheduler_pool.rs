@@ -452,7 +452,7 @@ impl BankWithScheduler {
         trace!(
             "schedule_transaction_executions(): {} txs slot: {}",
             transactions_with_indexes.len(),
-            self.bank.slot(),
+            self.inner.bank.slot(),
         );
 
         let schedule_result: ScheduleResult = self.inner.with_active_scheduler(|scheduler| {
