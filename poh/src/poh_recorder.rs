@@ -64,7 +64,7 @@ pub type WorkingBankEntry = (Arc<Bank>, (Entry, u64));
 
 #[derive(Debug, Clone)]
 pub struct BankStart {
-    pub working_bank: Arc<Bank>,
+    pub working_bank: BankWithScheduler,
     pub bank_creation_time: Arc<Instant>,
 }
 
