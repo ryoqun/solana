@@ -462,6 +462,7 @@ fn main() {
         ),
     };
     let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+    let collector = solana_sdk::pubkey::new_rand();
     if let BlockProductionMethod::UnifiedScheduler = block_production_method {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             Some(num_banking_threads as usize),
@@ -475,7 +476,7 @@ fn main() {
             .write()
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
-        new_slot = bank.slot() + 1;
+        let new_slot = bank.slot() + 1;
         let new_bank = Bank::new_from_parent(bank, &collector, new_slot);
         new_bank_time.stop();
 
@@ -507,7 +508,6 @@ fn main() {
     let mut tx_total_us = 0;
     let base_tx_count = bank.transaction_count();
     let mut txs_processed = 0;
-    let collector = solana_sdk::pubkey::new_rand();
     let mut total_sent = 0;
     for current_iteration_index in 0..iterations {
         trace!("RUNNING ITERATION {}", current_iteration_index);
