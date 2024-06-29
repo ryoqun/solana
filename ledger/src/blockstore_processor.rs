@@ -347,6 +347,7 @@ fn execute_batches_internal(
                             &mut timings,
                             log_messages_bytes_limit,
                             prioritization_fee_cache,
+                            None,
                         )
                     },
                     "execute_batch",
