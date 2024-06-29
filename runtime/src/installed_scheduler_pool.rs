@@ -522,6 +522,7 @@ impl BankWithSchedulerInner {
         let scheduler = self.scheduler.read().unwrap();
         match &*scheduler {
             SchedulerStatus::Active(scheduler) => {
+                trace!("entering the fast path slot: {}", self.bank.slot());
                 // This is the fast path, needing single read-lock most of time.
                 f(scheduler)
             }
@@ -558,7 +559,7 @@ impl BankWithSchedulerInner {
                 pool.register_timeout_listener(self.do_create_timeout_listener());
                 f(scheduler.active_scheduler())
             }
-            SchedulerStatus::Unavailable => unreachable!("no installed scheduler"),
+            SchedulerStatus::Unavailable => warn!("no installed scheduler: slot: {}", self.bank.slot()),
         }
     }
 
