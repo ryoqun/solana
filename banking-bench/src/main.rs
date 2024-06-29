@@ -460,6 +460,7 @@ fn main() {
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
         ),
     };
+    let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
     if let BlockProductionMethod::UnifiedScheduler = block_production_method {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             num_banking_threads,
@@ -487,7 +488,7 @@ fn main() {
         None,
         Arc::new(connection_cache),
         bank_forks.clone(),
-        &Arc::new(PrioritizationFeeCache::new(0u64)),
+        &prioritization_fee_cache,
     );
 
     // This is so that the signal_receiver does not go out of scope after the closure.
