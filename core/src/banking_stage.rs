@@ -624,6 +624,24 @@ impl BankingStage {
         Self { bank_thread_hdls }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_unified_scheduler(
+        cluster_info: &Arc<ClusterInfo>,
+        poh_recorder: &Arc<RwLock<PohRecorder>>,
+        non_vote_receiver: BankingPacketReceiver,
+        tpu_vote_receiver: BankingPacketReceiver,
+        gossip_vote_receiver: BankingPacketReceiver,
+        num_threads: u32,
+        transaction_status_sender: Option<TransactionStatusSender>,
+        replay_vote_sender: ReplayVoteSender,
+        log_messages_bytes_limit: Option<usize>,
+        connection_cache: Arc<ConnectionCache>,
+        bank_forks: Arc<RwLock<BankForks>>,
+        prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
+    ) -> Self {
+        Self { bank_thread_hdls: vec![] }
+    }
+
     fn spawn_thread_local_multi_iterator_thread(
         id: u32,
         packet_receiver: BankingPacketReceiver,
