@@ -4963,6 +4963,7 @@ impl Bank {
             None,
             || {},
         )
+        .unwrap()
         .0
         .fee_collection_results
     }
