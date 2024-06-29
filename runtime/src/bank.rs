@@ -4907,13 +4907,13 @@ impl Bank {
             Err(err) => return TransactionExecutionResult::NotExecuted(err),
         };
 
-        let Some(
+        let Some((
             TransactionResults {
                 mut execution_results,
                 ..
             },
             ..,
-        ) =  { self.load_execute_and_commit_transactions(
+        )) =  { self.load_execute_and_commit_transactions(
             &batch,
             MAX_PROCESSING_AGE,
             false, // collect_balances
