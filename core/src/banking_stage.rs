@@ -661,9 +661,10 @@ impl BankingStage {
             let decision_maker = decision_maker.clone();
             let id_generator = id_generator.clone();
             let bank_forks = bank_forks.clone();
+
             std::thread::spawn(move || {
                 let packet_deserializer =
-                    PacketDeserializer::new(receiver, bank_forks.clone());
+                    PacketDeserializer::new(receiver, bank_forks);
                 let decision = decision_maker.make_consume_or_forward_decision();
                 match decision {
                     BufferedPacketsDecision::Consume(bank_start) => {
