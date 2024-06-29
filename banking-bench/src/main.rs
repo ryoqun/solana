@@ -476,11 +476,9 @@ fn main() {
             .write()
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
+
         let new_slot = bank.slot() + 1;
         let new_bank = Bank::new_from_parent(bank, &collector, new_slot);
-        new_bank_time.stop();
-
-        let mut insert_time = Measure::start("insert_time");
         bank_forks.write().unwrap().insert(new_bank);
         bank = bank_forks.read().unwrap().working_bank();
     }
