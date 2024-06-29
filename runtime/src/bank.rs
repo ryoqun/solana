@@ -4965,7 +4965,7 @@ impl Bank {
             ExecutionRecordingConfig::new_single_setting(false),
             &mut ExecuteTimings::default(),
             None,
-            || {},
+            || true,
         )
         .unwrap()
         .0
