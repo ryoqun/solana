@@ -142,6 +142,8 @@ fn create_thread_pool(num_threads: usize) -> ThreadPool {
         .expect("new rayon threadpool")
 }
 
+type PreCommitCallback = impl FnOnce();
+
 pub fn execute_batch(
     batch: &TransactionBatchWithIndexes,
     bank: &Arc<Bank>,
@@ -150,7 +152,7 @@ pub fn execute_batch(
     timings: &mut ExecuteTimings,
     log_messages_bytes_limit: Option<usize>,
     prioritization_fee_cache: &PrioritizationFeeCache,
-    pre_commit_callck: impl FnOnce(),
+    pre_commit_callback: PreCommitCallback,
 ) -> Result<()> {
     let TransactionBatchWithIndexes {
         batch,
