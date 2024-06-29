@@ -284,6 +284,7 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+        _transaction_recorder: solana_poh::poh_recorder::TransactionRecorder,
     ) -> InstalledSchedulerPoolArc {
         Self::new(
             handler_count,
