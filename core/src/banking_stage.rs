@@ -696,7 +696,7 @@ impl BankingStage {
                         std::thread::sleep(Duration::from_millis(10));
                     },
                 }
-            });
+            })
         }).collect();
 
         Self { bank_thread_hdls }
