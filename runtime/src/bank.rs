@@ -4856,6 +4856,10 @@ impl Bank {
             },
         );
 
+        if !pre_commit_callback() {
+            return None;
+        }
+
         let (last_blockhash, lamports_per_signature) =
             self.last_blockhash_and_lamports_per_signature();
         let results = self.commit_transactions(
