@@ -464,7 +464,7 @@ fn main() {
     let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
     if let BlockProductionMethod::UnifiedScheduler = block_production_method {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
-            Some(num_banking_threads),
+            Some(num_banking_threads as usize),
             None,
             None,
             Some(replay_vote_sender.clone()),
