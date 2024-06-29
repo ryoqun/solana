@@ -150,7 +150,7 @@ pub fn execute_batch(
     timings: &mut ExecuteTimings,
     log_messages_bytes_limit: Option<usize>,
     prioritization_fee_cache: &PrioritizationFeeCache,
-    pre_commit_callck: impl FnOnce(),
+    pre_commit_callback: impl FnOnce(),
 ) -> Result<()> {
     let TransactionBatchWithIndexes {
         batch,
@@ -173,6 +173,7 @@ pub fn execute_batch(
         ExecutionRecordingConfig::new_single_setting(transaction_status_sender.is_some()),
         timings,
         log_messages_bytes_limit,
+        pre_commit_callback,
     );
 
     bank_utils::find_and_send_votes(
