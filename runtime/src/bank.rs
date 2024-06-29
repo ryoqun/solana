@@ -4960,6 +4960,7 @@ impl Bank {
             ExecutionRecordingConfig::new_single_setting(false),
             &mut ExecuteTimings::default(),
             None,
+            None,
         )
         .0
         .fee_collection_results
