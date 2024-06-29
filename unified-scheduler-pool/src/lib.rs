@@ -100,6 +100,7 @@ pub struct HandlerContext {
     transaction_status_sender: Option<TransactionStatusSender>,
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+    transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
 }
 
 pub type DefaultSchedulerPool =
@@ -179,6 +180,7 @@ where
                 transaction_status_sender,
                 replay_vote_sender,
                 prioritization_fee_cache,
+                transaction_recorder,
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
