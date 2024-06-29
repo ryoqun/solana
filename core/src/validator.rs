@@ -855,15 +855,6 @@ impl Validator {
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
 
         match (&config.block_verification_method, &config.block_production_method) {
-            _ => {
-                info!("no scheduler pool is installed for block verification...");
-                if let Some(count) = config.unified_scheduler_handler_threads {
-                    warn!(
-                        "--unified-scheduler-handler-threads={count} is ignored because unified \
-                         scheduler isn't enabled"
-                    );
-                }
-            }
             (BlockVerificationMethod::UnifiedScheduler, _) | (_, BlockProductionMethod::UnifiedScheduler) => {
                 let scheduler_pool = DefaultSchedulerPool::new_dyn(
                     config.unified_scheduler_handler_threads,
@@ -877,6 +868,15 @@ impl Validator {
                     .write()
                     .unwrap()
                     .install_scheduler_pool(scheduler_pool);
+            }
+            _ => {
+                info!("no scheduler pool is installed for block verification...");
+                if let Some(count) = config.unified_scheduler_handler_threads {
+                    warn!(
+                        "--unified-scheduler-handler-threads={count} is ignored because unified \
+                         scheduler isn't enabled"
+                    );
+                }
             }
         }
 
