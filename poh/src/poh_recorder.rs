@@ -412,7 +412,7 @@ impl PohRecorder {
 
     pub fn bank_start(&self) -> Option<BankStart> {
         self.working_bank.as_ref().map(|w| BankStart {
-            working_bank: w.bank.clone(),
+            working_bank: w.bank.clone_with_scheduler(),
             bank_creation_time: w.start.clone(),
         })
     }
