@@ -373,24 +373,24 @@ impl BankingStage {
         bank_forks: Arc<RwLock<BankForks>>,
         prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
     ) -> Self {
+        use BlockProductionMethod::*;
+
         match block_production_method {
-            BlockProductionMethod::ThreadLocalMultiIterator => {
-                Self::new_thread_local_multi_iterator(
-                    cluster_info,
-                    poh_recorder,
-                    non_vote_receiver,
-                    tpu_vote_receiver,
-                    gossip_vote_receiver,
-                    num_threads,
-                    transaction_status_sender,
-                    replay_vote_sender,
-                    log_messages_bytes_limit,
-                    connection_cache,
-                    bank_forks,
-                    prioritization_fee_cache,
-                )
-            }
-            BlockProductionMethod::CentralScheduler => Self::new_central_scheduler(
+            ThreadLocalMultiIterator => Self::new_thread_local_multi_iterator(
+                cluster_info,
+                poh_recorder,
+                non_vote_receiver,
+                tpu_vote_receiver,
+                gossip_vote_receiver,
+                num_threads,
+                transaction_status_sender,
+                replay_vote_sender,
+                log_messages_bytes_limit,
+                connection_cache,
+                bank_forks,
+                prioritization_fee_cache,
+            ),
+            CentralScheduler => Self::new_central_scheduler(
                 cluster_info,
                 poh_recorder,
                 non_vote_receiver,
