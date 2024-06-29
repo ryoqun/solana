@@ -692,7 +692,7 @@ impl BankingStage {
                     },
                     _  => {},
                 }
-            }).unwrap();
+            });
         }
 
         Self { bank_thread_hdls: vec![] }
