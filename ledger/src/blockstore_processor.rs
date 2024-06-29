@@ -166,7 +166,7 @@ pub fn execute_batch(
         vec![]
     };
 
-    let (tx_results, balances) = batch.bank().load_execute_and_commit_transactions(
+    let Some((tx_results, balances)) = batch.bank().load_execute_and_commit_transactions(
         batch,
         MAX_PROCESSING_AGE,
         transaction_status_sender.is_some(),
