@@ -575,7 +575,7 @@ fn main() {
 
             let mut insert_time = Measure::start("insert_time");
             bank_forks.write().unwrap().insert(new_bank);
-            bank = bank_forks.read().unwrap().working_bank_with_scheduler();
+            bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
             insert_time.stop();
 
             // set cost tracker limits to MAX so it will not filter out TXs
