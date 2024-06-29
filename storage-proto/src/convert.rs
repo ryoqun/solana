@@ -972,7 +972,7 @@ impl From<TransactionError> for tx_by_addr::TransactionError {
                     tx_by_addr::TransactionErrorType::ProgramCacheHitMaxLimit
                 }
                 TransactionError::CommitFailed => {
-                    tx_by_addr::TransactionErrorType::CommitFailed
+                    panic!();
                 }
             } as i32,
             instruction_error: match transaction_error {
