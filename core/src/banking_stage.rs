@@ -410,6 +410,7 @@ impl BankingStage {
                 non_vote_receiver,
                 tpu_vote_receiver,
                 gossip_vote_receiver,
+                bank_forks,
             ),
         }
     }
@@ -636,8 +637,62 @@ impl BankingStage {
         non_vote_receiver: BankingPacketReceiver,
         tpu_vote_receiver: BankingPacketReceiver,
         gossip_vote_receiver: BankingPacketReceiver,
+        bank_forks: Arc<RwLock<BankForks>>,
     ) -> Self {
+        struct MonotonicIdGenerator {
+            next_task_id: AtomicUsize,
+        }
+
+        impl MonotonicIdGenerator {
+            fn new() -> Arc<Self> {
+                Arc::new(Self{next_task_id: Default::default()})
+            }
+
+            fn bulk_assign_task_ids(&self, count: usize) -> usize {
+                self.next_task_id
+                    .fetch_add(count, Ordering::AcqRel)
+            }
+        }
+        let id_generator = MonotonicIdGenerator::new();
+
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
+
+        for receiver in [non_vote_receiver, tpu_vote_receiver, gossip_vote_receiver] {
+            let packet_deserializer =
+                PacketDeserializer::new(receiver, bank_forks.clone());
+            let decision = decision_maker.make_consume_or_forward_decision();
+            match decision {
+                BufferedPacketsDecision::Consume(bank_start) => {
+                    let bank = bank_start.working_bank;
+                    let recv_timeout = Duration::from_millis(10);
+
+                    let start = Instant::now();
+
+                    while let Ok(aaa) = packet_deserializer.packet_batch_receiver.recv_timeout(recv_timeout) {
+                        for pp in &aaa.0 {
+                            // over-provision
+                            let mut task_id = id_generator.bulk_assign_task_ids(pp.len());
+
+                            let indexes = PacketDeserializer::generate_packet_indexes(&pp);
+                            for p in PacketDeserializer::deserialize_packets2(&pp, &indexes) {
+                                if let Some(t) = p.build_sanitized_transaction(bank.vote_only_bank(), &**bank, bank.get_reserved_account_keys()) {
+                                    if let Err(_) = bank.schedule_transaction_executions(vec![(&t, &task_id)].into_iter()) {
+                                        break;
+                                    }
+                                    task_id += 1;
+                                }
+                            }
+                        }
+
+                        if start.elapsed() >= recv_timeout {
+                            break;
+                        }
+                    }
+                },
+                _  => {},
+            }
+        }
+
         Self { bank_thread_hdls: vec![] }
     }
 

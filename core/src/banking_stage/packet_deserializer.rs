@@ -32,7 +32,7 @@ pub struct ReceivePacketResults {
 
 pub struct PacketDeserializer {
     /// Receiver for packet batches from sigverify stage
-    packet_batch_receiver: BankingPacketReceiver,
+    pub(crate) packet_batch_receiver: BankingPacketReceiver,
     /// Provides working bank for deserializer to check feature activation
     bank_forks: Arc<RwLock<BankForks>>,
 }
@@ -206,7 +206,7 @@ impl PacketDeserializer {
         Ok((num_packets_received, messages))
     }
 
-    fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
+    pub(crate) fn generate_packet_indexes(packet_batch: &PacketBatch) -> Vec<usize> {
         packet_batch
             .iter()
             .enumerate()
@@ -236,6 +236,25 @@ impl PacketDeserializer {
                 Ok(packet) => Some(packet),
                 Err(err) => {
                     packet_stats.increment_error_count(&err);
+                    None
+                }
+            }
+        })
+    }
+
+    pub(crate) fn deserialize_packets2<'a>(
+        packet_batch: &'a PacketBatch,
+        packet_indexes: &'a [usize],
+    ) -> impl Iterator<Item = ImmutableDeserializedPacket> + 'a {
+        packet_indexes.iter().filter_map(move |packet_index| {
+            let mut packet_clone = packet_batch[*packet_index].clone();
+            packet_clone
+                .meta_mut()
+                .set_round_compute_unit_price(true /* todo */);
+
+            match ImmutableDeserializedPacket::new(packet_clone) {
+                Ok(packet) => Some(packet),
+                Err(err) => {
                     None
                 }
             }
