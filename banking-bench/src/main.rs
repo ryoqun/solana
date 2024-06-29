@@ -587,7 +587,7 @@ fn main() {
             poh_recorder
                 .write()
                 .unwrap()
-                .set_bank_for_test(bank.clone());
+                .set_bank(bank.clone_with_scheduler());
             assert!(poh_recorder.read().unwrap().bank().is_some());
             debug!(
                 "new_bank_time: {}us insert_time: {}us poh_time: {}us",
