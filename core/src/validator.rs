@@ -854,8 +854,8 @@ impl Validator {
         };
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
 
-        match &config.block_verification_method {
-            BlockVerificationMethod::BlockstoreProcessor => {
+        match (&config.block_verification_method, &config.block_production_method) {
+            _ => {
                 info!("no scheduler pool is installed for block verification...");
                 if let Some(count) = config.unified_scheduler_handler_threads {
                     warn!(
@@ -864,7 +864,7 @@ impl Validator {
                     );
                 }
             }
-            BlockVerificationMethod::UnifiedScheduler => {
+            (BlockVerificationMethod::UnifiedScheduler, _) | (_, BlockProductionMethod::UnifiedScheduler) => {
                 let scheduler_pool = DefaultSchedulerPool::new_dyn(
                     config.unified_scheduler_handler_threads,
                     config.runtime_config.log_messages_bytes_limit,
