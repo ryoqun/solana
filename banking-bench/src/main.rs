@@ -464,7 +464,7 @@ fn main() {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             num_banking_threads,
             None,
-            transaction_status_sender.clone(),
+            None,
             Some(replay_vote_sender.clone()),
             prioritization_fee_cache.clone(),
             Some(poh_recorder.read().unwrap().new_recorder()),
