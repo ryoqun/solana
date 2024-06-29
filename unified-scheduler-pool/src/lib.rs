@@ -448,7 +448,7 @@ impl TaskHandler for DefaultTaskHandler {
             handler_context.log_messages_bytes_limit,
             &handler_context.prioritization_fee_cache,
             || {
-                handler_context.transaction_recorder;
+                &handler_context.transaction_recorder;
             },
         );
         sleepless_testing::at(CheckPoint::TaskHandled(index));
