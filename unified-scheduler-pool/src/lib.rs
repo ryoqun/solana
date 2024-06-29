@@ -448,7 +448,7 @@ impl TaskHandler for DefaultTaskHandler {
             handler_context.log_messages_bytes_limit,
             &handler_context.prioritization_fee_cache,
             || {
-                let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![]);
+                let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
                 if let Err(recorder_err) = summary.result {
                     true
                 } else {
