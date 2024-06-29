@@ -460,6 +460,8 @@ fn main() {
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
         ),
     };
+    if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+    }
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
         &cluster_info,
