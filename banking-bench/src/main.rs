@@ -570,7 +570,7 @@ fn main() {
 
             let mut new_bank_time = Measure::start("new_bank");
             let new_slot = bank.slot() + 1;
-            let new_bank = Bank::new_from_parent(bank, &collector, new_slot);
+            let new_bank = Bank::new_from_parent(bank.clone_without_scheduler(), &collector, new_slot);
             new_bank_time.stop();
 
             let mut insert_time = Measure::start("insert_time");
