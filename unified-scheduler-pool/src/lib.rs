@@ -449,6 +449,7 @@ impl TaskHandler for DefaultTaskHandler {
             &handler_context.prioritization_fee_cache,
             || {
                 &handler_context.transaction_recorder;
+                true
             },
         );
         sleepless_testing::at(CheckPoint::TaskHandled(index));
