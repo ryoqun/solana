@@ -1143,7 +1143,7 @@ impl PohRecorder {
 }
 
 pub fn create_test_recorder(
-    bank: Arc<Bank>,
+    bank: BankWithScheduler,
     blockstore: Arc<Blockstore>,
     poh_config: Option<PohConfig>,
     leader_schedule_cache: Option<Arc<LeaderScheduleCache>>,
@@ -1172,7 +1172,7 @@ pub fn create_test_recorder(
     );
     let ticks_per_slot = bank.ticks_per_slot();
 
-    poh_recorder.set_bank(BankWithScheduler::new_without_scheduler(bank), false);
+    poh_recorder.set_bank(bank, false);
     let poh_recorder = Arc::new(RwLock::new(poh_recorder));
     let poh_service = PohService::new(
         poh_recorder.clone(),
