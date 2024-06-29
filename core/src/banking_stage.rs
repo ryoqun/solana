@@ -658,6 +658,7 @@ impl BankingStage {
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
         for receiver in [non_vote_receiver, tpu_vote_receiver, gossip_vote_receiver] {
+            let id_generator = id_generator.clone();
             let bank_forks = bank_forks.clone();
             std::thread::spawn(move || {
                 let packet_deserializer =
