@@ -449,11 +449,7 @@ impl TaskHandler for DefaultTaskHandler {
             &handler_context.prioritization_fee_cache,
             || {
                 let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
-                if let Err(recorder_err) = summary.result {
-                    true
-                } else {
-                    false
-                }
+                summary.result.is_ok()
             },
         );
         sleepless_testing::at(CheckPoint::TaskHandled(index));
