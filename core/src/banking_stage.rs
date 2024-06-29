@@ -662,7 +662,7 @@ impl BankingStage {
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
 
-            std::thread::spawn(move || {
+            std::thread::spawn(move || loop {
                 let decision = decision_maker.make_consume_or_forward_decision();
                 match decision {
                     BufferedPacketsDecision::Consume(bank_start) => {
@@ -692,7 +692,9 @@ impl BankingStage {
                             }
                         }
                     },
-                    _  => {},
+                    _  => {
+                        std::thread::sleep(Duration::from_millis(10));
+                    },
                 }
             });
         }
