@@ -404,6 +404,8 @@ impl BankingStage {
                 bank_forks,
                 prioritization_fee_cache,
             ),
+            UnifiedScheduler => Self::new_unified_scheduler(
+            ),
         }
     }
 
