@@ -463,7 +463,7 @@ fn main() {
     if let BlockProductionMethod::UnifiedScheduler = block_production_method {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             num_banking_threads,
-            config.runtime_config.log_messages_bytes_limit,
+            None,
             transaction_status_sender.clone(),
             Some(replay_vote_sender.clone()),
             prioritization_fee_cache.clone(),
