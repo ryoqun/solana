@@ -450,8 +450,9 @@ impl BankWithScheduler {
         transactions_with_indexes: impl ExactSizeIterator<Item = (&'a SanitizedTransaction, &'a usize)>,
     ) -> Result<()> {
         trace!(
-            "schedule_transaction_executions(): {} txs",
-            transactions_with_indexes.len()
+            "schedule_transaction_executions(): {} txs slot: {}",
+            transactions_with_indexes.len(),
+            self.bank.slot(),
         );
 
         let schedule_result: ScheduleResult = self.inner.with_active_scheduler(|scheduler| {
