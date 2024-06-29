@@ -5587,6 +5587,7 @@ dependencies = [
  "solana-sdk",
  "solana-streamer",
  "solana-tpu-client",
+ "solana-unified-scheduler-pool",
  "solana-version",
 ]
 
