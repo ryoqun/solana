@@ -4924,6 +4924,7 @@ impl Bank {
             },
             &mut ExecuteTimings::default(),
             Some(1000 * 1000),
+            || {},
         );
 
         execution_results.remove(0)
