@@ -1,6 +1,4 @@
 use super::*;
-#[cfg(test)]
-use arbitrary::Arbitrary;
 
 // Offset used for VoteState version 1_14_11
 const DEFAULT_PRIOR_VOTERS_OFFSET: usize = 82;

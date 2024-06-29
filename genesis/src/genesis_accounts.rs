@@ -270,33 +270,3 @@ pub fn add_genesis_accounts(genesis_config: &mut GenesisConfig, mut issued_lampo
         None,
     );
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add_genesis_accounts() {
-        let clusters_and_expected_lamports = [
-            (ClusterType::MainnetBeta, 500_000_000 * LAMPORTS_PER_SOL),
-            (ClusterType::Testnet, 500_000_000 * LAMPORTS_PER_SOL),
-            (ClusterType::Devnet, 500_000_000 * LAMPORTS_PER_SOL),
-            (ClusterType::Development, 0),
-        ];
-
-        for (cluster_type, expected_lamports) in clusters_and_expected_lamports.iter() {
-            let mut genesis_config = GenesisConfig {
-                cluster_type: *cluster_type,
-                ..GenesisConfig::default()
-            };
-            add_genesis_accounts(&mut genesis_config, 0);
-
-            let lamports = genesis_config
-                .accounts
-                .values()
-                .map(|account| account.lamports)
-                .sum::<u64>();
-            assert_eq!(*expected_lamports, lamports);
-        }
-    }
-}

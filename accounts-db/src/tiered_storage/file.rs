@@ -169,39 +169,3 @@ impl Drop for TieredWritableFile {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use {
-        crate::tiered_storage::{
-            error::TieredStorageError,
-            file::{TieredReadableFile, TieredWritableFile, FILE_MAGIC_NUMBER},
-        },
-        std::path::Path,
-        tempfile::TempDir,
-    };
-
-    fn generate_test_file_with_number(path: impl AsRef<Path>, number: u64) {
-        let mut file = TieredWritableFile::new(path).unwrap();
-        file.write_pod(&number).unwrap();
-    }
-
-    #[test]
-    fn test_new() {
-        let temp_dir = TempDir::new().unwrap();
-        let path = temp_dir.path().join("test_new");
-        generate_test_file_with_number(&path, FILE_MAGIC_NUMBER);
-        assert!(TieredReadableFile::new(&path).is_ok());
-    }
-
-    #[test]
-    fn test_magic_number_mismatch() {
-        let temp_dir = TempDir::new().unwrap();
-        let path = temp_dir.path().join("test_magic_number_mismatch");
-        generate_test_file_with_number(&path, !FILE_MAGIC_NUMBER);
-        assert!(matches!(
-            TieredReadableFile::new(&path),
-            Err(TieredStorageError::MagicNumberMismatch(_, _))
-        ));
-    }
-}

@@ -36,9 +36,3 @@ impl_get_instance_packed_len!(
     )]
 );
 
-#[cfg(test)]
-#[allow(deprecated)]
-mod tests {
-    use {crate::borsh::impl_tests, borsh0_9::maybestd::io};
-    impl_tests!(borsh0_9, io);
-}

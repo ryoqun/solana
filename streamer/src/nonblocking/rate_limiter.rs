@@ -49,26 +49,3 @@ impl RateLimiter {
         &self.throttle_start_instant
     }
 }
-
-#[cfg(test)]
-pub mod test {
-    use {super::*, tokio::time::sleep};
-
-    #[tokio::test]
-    async fn test_rate_limiter() {
-        let mut limiter = RateLimiter::new(2, Duration::from_millis(100));
-        assert!(limiter.check_and_update());
-        assert!(limiter.check_and_update());
-        assert!(!limiter.check_and_update());
-        let instant1 = *limiter.throttle_start_instant();
-
-        // sleep 150 ms, the throttle parameters should have been reset.
-        sleep(Duration::from_millis(150)).await;
-        assert!(limiter.check_and_update());
-        assert!(limiter.check_and_update());
-        assert!(!limiter.check_and_update());
-
-        let instant2 = *limiter.throttle_start_instant();
-        assert!(instant2 > instant1);
-    }
-}

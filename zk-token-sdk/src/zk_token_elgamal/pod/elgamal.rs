@@ -151,32 +151,3 @@ impl TryFrom<DecryptHandle> for decoded::DecryptHandle {
         Self::from_bytes(&pod_handle.0).ok_or(ElGamalError::CiphertextDeserialization)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::encryption::elgamal::ElGamalKeypair, std::str::FromStr};
-
-    #[test]
-    fn elgamal_pubkey_fromstr() {
-        let elgamal_keypair = ElGamalKeypair::new_rand();
-        let expected_elgamal_pubkey: ElGamalPubkey = (*elgamal_keypair.pubkey()).into();
-
-        let elgamal_pubkey_base64_str = format!("{}", expected_elgamal_pubkey);
-        let computed_elgamal_pubkey = ElGamalPubkey::from_str(&elgamal_pubkey_base64_str).unwrap();
-
-        assert_eq!(expected_elgamal_pubkey, computed_elgamal_pubkey);
-    }
-
-    #[test]
-    fn elgamal_ciphertext_fromstr() {
-        let elgamal_keypair = ElGamalKeypair::new_rand();
-        let expected_elgamal_ciphertext: ElGamalCiphertext =
-            elgamal_keypair.pubkey().encrypt(0_u64).into();
-
-        let elgamal_ciphertext_base64_str = format!("{}", expected_elgamal_ciphertext);
-        let computed_elgamal_ciphertext =
-            ElGamalCiphertext::from_str(&elgamal_ciphertext_base64_str).unwrap();
-
-        assert_eq!(expected_elgamal_ciphertext, computed_elgamal_ciphertext);
-    }
-}

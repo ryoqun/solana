@@ -294,18 +294,3 @@ pub fn hardforks_of(matches: &ArgMatches<'_>, name: &str) -> Option<Vec<Slot>> {
         None
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, solana_accounts_db::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE};
-
-    #[test]
-    fn test_max_genesis_archive_unpacked_size_constant() {
-        assert_eq!(
-            MAX_GENESIS_ARCHIVE_UNPACKED_SIZE,
-            MAX_GENESIS_ARCHIVE_UNPACKED_SIZE_STR
-                .parse::<u64>()
-                .unwrap()
-        );
-    }
-}

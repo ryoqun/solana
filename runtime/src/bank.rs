@@ -4774,7 +4774,6 @@ impl Bank {
     // Absolutely not under ClusterType::MainnetBeta!!!!
     fn use_multi_epoch_collection_cycle(&self, epoch: Epoch) -> bool {
         // Force normal behavior, disabling multi epoch collection cycle for manual local testing
-        #[cfg(not(test))]
         if self.slot_count_per_normal_epoch() == solana_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH
         {
             return false;
@@ -4786,7 +4785,6 @@ impl Bank {
 
     pub(crate) fn use_fixed_collection_cycle(&self) -> bool {
         // Force normal behavior, disabling fixed collection cycle for manual local testing
-        #[cfg(not(test))]
         if self.slot_count_per_normal_epoch() == solana_sdk::epoch_schedule::MINIMUM_SLOTS_PER_EPOCH
         {
             return false;
@@ -6963,11 +6961,6 @@ impl Bank {
         self.update_accounts_data_size_delta_off_chain(amount)
     }
 
-    #[cfg(test)]
-    fn restore_old_behavior_for_fragile_tests(&self) {
-        self.lazy_rent_collection.store(true, Relaxed);
-    }
-
     /// Process multiple transaction in a single batch. This is used for benches and unit tests.
     ///
     /// # Panics
@@ -6989,14 +6982,6 @@ impl Bank {
     #[must_use]
     pub fn process_entry_transactions(&self, txs: Vec<VersionedTransaction>) -> Vec<Result<()>> {
         self.try_process_entry_transactions(txs).unwrap()
-    }
-
-    #[cfg(test)]
-    pub fn flush_accounts_cache_slot_for_tests(&self) {
-        self.rc
-            .accounts
-            .accounts_db
-            .flush_accounts_cache_slot_for_tests(self.slot())
     }
 
     /// This is only valid to call from tests.

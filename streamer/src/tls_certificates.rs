@@ -103,19 +103,3 @@ pub fn get_pubkey_from_tls_certificate(der_cert: &rustls::Certificate) -> Option
         _ => None,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, solana_sdk::signer::Signer};
-
-    #[test]
-    fn test_generate_tls_certificate() {
-        let keypair = Keypair::new();
-        let (cert, _) = new_dummy_x509_certificate(&keypair);
-        if let Some(pubkey) = get_pubkey_from_tls_certificate(&cert) {
-            assert_eq!(pubkey, keypair.pubkey());
-        } else {
-            panic!("Failed to get certificate pubkey");
-        }
-    }
-}

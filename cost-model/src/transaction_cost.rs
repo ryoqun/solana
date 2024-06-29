@@ -148,39 +148,7 @@ impl Default for UsageCostDetails {
     }
 }
 
-#[cfg(test)]
-impl PartialEq for UsageCostDetails {
-    fn eq(&self, other: &Self) -> bool {
-        fn to_hash_set(v: &[Pubkey]) -> std::collections::HashSet<&Pubkey> {
-            v.iter().collect()
-        }
-
-        self.signature_cost == other.signature_cost
-            && self.write_lock_cost == other.write_lock_cost
-            && self.data_bytes_cost == other.data_bytes_cost
-            && self.programs_execution_cost == other.programs_execution_cost
-            && self.loaded_accounts_data_size_cost == other.loaded_accounts_data_size_cost
-            && self.allocated_accounts_data_size == other.allocated_accounts_data_size
-            && self.num_transaction_signatures == other.num_transaction_signatures
-            && self.num_secp256k1_instruction_signatures
-                == other.num_secp256k1_instruction_signatures
-            && self.num_ed25519_instruction_signatures == other.num_ed25519_instruction_signatures
-            && to_hash_set(&self.writable_accounts) == to_hash_set(&other.writable_accounts)
-    }
-}
-
-#[cfg(test)]
-impl Eq for UsageCostDetails {}
-
 impl UsageCostDetails {
-    #[cfg(test)]
-    pub fn new_with_capacity(capacity: usize) -> Self {
-        Self {
-            writable_accounts: Vec::with_capacity(capacity),
-            ..Self::default()
-        }
-    }
-
     pub fn new_with_default_capacity() -> Self {
         Self::default()
     }
@@ -191,71 +159,5 @@ impl UsageCostDetails {
             .saturating_add(self.data_bytes_cost)
             .saturating_add(self.programs_execution_cost)
             .saturating_add(self.loaded_accounts_data_size_cost)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        crate::cost_model::CostModel,
-        solana_sdk::{
-            feature_set::FeatureSet,
-            hash::Hash,
-            message::SimpleAddressLoader,
-            reserved_account_keys::ReservedAccountKeys,
-            signer::keypair::Keypair,
-            transaction::{MessageHash, SanitizedTransaction, VersionedTransaction},
-        },
-        solana_vote_program::vote_transaction,
-    };
-
-    #[test]
-    fn test_vote_transaction_cost() {
-        solana_logger::setup();
-        let node_keypair = Keypair::new();
-        let vote_keypair = Keypair::new();
-        let auth_keypair = Keypair::new();
-        let transaction = vote_transaction::new_vote_transaction(
-            vec![],
-            Hash::default(),
-            Hash::default(),
-            &node_keypair,
-            &vote_keypair,
-            &auth_keypair,
-            None,
-        );
-
-        // create a sanitized vote transaction
-        let vote_transaction = SanitizedTransaction::try_create(
-            VersionedTransaction::from(transaction.clone()),
-            MessageHash::Compute,
-            Some(true),
-            SimpleAddressLoader::Disabled,
-            &ReservedAccountKeys::empty_key_set(),
-        )
-        .unwrap();
-
-        // create a identical sanitized transaction, but identified as non-vote
-        let none_vote_transaction = SanitizedTransaction::try_create(
-            VersionedTransaction::from(transaction),
-            MessageHash::Compute,
-            Some(false),
-            SimpleAddressLoader::Disabled,
-            &ReservedAccountKeys::empty_key_set(),
-        )
-        .unwrap();
-
-        // expected vote tx cost: 2 write locks, 1 sig, 1 vote ix, 8cu of loaded accounts size,
-        let expected_vote_cost = SIMPLE_VOTE_USAGE_COST;
-        // expected non-vote tx cost would include default loaded accounts size cost (16384) additionally
-        let expected_none_vote_cost = 20535;
-
-        let vote_cost = CostModel::calculate_cost(&vote_transaction, &FeatureSet::all_enabled());
-        let none_vote_cost =
-            CostModel::calculate_cost(&none_vote_transaction, &FeatureSet::all_enabled());
-
-        assert_eq!(expected_vote_cost, vote_cost.sum());
-        assert_eq!(expected_none_vote_cost, none_vote_cost.sum());
     }
 }

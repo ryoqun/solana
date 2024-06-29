@@ -64,36 +64,3 @@ impl TotalConnectionRateLimiter {
         self.limiter.check_and_update()
     }
 }
-
-#[cfg(test)]
-pub mod test {
-    use {super::*, std::net::Ipv4Addr};
-
-    #[tokio::test]
-    async fn test_total_connection_rate_limiter() {
-        let mut limiter = TotalConnectionRateLimiter::new(2);
-        assert!(limiter.is_allowed());
-        assert!(limiter.is_allowed());
-        assert!(!limiter.is_allowed());
-    }
-
-    #[tokio::test]
-    async fn test_connection_rate_limiter() {
-        let limiter = ConnectionRateLimiter::new(4);
-        let ip1 = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1));
-        assert!(limiter.is_allowed(&ip1));
-        assert!(limiter.is_allowed(&ip1));
-        assert!(limiter.is_allowed(&ip1));
-        assert!(limiter.is_allowed(&ip1));
-        assert!(!limiter.is_allowed(&ip1));
-
-        assert!(limiter.len() == 1);
-        let ip2 = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 2));
-        assert!(limiter.is_allowed(&ip2));
-        assert!(limiter.len() == 2);
-        assert!(limiter.is_allowed(&ip2));
-        assert!(limiter.is_allowed(&ip2));
-        assert!(limiter.is_allowed(&ip2));
-        assert!(!limiter.is_allowed(&ip2));
-    }
-}

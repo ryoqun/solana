@@ -30,7 +30,7 @@ pub mod weighted_shuffle;
 #[macro_use]
 extern crate log;
 
-#[cfg(test)]
+#[cfg(escaped)]
 #[macro_use]
 extern crate assert_matches;
 

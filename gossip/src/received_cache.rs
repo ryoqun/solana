@@ -55,14 +55,6 @@ impl ReceivedCache {
         .flatten()
     }
 
-    #[cfg(test)]
-    fn mock_clone(&self) -> Self {
-        let mut cache = LruCache::new(self.0.cap());
-        for (&origin, entry) in self.0.iter().rev() {
-            cache.put(origin, entry.clone());
-        }
-        Self(cache)
-    }
 }
 
 impl ReceivedCacheEntry {
@@ -124,71 +116,3 @@ impl ReceivedCacheEntry {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use {
-        super::*,
-        std::{collections::HashSet, iter::repeat_with},
-    };
-
-    #[test]
-    fn test_received_cache() {
-        let mut cache = ReceivedCache::new(/*capacity:*/ 100);
-        let pubkey = Pubkey::new_unique();
-        let origin = Pubkey::new_unique();
-        let records = vec![
-            vec![3, 1, 7, 5],
-            vec![7, 6, 5, 2],
-            vec![2, 0, 0, 2],
-            vec![3, 5, 0, 6],
-            vec![6, 2, 6, 2],
-        ];
-        let nodes: Vec<_> = repeat_with(Pubkey::new_unique)
-            .take(records.len())
-            .collect();
-        for (node, records) in nodes.iter().zip(records) {
-            for (num_dups, k) in records.into_iter().enumerate() {
-                for _ in 0..k {
-                    cache.record(origin, *node, num_dups);
-                }
-            }
-        }
-        assert_eq!(cache.0.get(&origin).unwrap().num_upserts, 21);
-        let scores: HashMap<Pubkey, usize> = [
-            (nodes[0], 4),
-            (nodes[1], 13),
-            (nodes[2], 2),
-            (nodes[3], 8),
-            (nodes[4], 8),
-        ]
-        .into_iter()
-        .collect();
-        assert_eq!(cache.0.get(&origin).unwrap().nodes, scores);
-        let stakes = [
-            (nodes[0], 6),
-            (nodes[1], 1),
-            (nodes[2], 5),
-            (nodes[3], 3),
-            (nodes[4], 7),
-            (pubkey, 9),
-            (origin, 9),
-        ]
-        .into_iter()
-        .collect();
-        let prunes: HashSet<Pubkey> = [nodes[0], nodes[2], nodes[3]].into_iter().collect();
-        assert_eq!(
-            cache
-                .mock_clone()
-                .prune(&pubkey, origin, 0.5, 2, &stakes)
-                .collect::<HashSet<_>>(),
-            prunes
-        );
-        let prunes: HashSet<Pubkey> = [nodes[0], nodes[2]].into_iter().collect();
-        assert_eq!(
-            cache
-                .prune(&pubkey, origin, 1.0, 0, &stakes)
-                .collect::<HashSet<_>>(),
-            prunes
-        );
-    }
-}

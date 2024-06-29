@@ -1,5 +1,3 @@
-#[cfg(test)]
-use arbitrary::Arbitrary;
 use {
     crate::{clock::Epoch, pubkey::Pubkey},
     serde_derive::{Deserialize, Serialize},

@@ -541,42 +541,6 @@ where
     )
 }
 
-#[cfg(test)]
-pub(crate) fn bank_to_stream<W>(
-    stream: &mut BufWriter<W>,
-    bank: &Bank,
-    snapshot_storages: &[Vec<Arc<AccountStorageEntry>>],
-) -> Result<(), Error>
-where
-    W: Write,
-{
-    bincode::serialize_into(
-        stream,
-        &SerializableBankAndStorage {
-            bank,
-            snapshot_storages,
-        },
-    )
-}
-
-#[cfg(test)]
-pub(crate) fn bank_to_stream_no_extra_fields<W>(
-    stream: &mut BufWriter<W>,
-    bank: &Bank,
-    snapshot_storages: &[Vec<Arc<AccountStorageEntry>>],
-) -> Result<(), Error>
-where
-    W: Write,
-{
-    bincode::serialize_into(
-        stream,
-        &SerializableBankAndStorageNoExtra {
-            bank,
-            snapshot_storages,
-        },
-    )
-}
-
 /// Serializes bank snapshot into `stream` with bincode
 pub fn serialize_bank_snapshot_into<W>(
     stream: &mut BufWriter<W>,
@@ -644,94 +608,6 @@ where
         epoch_accounts_hash,
     )
         .serialize(serializer)
-}
-
-#[cfg(test)]
-struct SerializableBankAndStorage<'a> {
-    bank: &'a Bank,
-    snapshot_storages: &'a [Vec<Arc<AccountStorageEntry>>],
-}
-
-#[cfg(test)]
-impl<'a> Serialize for SerializableBankAndStorage<'a> {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let slot = self.bank.slot();
-        let fields = self.bank.get_fields_to_serialize();
-        let accounts_db = &self.bank.rc.accounts.accounts_db;
-        let bank_hash_stats = accounts_db.get_bank_hash_stats(slot).unwrap();
-        let accounts_delta_hash = accounts_db.get_accounts_delta_hash(slot).unwrap();
-        let accounts_hash = accounts_db.get_accounts_hash(slot).unwrap().0;
-        let write_version = accounts_db.write_version.load(Ordering::Acquire);
-        let lamports_per_signature = fields.fee_rate_governor.lamports_per_signature;
-        let bank_fields_to_serialize = (
-            SerializableVersionedBank::from(fields),
-            SerializableAccountsDb::<'_> {
-                slot,
-                account_storage_entries: self.snapshot_storages,
-                bank_hash_stats,
-                accounts_delta_hash,
-                accounts_hash,
-                write_version,
-            },
-            lamports_per_signature,
-            None::<BankIncrementalSnapshotPersistence>,
-            self.bank
-                .get_epoch_accounts_hash_to_serialize()
-                .map(|epoch_accounts_hash| *epoch_accounts_hash.as_ref()),
-        );
-        bank_fields_to_serialize.serialize(serializer)
-    }
-}
-
-#[cfg(test)]
-struct SerializableBankAndStorageNoExtra<'a> {
-    bank: &'a Bank,
-    snapshot_storages: &'a [Vec<Arc<AccountStorageEntry>>],
-}
-
-#[cfg(test)]
-impl<'a> Serialize for SerializableBankAndStorageNoExtra<'a> {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let slot = self.bank.slot();
-        let fields = self.bank.get_fields_to_serialize();
-        let accounts_db = &self.bank.rc.accounts.accounts_db;
-        let bank_hash_stats = accounts_db.get_bank_hash_stats(slot).unwrap();
-        let accounts_delta_hash = accounts_db.get_accounts_delta_hash(slot).unwrap();
-        let accounts_hash = accounts_db.get_accounts_hash(slot).unwrap().0;
-        let write_version = accounts_db.write_version.load(Ordering::Acquire);
-        (
-            SerializableVersionedBank::from(fields),
-            SerializableAccountsDb::<'_> {
-                slot,
-                account_storage_entries: self.snapshot_storages,
-                bank_hash_stats,
-                accounts_delta_hash,
-                accounts_hash,
-                write_version,
-            },
-        )
-            .serialize(serializer)
-    }
-}
-
-#[cfg(test)]
-impl<'a> From<SerializableBankAndStorageNoExtra<'a>> for SerializableBankAndStorage<'a> {
-    fn from(s: SerializableBankAndStorageNoExtra<'a>) -> SerializableBankAndStorage<'a> {
-        let SerializableBankAndStorageNoExtra {
-            bank,
-            snapshot_storages,
-        } = s;
-        SerializableBankAndStorage {
-            bank,
-            snapshot_storages,
-        }
-    }
 }
 
 struct SerializableAccountsDb<'a> {

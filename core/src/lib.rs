@@ -63,6 +63,3 @@ extern crate solana_metrics;
 #[cfg(feature = "frozen-abi")]
 extern crate solana_frozen_abi_macro;
 
-#[cfg(test)]
-#[macro_use]
-extern crate assert_matches;

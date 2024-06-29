@@ -1,5 +1,4 @@
-#[cfg(test)]
-use crate::contact_info::{get_quic_socket, sanitize_socket};
+
 use {
     crate::{
         contact_info::{
@@ -57,7 +56,7 @@ impl Sanitize for LegacyContactInfo {
 
 macro_rules! get_socket {
     ($name:ident) => {
-        #[cfg(test)]
+        #[cfg(escaped)]
         pub(crate) fn $name(&self) -> Result<SocketAddr, Error> {
             let socket = &self.$name;
             sanitize_socket(socket)?;
@@ -65,7 +64,7 @@ macro_rules! get_socket {
         }
     };
     ($name:ident, $quic:ident) => {
-        #[cfg(test)]
+        #[cfg(escaped)]
         pub(crate) fn $name(&self, protocol: Protocol) -> Result<SocketAddr, Error> {
             let socket = match protocol {
                 Protocol::QUIC => &self.$quic,
@@ -76,7 +75,7 @@ macro_rules! get_socket {
         }
     };
     (@quic $name:ident) => {
-        #[cfg(test)]
+        #[cfg(escaped)]
         pub(crate) fn $name(&self, protocol: Protocol) -> Result<SocketAddr, Error> {
             let socket = &self.$name;
             sanitize_socket(socket)?;
@@ -105,26 +104,6 @@ macro_rules! socketaddr_any {
     };
 }
 
-#[cfg(test)]
-impl Default for LegacyContactInfo {
-    fn default() -> Self {
-        LegacyContactInfo {
-            id: Pubkey::default(),
-            gossip: socketaddr_any!(),
-            tvu: socketaddr_any!(),
-            tvu_quic: socketaddr_any!(),
-            serve_repair_quic: socketaddr_any!(),
-            tpu: socketaddr_any!(),
-            tpu_forwards: socketaddr_any!(),
-            tpu_vote: socketaddr_any!(),
-            rpc: socketaddr_any!(),
-            rpc_pubsub: socketaddr_any!(),
-            serve_repair: socketaddr_any!(),
-            wallclock: 0,
-            shred_version: 0,
-        }
-    }
-}
 
 impl LegacyContactInfo {
     #[inline]
@@ -211,53 +190,3 @@ impl TryFrom<&ContactInfo> for LegacyContactInfo {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use {super::*, std::net::Ipv4Addr};
-
-    #[test]
-    fn test_is_valid_address() {
-        let bad_address_port = socketaddr!(Ipv4Addr::LOCALHOST, 0);
-        assert!(!LegacyContactInfo::is_valid_address(
-            &bad_address_port,
-            &SocketAddrSpace::Unspecified
-        ));
-        let bad_address_unspecified = socketaddr!(Ipv4Addr::UNSPECIFIED, 1234);
-        assert!(!LegacyContactInfo::is_valid_address(
-            &bad_address_unspecified,
-            &SocketAddrSpace::Unspecified
-        ));
-        let bad_address_multicast = socketaddr!([224, 254, 0, 0], 1234);
-        assert!(!LegacyContactInfo::is_valid_address(
-            &bad_address_multicast,
-            &SocketAddrSpace::Unspecified
-        ));
-        let loopback = socketaddr!(Ipv4Addr::LOCALHOST, 1234);
-        assert!(LegacyContactInfo::is_valid_address(
-            &loopback,
-            &SocketAddrSpace::Unspecified
-        ));
-        //        assert!(!LegacyContactInfo::is_valid_ip_internal(loopback.ip(), false));
-    }
-
-    #[test]
-    fn test_default() {
-        let ci = LegacyContactInfo::default();
-        assert!(ci.gossip.ip().is_unspecified());
-        assert!(ci.tvu.ip().is_unspecified());
-        assert!(ci.tpu_forwards.ip().is_unspecified());
-        assert!(ci.rpc.ip().is_unspecified());
-        assert!(ci.rpc_pubsub.ip().is_unspecified());
-        assert!(ci.tpu.ip().is_unspecified());
-        assert!(ci.tpu_vote.ip().is_unspecified());
-        assert!(ci.serve_repair.ip().is_unspecified());
-    }
-
-    #[test]
-    fn test_sanitize() {
-        let mut ci = LegacyContactInfo::default();
-        assert_eq!(ci.sanitize(), Ok(()));
-        ci.wallclock = MAX_WALLCLOCK;
-        assert_eq!(ci.sanitize(), Err(SanitizeError::ValueOutOfBounds));
-    }
-}

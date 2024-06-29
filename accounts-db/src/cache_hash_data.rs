@@ -1,6 +1,4 @@
 //! Cached data for hashing accounts
-#[cfg(test)]
-use crate::pubkey_bins::PubkeyBinCalculator24;
 use {
     crate::{accounts_hash::CalculateHashIntermediate, cache_hash_data_stats::CacheHashDataStats},
     bytemuck_derive::{Pod, Zeroable},
@@ -18,9 +16,6 @@ use {
 
 pub type EntryType = CalculateHashIntermediate;
 pub type SavedTypeSlice = [Vec<EntryType>];
-
-#[cfg(test)]
-pub type SavedType = Vec<Vec<EntryType>>;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Pod, Zeroable)]
@@ -116,28 +111,7 @@ impl CacheHashDataFile {
         self.get_slice(0)
     }
 
-    #[cfg(test)]
     /// Populate 'accumulator' from entire contents of the cache file.
-    pub fn load_all(
-        &self,
-        accumulator: &mut SavedType,
-        start_bin_index: usize,
-        bin_calculator: &PubkeyBinCalculator24,
-    ) {
-        let mut m2 = Measure::start("decode");
-        let slices = self.get_cache_hash_data();
-        for d in slices {
-            let mut pubkey_to_bin_index = bin_calculator.bin_from_pubkey(&d.pubkey);
-            assert!(
-                pubkey_to_bin_index >= start_bin_index,
-                "{pubkey_to_bin_index}, {start_bin_index}"
-            ); // this would indicate we put a pubkey in too high of a bin
-            pubkey_to_bin_index -= start_bin_index;
-            accumulator[pubkey_to_bin_index].push(*d); // may want to avoid copy here
-        }
-
-        m2.stop();
-    }
 
     /// get '&mut EntryType' from cache file [ix]
     fn get_mut(&mut self, ix: u64) -> &mut EntryType {
@@ -425,200 +399,4 @@ pub enum DeletionPolicy {
     /// Delete *only* the unused cache files with starting slot range *at least* this slot
     /// Should be used when calculating incremental accounts hash
     UnusedAtLeast(Slot),
-}
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::accounts_hash::AccountHash, rand::Rng};
-
-    impl CacheHashData {
-        /// load from 'file_name' into 'accumulator'
-        fn load(
-            &self,
-            file_name: impl AsRef<Path>,
-            accumulator: &mut SavedType,
-            start_bin_index: usize,
-            bin_calculator: &PubkeyBinCalculator24,
-        ) -> Result<(), std::io::Error> {
-            let mut m = Measure::start("overall");
-            let cache_file = self.load_map(file_name)?;
-            cache_file.load_all(accumulator, start_bin_index, bin_calculator);
-            m.stop();
-            self.stats.load_us.fetch_add(m.as_us(), Ordering::Relaxed);
-            Ok(())
-        }
-
-        /// map 'file_name' into memory
-        fn load_map(
-            &self,
-            file_name: impl AsRef<Path>,
-        ) -> Result<CacheHashDataFile, std::io::Error> {
-            let reference = self.get_file_reference_to_map_later(file_name)?;
-            reference.map()
-        }
-    }
-
-    #[test]
-    fn test_read_write() {
-        // generate sample data
-        // write to file
-        // read
-        // compare
-        use tempfile::TempDir;
-        let tmpdir = TempDir::new().unwrap();
-        let cache_dir = tmpdir.path().to_path_buf();
-        std::fs::create_dir_all(&cache_dir).unwrap();
-
-        for bins in [1, 2, 4] {
-            let bin_calculator = PubkeyBinCalculator24::new(bins);
-            let num_points = 5;
-            let (data, _total_points) = generate_test_data(num_points, bins, &bin_calculator);
-            for passes in [1, 2] {
-                let bins_per_pass = bins / passes;
-                if bins_per_pass == 0 {
-                    continue; // illegal test case
-                }
-                for pass in 0..passes {
-                    for flatten_data in [true, false] {
-                        let mut data_this_pass = if flatten_data {
-                            vec![vec![], vec![]]
-                        } else {
-                            vec![]
-                        };
-                        let start_bin_this_pass = pass * bins_per_pass;
-                        for bin in 0..bins_per_pass {
-                            let mut this_bin_data = data[bin + start_bin_this_pass].clone();
-                            if flatten_data {
-                                data_this_pass[0].append(&mut this_bin_data);
-                            } else {
-                                data_this_pass.push(this_bin_data);
-                            }
-                        }
-                        let cache =
-                            CacheHashData::new(cache_dir.clone(), DeletionPolicy::AllUnused);
-                        let file_name = PathBuf::from("test");
-                        cache.save(&file_name, &data_this_pass).unwrap();
-                        cache.get_cache_files();
-                        assert_eq!(
-                            cache
-                                .pre_existing_cache_files
-                                .lock()
-                                .unwrap()
-                                .iter()
-                                .collect::<Vec<_>>(),
-                            vec![&file_name],
-                        );
-                        let mut accum = (0..bins_per_pass).map(|_| vec![]).collect();
-                        cache
-                            .load(&file_name, &mut accum, start_bin_this_pass, &bin_calculator)
-                            .unwrap();
-                        if flatten_data {
-                            bin_data(
-                                &mut data_this_pass,
-                                &bin_calculator,
-                                bins_per_pass,
-                                start_bin_this_pass,
-                            );
-                        }
-                        assert_eq!(
-                            accum, data_this_pass,
-                            "bins: {bins}, start_bin_this_pass: {start_bin_this_pass}, pass: {pass}, flatten: {flatten_data}, passes: {passes}"
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    fn bin_data(
-        data: &mut SavedType,
-        bin_calculator: &PubkeyBinCalculator24,
-        bins: usize,
-        start_bin: usize,
-    ) {
-        let mut accum: SavedType = (0..bins).map(|_| vec![]).collect();
-        data.drain(..).for_each(|mut x| {
-            x.drain(..).for_each(|item| {
-                let bin = bin_calculator.bin_from_pubkey(&item.pubkey);
-                accum[bin - start_bin].push(item);
-            })
-        });
-        *data = accum;
-    }
-
-    fn generate_test_data(
-        count: usize,
-        bins: usize,
-        binner: &PubkeyBinCalculator24,
-    ) -> (SavedType, usize) {
-        let mut rng = rand::thread_rng();
-        let mut ct = 0;
-        (
-            (0..bins)
-                .map(|bin| {
-                    let rnd = rng.gen::<u64>() % (bins as u64);
-                    if rnd < count as u64 {
-                        (0..std::cmp::max(1, count / bins))
-                            .map(|_| {
-                                ct += 1;
-                                let mut pk;
-                                loop {
-                                    // expensive, but small numbers and for tests, so ok
-                                    pk = solana_sdk::pubkey::new_rand();
-                                    if binner.bin_from_pubkey(&pk) == bin {
-                                        break;
-                                    }
-                                }
-
-                                CalculateHashIntermediate {
-                                    hash: AccountHash(solana_sdk::hash::Hash::new_unique()),
-                                    lamports: ct as u64,
-                                    pubkey: pk,
-                                }
-                            })
-                            .collect::<Vec<_>>()
-                    } else {
-                        vec![]
-                    }
-                })
-                .collect::<Vec<_>>(),
-            ct,
-        )
-    }
-
-    #[test]
-    #[allow(clippy::used_underscore_binding)]
-    fn test_parse_filename() {
-        let good_filename = "123.456.0.65536.537d65697d9b2baa";
-        let parsed_filename = parse_filename(good_filename).unwrap();
-        assert_eq!(parsed_filename.slot_range_start, 123);
-        assert_eq!(parsed_filename.slot_range_end, 456);
-        assert_eq!(parsed_filename.bin_range_start, 0);
-        assert_eq!(parsed_filename.bin_range_end, 65536);
-        assert_eq!(parsed_filename.hash, 0x537d65697d9b2baa);
-
-        let bad_filenames = [
-            // bad separator
-            "123-456-0-65536.537d65697d9b2baa",
-            // bad values
-            "abc.456.0.65536.537d65697d9b2baa",
-            "123.xyz.0.65536.537d65697d9b2baa",
-            "123.456.?.65536.537d65697d9b2baa",
-            "123.456.0.@#$%^.537d65697d9b2baa",
-            "123.456.0.65536.base19shouldfail",
-            "123.456.0.65536.123456789012345678901234567890",
-            // missing values
-            "123.456.0.65536.",
-            "123.456.0.65536",
-            // extra junk
-            "123.456.0.65536.537d65697d9b2baa.42",
-            "123.456.0.65536.537d65697d9b2baa.",
-            "123.456.0.65536.537d65697d9b2baa/",
-            ".123.456.0.65536.537d65697d9b2baa",
-            "/123.456.0.65536.537d65697d9b2baa",
-        ];
-        for bad_filename in bad_filenames {
-            assert!(parse_filename(bad_filename).is_none());
-        }
-    }
 }

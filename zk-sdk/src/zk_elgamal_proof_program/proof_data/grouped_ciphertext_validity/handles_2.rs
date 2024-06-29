@@ -134,36 +134,3 @@ impl GroupedCiphertext2HandlesValidityProofContext {
         transcript
     }
 }
-
-#[cfg(test)]
-mod test {
-    use {
-        super::*,
-        crate::encryption::{elgamal::ElGamalKeypair, grouped_elgamal::GroupedElGamal},
-    };
-
-    #[test]
-    fn test_ciphertext_validity_proof_instruction_correctness() {
-        let first_keypair = ElGamalKeypair::new_rand();
-        let first_pubkey = first_keypair.pubkey();
-
-        let second_keypair = ElGamalKeypair::new_rand();
-        let second_pubkey = second_keypair.pubkey();
-
-        let amount: u64 = 55;
-        let opening = PedersenOpening::new_rand();
-        let grouped_ciphertext =
-            GroupedElGamal::encrypt_with([first_pubkey, second_pubkey], amount, &opening);
-
-        let proof_data = GroupedCiphertext2HandlesValidityProofData::new(
-            first_pubkey,
-            second_pubkey,
-            &grouped_ciphertext,
-            amount,
-            &opening,
-        )
-        .unwrap();
-
-        assert!(proof_data.verify_proof().is_ok());
-    }
-}

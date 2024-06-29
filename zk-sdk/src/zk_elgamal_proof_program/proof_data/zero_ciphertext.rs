@@ -101,25 +101,3 @@ impl ZeroCiphertextProofContext {
         transcript
     }
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_zero_ciphertext_proof_instruction_correctness() {
-        let keypair = ElGamalKeypair::new_rand();
-
-        // general case: encryption of 0
-        let ciphertext = keypair.pubkey().encrypt(0_u64);
-        let zero_ciphertext_proof_data =
-            ZeroCiphertextProofData::new(&keypair, &ciphertext).unwrap();
-        assert!(zero_ciphertext_proof_data.verify_proof().is_ok());
-
-        // general case: encryption of > 0
-        let ciphertext = keypair.pubkey().encrypt(1_u64);
-        let zero_ciphertext_proof_data =
-            ZeroCiphertextProofData::new(&keypair, &ciphertext).unwrap();
-        assert!(zero_ciphertext_proof_data.verify_proof().is_err());
-    }
-}

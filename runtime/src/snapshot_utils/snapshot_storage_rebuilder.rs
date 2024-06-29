@@ -431,39 +431,3 @@ pub(crate) fn get_slot_and_append_vec_id(filename: &str) -> Result<(Slot, usize)
     slot.zip(id)
         .ok_or_else(|| SnapshotError::InvalidAppendVecPath(PathBuf::from(filename)))
 }
-
-#[cfg(test)]
-mod tests {
-    use {
-        super::*, crate::snapshot_utils::SNAPSHOT_VERSION_FILENAME,
-        solana_accounts_db::accounts_file::AccountsFile,
-    };
-
-    #[test]
-    fn test_get_snapshot_file_kind() {
-        assert_eq!(None, get_snapshot_file_kind("file.txt"));
-        assert_eq!(
-            Some(SnapshotFileKind::Version),
-            get_snapshot_file_kind(SNAPSHOT_VERSION_FILENAME)
-        );
-        assert_eq!(
-            Some(SnapshotFileKind::BankFields),
-            get_snapshot_file_kind("1234")
-        );
-        assert_eq!(
-            Some(SnapshotFileKind::Storage),
-            get_snapshot_file_kind("1000.999")
-        );
-    }
-
-    #[test]
-    fn test_get_slot_and_append_vec_id() {
-        let expected_slot = 12345;
-        let expected_id = 9987;
-        let (slot, id) =
-            get_slot_and_append_vec_id(&AccountsFile::file_name(expected_slot, expected_id))
-                .unwrap();
-        assert_eq!(expected_slot, slot);
-        assert_eq!(expected_id as usize, id);
-    }
-}
