@@ -4826,7 +4826,7 @@ impl Bank {
         timings: &mut ExecuteTimings,
         log_messages_bytes_limit: Option<usize>,
         pre_commit_callback: impl FnOnce(),
-    ) -> (TransactionResults, TransactionBalancesSet) {
+    ) -> Option<(TransactionResults, TransactionBalancesSet)> {
         let pre_balances = if collect_balances {
             self.collect_balances(batch)
         } else {
