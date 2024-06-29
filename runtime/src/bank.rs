@@ -4913,7 +4913,7 @@ impl Bank {
                 ..
             },
             ..,
-        )) =  { self.load_execute_and_commit_transactions(
+        )) =  self.load_execute_and_commit_transactions(
             &batch,
             MAX_PROCESSING_AGE,
             false, // collect_balances
@@ -4925,7 +4925,7 @@ impl Bank {
             &mut ExecuteTimings::default(),
             Some(1000 * 1000),
             || {},
-        ) }  else { panic!() };
+        ) else { panic!() };
 
         execution_results.remove(0)
     }
