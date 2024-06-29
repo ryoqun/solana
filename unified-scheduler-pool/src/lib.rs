@@ -1351,7 +1351,9 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-    ) -> Self;
+    ) -> Self
+    where
+        Self: Sized;
 }
 
 impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
