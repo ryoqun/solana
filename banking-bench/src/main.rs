@@ -461,6 +461,18 @@ fn main() {
         ),
     };
     if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+        let scheduler_pool = DefaultSchedulerPool::new_dyn(
+            config.unified_scheduler_handler_threads,
+            config.runtime_config.log_messages_bytes_limit,
+            transaction_status_sender.clone(),
+            Some(replay_vote_sender.clone()),
+            prioritization_fee_cache.clone(),
+            Some(poh_recorder.read().unwrap().new_recorder()),
+        );
+        bank_forks
+            .write()
+            .unwrap()
+            .install_scheduler_pool(scheduler_pool);
     }
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
