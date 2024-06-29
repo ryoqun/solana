@@ -350,26 +350,6 @@ fn main() {
     let bank_forks = BankForks::new_rw_arc(bank0);
     let mut bank = bank_forks.read().unwrap().working_bank();
 
-    if let BlockProductionMethod::UnifiedScheduler = block_production_method {
-        let scheduler_pool = DefaultSchedulerPool::new_dyn(
-            Some(num_banking_threads as usize),
-            None,
-            None,
-            Some(replay_vote_sender.clone()),
-            prioritization_fee_cache.clone(),
-            Some(poh_recorder.read().unwrap().new_recorder()),
-        );
-        bank_forks
-            .write()
-            .unwrap()
-            .install_scheduler_pool(scheduler_pool);
-
-        let new_slot = bank.slot() + 1;
-        let new_bank = Bank::new_from_parent(bank, &collector, new_slot);
-        bank_forks.write().unwrap().insert(new_bank);
-        bank = bank_forks.read().unwrap().working_bank();
-    }
-
     // set cost tracker limits to MAX so it will not filter out TXs
     bank.write_cost_tracker()
         .unwrap()
@@ -483,6 +463,27 @@ fn main() {
     };
     let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
     let collector = solana_sdk::pubkey::new_rand();
+
+    if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+        let scheduler_pool = DefaultSchedulerPool::new_dyn(
+            Some(num_banking_threads as usize),
+            None,
+            None,
+            Some(replay_vote_sender.clone()),
+            prioritization_fee_cache.clone(),
+            Some(poh_recorder.read().unwrap().new_recorder()),
+        );
+        bank_forks
+            .write()
+            .unwrap()
+            .install_scheduler_pool(scheduler_pool);
+
+        let new_slot = bank.slot() + 1;
+        let new_bank = Bank::new_from_parent(bank, &collector, new_slot);
+        bank_forks.write().unwrap().insert(new_bank);
+        bank = bank_forks.read().unwrap().working_bank();
+        poh_recorder.write().unwrap().reset_poh(bank.clone(), true);
+    }
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
         &cluster_info,
