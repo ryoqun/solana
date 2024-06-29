@@ -405,6 +405,7 @@ impl BankingStage {
                 prioritization_fee_cache,
             ),
             UnifiedScheduler => Self::new_unified_scheduler(
+                cluster_info,
                 poh_recorder,
                 non_vote_receiver,
                 tpu_vote_receiver,
@@ -630,11 +631,13 @@ impl BankingStage {
 
     #[allow(clippy::too_many_arguments)]
     pub fn new_unified_scheduler(
+        cluster_info: &Arc<ClusterInfo>,
         poh_recorder: &Arc<RwLock<PohRecorder>>,
         non_vote_receiver: BankingPacketReceiver,
         tpu_vote_receiver: BankingPacketReceiver,
         gossip_vote_receiver: BankingPacketReceiver,
     ) -> Self {
+        let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
         Self { bank_thread_hdls: vec![] }
     }
 
