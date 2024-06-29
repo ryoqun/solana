@@ -7772,6 +7772,7 @@ dependencies = [
  "scopeguard",
  "solana-ledger",
  "solana-logger",
+ "solana-poh",
  "solana-program-runtime",
  "solana-runtime",
  "solana-sdk",
