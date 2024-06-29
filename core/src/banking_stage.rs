@@ -649,8 +649,7 @@ impl BankingStage {
             }
 
             fn bulk_assign_task_ids(&self, count: usize) -> usize {
-                self.next_task_id
-                    .fetch_add(count, Ordering::AcqRel)
+                self.next_task_id.fetch_add(count, Ordering::AcqRel)
             }
         }
         let id_generator = MonotonicIdGenerator::new();
