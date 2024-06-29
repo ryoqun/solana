@@ -62,10 +62,19 @@ type Result<T> = std::result::Result<T, PohRecorderError>;
 
 pub type WorkingBankEntry = (Arc<Bank>, (Entry, u64));
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BankStart {
     pub working_bank: BankWithScheduler,
     pub bank_creation_time: Arc<Instant>,
+}
+
+impl Clone for BankStart {
+    fn clone(&self) -> Self {
+        Self {
+            working_bank: self.working_bank.clone_with_scheduler(),
+            bank_creation_time: self.bank_creation_time.clone(),
+        }
+    }
 }
 
 impl BankStart {
