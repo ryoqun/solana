@@ -831,6 +831,27 @@ impl Validator {
         // (by both replay stage and banking stage)
         let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::default());
 
+        let startup_verification_complete;
+        let (poh_recorder, entry_receiver, record_receiver) = {
+            let bank = &bank_forks.read().unwrap().working_bank();
+            startup_verification_complete = Arc::clone(bank.get_startup_verification_complete());
+            PohRecorder::new_with_clear_signal(
+                bank.tick_height(),
+                bank.last_blockhash(),
+                bank.clone(),
+                None,
+                bank.ticks_per_slot(),
+                config.delay_leader_block_for_pending_fork,
+                blockstore.clone(),
+                blockstore.get_new_shred_signal(0),
+                &leader_schedule_cache,
+                &genesis_config.poh_config,
+                Some(poh_timing_point_sender),
+                exit.clone(),
+            )
+        };
+        let poh_recorder = Arc::new(RwLock::new(poh_recorder));
+
         match &config.block_verification_method {
             BlockVerificationMethod::BlockstoreProcessor => {
                 info!("no scheduler pool is installed for block verification...");
@@ -929,26 +950,6 @@ impl Validator {
 
         let max_slots = Arc::new(MaxSlots::default());
 
-        let startup_verification_complete;
-        let (poh_recorder, entry_receiver, record_receiver) = {
-            let bank = &bank_forks.read().unwrap().working_bank();
-            startup_verification_complete = Arc::clone(bank.get_startup_verification_complete());
-            PohRecorder::new_with_clear_signal(
-                bank.tick_height(),
-                bank.last_blockhash(),
-                bank.clone(),
-                None,
-                bank.ticks_per_slot(),
-                config.delay_leader_block_for_pending_fork,
-                blockstore.clone(),
-                blockstore.get_new_shred_signal(0),
-                &leader_schedule_cache,
-                &genesis_config.poh_config,
-                Some(poh_timing_point_sender),
-                exit.clone(),
-            )
-        };
-        let poh_recorder = Arc::new(RwLock::new(poh_recorder));
 
         let staked_nodes = Arc::new(RwLock::new(StakedNodes::default()));
 
