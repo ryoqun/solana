@@ -831,6 +831,7 @@ impl Validator {
         // (by both replay stage and banking stage)
         let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::default());
 
+        let leader_schedule_cache = Arc::new(leader_schedule_cache);
         let startup_verification_complete;
         let (poh_recorder, entry_receiver, record_receiver) = {
             let bank = &bank_forks.read().unwrap().working_bank();
@@ -878,7 +879,6 @@ impl Validator {
             }
         }
 
-        let leader_schedule_cache = Arc::new(leader_schedule_cache);
         let entry_notification_sender = entry_notifier_service
             .as_ref()
             .map(|service| service.sender());
