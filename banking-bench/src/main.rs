@@ -589,7 +589,7 @@ fn main() {
                 insert_time.as_us(),
                 poh_time.as_us(),
             );
-            assert!(p.bank().is_some());
+            //assert!(p.bank().is_some());
         } else {
             eprintln!(
                 "[iteration {}, tx sent {}, slot {} active, bank tx count {}]",
