@@ -477,7 +477,9 @@ fn main() {
             .write()
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
+        bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
     }
+
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
         &cluster_info,

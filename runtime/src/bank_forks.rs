@@ -217,9 +217,9 @@ impl BankForks {
 
     pub fn install_scheduler_pool(&mut self, pool: InstalledSchedulerPoolArc) {
         info!("Installed new scheduler_pool into bank_forks: {:?}", pool);
-        for (_slot, bank) in self.banks.iter_mut() {
+        for (slot, bank) in self.banks.iter_mut() {
             if !bank.is_frozen() {
-                trace!("Installed scheduer into existing unfrozen bank: slot: {}", bank.slot());
+                trace!("Installed scheduler into existing unfrozen slot: {slot}");
                 *bank = Self::install_scheduler_into_bank(&pool, bank.clone_without_scheduler());
             }
         }
@@ -230,7 +230,7 @@ impl BankForks {
     }
 
     fn install_scheduler_into_bank(scheduler_pool: &InstalledSchedulerPoolArc, bank: Arc<Bank>) -> BankWithScheduler {
-        trace!("inserting bank(slot: {}) with scheduler into bank_forks...", bank.slot());
+        trace!("Inserting bank (slot: {}) with scheduler into bank_forks...", bank.slot());
         let context = SchedulingContext::new(bank.clone());
         let scheduler = scheduler_pool.take_scheduler(context);
         let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
