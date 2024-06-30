@@ -100,7 +100,7 @@ impl BankForks {
         let root_bank = Arc::new(root_bank);
         let root_slot = root_bank.slot();
 
-        let root_bank = if let Some(scheduler_pool) = scheduler_pool {
+        let root_bank = if let Some(scheduler_pool) = scheduler_pool.as_ref() {
             Self::install_scheduler_into_bank(scheduler_pool, root_bank)
         } else {
             BankWithScheduler::new_without_scheduler(root_bank.clone())
