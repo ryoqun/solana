@@ -1019,6 +1019,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 // 1. Initial result_with_timing is propagated implicitly by the moved variable.
                 // 2. Subsequent result_with_timings are propagated explicitly from
                 //    the new_task_receiver.recv() invocation located at the end of loop.
+                let scheduler_id = self.scheduler_id();
+                let slot = context.bank().slot();
+
                 'nonaborted_main_loop: loop {
                     let mut is_finished = false;
                     while !is_finished {
@@ -1130,6 +1133,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
+                            slot = new_context.bank.slot();
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
                                 .unwrap();
