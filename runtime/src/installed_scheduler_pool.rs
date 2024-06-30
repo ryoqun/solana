@@ -465,7 +465,7 @@ impl BankWithScheduler {
             Ok(())
         });
 
-        if let Err(SchedulerStatus::Aborted) = schedule_result {
+        if let Err(SchedulerError::Aborted) = schedule_result {
             // This write lock isn't atomic with the above the read lock. So, another thread
             // could have called .recover_error_after_abort() while we're literally stuck at
             // the gaps of these locks (i.e. this comment in source code wise) under extreme
@@ -475,7 +475,7 @@ impl BankWithScheduler {
             // Lastly, this non-atomic nature is intentional for optimizing the fast code-path
             return Err(self.inner.retrieve_error_after_schedule_failure());
         }
-        if let Err(SchedulerStatus::Aborted) = schedule_result {
+        if let Err(SchedulerError::Aborted) = schedule_result {
             return Err(TransactionError::CommitFailed);
         }
 
