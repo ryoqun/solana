@@ -58,20 +58,30 @@ fn check_txs(
     ref_tx_count: usize,
     poh_recorder: &Arc<RwLock<PohRecorder>>,
     dummy_receiver: &DummyReceiver,
+    is_uni: bool,
 ) -> bool {
     let mut total = 0;
     let now = Instant::now();
     let mut no_bank = false;
     loop {
-        if let Ok(txs) = dummy_receiver.try_recv() {
-            total += txs.len();
-            if total >= ref_tx_count {
-                break;
+        if is_uni {
+            if let Ok(txs) = dummy_receiver.try_recv() {
+                total += txs.len();
             } else {
-                continue
+                sleep(Duration::from_millis(10));
             }
         } else {
-            sleep(Duration::from_millis(10));
+            if let Ok((_bank, (entry, _tick_height))) = receiver.try_recv() {
+                total += entry.transactions.len();
+            } else {
+                sleep(Duration::from_millis(10));
+            }
+        }
+
+        if total >= ref_tx_count {
+            break;
+        } else {
+            continue
         }
         if now.elapsed().as_secs() > 60 {
             break;
@@ -472,7 +482,7 @@ fn main() {
     let collector = solana_sdk::pubkey::new_rand();
     let (dummy_sender, dummy_receiver) = unbounded();
 
-    if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+    let is_uni = if let BlockProductionMethod::UnifiedScheduler = block_production_method {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             Some(num_banking_threads as usize),
             None,
@@ -488,7 +498,10 @@ fn main() {
             .install_scheduler_pool(scheduler_pool);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
         poh_recorder.write().unwrap().swap_working_bank(bank.clone_with_scheduler());
-    }
+        true
+    } else {
+        false
+    };
 
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
@@ -555,6 +568,7 @@ fn main() {
             packets_for_this_iteration.transactions.len(),
             &poh_recorder,
             &dummy_receiver,
+            is_uni,
         ) {
             eprintln!(
                 "[iteration {}, tx sent {}, slot {} expired, bank tx count {}]",
