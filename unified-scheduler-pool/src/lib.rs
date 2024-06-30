@@ -464,6 +464,7 @@ impl TaskHandler for DefaultTaskHandler {
                 //trace!("poh record end!");
                 //summary.result.is_ok()
                 handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+                true
             },
         );
         sleepless_testing::at(CheckPoint::TaskHandled(index));
