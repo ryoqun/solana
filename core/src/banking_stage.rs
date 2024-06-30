@@ -674,14 +674,14 @@ impl BankingStage {
                             for pp in &aaa.0 {
                                 // over-provision
                                 let mut task_id = id_generator.bulk_assign_task_ids(pp.len());
-                                let mut task_ids = (task_id..(task_id + pp.len()));
+                                let mut task_ids = (&task_id..&(task_id + pp.len()));
 
                                 let indexes = PacketDeserializer::generate_packet_indexes(&pp);
                                 let ppp = PacketDeserializer::deserialize_packets2(&pp, &indexes).filter_map(|p| {
                                     p.build_sanitized_transaction(bank.vote_only_bank(), &**bank, bank.get_reserved_account_keys())
                                 }).collect::<Vec<_>>();
 
-                                if let Err(_) = bank.schedule_transaction_executions(ppp.iter().zip(task_ids.into_iter())) {
+                                if let Err(_) = bank.schedule_transaction_executions(ppp.iter().zip(task_ids.iter())) {
                                     break;
                                 }
                             }
