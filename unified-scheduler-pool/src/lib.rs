@@ -1133,7 +1133,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
-                            slot = new_context.bank.slot();
+                            slot = new_context.bank().slot();
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
                                 .unwrap();
