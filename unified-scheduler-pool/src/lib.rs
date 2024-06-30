@@ -145,6 +145,7 @@ where
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
         transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        dummy_sender: Option<DummySender>,
     ) -> Arc<Self> {
         Self::do_new(
             handler_count,
@@ -153,6 +154,7 @@ where
             replay_vote_sender,
             prioritization_fee_cache,
             transaction_recorder,
+            dummy_sender,
             DEFAULT_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
@@ -297,6 +299,7 @@ where
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
         transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        dummy_sender: Option<DummySender>,
     ) -> InstalledSchedulerPoolArc {
         Self::new(
             handler_count,
@@ -305,6 +308,7 @@ where
             replay_vote_sender,
             prioritization_fee_cache,
             transaction_recorder,
+            dummy_sender,
         )
     }
 
