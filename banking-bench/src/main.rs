@@ -477,19 +477,6 @@ fn main() {
             .write()
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
-
-        let new_slot = bank.slot() + 1;
-        let new_bank = Bank::new_from_parent(bank.clone(), &collector, new_slot);
-        bank_forks.write().unwrap().insert(new_bank);
-        bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
-        poh_recorder
-            .write()
-            .unwrap()
-            .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
-        poh_recorder
-            .write()
-            .unwrap()
-            .set_bank(bank.clone_with_scheduler(), false);
     }
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
