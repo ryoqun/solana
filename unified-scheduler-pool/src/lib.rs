@@ -778,6 +778,17 @@ struct ThreadManager<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     handler_threads: Vec<JoinHandle<()>>,
 }
 
+#[derive(Default)]
+struct LogInterval(usize);
+
+impl LogInterval {
+    fn increment(&mut self) -> bool {
+        let should_log = self.0 % 1000 == 0;
+        self.0 = self.0.checked_add(1).unwrap();
+        should_log
+    }
+}
+
 struct HandlerPanicked;
 type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 
@@ -824,9 +835,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let Ok(executed_task) = executed_task else {
             return None;
         };
-        trace!("accumulate begin!!");
+        //trace!("accumulate begin!!");
         //timings.accumulate(&executed_task.result_with_timings.1);
-        trace!("accumulate end!!");
+        //trace!("accumulate end!!");
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
             //Err(TransactionError::CommitFailed) => {
@@ -1025,6 +1036,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 let mut state_machine = unsafe {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
+                let mut log_interval = LogInterval::default();
 
                 // The following loop maintains and updates ResultWithTimings as its
                 // externally-provided mutable state for each session in this way:
@@ -1100,34 +1112,50 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
-                                trace!("select_biased! fired!");
+                                //trace!("select_biased! fired!");
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler")
                                 ) else {
                                     break 'nonaborted_main_loop;
                                 };
-                                trace!("select_biased! deschedule!!");
+                                //trace!("select_biased! deschedule!!");
                                 state_machine.deschedule_task(&executed_task.task);
-                                trace!("select_biased! drop!!");
-                                std::mem::forget(executed_task);
+                                //trace!("select_biased! drop!!");
+                                //std::mem::forget(executed_task);
                                 "deschedule_idle_task"
                             },
                         };
-                        trace!("logging...");
-                        trace!(
-                            "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
-                            scheduler_id, slot,
-                            (if step == "step" { "interval" } else { step }),
-                            (if session_ending {"S"} else {"-"}),
-                            state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
-                            state_machine.total_task_count(),
-                            state_machine.unblocked_task_count(),
-                            new_task_receiver.len(),
-                            runnable_task_sender.len(), runnable_task_sender.aux_len(),
-                            finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
-                            width = SchedulerId::BITS as usize / 4,
-                        );
+                        //trace!("logging...");
+                        if log_interval.increment() {
+                            info!(
+                                "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
+                                scheduler_id, slot,
+                                (if step == "step" { "interval" } else { step }),
+                                (if session_ending {"S"} else {"-"}),
+                                state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+                                state_machine.total_task_count(),
+                                state_machine.unblocked_task_count(),
+                                new_task_receiver.len(),
+                                runnable_task_sender.len(), runnable_task_sender.aux_len(),
+                                finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
+                                width = SchedulerId::BITS as usize / 4,
+                            );
+                        } else {
+                            trace!(
+                                "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
+                                scheduler_id, slot,
+                                (if step == "step" { "interval" } else { step }),
+                                (if session_ending {"S"} else {"-"}),
+                                state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+                                state_machine.total_task_count(),
+                                state_machine.unblocked_task_count(),
+                                new_task_receiver.len(),
+                                runnable_task_sender.len(), runnable_task_sender.aux_len(),
+                                finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
+                                width = SchedulerId::BITS as usize / 4,
+                            );
+                        }
 
                         is_finished = session_ending && state_machine.has_no_active_task();
                     }
