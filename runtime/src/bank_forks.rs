@@ -93,6 +93,10 @@ impl Index<u64> for BankForks {
 
 impl BankForks {
     pub fn new_rw_arc(root_bank: Bank) -> Arc<RwLock<Self>> {
+        Self::do_new_rw_arc(root_bank, None)
+    }
+
+    fn do_new_rw_arc(root_bank: Bank, scheduler_pool: Option<InstalledSchedulerPoolArc>) -> Arc<RwLock<Self>> {
         let root_bank = Arc::new(root_bank);
         let root_slot = root_bank.slot();
 
@@ -131,7 +135,7 @@ impl BankForks {
             last_accounts_hash_slot: root_slot,
             in_vote_only_mode: Arc::new(AtomicBool::new(false)),
             highest_slot_at_startup: 0,
-            scheduler_pool: None,
+            scheduler_pool,
         }));
 
         root_bank.set_fork_graph_in_program_cache(bank_forks.clone());
