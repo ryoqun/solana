@@ -217,13 +217,15 @@ impl BankForks {
 
     pub fn install_scheduler_pool(&mut self, pool: InstalledSchedulerPoolArc) {
         info!("Installed new scheduler_pool into bank_forks: {:?}", pool);
+        for (_slot, bank) in self.banks.iter_mut() {
+            if !bank.is_frozen() {
+                *bank = Self::install_scheduler_into_bank(&pool, bank.clone_without_scheduler());
+            }
+        }
         assert!(
             self.scheduler_pool.replace(pool).is_none(),
             "Reinstalling scheduler pool isn't supported"
         );
-        for (_slot, bank) in self.banks.iter_mut() {
-            *bank = bank.clone();
-        }
     }
 
     fn install_scheduler_into_bank(scheduler_pool: &InstalledSchedulerPoolArc, bank: Arc<Bank>) -> BankWithScheduler {
