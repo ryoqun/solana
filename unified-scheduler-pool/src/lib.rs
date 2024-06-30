@@ -825,7 +825,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             return None;
         };
         trace!("accumulate begin!!");
-        timings.accumulate(&executed_task.result_with_timings.1);
+        //timings.accumulate(&executed_task.result_with_timings.1);
         trace!("accumulate end!!");
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
