@@ -679,6 +679,10 @@ impl PohRecorder {
         self.leader_last_tick_height = leader_last_tick_height;
     }
 
+    pub fn swap_working_bank(&mut self, bank: BankWithScheduler) {
+        self.working_bank.as_mut().unwrap().bank = bank;
+    }
+
     pub fn set_bank(&mut self, bank: BankWithScheduler, track_transaction_indexes: bool) {
         assert!(self.working_bank.is_none());
         self.leader_bank_notifier.set_in_progress(&bank);
