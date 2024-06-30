@@ -1106,7 +1106,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             new_task_receiver.len(),
                             runnable_task_sender.len(), runnable_task_sender.aux_len(),
                             finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
-                            width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
+                            width = SchedulerId::BITS as usize / 4,
                         );
 
                         is_finished = session_ending && state_machine.has_no_active_task();
