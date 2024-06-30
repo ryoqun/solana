@@ -572,6 +572,14 @@ mod chained_channel {
             self.aux_sender = chained_aux_sender;
             Ok(())
         }
+
+        pub(super) fn len(&self) -> usize {
+            self.sender.len()
+        }
+
+        pub(super) fn aux_len(&self) -> usize {
+            self.aux_sender.len()
+        }
     }
 
     // P doesn't need to be `: Clone`, yet rustc derive can't handle it.
@@ -623,14 +631,6 @@ mod chained_channel {
                     None
                 }
             }
-        }
-
-        pub(super) fn len(&self) -> usize {
-            self.sender.len()
-        }
-
-        pub(super) fn aux_len(&self) -> usize {
-            self.aux_sender.len()
         }
     }
 
