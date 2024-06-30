@@ -57,7 +57,7 @@ fn check_txs(
     receiver: &Arc<Receiver<WorkingBankEntry>>,
     ref_tx_count: usize,
     poh_recorder: &Arc<RwLock<PohRecorder>>,
-    dummy_receiver: DummyRecceiver,
+    dummy_receiver: DummyReceiver,
 ) -> bool {
     let mut total = 0;
     let now = Instant::now();
