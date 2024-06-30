@@ -94,6 +94,8 @@ pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     _phantom: PhantomData<TH>,
 }
 
+use solana_sdk::transaction::VersionedTransaction;
+
 #[derive(Debug)]
 pub struct HandlerContext {
     log_messages_bytes_limit: Option<usize>,
