@@ -167,6 +167,7 @@ where
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
         transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        dummy_sender: Option<DummySender>,
         pool_cleaner_interval: Duration,
         max_pooling_duration: Duration,
         max_usage_queue_count: usize,
