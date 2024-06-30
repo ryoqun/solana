@@ -101,6 +101,7 @@ pub struct HandlerContext {
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
     transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+    dummy_sender: Option<Sender<Vec<VersionedTransaction>>,
 }
 
 pub type DefaultSchedulerPool =
