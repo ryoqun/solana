@@ -574,6 +574,9 @@ fn main() {
 
             let mut new_bank_time = Measure::start("new_bank");
             let new_slot = bank.slot() + 1;
+            if let Some((Err(error), _timings)) = bank.wait_for_completed_scheduler() {
+                error!("error is returned after waiting for completed scheduler...: {error:?}");
+            }
             let new_bank = Bank::new_from_parent(bank.clone(), &collector, new_slot);
             new_bank_time.stop();
 
