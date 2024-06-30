@@ -565,7 +565,7 @@ fn main() {
             let mut new_bank_time = Measure::start("new_bank");
             let new_slot = bank.slot() + 1;
             if let Some((Err(error), _timings)) = bank.wait_for_completed_scheduler() {
-                error!("error is returned after waiting for completed scheduler...: {error:?}");
+                error!("error is returned after waiting for completed scheduler...: {error:?} slot: {}", bank.slot());
             }
             let new_bank = Bank::new_from_parent(bank.clone(), &collector, new_slot);
             new_bank_time.stop();
@@ -584,7 +584,9 @@ fn main() {
             assert!(p.bank().is_none());
             p.set_bank(bank.clone_with_scheduler(), false);
             debug!(
-                "new_bank_time: {}us insert_time: {}us poh_time: {}us",
+                "new_bank_time ({} => {}): {}us insert_time: {}us poh_time: {}us",
+                new_slot - 1,
+                new_slot,
                 new_bank_time.as_us(),
                 insert_time.as_us(),
                 poh_time.as_us(),
