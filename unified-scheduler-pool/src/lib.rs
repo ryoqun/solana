@@ -463,7 +463,7 @@ impl TaskHandler for DefaultTaskHandler {
                 //let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
                 //trace!("poh record end!");
                 //summary.result.is_ok()
-                handler_context.dummy_sender.as_ref().unwrap().send(vec![trace.to_versioned_transaction()]).unwrap();
+                handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
             },
         );
         sleepless_testing::at(CheckPoint::TaskHandled(index));
