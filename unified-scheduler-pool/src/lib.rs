@@ -824,7 +824,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let Ok(executed_task) = executed_task else {
             return None;
         };
+        trace!("accumulate begin!!");
         timings.accumulate(&executed_task.result_with_timings.1);
+        trace!("accumulate end!!");
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
             //Err(TransactionError::CommitFailed) => {
@@ -1107,6 +1109,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 };
                                 trace!("select_biased! deschedule!!");
                                 state_machine.deschedule_task(&executed_task.task);
+                                trace!("select_biased! drop!!");
                                 std::mem::forget(executed_task);
                                 "deschedule_idle_task"
                             },
