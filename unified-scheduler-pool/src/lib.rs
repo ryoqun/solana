@@ -1395,6 +1395,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
     ) -> Self {
+        info!("spawning new scheduler pool for slot: {}", context.bank().slot());
         let mut inner = Self::Inner {
             thread_manager: ThreadManager::new(pool),
             usage_queue_loader: UsageQueueLoader::default(),
