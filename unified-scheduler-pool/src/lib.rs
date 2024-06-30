@@ -1095,7 +1095,19 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "deschedule_idle_task"
                             },
                         };
-                        trace!("tick: {step}");
+                        info!(
+                            "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
+                            scheduler_id, slot,
+                            (if step == "step" { "interval" } else { step }),
+                            (if session_ending {"S"} else {"-"}),
+                            state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+                            state_machine.total_task_count(),
+                            state_machine.unblocked_task_count(),
+                            new_task_receiver.len(),
+                            runnable_task_sender.len(), runnable_task_sender.aux_len(),
+                            finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
+                            width = SchedulerId::BITS as usize / BITS_PER_HEX_DIGIT,
+                        );
 
                         is_finished = session_ending && state_machine.has_no_active_task();
                     }
