@@ -534,7 +534,7 @@ impl BankWithSchedulerInner {
                     "with_active_scheduler: bank (slot: {}) has a stale aborted scheduler...",
                     self.bank.slot(),
                 );
-                Err(SchedulerError)
+                Err(SchedulerError::Aborted)
             }
             SchedulerStatus::Stale(pool, _result_with_timings) => {
                 let pool = pool.clone();
