@@ -100,11 +100,13 @@ impl BankForks {
         let root_bank = Arc::new(root_bank);
         let root_slot = root_bank.slot();
 
+        let root_bank = if let Some(scheduler_pool) = scheduler_pool {
+            Self::install_scheduler_into_bank(scheduler_pool, root_bank)
+        } else {
+            BankWithScheduler::new_without_scheduler(root_bank.clone())
+        };
         let mut banks = HashMap::new();
-        banks.insert(
-            root_slot,
-            BankWithScheduler::new_without_scheduler(root_bank.clone()),
-        );
+        banks.insert(root_slot, root_bank);
 
         let parents = root_bank.parents();
         for parent in parents {
