@@ -448,7 +448,9 @@ impl TaskHandler for DefaultTaskHandler {
             handler_context.log_messages_bytes_limit,
             &handler_context.prioritization_fee_cache,
             || {
+                trace!("poh record start!");
                 let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+                trace!("poh record end!");
                 summary.result.is_ok()
             },
         );
