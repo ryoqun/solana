@@ -57,7 +57,7 @@ fn check_txs(
     receiver: &Arc<Receiver<WorkingBankEntry>>,
     ref_tx_count: usize,
     poh_recorder: &Arc<RwLock<PohRecorder>>,
-    dummy_receiver: DummyReceiver,
+    dummy_receiver: &DummyReceiver,
 ) -> bool {
     let mut total = 0;
     let now = Instant::now();
@@ -554,6 +554,7 @@ fn main() {
             &signal_receiver,
             packets_for_this_iteration.transactions.len(),
             &poh_recorder,
+            &dummy_receiver,
         ) {
             eprintln!(
                 "[iteration {}, tx sent {}, slot {} expired, bank tx count {}]",
