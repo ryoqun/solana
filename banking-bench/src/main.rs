@@ -71,7 +71,7 @@ fn check_txs(
                 continue
             }
         } else {
-            sleep(Duration::from_millis(10))
+            sleep(Duration::from_millis(10));
         }
         if now.elapsed().as_secs() > 60 {
             break;
