@@ -63,15 +63,15 @@ fn check_txs(
     let now = Instant::now();
     let mut no_bank = false;
     loop {
-        if let Ok(txs) = dummy_receiver.try_recv()
-        {
+        if let Ok(txs) = dummy_receiver.try_recv() {
             total += txs.len();
-            continue;
+            if total >= ref_tx_count {
+                break;
+            } else {
+                continue
+            }
         } else {
             sleep(Duration::from_millis(10))
-        }
-        if total >= ref_tx_count {
-            break;
         }
         if now.elapsed().as_secs() > 60 {
             break;
