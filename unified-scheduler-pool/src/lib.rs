@@ -96,6 +96,8 @@ pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
 
 use solana_sdk::transaction::VersionedTransaction;
 
+type DummySender = Sender<Vec<VersionedTransaction>>;
+
 #[derive(Debug)]
 pub struct HandlerContext {
     log_messages_bytes_limit: Option<usize>,
@@ -103,7 +105,7 @@ pub struct HandlerContext {
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
     transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
-    dummy_sender: Option<Sender<Vec<VersionedTransaction>>>,
+    dummy_sender: Option<DummySender>,
 }
 
 pub type DefaultSchedulerPool =
@@ -184,6 +186,7 @@ where
                 replay_vote_sender,
                 prioritization_fee_cache,
                 transaction_recorder,
+                dummy_sender,
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
