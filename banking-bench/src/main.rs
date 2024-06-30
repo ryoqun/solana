@@ -580,7 +580,7 @@ fn main() {
                 .unwrap()
                 .set_limits(u64::MAX, u64::MAX, u64::MAX);
 
-            let p = poh_recorder.write().unwrap();
+            let mut p = poh_recorder.write().unwrap();
             assert!(p.bank().is_none());
             p.set_bank(bank.clone_with_scheduler(), false);
             debug!(
