@@ -450,6 +450,7 @@ impl TaskHandler for DefaultTaskHandler {
             transaction_indexes: vec![index],
         };
 
+        /*
         *result = execute_batch(
             &batch_with_indexes,
             bank,
@@ -467,6 +468,8 @@ impl TaskHandler for DefaultTaskHandler {
                 true
             },
         );
+        */
+        handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
         sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
 }
