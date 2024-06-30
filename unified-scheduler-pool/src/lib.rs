@@ -1104,6 +1104,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                std::mem::forget(executed_task);
                                 "deschedule_idle_task"
                             },
                         };
