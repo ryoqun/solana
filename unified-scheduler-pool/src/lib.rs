@@ -1105,11 +1105,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 ) else {
                                     break 'nonaborted_main_loop;
                                 };
+                                trace!("select_biased! deschedule!!");
                                 state_machine.deschedule_task(&executed_task.task);
                                 std::mem::forget(executed_task);
                                 "deschedule_idle_task"
                             },
                         };
+                        trace!("logging...");
                         trace!(
                             "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
                             scheduler_id, slot,
