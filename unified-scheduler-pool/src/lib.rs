@@ -1088,6 +1088,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 state_machine.deschedule_task(&executed_task.task);
                             },
                         };
+                        trace!("tick");
 
                         is_finished = session_ending && state_machine.has_no_active_task();
                     }
