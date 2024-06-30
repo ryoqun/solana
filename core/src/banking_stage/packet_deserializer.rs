@@ -254,9 +254,7 @@ impl PacketDeserializer {
 
             match ImmutableDeserializedPacket::new(packet_clone) {
                 Ok(packet) => Some(packet),
-                Err(err) => {
-                    None
-                }
+                Err(_err) => None,
             }
         })
     }
