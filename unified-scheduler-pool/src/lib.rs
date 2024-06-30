@@ -26,7 +26,7 @@ use {
         installed_scheduler_pool::{
             initialized_result_with_timings, InstalledScheduler, InstalledSchedulerBox,
             InstalledSchedulerPool, InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult,
-            SchedulerAborted, SchedulerId, SchedulingContext, TimeoutListener,
+            SchedulerError, SchedulerId, SchedulingContext, TimeoutListener,
             UninstalledScheduler, UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
@@ -1307,7 +1307,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         debug!("send_task()");
         self.new_task_sender
             .send(NewTaskPayload::Payload(task))
-            .map_err(|_| SchedulerAborted)
+            .map_err(|_| SchedulerError::Aborted)
     }
 
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
