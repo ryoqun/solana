@@ -479,13 +479,13 @@ fn main() {
             .install_scheduler_pool(scheduler_pool);
 
         let new_slot = bank.slot() + 1;
-        let new_bank = Bank::new_from_parent(bank.clone_without_scheduler(), &collector, new_slot);
+        let new_bank = Bank::new_from_parent(bank.clone(), &collector, new_slot);
         bank_forks.write().unwrap().insert(new_bank);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
         poh_recorder
             .write()
             .unwrap()
-            .reset(bank.clone_without_scheduler(), Some((bank.slot(), bank.slot() + 1)));
+            .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
         poh_recorder
             .write()
             .unwrap()
@@ -569,7 +569,7 @@ fn main() {
             poh_recorder
                 .write()
                 .unwrap()
-                .reset(bank.clone_without_scheduler(), Some((bank.slot(), bank.slot() + 1)));
+                .reset(bank.clone(), Some((bank.slot(), bank.slot() + 1)));
             poh_time.stop();
 
             let mut new_bank_time = Measure::start("new_bank");
