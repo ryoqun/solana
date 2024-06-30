@@ -580,18 +580,16 @@ fn main() {
                 .unwrap()
                 .set_limits(u64::MAX, u64::MAX, u64::MAX);
 
-            assert!(poh_recorder.read().unwrap().bank().is_none());
-            poh_recorder
-                .write()
-                .unwrap()
-                .set_bank(bank.clone_with_scheduler(), false);
+            let p = poh_recorder.write().unwrap();
+            assert!(p.bank().is_none());
+            p.set_bank(bank.clone_with_scheduler(), false);
             debug!(
                 "new_bank_time: {}us insert_time: {}us poh_time: {}us",
                 new_bank_time.as_us(),
                 insert_time.as_us(),
                 poh_time.as_us(),
             );
-            assert!(poh_recorder.read().unwrap().bank().is_some());
+            assert!(p.bank().is_some());
         } else {
             eprintln!(
                 "[iteration {}, tx sent {}, slot {} active, bank tx count {}]",
