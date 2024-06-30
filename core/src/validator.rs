@@ -856,6 +856,7 @@ impl Validator {
 
         match (&config.block_verification_method, &config.block_production_method) {
             (BlockVerificationMethod::UnifiedScheduler, _) | (_, BlockProductionMethod::UnifiedScheduler) => {
+                let (dummy_sender, dummy_receiver) = unbounded();
                 let scheduler_pool = DefaultSchedulerPool::new_dyn(
                     config.unified_scheduler_handler_threads,
                     config.runtime_config.log_messages_bytes_limit,
@@ -863,6 +864,7 @@ impl Validator {
                     Some(replay_vote_sender.clone()),
                     prioritization_fee_cache.clone(),
                     Some(poh_recorder.read().unwrap().new_recorder()),
+                    dummy_sender,
                 );
                 bank_forks
                     .write()
