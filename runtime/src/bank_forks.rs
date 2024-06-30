@@ -222,6 +222,7 @@ impl BankForks {
             "Reinstalling scheduler pool isn't supported"
         );
         for (_slot, bank) in self.banks.iter_mut() {
+            *bank = bank.clone();
         }
     }
 
