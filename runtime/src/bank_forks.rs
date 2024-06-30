@@ -103,7 +103,7 @@ impl BankForks {
         let mut banks = HashMap::new();
         {
             let root_bank = if let Some(scheduler_pool) = scheduler_pool.as_ref() {
-                Self::install_scheduler_into_bank(scheduler_pool, root_bank)
+                Self::install_scheduler_into_bank(scheduler_pool, root_bank.clone())
             } else {
                 BankWithScheduler::new_without_scheduler(root_bank.clone())
             };
