@@ -681,7 +681,7 @@ impl BankingStage {
                                     p.build_sanitized_transaction(bank.vote_only_bank(), &**bank, bank.get_reserved_account_keys())
                                 }).collect::<Vec<_>>();
 
-                                if let Err(_) = bank.schedule_transaction_executions(ppp.iter().zip(task_ids.iter())) {
+                                if let Err(_) = bank.schedule_transaction_executions(ppp.iter().zip(task_ids.into_iter())) {
                                     break;
                                 }
                             }
