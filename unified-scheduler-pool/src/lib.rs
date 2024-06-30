@@ -1051,6 +1051,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // consistent. Note that unified scheduler will go
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
+                        trace!("select_biased! begin!");
                         let step = select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
@@ -1097,6 +1098,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
+                                trace!("select_biased! fired!");
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler")
@@ -1108,7 +1110,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "deschedule_idle_task"
                             },
                         };
-                        info!(
+                        trace!(
                             "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
                             scheduler_id, slot,
                             (if step == "step" { "interval" } else { step }),
