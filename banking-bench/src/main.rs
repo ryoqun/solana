@@ -63,9 +63,9 @@ fn check_txs(
     let now = Instant::now();
     let mut no_bank = false;
     loop {
-        if let Ok((_bank, (entry, _tick_height))) = receiver.try_recv()
+        if let Ok(txs) = dummy_receiver.try_recv()
         {
-            total += entry.transactions.len();
+            total += txs.len();
             continue;
         } else {
             sleep(Duration::from_millis(10))
