@@ -679,7 +679,7 @@ impl BankingStage {
                                 let indexes = PacketDeserializer::generate_packet_indexes(&pp);
                                 let ppp = PacketDeserializer::deserialize_packets2(&pp, &indexes).filter_map(|p| {
                                     p.build_sanitized_transaction(bank.vote_only_bank(), &**bank, bank.get_reserved_account_keys())
-                                }).zip(&task_id..).collect::<Vec<_>>();
+                                }).zip(task_id..).collect::<Vec<_>>();
 
                                 if let Err(_) = bank.schedule_transaction_executions(ppp.iter()) {
                                     break;
