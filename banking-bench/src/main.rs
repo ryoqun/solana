@@ -80,8 +80,6 @@ fn check_txs(
 
         if total >= ref_tx_count {
             break;
-        } else {
-            continue
         }
         if now.elapsed().as_secs() > 60 {
             break;
