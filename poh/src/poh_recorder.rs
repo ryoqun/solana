@@ -680,6 +680,7 @@ impl PohRecorder {
     }
 
     pub fn swap_working_bank(&mut self, bank: BankWithScheduler) {
+        // assert_eq!(slot)
         self.working_bank.as_mut().unwrap().bank = bank;
     }
 
