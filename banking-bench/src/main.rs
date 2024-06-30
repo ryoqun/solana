@@ -478,7 +478,6 @@ fn main() {
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
-        error!("new bank: {:?}", bank.has_installed_scheduler());
         poh_recorder.write().unwrap().swap_working_bank(bank.clone_with_scheduler());
     }
 
