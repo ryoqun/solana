@@ -59,8 +59,11 @@ pub trait InstalledSchedulerPool: Send + Sync + Debug {
 }
 
 #[derive(Debug)]
-pub struct SchedulerAborted;
-pub type ScheduleResult = std::result::Result<(), SchedulerAborted>;
+pub enum SchedulerError {
+    Aborted,
+    Terminated,
+}
+pub type ScheduleResult = std::result::Result<(), SchedulerError>;
 
 pub struct TimeoutListener {
     callback: Box<dyn FnOnce(InstalledSchedulerPoolArc) + Sync + Send>,
@@ -173,7 +176,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     /// Return the error which caused the scheduler to abort.
     ///
     /// Note that this must not be called until it's observed that `schedule_execution()` has
-    /// returned `Err(SchedulerAborted)`. Violating this should `panic!()`.
+    /// returned `Err(SchedulerError)`. Violating this should `panic!()`.
     ///
     /// That said, calling this multiple times is completely acceptable after the error observation
     /// from `schedule_execution()`. While it's not guaranteed, the same `.clone()`-ed errors of
@@ -531,7 +534,7 @@ impl BankWithSchedulerInner {
                     "with_active_scheduler: bank (slot: {}) has a stale aborted scheduler...",
                     self.bank.slot(),
                 );
-                Err(SchedulerAborted)
+                Err(SchedulerError)
             }
             SchedulerStatus::Stale(pool, _result_with_timings) => {
                 let pool = pool.clone();
@@ -594,7 +597,7 @@ impl BankWithSchedulerInner {
         })
     }
 
-    /// This must not be called until `Err(SchedulerAborted)` is observed. Violating this should
+    /// This must not be called until `Err(SchedulerError)` is observed. Violating this should
     /// `panic!()`.
     fn retrieve_error_after_schedule_failure(&self) -> TransactionError {
         let mut scheduler = self.scheduler.write().unwrap();
