@@ -93,22 +93,14 @@ impl Index<u64> for BankForks {
 
 impl BankForks {
     pub fn new_rw_arc(root_bank: Bank) -> Arc<RwLock<Self>> {
-        Self::do_new_rw_arc(root_bank, None)
-    }
-
-    fn do_new_rw_arc(root_bank: Bank, scheduler_pool: Option<InstalledSchedulerPoolArc>) -> Arc<RwLock<Self>> {
         let root_bank = Arc::new(root_bank);
         let root_slot = root_bank.slot();
 
         let mut banks = HashMap::new();
-        {
-            let root_bank = if let Some(scheduler_pool) = scheduler_pool.as_ref() {
-                Self::install_scheduler_into_bank(scheduler_pool, root_bank.clone())
-            } else {
-                BankWithScheduler::new_without_scheduler(root_bank.clone())
-            };
-            banks.insert(root_slot, root_bank);
-        }
+        banks.insert(
+            root_slot,
+            BankWithScheduler::new_without_scheduler(root_bank.clone()),
+        );
 
         let parents = root_bank.parents();
         for parent in parents {
@@ -139,7 +131,7 @@ impl BankForks {
             last_accounts_hash_slot: root_slot,
             in_vote_only_mode: Arc::new(AtomicBool::new(false)),
             highest_slot_at_startup: 0,
-            scheduler_pool,
+            scheduler_pool: None,
         }));
 
         root_bank.set_fork_graph_in_program_cache(bank_forks.clone());
@@ -229,6 +221,8 @@ impl BankForks {
             self.scheduler_pool.replace(pool).is_none(),
             "Reinstalling scheduler pool isn't supported"
         );
+        for (_slot, bank) in self.banks.iter_mut() {
+        }
     }
 
     fn install_scheduler_into_bank(scheduler_pool: &InstalledSchedulerPoolArc, bank: Arc<Bank>) -> BankWithScheduler {
