@@ -585,13 +585,13 @@ fn main() {
                 .write()
                 .unwrap()
                 .set_bank(bank.clone_with_scheduler(), false);
-            assert!(poh_recorder.read().unwrap().bank().is_some());
             debug!(
                 "new_bank_time: {}us insert_time: {}us poh_time: {}us",
                 new_bank_time.as_us(),
                 insert_time.as_us(),
                 poh_time.as_us(),
             );
+            assert!(poh_recorder.read().unwrap().bank().is_some());
         } else {
             eprintln!(
                 "[iteration {}, tx sent {}, slot {} active, bank tx count {}]",
