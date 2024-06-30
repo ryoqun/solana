@@ -479,7 +479,7 @@ fn main() {
             .install_scheduler_pool(scheduler_pool);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
         error!("new bank: {:?}", bank.has_installed_scheduler());
-        poh_recorder.write().unwrap().set_bank(bank.clone(), false);
+        poh_recorder.write().unwrap().set_bank(bank.clone_with_scheduler(), false);
     }
 
     let banking_stage = BankingStage::new_num_threads(
