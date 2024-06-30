@@ -223,6 +223,15 @@ impl BankForks {
         );
     }
 
+    fn install_scheduler_into_bank(scheduler_pool: &InstalledSchedulerPoolArc, bank: Arc<Bank>) -> BankWithScheduler {
+        trace!("inserting bank(slot: {}) with scheduler into bank_forks...", bank.slot());
+        let context = SchedulingContext::new(bank.clone());
+        let scheduler = scheduler_pool.take_scheduler(context);
+        let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
+        scheduler_pool.register_timeout_listener(bank_with_scheduler.create_timeout_listener());
+        bank_with_scheduler
+    }
+
     pub fn insert(&mut self, mut bank: Bank) -> BankWithScheduler {
         if self.root.load(Ordering::Relaxed) < self.highest_slot_at_startup {
             bank.set_check_program_modification_slot(true);
@@ -230,12 +239,7 @@ impl BankForks {
 
         let bank = Arc::new(bank);
         let bank = if let Some(scheduler_pool) = &self.scheduler_pool {
-            trace!("inserting bank(slot: {}) with scheduler into bank_forks...", bank.slot());
-            let context = SchedulingContext::new(bank.clone());
-            let scheduler = scheduler_pool.take_scheduler(context);
-            let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
-            scheduler_pool.register_timeout_listener(bank_with_scheduler.create_timeout_listener());
-            bank_with_scheduler
+            Self::install_scheduler_into_bank(scheduler_pool, bank)
         } else {
             BankWithScheduler::new_without_scheduler(bank)
         };
