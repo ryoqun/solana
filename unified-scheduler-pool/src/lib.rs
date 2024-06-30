@@ -624,6 +624,14 @@ mod chained_channel {
                 }
             }
         }
+
+        pub(super) fn len(&self) -> usize {
+            self.sender.len()
+        }
+
+        pub(super) fn aux_len(&self) -> usize {
+            self.aux_sender.len()
+        }
     }
 
     pub(super) fn unbounded<P, C: Clone>(
