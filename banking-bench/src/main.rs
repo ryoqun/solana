@@ -478,6 +478,7 @@ fn main() {
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
+        error!("new bank: {:?}", bank.has_installed_scheduler());
     }
 
     let banking_stage = BankingStage::new_num_threads(
