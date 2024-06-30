@@ -50,6 +50,8 @@ use solana_unified_scheduler_pool::DefaultSchedulerPool;
 //                           = 1470 CU
 const TRANSFER_TRANSACTION_COST: u32 = 1470;
 
+type DummyReceiver = Sender<Vec<VersionedTransaction>>;
+
 fn check_txs(
     receiver: &Arc<Receiver<WorkingBankEntry>>,
     ref_tx_count: usize,
