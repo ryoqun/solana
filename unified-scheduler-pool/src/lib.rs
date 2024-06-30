@@ -1019,7 +1019,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 // 1. Initial result_with_timing is propagated implicitly by the moved variable.
                 // 2. Subsequent result_with_timings are propagated explicitly from
                 //    the new_task_receiver.recv() invocation located at the end of loop.
-                let scheduler_id = self.scheduler_id();
+                let scheduler_id = self.scheduler_id;
                 let slot = context.bank().slot();
 
                 'nonaborted_main_loop: loop {
