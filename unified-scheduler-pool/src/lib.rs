@@ -860,7 +860,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
             Err(ref error @ TransactionError::CommitFailed) => {
-                info!("maybe reached max tick height...: {error:?}");
+                debug!("maybe reached max tick height...: {error:?}");
                 Some(executed_task)
             },
             Err(error) => {

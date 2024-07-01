@@ -574,7 +574,7 @@ fn main() {
             &dummy_receiver,
             use_dummy,
         ) {
-            eprintln!(
+            info!(
                 "[iteration {}, tx sent {}, slot {} expired, bank tx count {}]",
                 current_iteration_index,
                 sent,
