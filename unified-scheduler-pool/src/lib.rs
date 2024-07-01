@@ -805,6 +805,33 @@ impl LogInterval {
     }
 }
 
+macro_rules! log_scheduler {
+    ($level:ident, $prefix:tt) => {
+        $level! {
+            "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
+            scheduler_id, slot,
+            $prefix,
+            (if session_ending {"S"} else {"-"}),
+            state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+            state_machine.total_task_count(),
+            state_machine.unblocked_task_count(),
+            new_task_receiver.len(),
+            runnable_task_sender.len(), runnable_task_sender.aux_len(),
+            finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
+            {
+                let elapsed_us = session_started_at.elapsed().as_micros();
+
+                if elapsed_us > 0 {
+                    format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed_us)
+                } else {
+                    "-".to_string()
+                }
+            },
+            width = SchedulerId::BITS as usize / 4,
+        }
+    }
+}
+
 struct HandlerPanicked;
 type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 
@@ -1143,33 +1170,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "deschedule_idle_task"
                             },
                         };
-                        //trace!("logging...");
-                        macro_rules! log_scheduler {
-                            ($level:ident, $prefix:tt) => {
-                                $level! {
-                                    "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
-                                    scheduler_id, slot,
-                                    $prefix,
-                                    (if session_ending {"S"} else {"-"}),
-                                    state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
-                                    state_machine.total_task_count(),
-                                    state_machine.unblocked_task_count(),
-                                    new_task_receiver.len(),
-                                    runnable_task_sender.len(), runnable_task_sender.aux_len(),
-                                    finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
-                                    {
-                                        let elapsed_us = session_started_at.elapsed().as_micros();
-
-                                        if elapsed_us > 0 {
-                                            format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed_us)
-                                        } else {
-                                            "-".to_string()
-                                        }
-                                    },
-                                    width = SchedulerId::BITS as usize / 4,
-                                }
-                            }
-                        }
                         if log_interval.increment() {
                             log_scheduler!(info, step_type);
                         } else {
