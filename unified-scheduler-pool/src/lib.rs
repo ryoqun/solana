@@ -1118,7 +1118,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
-                                "deschedule_blocked_task"
+                                "desc_b_task"
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
                                 assert_matches!(dummy, Err(RecvError));
@@ -1127,7 +1127,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     .schedule_next_unblocked_task()
                                     .expect("unblocked task");
                                 runnable_task_sender.send_payload(task).unwrap();
-                                "schedule_blocked_task"
+                                "sc_b_task"
                             },
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
@@ -1137,13 +1137,15 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
+                                            "new_i_task"
+                                        } else {
+                                            "new_b_task"
                                         }
-                                        "new_task"
                                     }
                                     Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
-                                        log_scheduler!(info, "session_ending");
-                                        "session_ending"
+                                        log_scheduler!(info, "ending");
+                                        "ending"
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context_and_result_with_timings)) =>
                                         unreachable!(),
@@ -1167,7 +1169,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 state_machine.deschedule_task(&executed_task.task);
                                 //trace!("select_biased! drop!!");
                                 //std::mem::forget(executed_task);
-                                "deschedule_idle_task"
+                                "desc_i_task"
                             },
                         };
                         if log_interval.increment() {
@@ -1185,7 +1187,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     session_result_sender
                         .send(result_with_timings)
                         .expect("always outlived receiver");
-                    log_scheduler!(info, "session_ended");
+                    log_scheduler!(info, "ended");
                     state_machine.reinitialize();
                     log_interval = LogInterval::default();
                     session_ending = false;
