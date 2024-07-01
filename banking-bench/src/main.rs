@@ -621,7 +621,7 @@ fn main() {
             );
             //assert!(p.bank().is_some());
         } else {
-            eprintln!(
+            info!(
                 "[iteration {}, tx sent {}, slot {} active, bank tx count {}]",
                 current_iteration_index,
                 sent,
