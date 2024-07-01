@@ -469,7 +469,8 @@ impl TaskHandler for DefaultTaskHandler {
             },
         );
         */
-        handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+        handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+        //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
         sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
 }

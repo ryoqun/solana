@@ -58,13 +58,13 @@ fn check_txs(
     ref_tx_count: usize,
     poh_recorder: &Arc<RwLock<PohRecorder>>,
     dummy_receiver: &DummyReceiver,
-    is_uni: bool,
+    use_dummy: bool,
 ) -> bool {
     let mut total = 0;
     let now = Instant::now();
     let mut no_bank = false;
     loop {
-        if is_uni {
+        if use_dummy {
             if let Ok(txs) = dummy_receiver.try_recv() {
                 total += txs.len();
             } else {
@@ -480,7 +480,7 @@ fn main() {
     let collector = solana_sdk::pubkey::new_rand();
     let (dummy_sender, dummy_receiver) = unbounded();
 
-    let is_uni = if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+    let use_dummy = if let BlockProductionMethod::UnifiedScheduler = block_production_method {
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             Some(num_banking_threads as usize),
             None,
@@ -496,7 +496,7 @@ fn main() {
             .install_scheduler_pool(scheduler_pool);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
         poh_recorder.write().unwrap().swap_working_bank(bank.clone_with_scheduler());
-        true
+        false
     } else {
         false
     };
@@ -568,7 +568,7 @@ fn main() {
             packets_for_this_iteration.transactions.len(),
             &poh_recorder,
             &dummy_receiver,
-            is_uni,
+            use_dummy,
         ) {
             eprintln!(
                 "[iteration {}, tx sent {}, slot {} expired, bank tx count {}]",
