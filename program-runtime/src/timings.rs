@@ -328,14 +328,6 @@ pub struct ExecuteTimings {
 
 impl ExecuteTimings {
     pub fn accumulate(&mut self, other: &ExecuteTimings) {
-        for (t1, t2) in self.metrics.0.iter_mut().zip(other.metrics.0.iter()) {
-            saturating_add_assign!(*t1, *t2);
-        }
-        self.details.accumulate(&other.details);
-        self.execute_accessories
-            .accumulate(&other.execute_accessories);
-        self.execute_accounts_details
-            .accumulate(&other.execute_accounts_details);
     }
 
     pub fn saturating_add_in_place(&mut self, timing_type: ExecuteTimingType, value_to_add: u64) {
