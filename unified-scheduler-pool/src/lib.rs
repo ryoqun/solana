@@ -442,7 +442,6 @@ impl TaskHandler for DefaultTaskHandler {
         index: usize,
         handler_context: &HandlerContext,
     ) {
-        /*
         // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
         // responsible for locking.
         let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
@@ -461,15 +460,14 @@ impl TaskHandler for DefaultTaskHandler {
             &handler_context.prioritization_fee_cache,
             || {
                 //trace!("poh record start!");
-                //let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+                let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
                 //trace!("poh record end!");
-                //summary.result.is_ok()
-                handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
-                true
+                summary.result.is_ok()
+                //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+                //true
             },
         );
-        */
-        handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+        //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
         //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
         sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
