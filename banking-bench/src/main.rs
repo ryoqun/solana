@@ -479,7 +479,12 @@ fn main() {
     let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
     let collector = solana_sdk::pubkey::new_rand();
     let (dummy_sender, dummy_receiver) = unbounded();
-    let (dummy_sender, use_dummy) = if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+    let use_dummy = if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+        let (dummy_sender, use_dummy) = if std::env::var("USE_DUMMY").is_ok() {
+            (Some(dummy_sender), true)
+        } else {
+            (None, false)
+        };
         let scheduler_pool = DefaultSchedulerPool::new_dyn(
             Some(num_banking_threads as usize),
             None,
@@ -495,13 +500,9 @@ fn main() {
             .install_scheduler_pool(scheduler_pool);
         bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
         poh_recorder.write().unwrap().swap_working_bank(bank.clone_with_scheduler());
-        if std::env::var("USE_DUMMY").is_ok() {
-            (Some(dummy_sender), true)
-        } else {
-            (None, false)
-        }
+        use_dummy
     } else {
-        (None, false)
+        false
     };
 
     let banking_stage = BankingStage::new_num_threads(
