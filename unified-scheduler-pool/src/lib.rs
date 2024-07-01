@@ -1171,7 +1171,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             }
                         }
                         if log_interval.increment() {
-                            log_scheduler!(level, "aaa");
+                            log_scheduler!(info, "aaa");
                         } else {
                             trace!(
                                 "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
