@@ -1144,8 +1144,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             },
                         };
                         //trace!("logging...");
-                        if log_interval.increment() {
-                            info!(
+                        macro_rules! log_scheduler {
+                            ($prefix:tt) => {
                                 "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
                                 scheduler_id, slot,
                                 (if step == "step" { "interval" } else { step }),
@@ -1166,7 +1166,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     }
                                 },
                                 width = SchedulerId::BITS as usize / 4,
-                            );
+                            }
+                        }
+                        if log_interval.increment() {
+                            info!(log_scheduler!("aaa"));
                         } else {
                             trace!(
                                 "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
