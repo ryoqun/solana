@@ -1146,7 +1146,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         //trace!("logging...");
                         if log_interval.increment() {
                             info!(
-                                "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
+                                "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
                                 scheduler_id, slot,
                                 (if step == "step" { "interval" } else { step }),
                                 (if session_ending {"S"} else {"-"}),
@@ -1156,6 +1156,15 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 new_task_receiver.len(),
                                 runnable_task_sender.len(), runnable_task_sender.aux_len(),
                                 finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
+                                {
+                                    let elapsed_us = session_started_at.elapsed();
+
+                                    if elapsed_us > 0 {
+                                        format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed)
+                                    } else {
+                                        "-"
+                                    }
+                                },
                                 width = SchedulerId::BITS as usize / 4,
                             );
                         } else {
@@ -1196,8 +1205,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
-                            slot = new_context.bank().slot();
                             session_started_at = Instant::now();
+                            slot = new_context.bank().slot();
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
                                 .unwrap();
