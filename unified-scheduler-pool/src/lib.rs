@@ -1160,7 +1160,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     let elapsed_us = session_started_at.elapsed().as_micros();
 
                                     if elapsed_us > 0 {
-                                        format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed)
+                                        format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed_us)
                                     } else {
                                         "-".to_string()
                                     }
