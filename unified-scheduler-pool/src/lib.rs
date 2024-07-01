@@ -1053,6 +1053,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
                 let mut log_interval = LogInterval::default();
+                let session_started_at = Instant::now();
 
                 // The following loop maintains and updates ResultWithTimings as its
                 // externally-provided mutable state for each session in this way:
@@ -1183,6 +1184,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         .send(result_with_timings)
                         .expect("always outlived receiver");
                     state_machine.reinitialize();
+                    log_interval = LogInterval::default();
                     session_ending = false;
 
                     // Prepare for the new session.
@@ -1195,6 +1197,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
                             slot = new_context.bank().slot();
+                            session_started_at = Instant::now();
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
                                 .unwrap();
