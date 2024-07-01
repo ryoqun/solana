@@ -1142,6 +1142,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     }
                                     Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
+                                        log_scheduler!(info, "session_ending");
                                         "session_ending"
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context_and_result_with_timings)) =>
@@ -1184,6 +1185,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     session_result_sender
                         .send(result_with_timings)
                         .expect("always outlived receiver");
+                    log_scheduler!(info, "session_ended");
                     state_machine.reinitialize();
                     log_interval = LogInterval::default();
                     session_ending = false;
