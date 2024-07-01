@@ -1162,7 +1162,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     if elapsed_us > 0 {
                                         format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed)
                                     } else {
-                                        "-"
+                                        "-".to_string()
                                     }
                                 },
                                 width = SchedulerId::BITS as usize / 4,
