@@ -1146,7 +1146,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     }
                                     Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
-                                        log_scheduler!(info, "ending");
                                         "ending"
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context_and_result_with_timings)) =>
@@ -1170,7 +1169,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "desc_i_task"
                             },
                         };
-                        if log_interval.increment() {
+                        if log_interval.increment() || step_type == "ending" {
                             log_scheduler!(info, step_type);
                         } else {
                             log_scheduler!(trace, step_type);
