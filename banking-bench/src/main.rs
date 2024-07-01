@@ -546,7 +546,6 @@ fn main() {
                 .unwrap();
         }
 
-        /*
         for tx in &packets_for_this_iteration.transactions {
             loop {
                 if bank.get_signature_status(&tx.signatures[0]).is_some() {
@@ -558,7 +557,6 @@ fn main() {
                 sleep(Duration::from_millis(5));
             }
         }
-        */
 
         // check if txs had been processed by bank. Returns when all transactions are
         // processed, with `FALSE` indicate there is still bank. or returns TRUE indicate a
