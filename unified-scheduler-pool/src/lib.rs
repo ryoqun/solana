@@ -1157,7 +1157,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 runnable_task_sender.len(), runnable_task_sender.aux_len(),
                                 finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
                                 {
-                                    let elapsed_us = session_started_at.elapsed();
+                                    let elapsed_us = session_started_at.elapsed().as_micros();
 
                                     if elapsed_us > 0 {
                                         format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed)
