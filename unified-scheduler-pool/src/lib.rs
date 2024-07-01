@@ -1137,7 +1137,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
-                                            "new_i_task"
+                                            "sc_i_task"
                                         } else {
                                             "new_b_task"
                                         }
