@@ -479,7 +479,7 @@ fn main() {
     let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
     let collector = solana_sdk::pubkey::new_rand();
     let (dummy_sender, dummy_receiver) = unbounded();
-    let (dummy_sender, use_dummy) = if env::var("USE_DUMMY").is_ok() {
+    let (dummy_sender, use_dummy) = if std::env::var("USE_DUMMY").is_ok() {
         (Some(dummy_sender), true)
     } else {
         (None, false)
