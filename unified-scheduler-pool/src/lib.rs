@@ -1083,7 +1083,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
                         trace!("select_biased! begin!");
-                        let step = select_biased! {
+                        let step_type = select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     &mut result_with_timings,
@@ -1145,11 +1145,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         };
                         //trace!("logging...");
                         macro_rules! log_scheduler {
-                            ($level:ident, $prefix:tt) => {
+                            ($level:ident, $step_type:tt) => {
                                 $level! {
                                 "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
                                 scheduler_id, slot,
-                                (if step == "step" { "interval" } else { step }),
+                                step_type,
                                 (if session_ending {"S"} else {"-"}),
                                 state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
                                 state_machine.total_task_count(),
