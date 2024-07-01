@@ -1176,7 +1176,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             trace!(
                                 "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{})",
                                 scheduler_id, slot,
-                                (if step == "step" { "interval" } else { step }),
+                                step_type,
                                 (if session_ending {"S"} else {"-"}),
                                 state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
                                 state_machine.total_task_count(),
