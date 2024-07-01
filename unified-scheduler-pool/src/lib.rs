@@ -1146,6 +1146,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         //trace!("logging...");
                         macro_rules! log_scheduler {
                             ($level:ident, $prefix:tt) => {
+                                $level!
                                 "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
                                 scheduler_id, slot,
                                 (if step == "step" { "interval" } else { step }),
