@@ -855,7 +855,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         //trace!("accumulate end!!");
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
-            Err(TransactionError::CommitFailed @ error) => {
+            Err(error @ TransactionError::CommitFailed) => {
                 info!("maybe reached max tick height...: {error:?}");
                 Some(executed_task)
             },
