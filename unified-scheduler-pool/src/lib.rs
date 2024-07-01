@@ -1053,7 +1053,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
                 let mut log_interval = LogInterval::default();
-                let session_started_at = Instant::now();
+                let mut session_started_at = Instant::now();
 
                 // The following loop maintains and updates ResultWithTimings as its
                 // externally-provided mutable state for each session in this way:
