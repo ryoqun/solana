@@ -442,7 +442,7 @@ impl TaskHandler for DefaultTaskHandler {
         index: usize,
         handler_context: &HandlerContext,
     ) {
-        if handler_context.dummy_sender.is_some() {
+        if handler_context.dummy_sender.is_none() {
         // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
         // responsible for locking.
         let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
@@ -469,10 +469,10 @@ impl TaskHandler for DefaultTaskHandler {
             },
         );
         } else {
-        handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+        //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+        handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
         }
 
-        //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
         sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
 }
