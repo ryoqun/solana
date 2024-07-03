@@ -681,7 +681,7 @@ impl UsageQueueLoader {
         // taken from https://github.com/xacrimon/dashmap/issues/292#issuecomment-1916621009
         match self.usage_queues.get(&address) {
             Some(bar_read_guard) => bar_read_guard.value().clone(),
-            None => dashmap
+            None => self.usage_queues
                 .entry(address)
                 .or_default()
                 .clone(),
