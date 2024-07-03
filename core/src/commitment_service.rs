@@ -151,7 +151,7 @@ impl AggregateCommitmentService {
         let (block_commitment, rooted_stake) = Self::aggregate_commitment(
             &ancestors,
             &aggregation_data.bank,
-            Some(&aggregation_data.node_vote_state),
+            &aggregation_data.node_vote_state,
         );
 
         let highest_super_majority_root =
@@ -185,7 +185,7 @@ impl AggregateCommitmentService {
     pub fn aggregate_commitment(
         ancestors: &[Slot],
         bank: &Bank,
-        node_vote_state: Option<&(Pubkey, VoteState)>,
+        (node_vote_pubkey, node_vote_state): &(Pubkey, VoteState),
     ) -> (HashMap<Slot, BlockCommitment>, Vec<(Slot, u64)>) {
         assert!(!ancestors.is_empty());
 
@@ -200,12 +200,11 @@ impl AggregateCommitmentService {
             if *lamports == 0 {
                 continue;
             }
-            let vote_state = match node_vote_state {
-                Some((node_vote_pubkey, node_vote_state)) if node_vote_pubkey == pubkey => {
-                    // Override old vote_state in bank with latest one for my own vote pubkey
-                    Ok(node_vote_state)
-                }
-                _ => account.vote_state(),
+            let vote_state = if pubkey == node_vote_pubkey {
+                // Override old vote_state in bank with latest one for my own vote pubkey
+                Ok(node_vote_state)
+            } else {
+                account.vote_state()
             };
             if let Ok(vote_state) = vote_state {
                 Self::aggregate_commitment_for_vote_account(
@@ -402,8 +401,7 @@ mod tests {
         assert_eq!(rooted_stake[0], (root, lamports));
     }
 
-    #[test]
-    fn test_aggregate_commitment_validity() {
+    fn do_test_aggregate_commitment_validity(with_node_vote_state: bool) {
         let ancestors = vec![3, 4, 5, 7, 9, 10, 11];
         let GenesisConfigInfo {
             mut genesis_config, ..
@@ -467,9 +465,11 @@ mod tests {
         let mut vote_state1 = vote_state::from(&vote_account1).unwrap();
         process_slot_vote_unchecked(&mut vote_state1, 3);
         process_slot_vote_unchecked(&mut vote_state1, 5);
-        let versioned = VoteStateVersions::new_current(vote_state1);
-        vote_state::to(&versioned, &mut vote_account1).unwrap();
-        bank.store_account(&pk1, &vote_account1);
+        if !with_node_vote_state {
+            let versioned = VoteStateVersions::new_current(vote_state1.clone());
+            vote_state::to(&versioned, &mut vote_account1).unwrap();
+            bank.store_account(&pk1, &vote_account1);
+        }
 
         let mut vote_state2 = vote_state::from(&vote_account2).unwrap();
         process_slot_vote_unchecked(&mut vote_state2, 9);
@@ -490,8 +490,18 @@ mod tests {
         vote_state::to(&versioned, &mut vote_account4).unwrap();
         bank.store_account(&pk4, &vote_account4);
 
-        let (commitment, rooted_stake) =
-            AggregateCommitmentService::aggregate_commitment(&ancestors, &bank, None);
+        let node_vote_pubkey = if with_node_vote_state {
+            pk1
+        } else {
+            // Use some random pubkey as dummy to suppress the override.
+            solana_sdk::pubkey::new_rand()
+        };
+
+        let (commitment, rooted_stake) = AggregateCommitmentService::aggregate_commitment(
+            &ancestors,
+            &bank,
+            &(node_vote_pubkey, vote_state1),
+        );
 
         for a in ancestors {
             if a <= 3 {
@@ -517,6 +527,16 @@ mod tests {
         }
         assert_eq!(rooted_stake.len(), 2);
         assert_eq!(get_highest_super_majority_root(rooted_stake, 100), 1)
+    }
+
+    #[test]
+    fn test_aggregate_commitment_validity_with_node_vote_state() {
+        do_test_aggregate_commitment_validity(true)
+    }
+
+    #[test]
+    fn test_aggregate_commitment_validity_without_node_vote_state() {
+        do_test_aggregate_commitment_validity(false);
     }
 
     #[test]
