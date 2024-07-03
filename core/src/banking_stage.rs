@@ -656,7 +656,7 @@ impl BankingStage {
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
-        let bank_thread_hdls = [non_vote_receiver, tpu_vote_receiver, gossip_vote_receiver].into_iter().map(|receiver| {
+        let bank_thread_hdls = [non_vote_receiver.clone(), non_vote_receiver, tpu_vote_receiver, gossip_vote_receiver].into_iter().map(|receiver| {
             let decision_maker = decision_maker.clone();
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
