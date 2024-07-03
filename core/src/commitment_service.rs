@@ -26,8 +26,8 @@ pub struct CommitmentAggregationData {
     bank: Arc<Bank>,
     root: Slot,
     total_stake: Stake,
-    // Node's latest local vote state accompanied to the bank.
-    // Used for commitment aggreagation if the vote account is staked.
+    // The latest local vote state of the node running this service.
+    // Used for commitment aggregation if the node's vote account is staked.
     node_vote_state: (Pubkey, VoteState),
 }
 
