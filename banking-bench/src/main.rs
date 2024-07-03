@@ -44,6 +44,7 @@ use {
 };
 use solana_unified_scheduler_pool::DefaultSchedulerPool;
 
+#[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 // transfer transaction cost = 1 * SIGNATURE_COST +
