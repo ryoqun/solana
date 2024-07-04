@@ -839,7 +839,7 @@ impl SchedulingStateMachine {
                                 }
                                 r
                             },
-                        };
+                        }
                     },
                     _ => {
                         if usage_queue.has_no_blocked_usage() {
