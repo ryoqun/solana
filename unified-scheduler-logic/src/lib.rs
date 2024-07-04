@@ -1486,14 +1486,21 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         // now
         // addr1: locked by task_0_1, queue: [task2, task1]
-        // addr2: locked by task1, queue: [task2]
+        // addr2: locked by task2, queue: [task1]
 
         assert!(!state_machine.has_unblocked_task());
         state_machine.deschedule_task(&task0_1);
-        assert!(!state_machine.has_unblocked_task());
+        assert!(state_machine.has_unblocked_task());
         // now
         // addr1: locked by task2, queue: [task1]
-        // addr2: locked by task1, queue: [task2]
+        // addr2: locked by task2, queue: [task1]
+
+        assert_matches!(
+            state_machine
+                .schedule_next_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(99)
+        );
 
         dbg!(state_machine);
         // task1
