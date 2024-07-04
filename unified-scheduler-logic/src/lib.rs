@@ -559,7 +559,7 @@ impl UsageQueueInner {
     fn unlock(&mut self, requested_usage: RequestedUsage) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some(Usage::Readonly(ref mut count)) => match requested_usage {
+            Some((Usage::Readonly(ref mut count), _task)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     if count.is_one() {
                         is_unused_now = true;
