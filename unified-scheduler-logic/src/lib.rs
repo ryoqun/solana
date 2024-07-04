@@ -575,7 +575,7 @@ impl UsageQueueInner {
 
         if is_unused_now {
             self.current_usage = None;
-            self.blocked_usages_from_tasks.pop_front()
+            self.blocked_usages_from_tasks.pop_first()
         } else {
             None
         }
