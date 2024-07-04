@@ -748,6 +748,7 @@ impl SchedulingStateMachine {
                                 todo!();
                             }
                         }
+                        usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
                     },
                     _ => {
                         if usage_queue.has_no_blocked_usage() {
