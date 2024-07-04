@@ -1393,7 +1393,13 @@ mod tests {
         };
         assert_matches!(
             state_machine
-                .schedule_task(task0.clone())
+                .schedule_task(task0_1.clone())
+                .map(|t| t.task_index()),
+            Some(100)
+        );
+        assert_matches!(
+            state_machine
+                .schedule_task(task0_2.clone())
                 .map(|t| t.task_index()),
             Some(100)
         );
