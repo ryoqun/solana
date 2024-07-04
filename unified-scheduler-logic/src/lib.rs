@@ -832,8 +832,8 @@ impl SchedulingStateMachine {
                                     current_tasks.insert(new_task.index, new_task.clone());
                                     LockResult::Ok(())
                                 } else {
+                                    panic!("{:?} tt: {:?} new_c: {:?}", current_tasks.keys(), t.iter().map(|t| t.index).collect::<Vec<_>>(), &new_c);
                                     *current_usage = Usage::Readonly(new_c);
-                                    panic!("{:?} tt: {:?}", current_tasks.keys(), t.iter().map(|t| t.index).collect::<Vec<_>>());
                                     LockResult::Err(())
                                 };
                                 for tt in t.into_iter() {
