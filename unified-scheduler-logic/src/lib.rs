@@ -604,7 +604,7 @@ impl UsageQueueInner {
                 .map(|(_key, usage)| usage),
             Some((RequestedUsage::Readonly, _))
         ) {
-            assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
+            assert_matches!(self.current_usage, Some((Usage::Readonly(_), _)));
             self.blocked_usages_from_tasks
                 .pop_first()
                 .map(|(_key, usage)| usage)
