@@ -1739,8 +1739,10 @@ mod tests {
             transaction_with_writable_read2(*sanitized0_1.message().fee_payer(), conflicting_address2);
         let sanitized1_2 =
             transaction_with_writable_read2(conflicting_address1, conflicting_address2);
+        let sanitized1_3 =
+            transaction_with_writable_read2(conflicting_address1, conflicting_address2);
         let sanitized2 =
-            transaction_with_writable_address2(Pubkey::new_unique(), Pubkey::new_unique());
+            transaction_with_writable_address2(Pubkey::new_unique(), conflicting_address2);
         //let sanitized0_2 = transaction_with_writable_address(
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
         let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
@@ -1748,6 +1750,7 @@ mod tests {
         //let task0_2 = SchedulingStateMachine::create_task(sanitized0_2, 51, address_loader);
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
         let task1_2 = SchedulingStateMachine::create_task(sanitized1_2, 103, address_loader);
+        let task1_3 = SchedulingStateMachine::create_task(sanitized1_3, 104, address_loader);
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
         let mut state_machine = unsafe {
@@ -1773,6 +1776,11 @@ mod tests {
         // now
         // addr1: locked by task1_2, queue: []
         // addr2: locked by [task0_1, task1, task1_2], queue: []
+
+        assert_matches!(state_machine.schedule_task(task1_3.clone()).map(|t| t.task_index()), None);
+        // now
+        // addr1: locked by task1_2, queue: [task1_3]
+        // addr2: locked by [task0_1, task1, task1_2, task1_3], queue: []
 
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         // now
