@@ -547,7 +547,7 @@ trait UsageFromTaskExt {
 
 impl UsageFromTaskExt for UsageFromTask {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
-        Self(requested_usage, BTreeMap::from([(task.index, task)]))
+        (requested_usage, BTreeMap::from([(task.index, task)]))
     }
 }
 
