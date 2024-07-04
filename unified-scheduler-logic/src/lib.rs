@@ -774,7 +774,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some((current_usage, current_tasks) @ aa) if aa.hello() => {
+                    Some((current_usage, current_tasks)) if (current_usage, current_tasks).hello() => {
                         // introduce some counter for this branch...
 
                         match (&current_usage, context.requested_usage) {
