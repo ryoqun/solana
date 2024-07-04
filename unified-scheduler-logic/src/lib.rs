@@ -1419,7 +1419,7 @@ mod tests {
         // addr1: locked by task2 queue: [task1]
         // addr2: locked by task1 queue: [task2]
 
-        dbg(state_machine);
+        dbg!(state_machine);
         // task1
         //      blocked by addr1
         //      locking addr2
