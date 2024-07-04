@@ -546,7 +546,7 @@ type CurrentUsage = (Usage, BTreeMap<usize, Task>);
 trait CurrentUsageExt {
     fn new(usage: Usage, task: Task) -> Self;
 
-    fn hello(&self) -> bool { return false; }
+    fn hello(&self, new_task: &Task) -> bool { return false; }
 }
 
 impl CurrentUsageExt for CurrentUsage {
@@ -774,7 +774,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some(a) if a.hello() => {
+                    Some(a) if a.should_revert(&new_task) => {
                         let (current_usage, current_tasks) = a;
                         // introduce some counter for this branch...
                         //
