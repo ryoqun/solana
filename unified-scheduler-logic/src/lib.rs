@@ -789,11 +789,11 @@ impl SchedulingStateMachine {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
                     Some(ref mut a) if a.should_revert(&mut self.count_token, &new_task) => {
-                        let (mut current_usage, current_tasks) = a;
+                        let (current_usage, current_tasks) = &mut a;
                         // introduce some counter for this branch...
                         //
 
-                        match (current_usage, context.requested_usage) {
+                        match (&mut current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
