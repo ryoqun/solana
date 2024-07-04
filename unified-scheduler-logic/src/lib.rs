@@ -574,18 +574,20 @@ impl Default for UsageQueueInner {
 impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match &self.current_usage {
-            None => Some(Usage::from(requested_usage)),
-            Some((Usage::Readonly(count), _task)) => match requested_usage {
-                RequestedUsage::Readonly => Some(Usage::Readonly(count.increment())),
-                RequestedUsage::Writable => None,
+            None => {
+                *self.current_usage = Some(CurrentlyUsage::new(Usage::from(requested_usage), task.clone()));
+                Ok(())
+            }
+            Some((Usage::Readonly(count), current_tasks)) => match requested_usage {
+                RequestedUsage::Readonly => {
+                    count.increment_self();
+                    assert!(current_tasks.insert(task.index, task.clone()).is_none());
+                    Ok(())
+                }
+                RequestedUsage::Writable => Err(()),
             },
-            Some((Usage::Writable, _task)) => None,
+            Some((Usage::Writable, _task)) => Err(()),
         }
-        .inspect(|&new_usage| {
-            self.current_usage = Some(CurrentUsage::new(new_usage, task.clone()));
-        })
-        .map(|_| ())
-        .ok_or(())
     }
 
     #[must_use]
