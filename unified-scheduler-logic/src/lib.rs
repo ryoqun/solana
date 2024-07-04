@@ -833,7 +833,7 @@ impl SchedulingStateMachine {
                                 } else {
                                     usage_queue.insert_blocked_usage_from_task(new_task.index, (RequestedUsage::Writable, new_task.clone()));
                                     LockResult::Err(())
-                                }
+                                };
                                 for tt in t.into_iter() {
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
                                 }
