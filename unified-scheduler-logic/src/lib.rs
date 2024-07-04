@@ -1740,7 +1740,7 @@ mod tests {
         let sanitized1_2 =
             transaction_with_writable_read2(conflicting_address1, conflicting_address2);
         let sanitized2 =
-            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+            transaction_with_writable_address2(Pubkey::new_unique(), conflicting_address2);
         //let sanitized0_2 = transaction_with_writable_address(
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
         let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
@@ -1776,7 +1776,7 @@ mod tests {
 
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         // now
-        // addr1: locked by task2, queue: [task1_2]
+        // addr1: locked by task1_2, queue: []
         // addr2: locked by [task0_1, task_1_2], queue: [task2, task1]
 
         /*
