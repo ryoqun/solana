@@ -788,12 +788,12 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some(ref mut a) if a.should_revert(&mut self.count_token, &new_task) => {
-                        let (current_usage, current_tasks) = &mut a;
+                    Some(a) if a.should_revert(&mut self.count_token, &new_task) => {
+                        let (current_usage, current_tasks) = a;
                         // introduce some counter for this branch...
                         //
 
-                        match (&mut current_usage, context.requested_usage) {
+                        match (&current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
@@ -811,7 +811,7 @@ impl SchedulingStateMachine {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
                                 LockResult::Ok(())
                             },
-                            (Usage::Readonly(ref mut count), RequestedUsage::Writable) => {
+                            (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
                                 let idx: Vec<usize> = current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
