@@ -810,7 +810,7 @@ impl SchedulingStateMachine {
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
-                                for (&current_index, current_task) in current_tasks.entries_mut().rev() {
+                                for (&current_index, current_task) in current_tasks.keys().rev().collect::<Vec<_>>() {
                                     if current_index < new_task.index {
                                         break;
                                     }
