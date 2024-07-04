@@ -811,7 +811,7 @@ impl SchedulingStateMachine {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
                                 LockResult::Ok(())
                             },
-                            (Usage::Readonly(count), RequestedUsage::Writable) => {
+                            (Usage::Readonly(ref mut count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
                                 let idx: Vec<usize> = current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
