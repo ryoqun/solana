@@ -637,6 +637,12 @@ pub struct SchedulingStateMachine {
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
 }
+
+impl Drop for SchedulingStateMachine {
+    fn drop(&mut self) {
+        self.reinitialize();
+    }
+}
 const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 56);
 
 impl SchedulingStateMachine {
