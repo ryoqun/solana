@@ -582,10 +582,10 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     count.increment_self();
 
-                    dbg!(&current_tasks.keys());
+                    //dbg!(&current_tasks.keys());
                     let old = current_tasks.insert(task.index, task.clone());
-                    dbg!(task.index);
-                    //assert!(old.is_none(), "not existing index: {}", task.index);
+                    //dbg!(task.index);
+                    assert!(old.is_none(), "not existing index: {}", task.index);
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
@@ -600,7 +600,6 @@ impl UsageQueueInner {
         match &mut self.current_usage {
             Some((Usage::Readonly(ref mut count), tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    dbg!(("unlock", tasks.keys(), task_index));
                     if count.is_one() {
                         is_unused_now = true;
                     } else {
@@ -844,7 +843,7 @@ impl SchedulingStateMachine {
                         self.unblocked_task_queue.push_back(task);
                     }
 
-                    match usage_queue.try_lock(requested_usage, &task_with_unblocked_queue) {
+                    match usage_queue.try_lock(requested_usage, &task_with_unblocked_queue /* was task and had bug.. write test...*/) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
