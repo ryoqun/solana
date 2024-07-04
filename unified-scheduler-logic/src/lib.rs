@@ -830,7 +830,7 @@ impl SchedulingStateMachine {
                                     //*current_usage = Usage::Writable;
                                     //current_tasks.insert(new_task.index, new_task);
                                 } else {
-                                    usage_queue.insert_blocked_usage_from_task(new_task.index, (RequestedUsage::Writable, new_task));
+                                    //usage_queue.insert_blocked_usage_from_task(new_task.index, (RequestedUsage::Writable, new_task));
                                 }
                             },
                         };
