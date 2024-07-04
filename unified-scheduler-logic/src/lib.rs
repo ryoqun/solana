@@ -869,6 +869,7 @@ impl SchedulingStateMachine {
             active_task_count: ShortCounter::zero(),
             handled_task_count: ShortCounter::zero(),
             unblocked_task_count: ShortCounter::zero(),
+            blocked_task_count: ShortCounter::zero(),
             total_task_count: ShortCounter::zero(),
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
