@@ -535,19 +535,21 @@ enum RequestedUsage {
 /// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
 struct UsageQueueInner {
-    current_usage: Option<(Usage, BTreeMap<usize, Task>)>, // Option<Usage>
+    current_usage: Option<CurrentUsage>, // Option<Usage>
     blocked_usages_from_tasks: BTreeMap<usize, UsageFromTask>,
 }
 
 type UsageFromTask = (RequestedUsage, Task);
 
-trait UsageFromTaskExt {
-    fn new(requested_usage: RequestedUsage, task: Task) -> Self;
+type CurrentUsage = (Usage, BTreeMap<usize, Task>);
+
+trait CurrentUsageExt {
+    fn new(usage: Usage, task: Task) -> Self;
 }
 
-impl UsageFromTaskExt for UsageFromTask {
-    fn new(requested_usage: RequestedUsage, task: Task) -> Self {
-        (requested_usage, BTreeMap::from([(task.index, task)]))
+impl CurrentUsageExt for CurrentUsage {
+    fn new(usage: Usage, task: Task) -> Self {
+        (usage, BTreeMap::from([(task.index, task)]))
     }
 }
 
