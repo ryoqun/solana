@@ -541,7 +541,11 @@ struct UsageQueueInner {
 
 type UsageFromTask = (RequestedUsage, Task);
 
-impl UsageFromTask {
+trait UsageFromTaskExt {
+    fn new() -> Self;
+}
+
+impl UsageFromTaskExt for UsageFromTask {
 }
 
 impl Default for UsageQueueInner {
