@@ -815,7 +815,7 @@ impl SchedulingStateMachine {
                                     if current_index < new_task.index {
                                         break;
                                     }
-                                    let c: usize = current_tasks.get(&current_index).unwrap().blocked_usage_count(&mut self.count_token);
+                                    let c: u32 = current_tasks.get(&current_index).unwrap().blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
                                         let reverted_task = current_tasks.pop_first().unwrap().1;
                                         reverted_task.increment_blocked_usage_count(&mut self.count_token);
