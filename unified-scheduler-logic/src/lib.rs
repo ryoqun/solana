@@ -798,15 +798,18 @@ impl SchedulingStateMachine {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
+                                LockResult::Ok(())
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
+                                LockResult::Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
+                                LockResult::Ok(())
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
@@ -823,18 +826,20 @@ impl SchedulingStateMachine {
                                         t.push(reverted_task);
                                     }
                                 }
-                                if current_tasks.is_empty() {
+                                let r = if current_tasks.is_empty() {
                                     *current_usage = Usage::Writable;
                                     current_tasks.insert(new_task.index, new_task.clone());
+                                    LockResult::Ok(())
                                 } else {
                                     usage_queue.insert_blocked_usage_from_task(new_task.index, (RequestedUsage::Writable, new_task.clone()));
+                                    LockResult::Err(())
                                 }
                                 for tt in t.into_iter() {
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
                                 }
+                                r
                             },
                         };
-                        LockResult::Ok(())
                     },
                     _ => {
                         if usage_queue.has_no_blocked_usage() {
