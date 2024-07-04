@@ -540,7 +540,7 @@ impl Default for UsageQueueInner {
 
 impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
-        match self.current_usage {
+        match &self.current_usage {
             None => Some(Usage::from(requested_usage)),
             Some((Usage::Readonly(count), _task)) => match requested_usage {
                 RequestedUsage::Readonly => Some(Usage::Readonly(count.increment())),
