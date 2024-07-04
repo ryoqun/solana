@@ -824,7 +824,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 for tt in t.into_iter() {
-                                    usage_queue.insert_blocked_usage_from_task(t.index, (RequestedUsage::Readonly, t));
+                                    usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
                                 }
                                 /*
                                 if current_tasks.is_empty() {
