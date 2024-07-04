@@ -1789,11 +1789,17 @@ mod tests {
 
         assert!(!state_machine.has_unblocked_task());
         state_machine.deschedule_task(&task0_1);
-        assert!(state_machine.has_unblocked_task());
-        /*
+        assert!(!state_machine.has_unblocked_task());
         // now
-        // addr1: locked by task2, queue: [task1]
-        // addr2: locked by task2, queue: [task1]
+        // addr1: locked by task1_2, queue: [task1_3]
+        // addr2: locked by task1_2, queue: [task2, task1, task1_3]
+        //
+        assert!(!state_machine.has_unblocked_task());
+        state_machine.deschedule_task(&task1_2);
+        assert!(state_machine.has_unblocked_task());
+        // now
+        // addr1: unlocked, queue: [task1_3]
+        // addr2: unlocked, queue: [task2, task1, task1_3]
 
         assert_matches!(
             state_machine
@@ -1801,9 +1807,16 @@ mod tests {
                 .map(|t| t.task_index()),
             Some(99)
         );
+        // now
+        // addr1: unlocked, queue: [task1_3]
+        // addr2: locked by task2, queue: [task1, task1_3]
 
+        assert!(!state_machine.has_unblocked_task());
         state_machine.deschedule_task(&task2);
         assert!(state_machine.has_unblocked_task());
+        // now
+        // addr1: unlocked, queue: [task1_3]
+        // addr2: unlocked, queue: [task1, task1_3]
 
         assert_matches!(
             state_machine
@@ -1811,24 +1824,12 @@ mod tests {
                 .map(|t| t.task_index()),
             Some(101)
         );
-        state_machine.deschedule_task(&task1);
-
-        dbg!(state_machine);
-        // task1
-        //      blocked by addr1
-        //      locking addr2
-        // task2
-        //      locking addr1
-        //      blocked by addr2
-        //
         assert_matches!(
             state_machine
-                .schedule_task(task0_2.clone())
+                .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
-            Some(51)
+            Some(104)
         );
-        assert_matches!(state_machine.schedule_task(task2.clone()), None);
-        */
     }
 
     #[test]
