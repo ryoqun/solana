@@ -632,6 +632,7 @@ pub struct SchedulingStateMachine {
     active_task_count: ShortCounter,
     handled_task_count: ShortCounter,
     unblocked_task_count: ShortCounter,
+    blocked_task_count: ShortCounter,
     total_task_count: ShortCounter,
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
@@ -835,12 +836,14 @@ impl SchedulingStateMachine {
     pub fn reinitialize(&mut self) {
         assert!(self.has_no_active_task());
         assert_eq!(self.unblocked_task_queue.len(), 0);
+        assert_eq!(self.blocked_task_count, 0);
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
             unblocked_task_queue: _,
             active_task_count,
             handled_task_count,
             unblocked_task_count,
+            blocked_task_count: _,
             total_task_count,
             count_token: _,
             usage_queue_token: _,
