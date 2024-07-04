@@ -747,9 +747,6 @@ impl SchedulingStateMachine {
                             Usage::Readonly(_) => {
                                 todo!();
                             }
-                            Usage::Unused => {
-                                unreachable!();
-                            }
                         }
                     },
                     _ => {
