@@ -814,7 +814,7 @@ impl SchedulingStateMachine {
                                     if current_index < new_task.index {
                                         break;
                                     }
-                                    if current_task.blocked_usage_count(count_token) > 0 {
+                                    if current_task.blocked_usage_count(&mut self.count_token) > 0 {
                                         let reverted_task = current_tasks.pop_first().unwrap().1;
                                         reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
