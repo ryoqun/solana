@@ -692,6 +692,7 @@ impl SchedulingStateMachine {
     #[must_use]
     pub fn schedule_next_unblocked_task(&mut self) -> Option<Task> {
         self.unblocked_task_queue.pop_front().inspect(|_| {
+            self.blocked_task_count.decrement_self();
             self.unblocked_task_count.increment_self();
         })
     }
@@ -845,7 +846,7 @@ impl SchedulingStateMachine {
     pub fn reinitialize(&mut self) {
         assert!(self.has_no_active_task());
         assert_eq!(self.unblocked_task_queue.len(), 0);
-        //assert_eq!(self.blocked_task_count.current(), 0);
+        assert_eq!(self.blocked_task_count.current(), 0);
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
             unblocked_task_queue: _,
