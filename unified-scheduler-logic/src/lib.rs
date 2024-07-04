@@ -1895,8 +1895,9 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                let task_index = task.index;
                 usage_queue.current_usage = Some(CurrentUsage::new(Usage::Readonly(ShortCounter::one()), task));
-                let _ = usage_queue.unlock(RequestedUsage::Writable, task.index);
+                let _ = usage_queue.unlock(RequestedUsage::Writable, task_index);
             });
     }
 }
