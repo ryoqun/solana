@@ -581,7 +581,10 @@ impl UsageQueueInner {
             Some((Usage::Readonly(count), current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     count.increment_self();
-                    assert!(current_tasks.insert(task.index, task.clone()).is_none(), "not existing index: {}", task.index);
+
+                    let old = current_tasks.insert(task.index, task.clone());
+                    dbg!(task.index);
+                    assert!(old.is_none(), "not existing index: {}", task.index);
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
