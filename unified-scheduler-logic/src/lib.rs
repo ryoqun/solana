@@ -746,10 +746,13 @@ impl SchedulingStateMachine {
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
                                 //usage_queue.current_usage = Some((Usage::Writable, new_task.clone()));
                                 panic!("revert and overwrite lock");
-                            }
+                            },
+                            (Usage::Writable, RequestedUsage::Readonly) => {
+                                todo!();
+                            },
                             (Usage::Readonly(_), _) => {
                                 todo!();
-                            }
+                            },
                         }
                     },
                     _ => {
