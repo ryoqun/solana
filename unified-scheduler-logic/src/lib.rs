@@ -761,7 +761,7 @@ impl SchedulingStateMachine {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
                                 LockResult::Ok(())
                             },
-                            (Usage::Readonly(count), _) => {
+                            (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 todo!("{count:?}");
                             },
                         }
