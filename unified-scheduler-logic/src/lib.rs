@@ -844,7 +844,7 @@ impl SchedulingStateMachine {
                         self.unblocked_task_queue.push_back(task);
                     }
 
-                    match usage_queue.try_lock(requested_usage, &task) {
+                    match usage_queue.try_lock(requested_usage, &task_with_unblocked_queue) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
