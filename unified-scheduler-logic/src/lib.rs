@@ -588,8 +588,8 @@ impl UsageQueueInner {
 
     fn push_blocked_usage_from_task(&mut self, index: usize, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
-        self.blocked_usages_from_tasks
-            .insert(index, usage_from_task);
+        assert!(self.blocked_usages_from_tasks
+            .insert(index, usage_from_task).is_none());
     }
 
     #[must_use]
@@ -1375,13 +1375,16 @@ mod tests {
 
     #[test]
     fn test_higher_priority_locking() {
-        let conflicting_address = Pubkey::new_unique();
-        let sanitized1 = transaction_with_writable_address(conflicting_address);
-        let sanitized2 = transaction_with_writable_address(conflicting_address);
-        let sanitized0 = transaction_with_writable_address(*sanitized1.message().fee_payer());
+        let conflicting_address1 = Pubkey::new_unique();
+        let conflicting_address2 = Pubkey::new_unique();
+        let sanitized1 = transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+        let sanitized2 = transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+        let sanitized0_1 = transaction_with_writable_address(*sanitized1.message().fee_payer());
+        let sanitized0_2 = transaction_with_writable_address(*sanitized2.message().fee_payer());
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
         let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
-        let task0 = SchedulingStateMachine::create_task(sanitized0, 100, address_loader);
+        let task0_1 = SchedulingStateMachine::create_task(sanitized0_1, 100, address_loader);
+        let task0_2 = SchedulingStateMachine::create_task(sanitized0_2, 100, address_loader);
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
