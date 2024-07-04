@@ -1363,6 +1363,54 @@ mod tests {
     }
 
     #[test]
+    fn test_higher_priority_locking() {
+        let conflicting_address = Pubkey::new_unique();
+        let sanitized1 = transaction_with_writable_address(conflicting_address);
+        let sanitized2 = transaction_with_writable_address(conflicting_address);
+        let sanitized0 = transaction_with_writable_address(sanitized1.fee_payer());
+        let usage_queues = Rc::new(RefCell::new(HashMap::new()));
+        let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
+        let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
+        let task2 = SchedulingStateMachine::create_task(sanitized2, 102, address_loader);
+
+        let mut state_machine = unsafe {
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+        };
+        assert_matches!(
+            state_machine
+                .schedule_task(task1.clone())
+                .map(|t| t.task_index()),
+            Some(101)
+        );
+        assert_matches!(state_machine.schedule_task(task2.clone()), None);
+        let usage_queues = usage_queues.borrow_mut();
+        let usage_queue = usage_queues.get(&conflicting_address).unwrap();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable));
+            });
+        // task2's fee payer should have been locked already even if task2 is blocked still via the
+        // above the schedule_task(task2) call
+        let fee_payer = task2.transaction().message().fee_payer();
+        let usage_queue = usage_queues.get(fee_payer).unwrap();
+        usage_queue
+            .0
+            .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable));
+            });
+        state_machine.deschedule_task(&task1);
+        assert_matches!(
+            state_machine
+                .schedule_next_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(102)
+        );
+        state_machine.deschedule_task(&task2);
+        assert!(state_machine.has_no_active_task());
+    }
+
+    #[test]
     #[should_panic(expected = "internal error: entered unreachable code")]
     fn test_unreachable_unlock_conditions1() {
         let mut state_machine = unsafe {
