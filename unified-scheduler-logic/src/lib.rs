@@ -742,7 +742,7 @@ impl SchedulingStateMachine {
                     Some((current_usage, current_task)) if current_task.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.index => {
                         match current_usage {
                             Usage::Writable => {
-                                usage_queue.insert_blocked_usage_from_task(current_task.index, (RequestedUsage::Writable, current_task));
+                                usage_queue.insert_blocked_usage_from_task(current_task.index, (RequestedUsage::Writable, current_task.clone()));
                                 usage_queue.current_usage = Some((Usage::Writable, new_task.clone()));
                                 panic!("revert and overwrite lock");
                             }
