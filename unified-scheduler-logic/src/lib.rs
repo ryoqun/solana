@@ -729,7 +729,7 @@ impl SchedulingStateMachine {
 
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                dbg!(&usage_queue.current_usage);
+                dbg!(&usage_queue.current_usage.as_ref().map(|(u, t)| (u, t.index));
                 let lock_result = if usage_queue.has_no_blocked_usage() {
                     usage_queue.try_lock(context.requested_usage, &task)
                 } else {
