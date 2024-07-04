@@ -771,6 +771,7 @@ impl SchedulingStateMachine {
                                 LockResult::Ok(())
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
+                                assert_eq!(count.current(), 1);
                                 todo!("{count:?}");
                             },
                         }
