@@ -786,14 +786,20 @@ impl SchedulingStateMachine {
         // the checks before calling this (say, with some ad-hoc type like
         // `SanitizedTransactionWithCheckedAccountLocks`) or do the checks here, resulting in
         // eliminating the redundant one in the replaying stage and in the handler.
-        let lock_contexts = transaction.message().account_keys().iter().enumerate().map(|(i, &key)| {
-            let u = if transaction.message().is_writable(i) {
-                RequestedUsage::Writable
-            } else {
-                RequestedUsage::Readonly
-            };
-            LockContext::new(usage_queue_loader(key), u)
-        }).collect();
+        let lock_contexts = transaction
+            .message()
+            .account_keys()
+            .iter()
+            .enumerate()
+            .map(|(i, &key)| {
+                let u = if transaction.message().is_writable(i) {
+                    RequestedUsage::Writable
+                } else {
+                    RequestedUsage::Readonly
+                };
+                LockContext::new(usage_queue_loader(key), u)
+            })
+            .collect();
 
         Task::new(TaskInner {
             transaction,

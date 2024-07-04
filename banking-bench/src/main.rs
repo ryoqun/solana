@@ -36,13 +36,13 @@ use {
     },
     solana_streamer::socket::SocketAddrSpace,
     solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE,
+    solana_unified_scheduler_pool::DefaultSchedulerPool,
     std::{
         sync::{atomic::Ordering, Arc, RwLock},
         thread::sleep,
         time::{Duration, Instant},
     },
 };
-use solana_unified_scheduler_pool::DefaultSchedulerPool;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -366,7 +366,11 @@ fn main() {
     let (replay_vote_sender, _replay_vote_receiver) = unbounded();
     let bank0 = Bank::new_for_benches(&genesis_config);
     let bank_forks = BankForks::new_rw_arc(bank0);
-    let mut bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
+    let mut bank = bank_forks
+        .read()
+        .unwrap()
+        .working_bank_with_scheduler()
+        .clone_with_scheduler();
 
     // set cost tracker limits to MAX so it will not filter out TXs
     bank.write_cost_tracker()
@@ -501,8 +505,15 @@ fn main() {
             .write()
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
-        bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
-        poh_recorder.write().unwrap().swap_working_bank(bank.clone_with_scheduler());
+        bank = bank_forks
+            .read()
+            .unwrap()
+            .working_bank_with_scheduler()
+            .clone_with_scheduler();
+        poh_recorder
+            .write()
+            .unwrap()
+            .swap_working_bank(bank.clone_with_scheduler());
         use_dummy
     } else {
         false
@@ -554,17 +565,17 @@ fn main() {
         }
 
         if !use_dummy {
-        for tx in &packets_for_this_iteration.transactions {
-            loop {
-                if bank.get_signature_status(&tx.signatures[0]).is_some() {
-                    break;
+            for tx in &packets_for_this_iteration.transactions {
+                loop {
+                    if bank.get_signature_status(&tx.signatures[0]).is_some() {
+                        break;
+                    }
+                    if poh_recorder.read().unwrap().bank().is_none() {
+                        break;
+                    }
+                    sleep(Duration::from_millis(5));
                 }
-                if poh_recorder.read().unwrap().bank().is_none() {
-                    break;
-                }
-                sleep(Duration::from_millis(5));
             }
-        }
         }
 
         // check if txs had been processed by bank. Returns when all transactions are
@@ -603,7 +614,11 @@ fn main() {
 
             let mut insert_time = Measure::start("insert_time");
             bank_forks.write().unwrap().insert(new_bank);
-            bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
+            bank = bank_forks
+                .read()
+                .unwrap()
+                .working_bank_with_scheduler()
+                .clone_with_scheduler();
             insert_time.stop();
 
             // set cost tracker limits to MAX so it will not filter out TXs

@@ -568,7 +568,7 @@ impl BankWithSchedulerInner {
             SchedulerStatus::Unavailable => {
                 trace!("no installed scheduler: slot: {}", self.bank.slot());
                 Err(SchedulerError::Terminated)
-            },
+            }
         }
     }
 

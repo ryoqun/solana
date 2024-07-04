@@ -229,8 +229,14 @@ impl BankForks {
         );
     }
 
-    fn install_scheduler_into_bank(scheduler_pool: &InstalledSchedulerPoolArc, bank: Arc<Bank>) -> BankWithScheduler {
-        trace!("Inserting bank (slot: {}) with scheduler into bank_forks...", bank.slot());
+    fn install_scheduler_into_bank(
+        scheduler_pool: &InstalledSchedulerPoolArc,
+        bank: Arc<Bank>,
+    ) -> BankWithScheduler {
+        trace!(
+            "Inserting bank (slot: {}) with scheduler into bank_forks...",
+            bank.slot()
+        );
         let context = SchedulingContext::new(bank.clone());
         let scheduler = scheduler_pool.take_scheduler(context);
         let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));

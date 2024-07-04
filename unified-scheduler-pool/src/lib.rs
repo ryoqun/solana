@@ -26,8 +26,8 @@ use {
         installed_scheduler_pool::{
             initialized_result_with_timings, InstalledScheduler, InstalledSchedulerBox,
             InstalledSchedulerPool, InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult,
-            SchedulerError, SchedulerId, SchedulingContext, TimeoutListener,
-            UninstalledScheduler, UninstalledSchedulerBox,
+            SchedulerError, SchedulerId, SchedulingContext, TimeoutListener, UninstalledScheduler,
+            UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
         vote_sender_types::ReplayVoteSender,
@@ -447,34 +447,46 @@ impl TaskHandler for DefaultTaskHandler {
         handler_context: &HandlerContext,
     ) {
         if handler_context.dummy_sender.is_none() {
-        // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
-        // responsible for locking.
-        let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
-        let batch_with_indexes = TransactionBatchWithIndexes {
-            batch,
-            transaction_indexes: vec![index],
-        };
+            // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
+            // responsible for locking.
+            let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
+            let batch_with_indexes = TransactionBatchWithIndexes {
+                batch,
+                transaction_indexes: vec![index],
+            };
 
-        *result = execute_batch(
-            &batch_with_indexes,
-            bank,
-            handler_context.transaction_status_sender.as_ref(),
-            handler_context.replay_vote_sender.as_ref(),
-            timings,
-            handler_context.log_messages_bytes_limit,
-            &handler_context.prioritization_fee_cache,
-            || {
-                //trace!("poh record start!");
-                let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
-                //trace!("poh record end!");
-                summary.result.is_ok()
-                //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
-                //true
-            },
-        );
+            *result = execute_batch(
+                &batch_with_indexes,
+                bank,
+                handler_context.transaction_status_sender.as_ref(),
+                handler_context.replay_vote_sender.as_ref(),
+                timings,
+                handler_context.log_messages_bytes_limit,
+                &handler_context.prioritization_fee_cache,
+                || {
+                    //trace!("poh record start!");
+                    let summary = handler_context
+                        .transaction_recorder
+                        .as_ref()
+                        .unwrap()
+                        .record_transactions(
+                            bank.slot(),
+                            vec![transaction.to_versioned_transaction()],
+                        );
+                    //trace!("poh record end!");
+                    summary.result.is_ok()
+                    //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+                    //true
+                },
+            );
         } else {
-        //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
-        handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+            //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+            handler_context
+                .dummy_sender
+                .as_ref()
+                .unwrap()
+                .send(vec![transaction.to_versioned_transaction()])
+                .unwrap();
         }
 
         sleepless_testing::at(CheckPoint::TaskHandled(index));
@@ -685,10 +697,7 @@ impl UsageQueueLoader {
         // taken from https://github.com/xacrimon/dashmap/issues/292#issuecomment-1916621009
         match self.usage_queues.get(&address) {
             Some(bar_read_guard) => bar_read_guard.value().clone(),
-            None => self.usage_queues
-                .entry(address)
-                .or_default()
-                .clone(),
+            None => self.usage_queues.entry(address).or_default().clone(),
         }
     }
 
@@ -873,12 +882,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             Err(ref error @ TransactionError::CommitFailed) => {
                 debug!("maybe reached max tick height...: {error:?}");
                 Some(executed_task)
-            },
+            }
             Err(error) => {
                 error!("error is detected while accumulating....: {error:?}");
                 *result = Err(error);
                 None
-            },
+            }
         }
     }
 
@@ -1502,7 +1511,10 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
     ) -> Self {
-        info!("spawning new scheduler pool for slot: {}", context.bank().slot());
+        info!(
+            "spawning new scheduler pool for slot: {}",
+            context.bank().slot()
+        );
         let mut inner = Self::Inner {
             thread_manager: ThreadManager::new(pool),
             usage_queue_loader: UsageQueueLoader::default(),

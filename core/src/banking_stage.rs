@@ -645,7 +645,9 @@ impl BankingStage {
 
         impl MonotonicIdGenerator {
             fn new() -> Arc<Self> {
-                Arc::new(Self{next_task_id: Default::default()})
+                Arc::new(Self {
+                    next_task_id: Default::default(),
+                })
             }
 
             fn bulk_assign_task_ids(&self, count: usize) -> usize {
@@ -656,7 +658,14 @@ impl BankingStage {
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
-        let bank_thread_hdls = [non_vote_receiver.clone(), non_vote_receiver, tpu_vote_receiver, gossip_vote_receiver].into_iter().map(|receiver| {
+        let bank_thread_hdls = [
+            non_vote_receiver.clone(),
+            non_vote_receiver,
+            tpu_vote_receiver,
+            gossip_vote_receiver,
+        ]
+        .into_iter()
+        .map(|receiver| {
             let decision_maker = decision_maker.clone();
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
@@ -670,18 +679,29 @@ impl BankingStage {
 
                         let start = Instant::now();
 
-                        while let Ok(aaa) = packet_deserializer.packet_batch_receiver.recv_timeout(recv_timeout) {
+                        while let Ok(aaa) = packet_deserializer
+                            .packet_batch_receiver
+                            .recv_timeout(recv_timeout)
+                        {
                             for pp in &aaa.0 {
                                 // over-provision
                                 let task_id = id_generator.bulk_assign_task_ids(pp.len());
                                 let task_ids = (task_id..(task_id + pp.len())).collect::<Vec<_>>();
 
                                 let indexes = PacketDeserializer::generate_packet_indexes(&pp);
-                                let ppp = PacketDeserializer::deserialize_packets2(&pp, &indexes).filter_map(|p| {
-                                    p.build_sanitized_transaction(bank.vote_only_bank(), &**bank, bank.get_reserved_account_keys())
-                                }).collect::<Vec<_>>();
+                                let ppp = PacketDeserializer::deserialize_packets2(&pp, &indexes)
+                                    .filter_map(|p| {
+                                        p.build_sanitized_transaction(
+                                            bank.vote_only_bank(),
+                                            &**bank,
+                                            bank.get_reserved_account_keys(),
+                                        )
+                                    })
+                                    .collect::<Vec<_>>();
 
-                                if let Err(_) = bank.schedule_transaction_executions(ppp.iter().zip(&task_ids)) {
+                                if let Err(_) =
+                                    bank.schedule_transaction_executions(ppp.iter().zip(&task_ids))
+                                {
                                     break;
                                 }
                             }
@@ -690,13 +710,14 @@ impl BankingStage {
                                 break;
                             }
                         }
-                    },
-                    _  => {
+                    }
+                    _ => {
                         std::thread::sleep(Duration::from_millis(10));
-                    },
+                    }
                 }
             })
-        }).collect();
+        })
+        .collect();
 
         Self { bank_thread_hdls }
     }
