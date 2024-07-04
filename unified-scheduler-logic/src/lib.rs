@@ -98,6 +98,7 @@
 use {
     crate::utils::{ShortCounter, Token, TokenCell},
     assert_matches::assert_matches,
+    more_asserts::assert_gt,
     solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
     std::{
@@ -106,7 +107,6 @@ use {
         sync::Arc,
     },
 };
-use more_asserts::assert_gt;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
@@ -590,8 +590,10 @@ impl UsageQueueInner {
 
     fn push_blocked_usage_from_task(&mut self, index: usize, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
-        assert!(self.blocked_usages_from_tasks
-            .insert(index, usage_from_task).is_none());
+        assert!(self
+            .blocked_usages_from_tasks
+            .insert(index, usage_from_task)
+            .is_none());
     }
 
     #[must_use]
@@ -938,10 +940,16 @@ mod tests {
         SanitizedTransaction::from_transaction_for_tests(unsigned)
     }
 
-    fn transaction_with_writable_address2(address: Pubkey, address2: Pubkey) -> SanitizedTransaction {
+    fn transaction_with_writable_address2(
+        address: Pubkey,
+        address2: Pubkey,
+    ) -> SanitizedTransaction {
         let instruction = Instruction {
             program_id: Pubkey::default(),
-            accounts: vec![AccountMeta::new(address, false), AccountMeta::new(address2, false)],
+            accounts: vec![
+                AccountMeta::new(address, false),
+                AccountMeta::new(address2, false),
+            ],
             data: vec![],
         };
         let message = Message::new(&[instruction], Some(&Pubkey::new_unique()));
@@ -1400,8 +1408,10 @@ mod tests {
     fn test_higher_priority_locking() {
         let conflicting_address1 = Pubkey::new_unique();
         let conflicting_address2 = Pubkey::new_unique();
-        let sanitized1 = transaction_with_writable_address2(conflicting_address1, conflicting_address2);
-        let sanitized2 = transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+        let sanitized1 =
+            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+        let sanitized2 =
+            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
         let sanitized0_1 = transaction_with_writable_address(conflicting_address1);
         //let sanitized0_2 = transaction_with_writable_address(
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
@@ -1434,7 +1444,7 @@ mod tests {
         // now
         // addr1: locked by task_0_1, queue: [task2, task1]
         // addr2: locked by task1, queue: [task2]
-        
+
         assert!(!state_machine.has_unblocked_task());
         state_machine.deschedule_task(&task0_1);
         assert!(!state_machine.has_unblocked_task());
