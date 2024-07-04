@@ -857,7 +857,7 @@ impl SchedulingStateMachine {
     pub fn reinitialize(&mut self) {
         assert!(self.has_no_active_task());
         assert_eq!(self.unblocked_task_queue.len(), 0);
-        assert_eq!(self.blocked_task_count.current(), 0);
+        assert_eq!(self.blocked_task_count(), 0);
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
             unblocked_task_queue: _,
