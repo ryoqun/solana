@@ -768,13 +768,13 @@ impl SchedulingStateMachine {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
-                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, CurrentUsage::new(RequestedUsage::Writable, reverted_task));
+                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
-                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, CurrentUsage::new(RequestedUsage::Writable, reverted_task));
+                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
@@ -784,7 +784,7 @@ impl SchedulingStateMachine {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Writable;
-                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, CurrentUsage::new(RequestedUsage::Readonly, reverted_task));
+                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
                             },
                         };
                         LockResult::Ok(())
