@@ -740,14 +740,14 @@ impl SchedulingStateMachine {
 
                 let lock_result = match &mut usage_queue.current_usage {
                     Some((current_usage, current_task)) if current_task.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.index => {
-                        match current_usage {
-                            Usage::Writable => {
+                        match (current_usage, context.requested_usage) {
+                            (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
                                 //usage_queue.current_usage = Some((Usage::Writable, new_task.clone()));
                                 panic!("revert and overwrite lock");
                             }
-                            Usage::Readonly(_) => {
+                            (Usage::Readonly(_), _) => {
                                 todo!();
                             }
                         }
