@@ -727,7 +727,7 @@ impl SchedulingStateMachine {
         if blocked_usage_count.is_zero() {
             Some(task)
         } else {
-            self.blocked_usage_count.increment_self();
+            self.blocked_task_count.increment_self();
             task.set_blocked_usage_count(&mut self.count_token, blocked_usage_count);
             None
         }
