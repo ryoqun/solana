@@ -500,16 +500,10 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Copy, Clone, Debug)]
 enum Usage {
-    Readonly(ShortCounter),
-    Writable,
-}
-
-/*
-enum Usage {
     Readonly(BTreeMap<usize, Task>),
     Writable(Task),
 }
-*/
+
 const_assert_eq!(mem::size_of::<Usage>(), 8);
 
 impl From<RequestedUsage> for Usage {
@@ -535,7 +529,7 @@ enum RequestedUsage {
 /// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
 struct UsageQueueInner {
-    current_usage: Option<(Usage, Task)>, // Option<Usage>
+    current_usage: Option<Usage>,
     blocked_usages_from_tasks: BTreeMap<usize, UsageFromTask>,
 }
 
