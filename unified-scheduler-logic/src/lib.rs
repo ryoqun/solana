@@ -830,6 +830,7 @@ impl SchedulingStateMachine {
                                     current_tasks.insert(new_task.index, new_task.clone());
                                     LockResult::Ok(())
                                 } else {
+                                    panic!();
                                     LockResult::Err(())
                                 };
                                 for tt in t.into_iter() {
