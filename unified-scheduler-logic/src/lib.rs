@@ -793,7 +793,7 @@ impl SchedulingStateMachine {
                         // introduce some counter for this branch...
                         //
 
-                        match (&mut current_usage, context.requested_usage) {
+                        match (current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
