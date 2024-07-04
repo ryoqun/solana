@@ -822,7 +822,6 @@ impl SchedulingStateMachine {
                                     let c: u32 = current_tasks.get(&current_index).unwrap().blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
                                         let reverted_task = current_tasks.remove(&current_index).unwrap();
-                                        reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                         t.push(reverted_task);
                                     }
                                 }
@@ -834,6 +833,7 @@ impl SchedulingStateMachine {
                                     LockResult::Err(())
                                 };
                                 for tt in t.into_iter() {
+                                    tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
                                 }
                                 r
