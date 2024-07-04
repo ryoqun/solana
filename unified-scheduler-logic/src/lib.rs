@@ -546,13 +546,14 @@ type CurrentUsage = (Usage, BTreeMap<usize, Task>);
 trait CurrentUsageExt {
     fn new(usage: Usage, task: Task) -> Self;
 
-    fn hello(&self) -> bool { return false }a;
+    fn hello(&self) -> bool { return false; };
 }
 
 impl CurrentUsageExt for CurrentUsage {
     fn new(usage: Usage, task: Task) -> Self {
         (usage, BTreeMap::from([(task.index, task)]))
     }
+    //current_tasks.first_key_value().unwrap().1.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_tasks.first_key_value().unwrap().1.index
 }
 
 impl Default for UsageQueueInner {
