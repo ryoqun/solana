@@ -673,6 +673,10 @@ impl SchedulingStateMachine {
         self.unblocked_task_count.current()
     }
 
+    pub fn blocked_task_count(&self) -> u32 {
+        self.blocked_task_count.current()
+    }
+
     pub fn total_task_count(&self) -> u32 {
         self.total_task_count.current()
     }
