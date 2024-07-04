@@ -810,10 +810,22 @@ impl SchedulingStateMachine {
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
-                                let reverted_task = current_tasks.pop_first().unwrap().1;
-                                reverted_task.increment_blocked_usage_count(&mut self.count_token);
-                                *current_usage = Usage::Writable;
-                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
+                                for (&current_index, current_task) in current_tasks.entries_mut().rev() {
+                                    if current_index < new_task.index {
+                                        break;
+                                    }
+                                    if current_task.blocked_usage_count(count_token) > 0 {
+                                        let reverted_task = current_tasks.pop_first().unwrap().1;
+                                        reverted_task.increment_blocked_usage_count(&mut self.count_token);
+                                        usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
+                                    }
+                                }
+                                if current_tasks.is_empty() {
+                                    *current_usage = Usage::Writable;
+                                    current_tasks.insert(new_task.index, new_task);
+                                } else {
+                                    usage_queue.insert_blocked_usage_from_task(new_task.index, (RequestedUsage::Writable, new_task));
+                                }
                             },
                         };
                         LockResult::Ok(())
