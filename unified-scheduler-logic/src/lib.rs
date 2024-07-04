@@ -542,10 +542,13 @@ struct UsageQueueInner {
 type UsageFromTask = (RequestedUsage, Task);
 
 trait UsageFromTaskExt {
-    fn new() -> Self;
+    fn new(requested_usage: RequestedUsage, task: Task) -> Self;
 }
 
 impl UsageFromTaskExt for UsageFromTask {
+    fn new(requested_usage: RequestedUsage, task: Task) -> Self;
+        Self(requested_usage, BTreeMap::from(&[(task.index, task)]))
+    }
 }
 
 impl Default for UsageQueueInner {
