@@ -1367,7 +1367,7 @@ mod tests {
         let conflicting_address = Pubkey::new_unique();
         let sanitized1 = transaction_with_writable_address(conflicting_address);
         let sanitized2 = transaction_with_writable_address(conflicting_address);
-        let sanitized0 = transaction_with_writable_address(sanitized1.transaction().message().fee_payer());
+        let sanitized0 = transaction_with_writable_address(sanitized1.message().fee_payer());
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
         let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
