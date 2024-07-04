@@ -1388,7 +1388,7 @@ mod tests {
         let task0_1 = SchedulingStateMachine::create_task(sanitized0_1, 50, address_loader);
         //let task0_2 = SchedulingStateMachine::create_task(sanitized0_2, 51, address_loader);
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
-        let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
+        let task2 = SchedulingStateMachine::create_task(sanitized2, 199, address_loader);
 
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
