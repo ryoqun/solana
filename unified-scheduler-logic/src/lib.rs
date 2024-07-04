@@ -560,7 +560,7 @@ impl CurrentUsageExt for CurrentUsage {
             if current_index < new_task.index {
                 return false;
             }
-            if current_task.blocked_usage_count(count_token) > 1 {
+            if current_task.blocked_usage_count(count_token) > 0 {
                 return true;
             }
         }
