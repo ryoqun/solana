@@ -788,7 +788,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some(a) if a.should_revert(&mut self.count_token, &new_task) => {
+                    Some(ref mut a) if a.should_revert(&mut self.count_token, &new_task) => {
                         let (current_usage, current_tasks) = a;
                         // introduce some counter for this branch...
                         //
