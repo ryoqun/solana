@@ -595,7 +595,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn push_blocked_usage_from_task(&mut self, index: usize, usage_from_task: UsageFromTask) {
+    fn insert_blocked_usage_from_task(&mut self, index: usize, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         assert!(self
             .blocked_usages_from_tasks
@@ -737,15 +737,21 @@ impl SchedulingStateMachine {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 dbg!(&usage_queue.current_usage.as_ref().map(|(u, t)| (u, t.index, t.blocked_usage_count(&mut self.count_token))));
-                let lock_result = if usage_queue.has_no_blocked_usage() {
-                    usage_queue.try_lock(context.requested_usage, &task)
-                } else {
-                    LockResult::Err(())
+
+                let lock_result = match usage_queue.current_usage {
+                    _ => {
+                        if usage_queue.has_no_blocked_usage() {
+                            usage_queue.try_lock(context.requested_usage, &task)
+                        } else {
+                            LockResult::Err(())
+                        }
+                    }
                 };
+
                 if let Err(()) = lock_result {
                     blocked_usage_count.increment_self();
                     let usage_from_task = (context.requested_usage, task.clone());
-                    usage_queue.push_blocked_usage_from_task(task.index, usage_from_task);
+                    usage_queue.insert_blocked_usage_from_task(task.index, usage_from_task);
                 }
             });
         }
