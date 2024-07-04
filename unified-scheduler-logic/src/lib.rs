@@ -813,6 +813,7 @@ impl SchedulingStateMachine {
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
+                                let mut new_c = count.clone();
                                 let idx: Vec<usize> = current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
                                 for current_index in idx {
@@ -821,7 +822,7 @@ impl SchedulingStateMachine {
                                     }
                                     let c: u32 = current_tasks.get(&current_index).unwrap().blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
-                                        count.decrement_self();
+                                        new_c.decrement_self();
                                         let reverted_task = current_tasks.remove(&current_index).unwrap();
                                         t.push(reverted_task);
                                     }
@@ -831,6 +832,7 @@ impl SchedulingStateMachine {
                                     current_tasks.insert(new_task.index, new_task.clone());
                                     LockResult::Ok(())
                                 } else {
+                                    *current_usage = Usage::Readonly(new_c);
                                     panic!("{:?} tt: {:?}", current_tasks.keys(), t.iter().map(|t| t.index).collect::<Vec<_>>());
                                     LockResult::Err(())
                                 };
