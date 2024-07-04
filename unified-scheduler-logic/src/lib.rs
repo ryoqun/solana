@@ -1383,8 +1383,8 @@ mod tests {
         let sanitized0_2 = transaction_with_writable_address(*sanitized2.message().fee_payer());
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
         let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
-        let task0_1 = SchedulingStateMachine::create_task(sanitized0_1, 100, address_loader);
-        let task0_2 = SchedulingStateMachine::create_task(sanitized0_2, 100, address_loader);
+        let task0_1 = SchedulingStateMachine::create_task(sanitized0_1, 50, address_loader);
+        let task0_2 = SchedulingStateMachine::create_task(sanitized0_2, 51, address_loader);
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
