@@ -915,6 +915,17 @@ mod tests {
         SanitizedTransaction::from_transaction_for_tests(unsigned)
     }
 
+    fn transaction_with_writable_address2(address: Pubkey, address2: Pubkey) -> SanitizedTransaction {
+        let instruction = Instruction {
+            program_id: Pubkey::default(),
+            accounts: vec![AccountMeta::new(address, false), AccountMeta::new(address2, false)],
+            data: vec![],
+        };
+        let message = Message::new(&[instruction], Some(&Pubkey::new_unique()));
+        let unsigned = Transaction::new_unsigned(message);
+        SanitizedTransaction::from_transaction_for_tests(unsigned)
+    }
+
     fn create_address_loader(
         usage_queues: Option<Rc<RefCell<HashMap<Pubkey, UsageQueue>>>>,
     ) -> impl FnMut(Pubkey) -> UsageQueue {
