@@ -1648,9 +1648,9 @@ mod tests {
         let conflicting_address1 = Pubkey::new_unique();
         let conflicting_address2 = Pubkey::new_unique();
         let sanitized1 =
-            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
-        let sanitized2 =
             transaction_with_writable_read2(conflicting_address1, conflicting_address2);
+        let sanitized2 =
+            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
         let sanitized0_1 = transaction_with_writable_address(conflicting_address1);
         //let sanitized0_2 = transaction_with_writable_address(
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
