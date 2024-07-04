@@ -763,7 +763,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some((current_usage, current_task)) if current_task.first_key_value().unwrap().1.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.index => {
+                    Some((current_usage, current_task)) if current_task.first_key_value().unwrap().1.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.first_key_value().unrap().1.index => {
                         match (&current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = current_task.pop_first().unwrap().1;
