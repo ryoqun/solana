@@ -575,7 +575,7 @@ impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match &self.current_usage {
             None => {
-                *self.current_usage = Some(CurrentlyUsage::new(Usage::from(requested_usage), task.clone()));
+                *self.current_usage = Some(CurrentUsage::new(Usage::from(requested_usage), task.clone()));
                 Ok(())
             }
             Some((Usage::Readonly(count), current_tasks)) => match requested_usage {
