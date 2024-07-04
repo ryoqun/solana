@@ -731,17 +731,19 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    fn try_lock_usage_queues(&mut self, task: Task) -> Option<Task> {
+    fn try_lock_usage_queues(&mut self, new_task: Task) -> Option<Task> {
         let mut blocked_usage_count = ShortCounter::zero();
 
-        for context in task.lock_contexts() {
+        for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 dbg!(&usage_queue.current_usage.as_ref().map(|(u, t)| (u, t.index, t.blocked_usage_count(&mut self.count_token))));
 
                 let lock_result = match usage_queue.current_usage {
+                    Some((usage, current_task)) if current_task.blocked_usage_count(&mut self.count_token) == 0 && new_task.index < current_task.index => {
+                    },
                     _ => {
                         if usage_queue.has_no_blocked_usage() {
-                            usage_queue.try_lock(context.requested_usage, &task)
+                            usage_queue.try_lock(context.requested_usage, &new_task)
                         } else {
                             LockResult::Err(())
                         }
@@ -750,8 +752,8 @@ impl SchedulingStateMachine {
 
                 if let Err(()) = lock_result {
                     blocked_usage_count.increment_self();
-                    let usage_from_task = (context.requested_usage, task.clone());
-                    usage_queue.insert_blocked_usage_from_task(task.index, usage_from_task);
+                    let usage_from_task = (context.requested_usage, new_task.clone());
+                    usage_queue.insert_blocked_usage_from_task(new_task.index, usage_from_task);
                 }
             });
         }
