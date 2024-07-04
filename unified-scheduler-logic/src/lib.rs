@@ -838,7 +838,7 @@ impl SchedulingStateMachine {
                     // don't push task into unblocked_task_queue yet. It can be assumed that every
                     // task will eventually succeed to be unblocked, and enter in this condition
                     // clause as long as `SchedulingStateMachine` is used correctly.
-                    if let Some(task) = task_with_unblocked_queue.try_unblock(&mut self.count_token)
+                    if let Some(task) = task_with_unblocked_queue.clone().try_unblock(&mut self.count_token)
                     {
                         self.blocked_task_count.decrement_self();
                         self.unblocked_task_queue.push_back(task);
