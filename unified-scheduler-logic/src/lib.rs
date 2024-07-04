@@ -589,7 +589,7 @@ impl UsageQueueInner {
     }
 
     #[must_use]
-    fn unlock(&mut self, requested_usage: RequestedUsage) -> Option<UsageFromTask> {
+    fn unlock(&mut self, requested_usage: RequestedUsage, task_index: usize) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some((Usage::Readonly(ref mut count), tasks)) => match requested_usage {
@@ -598,7 +598,7 @@ impl UsageQueueInner {
                         is_unused_now = true;
                     } else {
                         // todo test this
-                        tasks.remove(task.index).unwrap();
+                        tasks.remove(task_index).unwrap();
                         count.decrement_self();
                     }
                 }
