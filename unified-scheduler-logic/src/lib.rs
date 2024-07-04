@@ -1005,6 +1005,23 @@ mod tests {
         SanitizedTransaction::from_transaction_for_tests(unsigned)
     }
 
+    fn transaction_with_writable_read2(
+        address: Pubkey,
+        address2: Pubkey,
+    ) -> SanitizedTransaction {
+        let instruction = Instruction {
+            program_id: Pubkey::default(),
+            accounts: vec![
+                AccountMeta::new(address, false),
+                AccountMeta::new_readonly(address2, false),
+            ],
+            data: vec![],
+        };
+        let message = Message::new(&[instruction], Some(&Pubkey::new_unique()));
+        let unsigned = Transaction::new_unsigned(message);
+        SanitizedTransaction::from_transaction_for_tests(unsigned)
+    }
+
     fn create_address_loader(
         usage_queues: Option<Rc<RefCell<HashMap<Pubkey, UsageQueue>>>>,
     ) -> impl FnMut(Pubkey) -> UsageQueue {
@@ -1459,7 +1476,7 @@ mod tests {
         let sanitized1 =
             transaction_with_writable_address2(conflicting_address1, conflicting_address2);
         let sanitized2 =
-            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+            transaction_with_writable_read2(conflicting_address1, conflicting_address2);
         let sanitized0_1 = transaction_with_writable_address(conflicting_address1);
         //let sanitized0_2 = transaction_with_writable_address(
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
