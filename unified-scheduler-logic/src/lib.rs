@@ -546,7 +546,7 @@ type CurrentUsage = (Usage, BTreeMap<usize, Task>);
 trait CurrentUsageExt {
     fn new(usage: Usage, task: Task) -> Self;
 
-    fn hello(&self) -> bool { return false; };
+    fn hello(&self) -> bool { return false; }
 }
 
 impl CurrentUsageExt for CurrentUsage {
