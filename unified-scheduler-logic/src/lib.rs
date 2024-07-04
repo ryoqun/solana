@@ -597,6 +597,8 @@ impl UsageQueueInner {
                     if count.is_one() {
                         is_unused_now = true;
                     } else {
+                        // todo test this
+                        tasks.remove(task.index).unwrap();
                         count.decrement_self();
                     }
                 }
