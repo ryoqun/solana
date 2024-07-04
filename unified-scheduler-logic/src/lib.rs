@@ -782,7 +782,8 @@ impl SchedulingStateMachine {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
-                                assert_eq!(count.current(), 1);
+                                assert_eq!(count.current(), 4);
+                                assert_eq!(current_task.len(), 4);
                                 let reverted_task = current_task.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Writable;
