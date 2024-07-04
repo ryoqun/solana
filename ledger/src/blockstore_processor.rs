@@ -150,6 +150,7 @@ pub fn execute_batch(
     timings: &mut ExecuteTimings,
     log_messages_bytes_limit: Option<usize>,
     prioritization_fee_cache: &PrioritizationFeeCache,
+    pre_commit_callback: impl FnOnce() -> bool,
 ) -> Result<()> {
     let TransactionBatchWithIndexes {
         batch,
@@ -165,14 +166,17 @@ pub fn execute_batch(
         vec![]
     };
 
-    let (tx_results, balances) = batch.bank().load_execute_and_commit_transactions(
+    let Some((tx_results, balances)) = batch.bank().load_execute_and_commit_transactions(
         batch,
         MAX_PROCESSING_AGE,
         transaction_status_sender.is_some(),
         ExecutionRecordingConfig::new_single_setting(transaction_status_sender.is_some()),
         timings,
         log_messages_bytes_limit,
-    );
+        pre_commit_callback,
+    ) else {
+        return Err(TransactionError::CommitFailed);
+    };
 
     bank_utils::find_and_send_votes(
         batch.sanitized_transactions(),
@@ -339,6 +343,7 @@ fn execute_batches_internal(
                             &mut timings,
                             log_messages_bytes_limit,
                             prioritization_fee_cache,
+                            || true,
                         )
                     },
                     "execute_batch",

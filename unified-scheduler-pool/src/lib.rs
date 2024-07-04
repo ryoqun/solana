@@ -26,7 +26,7 @@ use {
         installed_scheduler_pool::{
             initialized_result_with_timings, InstalledScheduler, InstalledSchedulerBox,
             InstalledSchedulerPool, InstalledSchedulerPoolArc, ResultWithTimings, ScheduleResult,
-            SchedulerAborted, SchedulerId, SchedulingContext, TimeoutListener,
+            SchedulerError, SchedulerId, SchedulingContext, TimeoutListener,
             UninstalledScheduler, UninstalledSchedulerBox,
         },
         prioritization_fee_cache::PrioritizationFeeCache,
@@ -94,12 +94,18 @@ pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     _phantom: PhantomData<TH>,
 }
 
+use solana_sdk::transaction::VersionedTransaction;
+
+type DummySender = Sender<Vec<VersionedTransaction>>;
+
 #[derive(Debug)]
 pub struct HandlerContext {
     log_messages_bytes_limit: Option<usize>,
     transaction_status_sender: Option<TransactionStatusSender>,
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+    transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+    dummy_sender: Option<DummySender>,
 }
 
 pub type DefaultSchedulerPool =
@@ -138,6 +144,8 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+        transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        dummy_sender: Option<DummySender>,
     ) -> Arc<Self> {
         Self::do_new(
             handler_count,
@@ -145,6 +153,8 @@ where
             transaction_status_sender,
             replay_vote_sender,
             prioritization_fee_cache,
+            transaction_recorder,
+            dummy_sender,
             DEFAULT_POOL_CLEANER_INTERVAL,
             DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
@@ -158,6 +168,8 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+        transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        dummy_sender: Option<DummySender>,
         pool_cleaner_interval: Duration,
         max_pooling_duration: Duration,
         max_usage_queue_count: usize,
@@ -176,6 +188,8 @@ where
                 transaction_status_sender,
                 replay_vote_sender,
                 prioritization_fee_cache,
+                transaction_recorder,
+                dummy_sender,
             },
             weak_self: weak_self.clone(),
             next_scheduler_id: AtomicSchedulerId::default(),
@@ -284,6 +298,8 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
+        transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        dummy_sender: Option<DummySender>,
     ) -> InstalledSchedulerPoolArc {
         Self::new(
             handler_count,
@@ -291,6 +307,8 @@ where
             transaction_status_sender,
             replay_vote_sender,
             prioritization_fee_cache,
+            transaction_recorder,
+            dummy_sender,
         )
     }
 
@@ -428,6 +446,7 @@ impl TaskHandler for DefaultTaskHandler {
         index: usize,
         handler_context: &HandlerContext,
     ) {
+        if handler_context.dummy_sender.is_none() {
         // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
         // responsible for locking.
         let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
@@ -444,7 +463,20 @@ impl TaskHandler for DefaultTaskHandler {
             timings,
             handler_context.log_messages_bytes_limit,
             &handler_context.prioritization_fee_cache,
+            || {
+                //trace!("poh record start!");
+                let summary = handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+                //trace!("poh record end!");
+                summary.result.is_ok()
+                //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+                //true
+            },
         );
+        } else {
+        //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
+        handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
+        }
+
         sleepless_testing::at(CheckPoint::TaskHandled(index));
     }
 }
@@ -563,6 +595,14 @@ mod chained_channel {
             self.aux_sender = chained_aux_sender;
             Ok(())
         }
+
+        pub(super) fn len(&self) -> usize {
+            self.sender.len()
+        }
+
+        pub(super) fn aux_len(&self) -> usize {
+            self.aux_sender.len()
+        }
     }
 
     // P doesn't need to be `: Clone`, yet rustc derive can't handle it.
@@ -637,12 +677,19 @@ mod chained_channel {
 /// pruning will be implemented in this type.
 #[derive(Default, Debug)]
 pub struct UsageQueueLoader {
-    usage_queues: DashMap<Pubkey, UsageQueue>,
+    usage_queues: DashMap<Pubkey, UsageQueue, ahash::RandomState>,
 }
 
 impl UsageQueueLoader {
     pub fn load(&self, address: Pubkey) -> UsageQueue {
-        self.usage_queues.entry(address).or_default().clone()
+        // taken from https://github.com/xacrimon/dashmap/issues/292#issuecomment-1916621009
+        match self.usage_queues.get(&address) {
+            Some(bar_read_guard) => bar_read_guard.value().clone(),
+            None => self.usage_queues
+                .entry(address)
+                .or_default()
+                .clone(),
+        }
     }
 
     fn count(&self) -> usize {
@@ -761,6 +808,17 @@ struct ThreadManager<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     handler_threads: Vec<JoinHandle<()>>,
 }
 
+#[derive(Default)]
+struct LogInterval(usize);
+
+impl LogInterval {
+    fn increment(&mut self) -> bool {
+        let should_log = self.0 % 100 == 0;
+        self.0 = self.0.checked_add(1).unwrap();
+        should_log
+    }
+}
+
 struct HandlerPanicked;
 type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 
@@ -807,14 +865,20 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let Ok(executed_task) = executed_task else {
             return None;
         };
-        timings.accumulate(&executed_task.result_with_timings.1);
+        //trace!("accumulate begin!!");
+        //timings.accumulate(&executed_task.result_with_timings.1);
+        //trace!("accumulate end!!");
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
+            Err(ref error @ TransactionError::CommitFailed) => {
+                debug!("maybe reached max tick height...: {error:?}");
+                Some(executed_task)
+            },
             Err(error) => {
                 error!("error is detected while accumulating....: {error:?}");
                 *result = Err(error);
                 None
-            }
+            },
         }
     }
 
@@ -839,6 +903,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         context: SchedulingContext,
         mut result_with_timings: ResultWithTimings,
     ) {
+        let scheduler_id = self.scheduler_id;
+        let mut slot = context.bank().slot();
+
         // Firstly, setup bi-directional messaging between the scheduler and handlers to pass
         // around tasks, by creating 2 channels (one for to-be-handled tasks from the scheduler to
         // the handlers and the other for finished tasks from the handlers to the scheduler).
@@ -999,6 +1066,34 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 let mut state_machine = unsafe {
                     SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
                 };
+                let mut log_interval = LogInterval::default();
+                let mut session_started_at = Instant::now();
+                macro_rules! log_scheduler {
+                    ($level:ident, $prefix:tt) => {
+                        $level! {
+                            "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
+                            scheduler_id, slot,
+                            $prefix,
+                            (if session_ending {"S"} else {"-"}),
+                            state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+                            state_machine.total_task_count(),
+                            state_machine.unblocked_task_count(),
+                            new_task_receiver.len(),
+                            runnable_task_sender.len(), runnable_task_sender.aux_len(),
+                            finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
+                            {
+                                let elapsed_us = session_started_at.elapsed().as_micros();
+
+                                if elapsed_us > 0 {
+                                    format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed_us)
+                                } else {
+                                    "-".to_string()
+                                }
+                            },
+                            width = SchedulerId::BITS as usize / 4,
+                        }
+                    }
+                }
 
                 // The following loop maintains and updates ResultWithTimings as its
                 // externally-provided mutable state for each session in this way:
@@ -1006,6 +1101,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 // 1. Initial result_with_timing is propagated implicitly by the moved variable.
                 // 2. Subsequent result_with_timings are propagated explicitly from
                 //    the new_task_receiver.recv() invocation located at the end of loop.
+
                 'nonaborted_main_loop: loop {
                     let mut is_finished = false;
                     while !is_finished {
@@ -1026,7 +1122,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // consistent. Note that unified scheduler will go
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
-                        select_biased! {
+                        let step_type = select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     &mut result_with_timings,
@@ -1035,6 +1131,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                "desc_b_task"
                             },
                             recv(dummy_unblocked_task_receiver) -> dummy => {
                                 assert_matches!(dummy, Err(RecvError));
@@ -1043,6 +1140,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     .schedule_next_unblocked_task()
                                     .expect("unblocked task");
                                 runnable_task_sender.send_payload(task).unwrap();
+                                "sc_b_task"
                             },
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
@@ -1052,10 +1150,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             runnable_task_sender.send_aux_payload(task).unwrap();
+                                            "sc_i_task"
+                                        } else {
+                                            "new_b_task"
                                         }
                                     }
                                     Ok(NewTaskPayload::CloseSubchannel) => {
                                         session_ending = true;
+                                        "ending"
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context_and_result_with_timings)) =>
                                         unreachable!(),
@@ -1075,8 +1177,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                "desc_i_task"
                             },
                         };
+                        if log_interval.increment() || step_type == "ending" {
+                            log_scheduler!(info, step_type);
+                        } else {
+                            log_scheduler!(trace, step_type);
+                        }
 
                         is_finished = session_ending && state_machine.has_no_active_task();
                     }
@@ -1087,7 +1195,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     session_result_sender
                         .send(result_with_timings)
                         .expect("always outlived receiver");
+                    log_scheduler!(info, "ended");
                     state_machine.reinitialize();
+                    log_interval = LogInterval::default();
                     session_ending = false;
 
                     // Prepare for the new session.
@@ -1099,6 +1209,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
+                            session_started_at = Instant::now();
+                            slot = new_context.bank().slot();
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
                                 .unwrap();
@@ -1198,6 +1310,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 if sender.send(Ok(task)).is_err() {
                     warn!("handler_thread: scheduler thread aborted...");
                     break;
+                } else {
+                    trace!("returning back task from handler to scheduler...");
                 }
             }
         };
@@ -1225,7 +1339,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         debug!("send_task()");
         self.new_task_sender
             .send(NewTaskPayload::Payload(task))
-            .map_err(|_| SchedulerAborted)
+            .map_err(|_| SchedulerError::Aborted)
     }
 
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
@@ -1388,6 +1502,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
     ) -> Self {
+        info!("spawning new scheduler pool for slot: {}", context.bank().slot());
         let mut inner = Self::Inner {
             thread_manager: ThreadManager::new(pool),
             usage_queue_loader: UsageQueueLoader::default(),

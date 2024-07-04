@@ -217,10 +217,25 @@ impl BankForks {
 
     pub fn install_scheduler_pool(&mut self, pool: InstalledSchedulerPoolArc) {
         info!("Installed new scheduler_pool into bank_forks: {:?}", pool);
+        for (slot, bank) in self.banks.iter_mut() {
+            if !bank.is_frozen() {
+                trace!("Installed scheduler into existing unfrozen slot: {slot}");
+                *bank = Self::install_scheduler_into_bank(&pool, bank.clone_without_scheduler());
+            }
+        }
         assert!(
             self.scheduler_pool.replace(pool).is_none(),
             "Reinstalling scheduler pool isn't supported"
         );
+    }
+
+    fn install_scheduler_into_bank(scheduler_pool: &InstalledSchedulerPoolArc, bank: Arc<Bank>) -> BankWithScheduler {
+        trace!("Inserting bank (slot: {}) with scheduler into bank_forks...", bank.slot());
+        let context = SchedulingContext::new(bank.clone());
+        let scheduler = scheduler_pool.take_scheduler(context);
+        let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
+        scheduler_pool.register_timeout_listener(bank_with_scheduler.create_timeout_listener());
+        bank_with_scheduler
     }
 
     pub fn insert(&mut self, mut bank: Bank) -> BankWithScheduler {
@@ -230,11 +245,7 @@ impl BankForks {
 
         let bank = Arc::new(bank);
         let bank = if let Some(scheduler_pool) = &self.scheduler_pool {
-            let context = SchedulingContext::new(bank.clone());
-            let scheduler = scheduler_pool.take_scheduler(context);
-            let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
-            scheduler_pool.register_timeout_listener(bank_with_scheduler.create_timeout_listener());
-            bank_with_scheduler
+            Self::install_scheduler_into_bank(scheduler_pool, bank)
         } else {
             BankWithScheduler::new_without_scheduler(bank)
         };

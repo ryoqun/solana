@@ -42,6 +42,10 @@ use {
         time::{Duration, Instant},
     },
 };
+use solana_unified_scheduler_pool::DefaultSchedulerPool;
+
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 // transfer transaction cost = 1 * SIGNATURE_COST +
 //                             2 * WRITE_LOCK_UNITS +
@@ -49,19 +53,34 @@ use {
 //                           = 1470 CU
 const TRANSFER_TRANSACTION_COST: u32 = 1470;
 
+use solana_sdk::transaction::VersionedTransaction;
+type DummyReceiver = Receiver<Vec<VersionedTransaction>>;
+
 fn check_txs(
     receiver: &Arc<Receiver<WorkingBankEntry>>,
     ref_tx_count: usize,
     poh_recorder: &Arc<RwLock<PohRecorder>>,
+    dummy_receiver: &DummyReceiver,
+    use_dummy: bool,
 ) -> bool {
     let mut total = 0;
     let now = Instant::now();
     let mut no_bank = false;
     loop {
-        if let Ok((_bank, (entry, _tick_height))) = receiver.recv_timeout(Duration::from_millis(10))
-        {
-            total += entry.transactions.len();
+        if use_dummy {
+            if let Ok(txs) = dummy_receiver.try_recv() {
+                total += txs.len();
+            } else {
+                sleep(Duration::from_millis(10));
+            }
+        } else {
+            if let Ok((_bank, (entry, _tick_height))) = receiver.try_recv() {
+                total += entry.transactions.len();
+            } else {
+                sleep(Duration::from_millis(10));
+            }
         }
+
         if total >= ref_tx_count {
             break;
         }
@@ -347,7 +366,7 @@ fn main() {
     let (replay_vote_sender, _replay_vote_receiver) = unbounded();
     let bank0 = Bank::new_for_benches(&genesis_config);
     let bank_forks = BankForks::new_rw_arc(bank0);
-    let mut bank = bank_forks.read().unwrap().working_bank();
+    let mut bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
 
     // set cost tracker limits to MAX so it will not filter out TXs
     bank.write_cost_tracker()
@@ -428,7 +447,7 @@ fn main() {
     );
     let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
     let (exit, poh_recorder, poh_service, signal_receiver) = create_test_recorder(
-        bank.clone(),
+        bank.clone_with_scheduler(),
         blockstore.clone(),
         None,
         Some(leader_schedule_cache),
@@ -460,6 +479,35 @@ fn main() {
             DEFAULT_TPU_CONNECTION_POOL_SIZE,
         ),
     };
+    let prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+    let collector = solana_sdk::pubkey::new_rand();
+    let (dummy_sender, dummy_receiver) = unbounded();
+    let use_dummy = if let BlockProductionMethod::UnifiedScheduler = block_production_method {
+        let (dummy_sender, use_dummy) = if std::env::var("USE_DUMMY").is_ok() {
+            (Some(dummy_sender), true)
+        } else {
+            (None, false)
+        };
+        let scheduler_pool = DefaultSchedulerPool::new_dyn(
+            Some(num_banking_threads as usize),
+            None,
+            None,
+            Some(replay_vote_sender.clone()),
+            prioritization_fee_cache.clone(),
+            Some(poh_recorder.read().unwrap().new_recorder()),
+            dummy_sender,
+        );
+        bank_forks
+            .write()
+            .unwrap()
+            .install_scheduler_pool(scheduler_pool);
+        bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
+        poh_recorder.write().unwrap().swap_working_bank(bank.clone_with_scheduler());
+        use_dummy
+    } else {
+        false
+    };
+
     let banking_stage = BankingStage::new_num_threads(
         block_production_method,
         &cluster_info,
@@ -473,7 +521,7 @@ fn main() {
         None,
         Arc::new(connection_cache),
         bank_forks.clone(),
-        &Arc::new(PrioritizationFeeCache::new(0u64)),
+        &prioritization_fee_cache,
     );
 
     // This is so that the signal_receiver does not go out of scope after the closure.
@@ -484,7 +532,6 @@ fn main() {
     let mut tx_total_us = 0;
     let base_tx_count = bank.transaction_count();
     let mut txs_processed = 0;
-    let collector = solana_sdk::pubkey::new_rand();
     let mut total_sent = 0;
     for current_iteration_index in 0..iterations {
         trace!("RUNNING ITERATION {}", current_iteration_index);
@@ -506,6 +553,7 @@ fn main() {
                 .unwrap();
         }
 
+        if !use_dummy {
         for tx in &packets_for_this_iteration.transactions {
             loop {
                 if bank.get_signature_status(&tx.signatures[0]).is_some() {
@@ -517,6 +565,7 @@ fn main() {
                 sleep(Duration::from_millis(5));
             }
         }
+        }
 
         // check if txs had been processed by bank. Returns when all transactions are
         // processed, with `FALSE` indicate there is still bank. or returns TRUE indicate a
@@ -525,8 +574,10 @@ fn main() {
             &signal_receiver,
             packets_for_this_iteration.transactions.len(),
             &poh_recorder,
+            &dummy_receiver,
+            use_dummy,
         ) {
-            eprintln!(
+            info!(
                 "[iteration {}, tx sent {}, slot {} expired, bank tx count {}]",
                 current_iteration_index,
                 sent,
@@ -544,12 +595,15 @@ fn main() {
 
             let mut new_bank_time = Measure::start("new_bank");
             let new_slot = bank.slot() + 1;
-            let new_bank = Bank::new_from_parent(bank, &collector, new_slot);
+            if let Some((Err(error), _timings)) = bank.wait_for_completed_scheduler() {
+                error!("error is returned after waiting for completed scheduler...: {error:?} slot: {}", bank.slot());
+            }
+            let new_bank = Bank::new_from_parent(bank.clone(), &collector, new_slot);
             new_bank_time.stop();
 
             let mut insert_time = Measure::start("insert_time");
             bank_forks.write().unwrap().insert(new_bank);
-            bank = bank_forks.read().unwrap().working_bank();
+            bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
             insert_time.stop();
 
             // set cost tracker limits to MAX so it will not filter out TXs
@@ -557,20 +611,20 @@ fn main() {
                 .unwrap()
                 .set_limits(u64::MAX, u64::MAX, u64::MAX);
 
-            assert!(poh_recorder.read().unwrap().bank().is_none());
-            poh_recorder
-                .write()
-                .unwrap()
-                .set_bank_for_test(bank.clone());
-            assert!(poh_recorder.read().unwrap().bank().is_some());
+            let mut p = poh_recorder.write().unwrap();
+            assert!(p.bank().is_none());
+            p.set_bank(bank.clone_with_scheduler(), false);
             debug!(
-                "new_bank_time: {}us insert_time: {}us poh_time: {}us",
+                "new_bank_time ({} => {}): {}us insert_time: {}us poh_time: {}us",
+                new_slot - 1,
+                new_slot,
                 new_bank_time.as_us(),
                 insert_time.as_us(),
                 poh_time.as_us(),
             );
+            //assert!(p.bank().is_some());
         } else {
-            eprintln!(
+            info!(
                 "[iteration {}, tx sent {}, slot {} active, bank tx count {}]",
                 current_iteration_index,
                 sent,

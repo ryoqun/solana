@@ -59,8 +59,11 @@ pub trait InstalledSchedulerPool: Send + Sync + Debug {
 }
 
 #[derive(Debug)]
-pub struct SchedulerAborted;
-pub type ScheduleResult = std::result::Result<(), SchedulerAborted>;
+pub enum SchedulerError {
+    Aborted,
+    Terminated,
+}
+pub type ScheduleResult = std::result::Result<(), SchedulerError>;
 
 pub struct TimeoutListener {
     callback: Box<dyn FnOnce(InstalledSchedulerPoolArc) + Sync + Send>,
@@ -173,7 +176,7 @@ pub trait InstalledScheduler: Send + Sync + Debug + 'static {
     /// Return the error which caused the scheduler to abort.
     ///
     /// Note that this must not be called until it's observed that `schedule_execution()` has
-    /// returned `Err(SchedulerAborted)`. Violating this should `panic!()`.
+    /// returned `Err(SchedulerError)`. Violating this should `panic!()`.
     ///
     /// That said, calling this multiple times is completely acceptable after the error observation
     /// from `schedule_execution()`. While it's not guaranteed, the same `.clone()`-ed errors of
@@ -450,8 +453,9 @@ impl BankWithScheduler {
         transactions_with_indexes: impl ExactSizeIterator<Item = (&'a SanitizedTransaction, &'a usize)>,
     ) -> Result<()> {
         trace!(
-            "schedule_transaction_executions(): {} txs",
-            transactions_with_indexes.len()
+            "schedule_transaction_executions(): {} txs slot: {}",
+            transactions_with_indexes.len(),
+            self.inner.bank.slot(),
         );
 
         let schedule_result: ScheduleResult = self.inner.with_active_scheduler(|scheduler| {
@@ -461,7 +465,7 @@ impl BankWithScheduler {
             Ok(())
         });
 
-        if schedule_result.is_err() {
+        if let Err(SchedulerError::Aborted) = schedule_result {
             // This write lock isn't atomic with the above the read lock. So, another thread
             // could have called .recover_error_after_abort() while we're literally stuck at
             // the gaps of these locks (i.e. this comment in source code wise) under extreme
@@ -470,6 +474,9 @@ impl BankWithScheduler {
             //
             // Lastly, this non-atomic nature is intentional for optimizing the fast code-path
             return Err(self.inner.retrieve_error_after_schedule_failure());
+        }
+        if let Err(SchedulerError::Aborted) = schedule_result {
+            return Err(TransactionError::CommitFailed);
         }
 
         Ok(())
@@ -521,6 +528,7 @@ impl BankWithSchedulerInner {
         let scheduler = self.scheduler.read().unwrap();
         match &*scheduler {
             SchedulerStatus::Active(scheduler) => {
+                trace!("entering the fast path slot: {}", self.bank.slot());
                 // This is the fast path, needing single read-lock most of time.
                 f(scheduler)
             }
@@ -529,7 +537,7 @@ impl BankWithSchedulerInner {
                     "with_active_scheduler: bank (slot: {}) has a stale aborted scheduler...",
                     self.bank.slot(),
                 );
-                Err(SchedulerAborted)
+                Err(SchedulerError::Aborted)
             }
             SchedulerStatus::Stale(pool, _result_with_timings) => {
                 let pool = pool.clone();
@@ -557,7 +565,10 @@ impl BankWithSchedulerInner {
                 pool.register_timeout_listener(self.do_create_timeout_listener());
                 f(scheduler.active_scheduler())
             }
-            SchedulerStatus::Unavailable => unreachable!("no installed scheduler"),
+            SchedulerStatus::Unavailable => {
+                trace!("no installed scheduler: slot: {}", self.bank.slot());
+                Err(SchedulerError::Terminated)
+            },
         }
     }
 
@@ -592,7 +603,7 @@ impl BankWithSchedulerInner {
         })
     }
 
-    /// This must not be called until `Err(SchedulerAborted)` is observed. Violating this should
+    /// This must not be called until `Err(SchedulerError)` is observed. Violating this should
     /// `panic!()`.
     fn retrieve_error_after_schedule_failure(&self) -> TransactionError {
         let mut scheduler = self.scheduler.write().unwrap();
@@ -630,7 +641,8 @@ impl BankWithSchedulerInner {
         let mut scheduler = scheduler.write().unwrap();
         let (was_noop, result_with_timings) = match &mut *scheduler {
             SchedulerStatus::Active(scheduler) if reason.is_paused() => {
-                scheduler.pause_for_recent_blockhash();
+                trace!("{}", std::backtrace::Backtrace::force_capture());
+                //scheduler.pause_for_recent_blockhash();
                 (false, None)
             }
             SchedulerStatus::Active(_scheduler) => {
