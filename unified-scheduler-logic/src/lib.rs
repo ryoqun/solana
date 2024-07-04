@@ -1734,17 +1734,20 @@ mod tests {
     fn test_higher_priority_locking_read_write_complex() {
         let conflicting_address1 = Pubkey::new_unique();
         let conflicting_address2 = Pubkey::new_unique();
+        let sanitized0_1 = transaction_with_readonly_address(conflicting_address2);
         let sanitized1 =
+            transaction_with_writable_read2(sanitized0_1.message().fee_payer(), conflicting_address2);
+        let sanitized1_2 =
             transaction_with_writable_read2(conflicting_address1, conflicting_address2);
         let sanitized2 =
             transaction_with_writable_address2(conflicting_address1, conflicting_address2);
-        let sanitized0_1 = transaction_with_writable_address(conflicting_address1);
         //let sanitized0_2 = transaction_with_writable_address(
         let usage_queues = Rc::new(RefCell::new(HashMap::new()));
         let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
         let task0_1 = SchedulingStateMachine::create_task(sanitized0_1, 50, address_loader);
         //let task0_2 = SchedulingStateMachine::create_task(sanitized0_2, 51, address_loader);
         let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
+        let task1_2 = SchedulingStateMachine::create_task(sanitized1_2, 103, address_loader);
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
         let mut state_machine = unsafe {
@@ -1758,19 +1761,25 @@ mod tests {
             Some(50)
         );
         // now
-        // addr1: locked by task_0_1, queue: []
-        // addr2: unlocked, queue: []
+        // addr1: unlocked, queue: []
+        // addr2: locked by task0_1, queue: []
 
         assert_matches!(state_machine.schedule_task(task1.clone()), None);
         // now
-        // addr1: locked by task_0_1, queue: [task1]
-        // addr2: locked by task1, queue: []
-        //
+        // addr1: unlocked, queue: []
+        // addr2: locked by [task0_1, task1], queue: []
+
+        assert_matches!(state_machine.schedule_task(task1_2.clone()).map(|t| t.task_index()), Some(103));
+        // now
+        // addr1: locked by task1_2, queue: []
+        // addr2: locked by [task0_1, task1, task1_2], queue: []
+
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         // now
-        // addr1: locked by task_0_1, queue: [task2, task1]
-        // addr2: locked by task2, queue: [task1]
+        // addr1: locked by task2, queue: [task1_2]
+        // addr2: locked by [task0_1, task_1_2], queue: [task2, task1]
 
+        /*
         assert!(!state_machine.has_unblocked_task());
         state_machine.deschedule_task(&task0_1);
         assert!(state_machine.has_unblocked_task());
@@ -1804,7 +1813,6 @@ mod tests {
         //      locking addr1
         //      blocked by addr2
         //
-        /*
         assert_matches!(
             state_machine
                 .schedule_task(task0_2.clone())
