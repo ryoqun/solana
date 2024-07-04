@@ -541,6 +541,9 @@ struct UsageQueueInner {
 
 type UsageFromTask = (RequestedUsage, Task);
 
+impl UsageFromTask {
+}
+
 impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
