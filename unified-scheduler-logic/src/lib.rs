@@ -638,6 +638,7 @@ pub struct SchedulingStateMachine {
     usage_queue_token: UsageQueueToken,
 }
 
+#[cfg(test)]
 impl Drop for SchedulingStateMachine {
     fn drop(&mut self) {
         if !std::thread::panicking() {
