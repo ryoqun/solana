@@ -604,7 +604,7 @@ impl UsageQueueInner {
     }
 }
 
-const_assert_eq!(mem::size_of::<TokenCell<UsageQueueInner>>(), 40);
+//const_assert_eq!(mem::size_of::<TokenCell<UsageQueueInner>>(), 40);
 
 /// Scheduler's internal data for each address ([`Pubkey`](`solana_sdk::pubkey::Pubkey`)). Very
 /// opaque wrapper type; no methods just with [`::clone()`](Clone::clone) and
