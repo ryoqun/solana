@@ -582,6 +582,7 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     count.increment_self();
 
+                    dbg!(&current_tasks);
                     let old = current_tasks.insert(task.index, task.clone());
                     dbg!(task.index);
                     //assert!(old.is_none(), "not existing index: {}", task.index);
