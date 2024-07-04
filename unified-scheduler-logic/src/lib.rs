@@ -760,10 +760,10 @@ impl SchedulingStateMachine {
 
         // no blocked usage count means success
         if blocked_usage_count.is_zero() {
-            Some(task)
+            Some(new_task)
         } else {
             self.blocked_task_count.increment_self();
-            task.set_blocked_usage_count(&mut self.count_token, blocked_usage_count);
+            new_task.set_blocked_usage_count(&mut self.count_token, blocked_usage_count);
             None
         }
     }
