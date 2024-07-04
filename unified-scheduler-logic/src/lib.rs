@@ -1736,7 +1736,7 @@ mod tests {
         let conflicting_address2 = Pubkey::new_unique();
         let sanitized0_1 = transaction_with_readonly_address(conflicting_address2);
         let sanitized1 =
-            transaction_with_writable_read2(sanitized0_1.message().fee_payer(), conflicting_address2);
+            transaction_with_writable_read2(*sanitized0_1.message().fee_payer(), conflicting_address2);
         let sanitized1_2 =
             transaction_with_writable_read2(conflicting_address1, conflicting_address2);
         let sanitized2 =
