@@ -539,7 +539,7 @@ impl Default for UsageQueueInner {
 }
 
 impl UsageQueueInner {
-    fn try_lock(&mut self, requested_usage: RequestedUsage) -> LockResult {
+    fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match self.current_usage {
             None => Some(Usage::from(requested_usage)),
             Some(Usage::Readonly(count)) => match requested_usage {
@@ -549,7 +549,7 @@ impl UsageQueueInner {
             Some(Usage::Writable) => None,
         }
         .inspect(|&new_usage| {
-            self.current_usage = Some(new_usage);
+            self.current_usage = Some((new_usage, task.clone()));
         })
         .map(|_| ())
         .ok_or(())
@@ -730,7 +730,7 @@ impl SchedulingStateMachine {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = if usage_queue.has_no_blocked_usage() {
-                    usage_queue.try_lock(context.requested_usage)
+                    usage_queue.try_lock(context.requested_usage, &task)
                 } else {
                     LockResult::Err(())
                 };
@@ -771,7 +771,7 @@ impl SchedulingStateMachine {
                         self.unblocked_task_queue.push_back(task);
                     }
 
-                    match usage_queue.try_lock(requested_usage) {
+                    match usage_queue.try_lock(requested_usage, &task) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
