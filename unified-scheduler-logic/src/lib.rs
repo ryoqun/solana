@@ -1502,6 +1502,17 @@ mod tests {
             Some(99)
         );
 
+        state_machine.deschedule_task(&task2);
+        assert!(state_machine.has_unblocked_task());
+
+        assert_matches!(
+            state_machine
+                .schedule_next_unblocked_task()
+                .map(|t| t.task_index()),
+            Some(101)
+        );
+        state_machine.deschedule_task(&task1);
+
         dbg!(state_machine);
         // task1
         //      blocked by addr1
