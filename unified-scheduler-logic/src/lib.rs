@@ -718,7 +718,9 @@ impl SchedulingStateMachine {
         self.active_task_count.decrement_self();
         self.handled_task_count.increment_self();
         self.unlock_usage_queues(task);
-        assert_gt!(self.active_task_count(), self.blocked_task_count());
+        if self.blocked_task_count() > 0 {
+            assert_gt!(self.active_task_count(), self.blocked_task_count());
+        }
     }
 
     #[must_use]
