@@ -604,7 +604,7 @@ impl UsageQueueInner {
                         is_unused_now = true;
                     } else {
                         // todo test this for unbounded growth of inifnite readable only locks....
-                        tasks.remove(&task_index)/*.unwrap()*/; 
+                        tasks.remove(&task_index).unwrap(); 
                         count.decrement_self();
                     }
                 }
