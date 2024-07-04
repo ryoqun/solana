@@ -673,7 +673,7 @@ mod chained_channel {
 /// pruning will be implemented in this type.
 #[derive(Default, Debug)]
 pub struct UsageQueueLoader {
-    usage_queues: DashMap<Pubkey, UsageQueue>,
+    usage_queues: DashMap<Pubkey, UsageQueue, ahash::RandomState>,
 }
 
 impl UsageQueueLoader {
