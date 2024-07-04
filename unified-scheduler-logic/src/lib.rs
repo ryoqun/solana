@@ -542,11 +542,11 @@ impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match self.current_usage {
             None => Some(Usage::from(requested_usage)),
-            Some(Usage::Readonly(count)) => match requested_usage {
+            Some((Usage::Readonly(count), _task)) => match requested_usage {
                 RequestedUsage::Readonly => Some(Usage::Readonly(count.increment())),
                 RequestedUsage::Writable => None,
             },
-            Some(Usage::Writable) => None,
+            Some((Usage::Writable, _task)) => None,
         }
         .inspect(|&new_usage| {
             self.current_usage = Some((new_usage, task.clone()));
