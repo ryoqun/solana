@@ -509,7 +509,7 @@ enum RequestedUsage {
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks: BreeMap<usize, UsageFromTask>,
+    blocked_usages_from_tasks: BTreeMap<usize, UsageFromTask>,
 }
 
 type UsageFromTask = (RequestedUsage, Task);
