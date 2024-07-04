@@ -573,7 +573,7 @@ impl Default for UsageQueueInner {
 
 impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
-        match &self.current_usage {
+        match &mut self.current_usage {
             None => {
                 self.current_usage = Some(CurrentUsage::new(Usage::from(requested_usage), task.clone()));
                 Ok(())
