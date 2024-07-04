@@ -100,9 +100,12 @@ use {
     assert_matches::assert_matches,
     solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
-    std::{collections::VecDeque, mem, sync::Arc},
+    std::{
+        collections::{BTreeMap, VecDeque},
+        mem,
+        sync::Arc,
+    },
 };
-use std::collections::BTreeMap;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
@@ -575,7 +578,9 @@ impl UsageQueueInner {
 
         if is_unused_now {
             self.current_usage = None;
-            self.blocked_usages_from_tasks.pop_first().map(|(_key, usage)| usage)
+            self.blocked_usages_from_tasks
+                .pop_first()
+                .map(|(_key, usage)| usage)
         } else {
             None
         }
@@ -583,17 +588,22 @@ impl UsageQueueInner {
 
     fn push_blocked_usage_from_task(&mut self, index: usize, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
-        self.blocked_usages_from_tasks.insert(index, usage_from_task);
+        self.blocked_usages_from_tasks
+            .insert(index, usage_from_task);
     }
 
     #[must_use]
     fn pop_unblocked_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
-            self.blocked_usages_from_tasks.first_key_value().map(|(_key, usage)| usage),
+            self.blocked_usages_from_tasks
+                .first_key_value()
+                .map(|(_key, usage)| usage),
             Some((RequestedUsage::Readonly, _))
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
-            self.blocked_usages_from_tasks.pop_first().map(|(_key, usage)| usage)
+            self.blocked_usages_from_tasks
+                .pop_first()
+                .map(|(_key, usage)| usage)
         } else {
             None
         }
