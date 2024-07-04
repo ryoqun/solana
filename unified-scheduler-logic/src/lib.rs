@@ -102,6 +102,7 @@ use {
     static_assertions::const_assert_eq,
     std::{collections::VecDeque, mem, sync::Arc},
 };
+use std::collections::BTreeMap;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
