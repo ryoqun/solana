@@ -700,7 +700,6 @@ impl SchedulingStateMachine {
     #[must_use]
     pub fn schedule_next_unblocked_task(&mut self) -> Option<Task> {
         self.unblocked_task_queue.pop_front().inspect(|_| {
-                        self.blocked_task_count.decrement_self();
             self.unblocked_task_count.increment_self();
         })
     }
@@ -768,6 +767,7 @@ impl SchedulingStateMachine {
                     // clause as long as `SchedulingStateMachine` is used correctly.
                     if let Some(task) = task_with_unblocked_queue.try_unblock(&mut self.count_token)
                     {
+                        self.blocked_task_count.decrement_self();
                         self.unblocked_task_queue.push_back(task);
                     }
 
