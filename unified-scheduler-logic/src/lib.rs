@@ -1415,7 +1415,7 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task4.clone()), None);
 
         state_machine.deschedule_task(&task1);
-        dbg!("aaa");
+        panic!("aaa");
         assert_matches!(
             state_machine
                 .schedule_next_unblocked_task()
