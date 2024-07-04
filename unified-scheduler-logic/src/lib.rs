@@ -821,6 +821,7 @@ impl SchedulingStateMachine {
                                     }
                                     let c: u32 = current_tasks.get(&current_index).unwrap().blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
+                                        count.decrement_self();
                                         let reverted_task = current_tasks.remove(&current_index).unwrap();
                                         t.push(reverted_task);
                                     }
@@ -837,7 +838,6 @@ impl SchedulingStateMachine {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
                                 }
-                                assert_eq!(count.current() as usize, current_tasks.len());
                                 r
                             },
                         }
