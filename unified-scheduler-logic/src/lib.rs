@@ -810,11 +810,11 @@ impl SchedulingStateMachine {
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
-                                for (&current_index, current_task) in current_tasks.keys().rev().collect::<Vec<_>>() {
+                                for current_index in current_tasks.keys().rev().collect::<Vec<_>>() {
                                     if current_index < new_task.index {
                                         break;
                                     }
-                                    if current_task.blocked_usage_count(&mut self.count_token) > 0 {
+                                    if current_tasks.get(current_index).unwrap().blocked_usage_count(&mut self.count_token) > 0 {
                                         let reverted_task = current_tasks.pop_first().unwrap().1;
                                         reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
