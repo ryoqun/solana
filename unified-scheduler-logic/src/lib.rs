@@ -757,8 +757,8 @@ impl SchedulingStateMachine {
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 todo!();
                             },
-                            (Usage::Readonly(_), _) => {
-                                todo!();
+                            (Usage::Readonly(count), _) => {
+                                todo!("{count}");
                             },
                         }
                     },
