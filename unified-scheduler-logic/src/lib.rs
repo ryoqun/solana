@@ -740,7 +740,17 @@ impl SchedulingStateMachine {
 
                 let lock_result = match &usage_queue.current_usage {
                     Some((usage, current_task)) if current_task.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.index => {
-                        panic!("revert lock");
+                        match usage {
+                            Usage::Writable => {
+                                panic!("revert and overwrite lock");
+                            }
+                            Usage::Readonly(_) => {
+                                todo!();
+                            }
+                            Usage::Unused => {
+                                unreachable!();
+                            }
+                        }
                     },
                     _ => {
                         if usage_queue.has_no_blocked_usage() {
