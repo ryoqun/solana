@@ -1494,10 +1494,14 @@ mod tests {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
         let usage_queue = UsageQueue::default();
+        let sanitized = simplest_transaction();
+        let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
+            UsageQueue::default()
+        });
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                usage_queue.current_usage = Some(Usage::Writable);
+                usage_queue.current_usage = Some((Usage::Writable, task));
                 let _ = usage_queue.unlock(RequestedUsage::Readonly);
             });
     }
