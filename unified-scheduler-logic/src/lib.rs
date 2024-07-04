@@ -798,18 +798,18 @@ impl SchedulingStateMachine {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                LockResult::Ok(())
+                                Ok(())
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                LockResult::Ok(())
+                                Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
-                                LockResult::Ok(())
+                                Ok(())
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
@@ -830,11 +830,11 @@ impl SchedulingStateMachine {
                                 let r = if current_tasks.is_empty() {
                                     *current_usage = Usage::Writable;
                                     current_tasks.insert(new_task.index, new_task.clone());
-                                    LockResult::Ok(())
+                                    Ok(())
                                 } else {
                                     //panic!("{:?} tt: {:?} new_c: {:?}", current_tasks.keys(), t.iter().map(|t| t.index).collect::<Vec<_>>(), &new_c);
                                     *current_usage = Usage::Readonly(new_c);
-                                    LockResult::Err(())
+                                    Err(())
                                 };
                                 for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
@@ -848,7 +848,7 @@ impl SchedulingStateMachine {
                         if usage_queue.has_no_blocked_usage() {
                             usage_queue.try_lock(context.requested_usage, &new_task)
                         } else {
-                            LockResult::Err(())
+                            Err(())
                         }
                     }
                 };
