@@ -772,7 +772,11 @@ impl SchedulingStateMachine {
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current(), 1);
-                                todo!("{count:?}");
+                                let reverted_task = std::mem::replace(current_task, new_task.clone());
+                                reverted_task.increment_blocked_usage_count(&mut self.count_token);
+                                *current_usage = Usage::Writable;
+                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
+                                LockResult::Ok(())
                             },
                         }
                     },
