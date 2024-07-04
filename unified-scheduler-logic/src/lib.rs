@@ -546,7 +546,7 @@ type CurrentUsage = (Usage, BTreeMap<usize, Task>);
 trait CurrentUsageExt {
     fn new(usage: Usage, task: Task) -> Self;
 
-    fn should_revert(&self, count_token: usize, new_task: &Task) -> bool;
+    fn should_revert(_: &Self, count_token: usize, new_task: &Task) -> bool;
 }
 
 impl CurrentUsageExt for CurrentUsage {
