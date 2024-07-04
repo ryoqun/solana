@@ -823,14 +823,14 @@ impl SchedulingStateMachine {
                                         t.push(reverted_task);
                                     }
                                 }
-                                for tt in t.into_iter() {
-                                    usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
-                                }
                                 if current_tasks.is_empty() {
                                     //*current_usage = Usage::Writable;
                                     //current_tasks.insert(new_task.index, new_task);
                                 } else {
                                     //usage_queue.insert_blocked_usage_from_task(new_task.index, (RequestedUsage::Writable, new_task));
+                                }
+                                for tt in t.into_iter() {
+                                    usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
                                 }
                             },
                         };
