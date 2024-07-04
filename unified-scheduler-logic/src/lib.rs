@@ -771,17 +771,17 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some((current_usage, current_task)) if current_task.first_key_value().unwrap().1.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.first_key_value().unwrap().1.index => {
+                    Some((current_usage, current_tasks)) if current_tasks.first_key_value().unwrap().1.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_tasks.first_key_value().unwrap().1.index => {
                         // introduce some counter for this branch...
 
                         match (&current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
-                                let reverted_task = current_task.pop_first().unwrap().1;
+                                let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
-                                let reverted_task = current_task.pop_first().unwrap().1;
+                                let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
@@ -790,8 +790,8 @@ impl SchedulingStateMachine {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
-                                assert_eq!(count.current() as usize, current_task.len());
-                                let reverted_task = current_task.pop_first().unwrap().1;
+                                assert_eq!(count.current() as usize, current_tasks.len());
+                                let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Writable;
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
