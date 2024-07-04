@@ -757,18 +757,15 @@ impl SchedulingStateMachine {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                LockResult::Ok(())
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                LockResult::Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
                                 usage_queue.try_lock(context.requested_usage, &new_task).unwrap();
-                                LockResult::Ok(())
                             },
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current(), 1);
@@ -776,9 +773,9 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Writable;
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
-                                LockResult::Ok(())
                             },
-                        }
+                        };
+                        LockResult::Ok(())
                     },
                     _ => {
                         if usage_queue.has_no_blocked_usage() {
