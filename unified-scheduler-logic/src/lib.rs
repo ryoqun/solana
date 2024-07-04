@@ -555,7 +555,7 @@ impl CurrentUsageExt for CurrentUsage {
     }
 
     fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task: &Task) -> bool { 
-        let (current_usage, current_tasks) = self;
+        let (_current_usage, current_tasks) = self;
         current_tasks.first_key_value().unwrap().1.blocked_usage_count(count_token) > 0 && new_task.index < current_tasks.first_key_value().unwrap().1.index
     }
 }
@@ -778,7 +778,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some(a) if a.should_revert(&new_task) => {
+                    Some(a) if a.should_revert(&mut self.count_token, &new_task) => {
                         let (current_usage, current_tasks) = a;
                         // introduce some counter for this branch...
                         //
