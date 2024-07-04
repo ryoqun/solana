@@ -600,7 +600,7 @@ impl UsageQueueInner {
         match &mut self.current_usage {
             Some((Usage::Readonly(ref mut count), tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    dbg!(("unlock", tasks.keys()));
+                    dbg!(("unlock", tasks.keys(), task_index));
                     if count.is_one() {
                         is_unused_now = true;
                     } else {
