@@ -535,7 +535,7 @@ enum RequestedUsage {
 /// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
 struct UsageQueueInner {
-    current_usage: Option<(Usage, Task)>, // Option<Usage>
+    current_usage: Option<(Usage, BTreeMap<usize, Task>)>, // Option<Usage>
     blocked_usages_from_tasks: BTreeMap<usize, UsageFromTask>,
 }
 
