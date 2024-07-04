@@ -253,6 +253,7 @@ mod utils {
     /// existence of mutable access over them by requiring the token itself to be mutably borrowed
     /// to get a mutable reference to the internal value of `TokenCell`.
     // *mut is used to make this type !Send and !Sync
+    #[derive(Debug)]
     pub(super) struct Token<V: 'static>(PhantomData<*mut V>);
 
     impl<V> Token<V> {
