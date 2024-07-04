@@ -1830,6 +1830,8 @@ mod tests {
                 .map(|t| t.task_index()),
             Some(104)
         );
+        state_machine.deschedule_task(&task1);
+        state_machine.deschedule_task(&task1_3);
     }
 
     #[test]
