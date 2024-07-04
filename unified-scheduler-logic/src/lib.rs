@@ -1401,7 +1401,7 @@ mod tests {
             state_machine
                 .schedule_task(task0_2.clone())
                 .map(|t| t.task_index()),
-            Some(100)
+            Some(51)
         );
         assert_matches!(state_machine.schedule_task(task1.clone()), None);
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
