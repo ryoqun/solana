@@ -640,7 +640,9 @@ pub struct SchedulingStateMachine {
 
 impl Drop for SchedulingStateMachine {
     fn drop(&mut self) {
-        self.reinitialize();
+        if !std::thread::panicking() {
+            self.reinitialize();
+        }
     }
 }
 const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 56);
