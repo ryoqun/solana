@@ -763,7 +763,7 @@ impl SchedulingStateMachine {
                                 let reverted_task = std::mem::replace(current_task, new_task.clone());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
-                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Readonly, reverted_task));
+                                usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
                                 LockResult::Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
