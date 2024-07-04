@@ -821,7 +821,7 @@ impl SchedulingStateMachine {
     fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                let mut unblocked_task_from_queue = usage_queue.unlock(context.requested_usage);
+                let mut unblocked_task_from_queue = usage_queue.unlock(context.requested_usage, task.index);
 
                 while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
