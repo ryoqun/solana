@@ -1413,7 +1413,8 @@ mod tests {
         // addr2: locked by task1 queue: [task2]
         
         assert!(!state_machine.has_unblocked_task());
-        //state_machine.deschedule_task(&task1);
+        state_machine.deschedule_task(&task0_1);
+        assert!(!state_machine.has_unblocked_task());
         //deschedule task0_1
         // now
         // addr1: locked by task2 queue: [task1]
