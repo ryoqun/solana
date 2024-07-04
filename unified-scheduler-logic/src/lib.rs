@@ -738,7 +738,7 @@ impl SchedulingStateMachine {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 dbg!(&usage_queue.current_usage.as_ref().map(|(u, t)| (u, t.index, t.blocked_usage_count(&mut self.count_token))));
 
-                let lock_result = match &usage_queue.current_usage {
+                let lock_result = match &mut usage_queue.current_usage {
                     Some((current_usage, current_task)) if current_task.blocked_usage_count(&mut self.count_token) > 0 && new_task.index < current_task.index => {
                         match current_usage {
                             Usage::Writable => {
