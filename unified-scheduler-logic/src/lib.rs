@@ -582,7 +582,7 @@ impl UsageQueueInner {
             Some((Usage::Writable, _task)) => None,
         }
         .inspect(|&new_usage| {
-            self.current_usage = Some((new_usage, task.clone()));
+            self.current_usage = Some(CurrentUsage::new(new_usage, task.clone()));
         })
         .map(|_| ())
         .ok_or(())
