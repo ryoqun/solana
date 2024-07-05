@@ -546,7 +546,7 @@ impl BankWithSchedulerInner {
                 let pool = pool.clone();
                 drop(scheduler);
 
-                let context = SchedulingContext::new(mode, self.bank.clone());
+                let context = SchedulingContext::new(*mode, self.bank.clone());
                 let mut scheduler = self.scheduler.write().unwrap();
                 trace!("with_active_scheduler: {:?}", scheduler);
                 scheduler.transition_from_stale_to_active(|pool, result_with_timings| {
