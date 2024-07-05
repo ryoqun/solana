@@ -242,9 +242,9 @@ impl BankForks {
             "Inserting bank (slot: {}) with scheduler into bank_forks...",
             bank.slot()
         );
-        let context = SchedulingContext::new(bank.clone());
+        let context = SchedulingContext::new(mode, bank.clone());
         let scheduler = scheduler_pool.take_scheduler(context);
-        let bank_with_scheduler = BankWithScheduler::new(mode, bank, Some(scheduler));
+        let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
         scheduler_pool.register_timeout_listener(bank_with_scheduler.create_timeout_listener());
         bank_with_scheduler
     }
