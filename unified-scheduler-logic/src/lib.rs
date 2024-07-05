@@ -712,7 +712,7 @@ pub struct SchedulingStateMachine {
 impl Drop for SchedulingStateMachine {
     fn drop(&mut self) {
         if !std::thread::panicking() {
-            self.reinitialize();
+            self.reinitialize_for_test();
         }
     }
 }
