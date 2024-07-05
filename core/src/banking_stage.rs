@@ -753,7 +753,7 @@ impl BankingStage {
                                             break;
                                         }
                                     }
-                                    Err(RecvTimeoutError::Timeout) => continue,
+                                    Err(RecvTimeoutError::Timeout) => continue 'outer,
                                     Err(RecvTimeoutError::Disconnected) => break 'outer,
                                 }
                             }
