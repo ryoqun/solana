@@ -453,7 +453,7 @@ impl TaskHandler for DefaultTaskHandler {
             let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
             let batch_with_indexes = TransactionBatchWithIndexes {
                 batch,
-                transaction_indexes: vec![index],
+                transaction_indexes: vec![(index as usize)],
             };
 
             *result = execute_batch(
