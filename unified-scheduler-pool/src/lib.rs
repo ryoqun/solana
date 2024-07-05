@@ -1082,7 +1082,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
                         $level! {
-                            "sch: {}: slot: {}[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}Tb|{}Lr) channels(<{} >{}+{} <{}+{}) tps: {}",
+                            "sch: {}: slot: {}[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}Tb|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
                             scheduler_id, slot,
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
@@ -1100,7 +1100,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                                 if log_elapsed_us > 0 {
                                     let l = format!(
-                                        "[interval:{}|overall:{}]",
+                                        "tps({}|{}): ({}|{})",
+                                        log_elapsed_us,
+                                        session_elapsed_us,
                                         1_000_000_u128 * ((state_machine.handled_task_count() - reported_task_count) as u128) / log_elapsed_us,
                                         1_000_000_u128 * (state_machine.handled_task_count() as u128) / session_elapsed_us
                                     );
@@ -1110,7 +1112,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     }
                                     l
                                 } else {
-                                    "-".to_string()
+                                    "tps: -".to_string()
                                 }
                             },
                         }
