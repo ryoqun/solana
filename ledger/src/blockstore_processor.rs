@@ -477,7 +477,7 @@ fn rebatch_transactions<'a>(
     sanitized_txs: &'a [SanitizedTransaction],
     start: usize,
     end: usize,
-    transaction_indexes: &'a [usize],
+    transaction_indexes: &'a [u128],
 ) -> TransactionBatchWithIndexes<'a, 'a> {
     let txs = &sanitized_txs[start..=end];
     let results = &lock_results[start..=end];
