@@ -217,20 +217,24 @@ impl BankForks {
 
     pub fn install_scheduler_pool(&mut self, pool: InstalledSchedulerPoolArc) {
         info!("Installed new scheduler_pool into bank_forks: {:?}", pool);
-        for (slot, bank) in self.banks.iter_mut() {
-            if !bank.is_frozen() {
-                trace!("Installed scheduler into existing unfrozen slot: {slot}");
-                *bank = Self::install_scheduler_into_bank(&pool, bank.clone_without_scheduler());
-            }
-        }
         assert!(
             self.scheduler_pool.replace(pool).is_none(),
             "Reinstalling scheduler pool isn't supported"
         );
     }
 
+    pub fn reinstall_schedulers(&mut self, mode: SchedulingMode) {
+        for (slot, bank) in self.banks.iter_mut() {
+            if !bank.is_frozen() {
+                trace!("Installed scheduler into existing unfrozen slot: {slot}");
+                *bank = Self::install_scheduler_into_bank(&pool, mode, bank.clone_without_scheduler());
+            }
+        }
+    }
+
     fn install_scheduler_into_bank(
         scheduler_pool: &InstalledSchedulerPoolArc,
+        mode: SchedulingMode,
         bank: Arc<Bank>,
     ) -> BankWithScheduler {
         trace!(
@@ -239,19 +243,19 @@ impl BankForks {
         );
         let context = SchedulingContext::new(bank.clone());
         let scheduler = scheduler_pool.take_scheduler(context);
-        let bank_with_scheduler = BankWithScheduler::new(bank, Some(scheduler));
+        let bank_with_scheduler = BankWithScheduler::new(mode, bank, Some(scheduler));
         scheduler_pool.register_timeout_listener(bank_with_scheduler.create_timeout_listener());
         bank_with_scheduler
     }
 
-    pub fn insert(&mut self, mut bank: Bank) -> BankWithScheduler {
+    pub fn insert(&mut self, mode: SchedulingMode, mut bank: Bank) -> BankWithScheduler {
         if self.root.load(Ordering::Relaxed) < self.highest_slot_at_startup {
             bank.set_check_program_modification_slot(true);
         }
 
         let bank = Arc::new(bank);
         let bank = if let Some(scheduler_pool) = &self.scheduler_pool {
-            Self::install_scheduler_into_bank(scheduler_pool, bank)
+            Self::install_scheduler_into_bank(scheduler_pool, mode, bank)
         } else {
             BankWithScheduler::new_without_scheduler(bank)
         };
