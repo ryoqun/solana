@@ -352,7 +352,7 @@ impl SchedulerStatus {
     }
 
     fn transition_from_stale_to_unavailable(&mut self) -> ResultWithTimings {
-        let Self::Stale(_pool, result_with_timings) = mem::replace(self, Self::Unavailable) else {
+        let Self::Stale(_pool, _mode, result_with_timings) = mem::replace(self, Self::Unavailable) else {
             panic!("transition to Unavailable failed: {self:?}");
         };
         result_with_timings
