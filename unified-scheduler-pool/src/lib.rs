@@ -461,17 +461,17 @@ impl TaskHandler for DefaultTaskHandler {
                 SchedulingMode::BlockVerification => None,
                 SchedulingMode::BlockProduction => {
                     Some(|| {
-                    let summary = handler_context
-                        .transaction_recorder
-                        .as_ref()
-                        .unwrap()
-                        .record_transactions(
-                            scheduling_context.bank().slot(),
-                            vec![transaction.to_versioned_transaction()],
-                        );
-                    summary.result.is_ok()
-                })
-                }
+                        let summary = handler_context
+                            .transaction_recorder
+                            .as_ref()
+                            .unwrap()
+                            .record_transactions(
+                                scheduling_context.bank().slot(),
+                                vec![transaction.to_versioned_transaction()],
+                            );
+                        summary.result.is_ok()
+                    })
+                },
             };
 
             *result = execute_batch(
@@ -482,7 +482,7 @@ impl TaskHandler for DefaultTaskHandler {
                 timings,
                 handler_context.log_messages_bytes_limit,
                 &handler_context.prioritization_fee_cache,
-                pre_commit_callback),
+                pre_commit_callback,
             );
         } else {
             handler_context
