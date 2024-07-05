@@ -708,7 +708,7 @@ impl BankingStage {
                                             return None;
                                         };
 
-                                        let (priority, cost) = SchedulerController::calculate_priority_and_cost(&tx, &fb, &bank);
+                                        let (priority, cost) = SchedulerController::calculate_priority_and_cost(&tx, &fb.into(), &bank);
 
                                         Some((tx, i))
                                     })
