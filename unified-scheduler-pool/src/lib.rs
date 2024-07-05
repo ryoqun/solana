@@ -1104,9 +1104,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         1_000_000_u128 * ((state_machine.handled_task_count() - reported_task_count) as u128) / log_elapsed_us,
                                         1_000_000_u128 * (state_machine.handled_task_count() as u128) / session_elapsed_us
                                     );
-                                    if $prefix != "ended" {
-                                        (log_reported_at, reported_task_count) = (now, state_machine.handled_task_count());
-                                    }
+                                    #[allow(unused_assignment)]
+                                    (log_reported_at, reported_task_count) = (now, state_machine.handled_task_count());
                                     l
                                 } else {
                                     "-".to_string()
