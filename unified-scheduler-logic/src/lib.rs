@@ -1181,7 +1181,7 @@ mod tests {
         };
         state_machine.task_total.increment_self();
         assert_eq!(state_machine.task_total(), 1);
-        state_machine.reinitialize();
+        state_machine.reinitialize_for_test();
         assert_eq!(state_machine.task_total(), 0);
     }
 
@@ -1194,7 +1194,7 @@ mod tests {
         let address_loader = &mut create_address_loader(None);
         let task = SchedulingStateMachine::create_task(simplest_transaction(), 3, address_loader);
         state_machine.schedule_task(task).unwrap();
-        state_machine.reinitialize();
+        state_machine.reinitialize_for_test();
     }
 
     #[test]
