@@ -1100,7 +1100,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                                 if log_elapsed_us > 0 {
                                     let l = format!(
-                                        "tps({}|{}): ({}|{})",
+                                        "tps({}us|{}us): ({}|{})",
                                         log_elapsed_us,
                                         session_elapsed_us,
                                         1_000_000_u128 * ((state_machine.handled_task_count() - reported_task_count) as u128) / log_elapsed_us,
