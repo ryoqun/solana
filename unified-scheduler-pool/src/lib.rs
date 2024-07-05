@@ -457,16 +457,10 @@ impl TaskHandler for DefaultTaskHandler {
                 transaction_indexes: vec![(index as usize)],
             };
 
-            *result = execute_batch(
-                &batch_with_indexes,
-                scheduling_context.bank(),
-                handler_context.transaction_status_sender.as_ref(),
-                handler_context.replay_vote_sender.as_ref(),
-                timings,
-                handler_context.log_messages_bytes_limit,
-                &handler_context.prioritization_fee_cache,
-                Some(|| {
-                    //trace!("poh record start!");
+            let pre_commit_callback = match scheduling_context.mode() {
+                SchedulingMode::BlockVerification => None,
+                SchedulingMode::BlockProduction => {
+                    Some(|| {
                     let summary = handler_context
                         .transaction_recorder
                         .as_ref()
@@ -475,14 +469,22 @@ impl TaskHandler for DefaultTaskHandler {
                             scheduling_context.bank().slot(),
                             vec![transaction.to_versioned_transaction()],
                         );
-                    //trace!("poh record end!");
                     summary.result.is_ok()
-                    //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
-                    //true
-                }),
+                }
+                }
+            };
+
+            *result = execute_batch(
+                &batch_with_indexes,
+                scheduling_context.bank(),
+                handler_context.transaction_status_sender.as_ref(),
+                handler_context.replay_vote_sender.as_ref(),
+                timings,
+                handler_context.log_messages_bytes_limit,
+                &handler_context.prioritization_fee_cache,
+                pre_commit_callback),
             );
         } else {
-            //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
             handler_context
                 .dummy_sender
                 .as_ref()
@@ -877,9 +879,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let Ok(executed_task) = executed_task else {
             return None;
         };
-        //trace!("accumulate begin!!");
-        //timings.accumulate(&executed_task.result_with_timings.1);
-        //trace!("accumulate end!!");
         match mode {
             SchedulingMode::BlockVerification => match executed_task.result_with_timings.0 {
                 Ok(()) => Some(executed_task),
