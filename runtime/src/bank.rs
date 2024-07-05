@@ -4840,8 +4840,10 @@ impl Bank {
             },
         );
 
-        if !pre_commit_callback() {
-            return None;
+        if Some(pre_commit_callback) = pre_commit_callback {
+            if !pre_commit_callback() {
+                return None;
+            }
         }
 
         let (last_blockhash, lamports_per_signature) =
