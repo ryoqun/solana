@@ -870,7 +870,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
     #[must_use]
     fn accumulate_result_with_timings(
-        mode: &SchedulingMode,
+        mode: SchedulingMode,
         (result, timings): &mut ResultWithTimings,
         executed_task: HandlerResult,
     ) -> Option<Box<ExecutedTask>> {
