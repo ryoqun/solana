@@ -86,7 +86,7 @@ use {
 
 pub struct TransactionBatchWithIndexes<'a, 'b> {
     pub batch: TransactionBatch<'a, 'b>,
-    pub transaction_indexes: Vec<u128>,
+    pub transaction_indexes: Vec<usize>,
 }
 
 struct ReplayEntry {
@@ -477,7 +477,7 @@ fn rebatch_transactions<'a>(
     sanitized_txs: &'a [SanitizedTransaction],
     start: usize,
     end: usize,
-    transaction_indexes: &'a [u128],
+    transaction_indexes: &'a [usize],
 ) -> TransactionBatchWithIndexes<'a, 'a> {
     let txs = &sanitized_txs[start..=end];
     let results = &lock_results[start..=end];
