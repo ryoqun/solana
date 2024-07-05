@@ -416,6 +416,8 @@ const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 type BlockedUsageCountToken = Token<ShortCounter>;
 const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
+type Index = u128;
+
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
 pub struct TaskInner {
@@ -423,13 +425,13 @@ pub struct TaskInner {
     /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
     /// Carrying this along with the transaction is needed to properly record the execution result
     /// of it.
-    index: usize,
+    index: Index,
     lock_contexts: Vec<LockContext>,
     blocked_usage_count: TokenCell<ShortCounter>,
 }
 
 impl TaskInner {
-    pub fn task_index(&self) -> usize {
+    pub fn task_index(&self) -> Index {
         self.index
     }
 
@@ -506,7 +508,7 @@ enum Usage {
 
 /*
 enum Usage {
-    Readonly(BTreeMap<usize, Task>),
+    Readonly(BTreeMap<Index, Task>),
     Writable(Task),
 }
 */
@@ -536,12 +538,12 @@ enum RequestedUsage {
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<CurrentUsage>, // Option<Usage>
-    blocked_usages_from_tasks: BTreeMap<usize, UsageFromTask>,
+    blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
 }
 
 type UsageFromTask = (RequestedUsage, Task);
 
-type CurrentUsage = (Usage, BTreeMap<usize, Task>);
+type CurrentUsage = (Usage, BTreeMap<Index, Task>);
 
 trait CurrentUsageExt {
     fn new(usage: Usage, task: Task) -> Self;
@@ -612,7 +614,7 @@ impl UsageQueueInner {
     }
 
     #[must_use]
-    fn unlock(&mut self, requested_usage: RequestedUsage, task_index: usize) -> Option<UsageFromTask> {
+    fn unlock(&mut self, requested_usage: RequestedUsage, task_index: Index) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some((Usage::Readonly(ref mut count), current_tasks)) => match requested_usage {
@@ -646,7 +648,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn insert_blocked_usage_from_task(&mut self, index: usize, usage_from_task: UsageFromTask) {
+    fn insert_blocked_usage_from_task(&mut self, index: Index, usage_from_task: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         assert!(self
             .blocked_usages_from_tasks
@@ -817,7 +819,7 @@ impl SchedulingStateMachine {
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
                                 let mut new_c = count.clone();
-                                let idx: Vec<usize> = current_tasks.keys().rev().copied().collect::<Vec<_>>();
+                                let idx: Vec<Index> = current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
                                 for current_index in idx {
                                     if current_index < new_task.index {
@@ -926,7 +928,7 @@ impl SchedulingStateMachine {
     /// separation of concern.
     pub fn create_task(
         transaction: SanitizedTransaction,
-        index: usize,
+        index: Index,
         usage_queue_loader: &mut impl FnMut(Pubkey) -> UsageQueue,
     ) -> Task {
         // Calling the _unchecked() version here is safe for faster operation, because
