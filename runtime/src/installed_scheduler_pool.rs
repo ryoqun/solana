@@ -244,6 +244,10 @@ impl SchedulingContext {
         Self { mode, bank }
     }
 
+    pub fn mode(&self) -> SchedulingMode {
+        self.mode
+    }
+
     pub fn bank(&self) -> &Arc<Bank> {
         &self.bank
     }
