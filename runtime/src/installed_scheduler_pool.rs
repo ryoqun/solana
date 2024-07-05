@@ -1,6 +1,6 @@
 //! Transaction processing glue code, mainly consisting of Object-safe traits
 //!
-/^/! [InstalledSchedulerPool] lends one of pooled [InstalledScheduler]s as wrapped in
+//! [InstalledSchedulerPool] lends one of pooled [InstalledScheduler]s as wrapped in
 //! [BankWithScheduler], which can be used by `ReplayStage` and `BankingStage` for transaction
 //! execution. After use, the scheduler will be returned to the pool.
 //!
