@@ -652,8 +652,7 @@ impl BankWithSchedulerInner {
         let mut scheduler = scheduler.write().unwrap();
         let (was_noop, result_with_timings) = match &mut *scheduler {
             SchedulerStatus::Active(scheduler) if reason.is_paused() => {
-                trace!("{}", std::backtrace::Backtrace::force_capture());
-                //scheduler.pause_for_recent_blockhash();
+                scheduler.pause_for_recent_blockhash();
                 (false, None)
             }
             SchedulerStatus::Active(_scheduler) => {
