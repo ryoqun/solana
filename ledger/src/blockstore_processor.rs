@@ -86,7 +86,7 @@ use {
 
 pub struct TransactionBatchWithIndexes<'a, 'b> {
     pub batch: TransactionBatch<'a, 'b>,
-    pub transaction_indexes: Vec<usize>,
+    pub transaction_indexes: Vec<u128>,
 }
 
 struct ReplayEntry {
