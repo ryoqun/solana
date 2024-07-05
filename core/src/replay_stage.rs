@@ -2153,7 +2153,7 @@ impl ReplayStage {
             // new()-ing of its child bank
             banking_tracer.hash_event(parent.slot(), &parent.last_blockhash(), &parent.hash());
 
-            let tpu_bank = bank_forks.write().unwrap().insert(tpu_bank);
+            let tpu_bank = bank_forks.write().unwrap().insert(SchedulingMode::BlockProduction, tpu_bank);
             poh_recorder
                 .write()
                 .unwrap()
