@@ -1077,7 +1077,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let (mut log_reported_at, mut reported_task_count) = (Instant::now(), 0);
+                let (mut log_reported_at, mut reported_task_count) = (session_started_at, 0);
 
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
@@ -1230,6 +1230,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
                             session_started_at = Instant::now();
+                            (log_reported_at, reported_task_count) = (session_started_at, 0);
                             slot = new_context.bank().slot();
                             runnable_task_sender
                                 .send_chained_channel(new_context, handler_count)
