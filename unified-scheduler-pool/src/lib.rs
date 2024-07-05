@@ -870,6 +870,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
     #[must_use]
     fn accumulate_result_with_timings(
+        mode: &SchedulingMode,
         (result, timings): &mut ResultWithTimings,
         executed_task: HandlerResult,
     ) -> Option<Box<ExecutedTask>> {
@@ -881,14 +882,18 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         //trace!("accumulate end!!");
         match executed_task.result_with_timings.0 {
             Ok(()) => Some(executed_task),
-            Err(ref error @ TransactionError::CommitFailed) => {
-                debug!("maybe reached max tick height...: {error:?}");
-                Some(executed_task)
-            }
             Err(error) => {
-                error!("error is detected while accumulating....: {error:?}");
-                *result = Err(error);
-                None
+                match mode {
+                    SchedulingMode::BlockVerification => {
+                        error!("error is detected while accumulating....: {error:?}");
+                        *result = Err(error);
+                        None
+                    }
+                    SchedulingMode::BlockProduction => {
+                        debug!("error is detected while accumulating....: {error:?}");
+                        Some(executed_task)
+                    }
+                }
             }
         }
     }
@@ -1135,7 +1140,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 // 1. Initial result_with_timing is propagated implicitly by the moved variable.
                 // 2. Subsequent result_with_timings are propagated explicitly from
                 //    the new_task_receiver.recv() invocation located at the end of loop.
-
                 'nonaborted_main_loop: loop {
                     let mut is_finished = false;
                     while !is_finished {
@@ -1159,6 +1163,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         let step_type = select_biased! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
+                                    state_machine.mode(),
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler")
                                 ) else {
@@ -1205,6 +1210,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
+                                    state_machine.mode(),
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler")
                                 ) else {
