@@ -1042,6 +1042,10 @@ impl SchedulingStateMachine {
         *scheduling_mode = mode;
     }
 
+    pub fn reinitialize_for_test(&mut self) {
+        self.reinitialize(SchedulingMode::BlockProduction);
+    }
+
     /// Creates a new instance of [`SchedulingStateMachine`] with its `unsafe` fields created as
     /// well, thus carrying over `unsafe`.
     ///
