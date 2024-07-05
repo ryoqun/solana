@@ -471,7 +471,7 @@ impl TaskHandler for DefaultTaskHandler {
                         .as_ref()
                         .unwrap()
                         .record_transactions(
-                            bank.slot(),
+                            scheduling_context.bank().slot(),
                             vec![transaction.to_versioned_transaction()],
                         );
                     //trace!("poh record end!");
