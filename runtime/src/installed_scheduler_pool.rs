@@ -324,7 +324,7 @@ impl SchedulerStatus {
         &mut self,
         f: impl FnOnce(InstalledSchedulerPoolArc, ResultWithTimings) -> InstalledSchedulerBox,
     ) {
-        let Self::Stale(pool, result_with_timings) = mem::replace(self, Self::Unavailable) else {
+        let Self::Stale(pool, _mode, result_with_timings) = mem::replace(self, Self::Unavailable) else {
             panic!("transition to Active failed: {self:?}");
         };
         *self = Self::Active(f(pool, result_with_timings));
