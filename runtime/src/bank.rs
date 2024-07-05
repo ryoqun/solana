@@ -4809,7 +4809,7 @@ impl Bank {
         recording_config: ExecutionRecordingConfig,
         timings: &mut ExecuteTimings,
         log_messages_bytes_limit: Option<usize>,
-        pre_commit_callback: impl FnOnce() -> bool,
+        pre_commit_callback: Option<impl FnOnce() -> bool>,
     ) -> Option<(TransactionResults, TransactionBalancesSet)> {
         let pre_balances = if collect_balances {
             self.collect_balances(batch)
