@@ -691,11 +691,11 @@ const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 pub struct SchedulingStateMachine {
     unblocked_task_queue: VecDeque<Task>,
     active_task_count: ShortCounter,
-    handled_task_count: ShortCounter,
-    unblocked_task_count: ShortCounter,
+    handled_task_total: ShortCounter,
+    unblocked_task_total: ShortCounter,
     blocked_task_count: ShortCounter,
-    replaced_lock_total: ShortCounter,
-    total_task_count: ShortCounter,
+    reblocked_lock_total: ShortCounter,
+    task_total: ShortCounter,
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
 }
@@ -727,23 +727,23 @@ impl SchedulingStateMachine {
         self.active_task_count.current()
     }
 
-    pub fn handled_task_count(&self) -> u32 {
-        self.handled_task_count.current()
+    pub fn handled_task_total(&self) -> u32 {
+        self.handled_task_total.current()
     }
 
-    pub fn unblocked_task_count(&self) -> u32 {
-        self.unblocked_task_count.current()
+    pub fn unblocked_task_total(&self) -> u32 {
+        self.unblocked_task_total.current()
     }
 
     pub fn blocked_task_count(&self) -> u32 {
         self.blocked_task_count.current()
     }
 
-    pub fn replaced_lock_total(&self) -> u32 {
-        self.replaced_lock_total.current()
+    pub fn reblocked_lock_total(&self) -> u32 {
+        self.reblocked_lock_total.current()
     }
-    pub fn total_task_count(&self) -> u32 {
-        self.total_task_count.current()
+    pub fn task_total(&self) -> u32 {
+        self.task_total.current()
     }
 
     /// Schedules given `task`, returning it if successful.
@@ -754,7 +754,7 @@ impl SchedulingStateMachine {
     /// Note that this function takes ownership of the task to allow for future optimizations.
     #[must_use]
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
-        self.total_task_count.increment_self();
+        self.task_total.increment_self();
         self.active_task_count.increment_self();
         self.try_lock_usage_queues(task)
     }
@@ -762,7 +762,7 @@ impl SchedulingStateMachine {
     #[must_use]
     pub fn schedule_next_unblocked_task(&mut self) -> Option<Task> {
         self.unblocked_task_queue.pop_front().inspect(|_| {
-            self.unblocked_task_count.increment_self();
+            self.unblocked_task_total.increment_self();
         })
     }
 
@@ -778,7 +778,7 @@ impl SchedulingStateMachine {
     /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
         self.active_task_count.decrement_self();
-        self.handled_task_count.increment_self();
+        self.handled_task_total.increment_self();
         self.unlock_usage_queues(task);
         if self.blocked_task_count() > 0 {
             assert_gt!(self.active_task_count(), self.blocked_task_count(), "no deadlock");
@@ -799,7 +799,7 @@ impl SchedulingStateMachine {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                self.replaced_lock_total.increment_self();
+                                self.reblocked_lock_total.increment_self();
                                 Ok(())
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
@@ -807,7 +807,7 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                self.replaced_lock_total.increment_self();
+                                self.reblocked_lock_total.increment_self();
                                 Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
@@ -841,7 +841,7 @@ impl SchedulingStateMachine {
                                 for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
-                                    self.replaced_lock_total.increment_self();
+                                    self.reblocked_lock_total.increment_self();
                                 }
                                 r
                             },
@@ -984,20 +984,20 @@ impl SchedulingStateMachine {
         let Self {
             unblocked_task_queue: _,
             active_task_count,
-            handled_task_count,
-            unblocked_task_count,
+            handled_task_total,
+            unblocked_task_total,
             blocked_task_count: _,
-            replaced_lock_total,
-            total_task_count,
+            reblocked_lock_total,
+            task_total,
             count_token: _,
             usage_queue_token: _,
             // don't add ".." here
         } = self;
         active_task_count.reset_to_zero();
-        handled_task_count.reset_to_zero();
-        unblocked_task_count.reset_to_zero();
-        replaced_lock_total.reset_to_zero();
-        total_task_count.reset_to_zero();
+        handled_task_total.reset_to_zero();
+        unblocked_task_total.reset_to_zero();
+        reblocked_lock_total.reset_to_zero();
+        task_total.reset_to_zero();
     }
 
     /// Creates a new instance of [`SchedulingStateMachine`] with its `unsafe` fields created as
@@ -1012,11 +1012,11 @@ impl SchedulingStateMachine {
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
             unblocked_task_queue: VecDeque::with_capacity(1024),
             active_task_count: ShortCounter::zero(),
-            handled_task_count: ShortCounter::zero(),
-            unblocked_task_count: ShortCounter::zero(),
+            handled_task_total: ShortCounter::zero(),
+            unblocked_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
-            replaced_lock_total: ShortCounter::zero(),
-            total_task_count: ShortCounter::zero(),
+            reblocked_lock_total: ShortCounter::zero(),
+            task_total: ShortCounter::zero(),
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
         }
@@ -1120,7 +1120,7 @@ mod tests {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
         assert_eq!(state_machine.active_task_count(), 0);
-        assert_eq!(state_machine.total_task_count(), 0);
+        assert_eq!(state_machine.task_total(), 0);
         assert!(state_machine.has_no_active_task());
     }
 
@@ -1129,10 +1129,10 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
         };
-        state_machine.total_task_count.increment_self();
-        assert_eq!(state_machine.total_task_count(), 1);
+        state_machine.task_total.increment_self();
+        assert_eq!(state_machine.task_total(), 1);
         state_machine.reinitialize();
-        assert_eq!(state_machine.total_task_count(), 0);
+        assert_eq!(state_machine.task_total(), 0);
     }
 
     #[test]
@@ -1168,10 +1168,10 @@ mod tests {
         };
         let task = state_machine.schedule_task(task).unwrap();
         assert_eq!(state_machine.active_task_count(), 1);
-        assert_eq!(state_machine.total_task_count(), 1);
+        assert_eq!(state_machine.task_total(), 1);
         state_machine.deschedule_task(&task);
         assert_eq!(state_machine.active_task_count(), 0);
-        assert_eq!(state_machine.total_task_count(), 1);
+        assert_eq!(state_machine.task_total(), 1);
         assert!(state_machine.has_no_active_task());
     }
 
@@ -1198,21 +1198,21 @@ mod tests {
         assert!(state_machine.has_unblocked_task());
         assert_eq!(state_machine.unblocked_task_queue_count(), 1);
 
-        // unblocked_task_count() should be incremented
-        assert_eq!(state_machine.unblocked_task_count(), 0);
+        // unblocked_task_total() should be incremented
+        assert_eq!(state_machine.unblocked_task_total(), 0);
         assert_eq!(
             state_machine
                 .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_eq!(state_machine.unblocked_task_count(), 1);
+        assert_eq!(state_machine.unblocked_task_total(), 1);
 
         // there's no blocked task anymore; calling schedule_next_unblocked_task should be noop and
-        // shouldn't increment the unblocked_task_count().
+        // shouldn't increment the unblocked_task_total().
         assert!(!state_machine.has_unblocked_task());
         assert_matches!(state_machine.schedule_next_unblocked_task(), None);
-        assert_eq!(state_machine.unblocked_task_count(), 1);
+        assert_eq!(state_machine.unblocked_task_total(), 1);
 
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
         state_machine.deschedule_task(&task2);
@@ -1253,14 +1253,14 @@ mod tests {
         // new task is arriving after task1 is already descheduled and task2 got unblocked
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
-        assert_eq!(state_machine.unblocked_task_count(), 0);
+        assert_eq!(state_machine.unblocked_task_total(), 0);
         assert_matches!(
             state_machine
                 .schedule_next_unblocked_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_eq!(state_machine.unblocked_task_count(), 1);
+        assert_eq!(state_machine.unblocked_task_total(), 1);
 
         state_machine.deschedule_task(&task2);
 
@@ -1270,7 +1270,7 @@ mod tests {
                 .map(|t| t.task_index()),
             Some(103)
         );
-        assert_eq!(state_machine.unblocked_task_count(), 2);
+        assert_eq!(state_machine.unblocked_task_total(), 2);
 
         state_machine.deschedule_task(&task3);
         assert!(state_machine.has_no_active_task());
@@ -1303,15 +1303,15 @@ mod tests {
         );
 
         assert_eq!(state_machine.active_task_count(), 2);
-        assert_eq!(state_machine.handled_task_count(), 0);
+        assert_eq!(state_machine.handled_task_total(), 0);
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
         state_machine.deschedule_task(&task1);
         assert_eq!(state_machine.active_task_count(), 1);
-        assert_eq!(state_machine.handled_task_count(), 1);
+        assert_eq!(state_machine.handled_task_total(), 1);
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.active_task_count(), 0);
-        assert_eq!(state_machine.handled_task_count(), 2);
+        assert_eq!(state_machine.handled_task_total(), 2);
         assert!(state_machine.has_no_active_task());
     }
 
@@ -1344,16 +1344,16 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
         assert_eq!(state_machine.active_task_count(), 3);
-        assert_eq!(state_machine.handled_task_count(), 0);
+        assert_eq!(state_machine.handled_task_total(), 0);
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
         state_machine.deschedule_task(&task1);
         assert_eq!(state_machine.active_task_count(), 2);
-        assert_eq!(state_machine.handled_task_count(), 1);
+        assert_eq!(state_machine.handled_task_total(), 1);
         assert_eq!(state_machine.unblocked_task_queue_count(), 0);
         assert_matches!(state_machine.schedule_next_unblocked_task(), None);
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.active_task_count(), 1);
-        assert_eq!(state_machine.handled_task_count(), 2);
+        assert_eq!(state_machine.handled_task_total(), 2);
         assert_eq!(state_machine.unblocked_task_queue_count(), 1);
         // task3 is finally unblocked after all of readable tasks (task1 and task2) is finished.
         assert_matches!(
