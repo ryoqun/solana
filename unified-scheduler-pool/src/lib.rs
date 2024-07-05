@@ -1087,7 +1087,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
                             state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_total(),
-                            state_machine.total_task_count(),
+                            state_machine.task_total(),
                             state_machine.unblocked_task_count(),
                             state_machine.reblocked_lock_total(),
                             new_task_receiver.len(),
