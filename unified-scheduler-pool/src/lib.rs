@@ -1087,10 +1087,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         $level! {
                             "sch: {}: slot: {}({})[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}TB|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
                             scheduler_id, slot,
-                            if state_machine.mode() == SchedulingMode::BlockVerification {
-                                "v"
-                            } else {
-                                "p"
+                            match state_machine.mode() {
+                                SchedulingMode::BlockVerification => "v",
+                                SchedulingMode::BlockProduction => "p",
                             },
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
