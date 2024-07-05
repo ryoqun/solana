@@ -1556,7 +1556,7 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
 
     fn schedule_execution(
         &self,
-        &(transaction, index): &(&SanitizedTransaction, usize),
+        &(transaction, index): &(&SanitizedTransaction, Index),
     ) -> ScheduleResult {
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
