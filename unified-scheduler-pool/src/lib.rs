@@ -1077,7 +1077,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let mut (log_reported_at, reported_handled_task_count) = (Instant::now(), 0);
+                let mut (log_reported_at, reported_task_count) = (Instant::now(), 0);
 
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
@@ -1099,8 +1099,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let log_elapsed_us = now.duration_since(log_reported_at).as_micros();
 
                                 if log_elapsed_us > 0 {
-                                    let l = format!("[interval:{}|overall:{}]", 1_000_000_u128 * (state_machine.handled_task_count() - reported_handled_task_count) as u128) / log_elapsed_us, 1_000_000_u128 * (state_machine.handled_task_count() as u128) / session_elapsed_us);
-                                    (log_reported_at, reported_handled_task_count) = (now, state_machine.handled_task_count());
+                                    let l = format!(
+                                        "[interval:{}|overall:{}]",
+                                        1_000_000_u128 * ((state_machine.handled_task_count() - reported_task_count) as u128) / log_elapsed_us,
+                                        1_000_000_u128 * (state_machine.handled_task_count() as u128) / session_elapsed_us
+                                    );
+                                    (log_reported_at, reported_task_count) = (now, state_machine.handled_task_count());
                                     l
                                 } else {
                                     "-".to_string()
