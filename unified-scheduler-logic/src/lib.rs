@@ -1066,6 +1066,10 @@ impl SchedulingStateMachine {
             scheduling_mode,
         }
     }
+
+    pub unsafe fn exclusively_initialize_current_thread_for_scheduling_for_test() -> Self {
+        exclusively_initialize_current_thread_for_scheduling(SchedulingMode::BlockProduction)
+    }
 }
 
 #[cfg(test)]
@@ -1159,7 +1163,7 @@ mod tests {
     #[test]
     fn test_scheduling_state_machine_creation() {
         let state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_eq!(state_machine.active_task_count(), 0);
         assert_eq!(state_machine.task_total(), 0);
@@ -1169,7 +1173,7 @@ mod tests {
     #[test]
     fn test_scheduling_state_machine_good_reinitialization() {
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         state_machine.task_total.increment_self();
         assert_eq!(state_machine.task_total(), 1);
@@ -1181,7 +1185,7 @@ mod tests {
     #[should_panic(expected = "assertion failed: self.has_no_active_task()")]
     fn test_scheduling_state_machine_bad_reinitialization() {
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         let address_loader = &mut create_address_loader(None);
         let task = SchedulingStateMachine::create_task(simplest_transaction(), 3, address_loader);
@@ -1206,7 +1210,7 @@ mod tests {
         let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         let task = state_machine.schedule_task(task).unwrap();
         assert_eq!(state_machine.active_task_count(), 1);
@@ -1226,7 +1230,7 @@ mod tests {
         let task3 = SchedulingStateMachine::create_task(sanitized.clone(), 103, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1278,7 +1282,7 @@ mod tests {
         let task3 = SchedulingStateMachine::create_task(sanitized.clone(), 103, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1328,7 +1332,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 102, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         // both of read-only tasks should be immediately runnable
         assert_matches!(
@@ -1369,7 +1373,7 @@ mod tests {
         let task3 = SchedulingStateMachine::create_task(sanitized3, 103, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1420,7 +1424,7 @@ mod tests {
         let task3 = SchedulingStateMachine::create_task(sanitized3, 103, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1462,7 +1466,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 102, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1498,7 +1502,7 @@ mod tests {
         let task4 = SchedulingStateMachine::create_task(sanitized4, 104, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1554,7 +1558,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 102, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         assert_matches!(
             state_machine
@@ -1608,7 +1612,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
 
         assert_matches!(
@@ -1693,7 +1697,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
 
         assert_matches!(
@@ -1778,7 +1782,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
 
         assert_matches!(
@@ -1871,7 +1875,7 @@ mod tests {
         let task2 = SchedulingStateMachine::create_task(sanitized2, 99, address_loader);
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
 
         assert_matches!(
@@ -1965,7 +1969,7 @@ mod tests {
     #[should_panic(expected = "internal error: entered unreachable code")]
     fn test_unreachable_unlock_conditions1() {
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         let usage_queue = UsageQueue::default();
         usage_queue
@@ -1979,7 +1983,7 @@ mod tests {
     #[should_panic(expected = "internal error: entered unreachable code")]
     fn test_unreachable_unlock_conditions2() {
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         let usage_queue = UsageQueue::default();
         let sanitized = simplest_transaction();
@@ -1999,7 +2003,7 @@ mod tests {
     #[should_panic(expected = "internal error: entered unreachable code")]
     fn test_unreachable_unlock_conditions3() {
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         let usage_queue = UsageQueue::default();
         let sanitized = simplest_transaction();
