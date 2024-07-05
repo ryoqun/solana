@@ -43,6 +43,7 @@ use {
         time::{Duration, Instant},
     },
 };
+use solana_sdk::scheduling::SchedulingMode;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
