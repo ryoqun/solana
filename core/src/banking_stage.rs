@@ -705,7 +705,7 @@ impl BankingStage {
 
                                         let Ok(fb) = process_compute_budget_instructions(tx.message().program_instructions_iter()) else {
                                             return None;
-                                        }
+                                        };
 
                                         Some((tx, i))
                                     })
