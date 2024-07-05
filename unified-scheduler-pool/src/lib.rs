@@ -51,6 +51,8 @@ use {
     },
     vec_extract_if_polyfill::MakeExtractIf,
 };
+use solana_sdk::transaction::VersionedTransaction;
+use solana_poh::poh_recorder::TransactionRecorder;
 
 mod sleepless_testing;
 use crate::sleepless_testing::BuilderTracked;
@@ -95,8 +97,6 @@ pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     _phantom: PhantomData<TH>,
 }
 
-use solana_sdk::transaction::VersionedTransaction;
-
 type DummySender = Sender<Vec<VersionedTransaction>>;
 
 #[derive(Debug)]
@@ -105,7 +105,7 @@ pub struct HandlerContext {
     transaction_status_sender: Option<TransactionStatusSender>,
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-    transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+    transaction_recorder: Option<TransactionRecorder>,
     dummy_sender: Option<DummySender>,
 }
 
@@ -145,7 +145,7 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-        transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        transaction_recorder: Option<TransactionRecorder>,
         dummy_sender: Option<DummySender>,
     ) -> Arc<Self> {
         Self::do_new(
@@ -169,7 +169,7 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-        transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        transaction_recorder: Option<TransactionRecorder>,
         dummy_sender: Option<DummySender>,
         pool_cleaner_interval: Duration,
         max_pooling_duration: Duration,
@@ -299,7 +299,7 @@ where
         transaction_status_sender: Option<TransactionStatusSender>,
         replay_vote_sender: Option<ReplayVoteSender>,
         prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-        transaction_recorder: Option<solana_poh::poh_recorder::TransactionRecorder>,
+        transaction_recorder: Option<TransactionRecorder>,
         dummy_sender: Option<DummySender>,
     ) -> InstalledSchedulerPoolArc {
         Self::new(
