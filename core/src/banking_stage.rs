@@ -709,7 +709,7 @@ impl BankingStage {
                                         };
 
                                         let (priority, cost) = SchedulerController::calculate_priority_and_cost(&tx, &fb.into(), &bank);
-                                        let i = (priority as u128) << 64 | task_ids[*i] as u128;
+                                        let i = ((u64::MAX - priority) as u128)) << 64 | task_ids[*i] as u128;
 
                                         Some((tx, i))
                                     })
