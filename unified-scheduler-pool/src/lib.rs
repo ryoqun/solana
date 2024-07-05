@@ -1339,7 +1339,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 }
                 let mut task = ExecutedTask::new_boxed(task);
                 Self::execute_task_with_handler(
-                    runnable_task_receiver.context().bank(),
+                    runnable_task_receiver.context(),
                     &mut task,
                     &pool.handler_context,
                 );
