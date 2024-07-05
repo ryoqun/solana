@@ -459,19 +459,17 @@ impl TaskHandler for DefaultTaskHandler {
 
             let pre_commit_callback = match scheduling_context.mode() {
                 SchedulingMode::BlockVerification => None,
-                SchedulingMode::BlockProduction => {
-                    Some(|| {
-                        let summary = handler_context
-                            .transaction_recorder
-                            .as_ref()
-                            .unwrap()
-                            .record_transactions(
-                                scheduling_context.bank().slot(),
-                                vec![transaction.to_versioned_transaction()],
-                            );
-                        summary.result.is_ok()
-                    })
-                },
+                SchedulingMode::BlockProduction => Some(|| {
+                    let summary = handler_context
+                        .transaction_recorder
+                        .as_ref()
+                        .unwrap()
+                        .record_transactions(
+                            scheduling_context.bank().slot(),
+                            vec![transaction.to_versioned_transaction()],
+                        );
+                    summary.result.is_ok()
+                }),
             };
 
             *result = execute_batch(
