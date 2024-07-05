@@ -882,6 +882,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         //trace!("accumulate end!!");
         match (executed_task.result_with_timings.0, mode) {
             //(Ok(()), _) => Some(executed_task),
+            _ => {},
             (Err(error), SchedulingMode::BlockVerification) => {
                 error!("error is detected while accumulating....: {error:?}");
                 *result = Err(error);
