@@ -1108,7 +1108,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     );
                                     #[allow(unused_assignments)]
                                     {
-                                        (log_reported_at, reported_task_count) = (now, state_machine.handled_task_count());
+                                        (log_reported_at, reported_task_count) = (now, state_machine.handled_task_total());
                                     }
                                     l
                                 } else {
