@@ -1868,7 +1868,7 @@ fn load_frozen_forks(
 
             let mut progress = ConfirmationProgress::new(last_entry_hash);
             let mut m = Measure::start("process_single_slot");
-            let bank = bank_forks.write().unwrap().insert_from_ledger(bank);
+            let bank = bank_forks.write().unwrap().insert_from_ledger(SchedulingMode::BlockVerification, bank);
             if process_single_slot(
                 blockstore,
                 &bank,
