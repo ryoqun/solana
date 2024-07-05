@@ -309,7 +309,7 @@ pub enum SchedulerStatus {
     /// Scheduler is idling for long time, returning scheduler back to the pool.
     /// This will be immediately (i.e. transaparently) transitioned to Active as soon as there's
     /// new transaction to be executed.
-    Stale(InstalledSchedulerPoolArc, ResultWithTimings),
+    Stale(InstalledSchedulerPoolArc, SchedulingMode, ResultWithTimings),
 }
 
 impl SchedulerStatus {
@@ -542,11 +542,11 @@ impl BankWithSchedulerInner {
                 );
                 Err(SchedulerError::Aborted)
             }
-            SchedulerStatus::Stale(pool, _result_with_timings) => {
+            SchedulerStatus::Stale(pool, mode, _result_with_timings) => {
                 let pool = pool.clone();
                 drop(scheduler);
 
-                let context = SchedulingContext::new(self.bank.clone());
+                let context = SchedulingContext::new(mode, self.bank.clone());
                 let mut scheduler = self.scheduler.write().unwrap();
                 trace!("with_active_scheduler: {:?}", scheduler);
                 scheduler.transition_from_stale_to_active(|pool, result_with_timings| {
