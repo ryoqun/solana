@@ -663,8 +663,8 @@ impl BankingStage {
 
         let bank_thread_hdls =
             [
-                (tpu_vote_receiver, 0),
-                (gossip_vote_receiver, 1),
+                (gossip_vote_receiver, 0),
+                (tpu_vote_receiver, 1),
                 (non_vote_receiver.clone(), 2),
                 (non_vote_receiver, 3),
             ]
@@ -687,10 +687,9 @@ impl BankingStage {
 
                                 let start = Instant::now();
 
-                                while let Ok(aaa) = packet_deserializer
-                                    .packet_batch_receiver
-                                    .recv_timeout(recv_timeout)
-                                {
+                                loop {
+                                match packet_deserializer .packet_batch_receiver .recv_timeout(recv_timeout) {
+                                Ok(pp) => {
                                     for pp in &aaa.0 {
                                         // over-provision
                                         let task_id = id_generator.bulk_assign_task_ids(pp.len());
@@ -751,7 +750,9 @@ impl BankingStage {
                                         break;
                                     }
                                 }
+                                _ => {}
                             }
+                                }
                             _ => {
                                 std::thread::sleep(Duration::from_millis(10));
                             }
