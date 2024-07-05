@@ -20,7 +20,6 @@ use {
     solana_ledger::blockstore_processor::{
         execute_batch, TransactionBatchWithIndexes, TransactionStatusSender,
     },
-    solana_poh::poh_recorder::TransactionRecorder,
     solana_program_runtime::timings::ExecuteTimings,
     solana_runtime::{
         bank::Bank,
@@ -36,7 +35,7 @@ use {
     solana_sdk::{
         pubkey::Pubkey,
         scheduling::SchedulingMode,
-        transaction::{Result, SanitizedTransaction, TransactionError, VersionedTransaction},
+        transaction::{Result, SanitizedTransaction, TransactionError},
     },
     solana_unified_scheduler_logic::{Index, SchedulingStateMachine, Task, UsageQueue},
     std::{
@@ -52,6 +51,8 @@ use {
     },
     vec_extract_if_polyfill::MakeExtractIf,
 };
+use solana_sdk::transaction::VersionedTransaction;
+use solana_poh::poh_recorder::TransactionRecorder;
 
 mod sleepless_testing;
 use crate::sleepless_testing::BuilderTracked;
@@ -427,7 +428,7 @@ pub trait TaskHandler: Send + Sync + Debug + Sized + 'static {
     fn handle(
         result: &mut Result<()>,
         timings: &mut ExecuteTimings,
-        bank: &Arc<Bank>,
+        scheduling_context: &SchedulingContext,
         transaction: &SanitizedTransaction,
         index: Index,
         handler_context: &HandlerContext,
@@ -441,7 +442,7 @@ impl TaskHandler for DefaultTaskHandler {
     fn handle(
         result: &mut Result<()>,
         timings: &mut ExecuteTimings,
-        bank: &Arc<Bank>,
+        scheduling_context: &SchedulingContext,
         transaction: &SanitizedTransaction,
         index: Index,
         handler_context: &HandlerContext,
