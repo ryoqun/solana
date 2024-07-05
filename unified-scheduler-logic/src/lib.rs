@@ -1003,7 +1003,7 @@ impl SchedulingStateMachine {
         unblocked_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
         task_total.reset_to_zero();
-        scheduling_mode = mode;
+        *scheduling_mode = mode;
     }
 
     /// Creates a new instance of [`SchedulingStateMachine`] with its `unsafe` fields created as
