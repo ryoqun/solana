@@ -1235,7 +1235,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
                             session_started_at = Instant::now();
-                            state_machine.reinitialize(new_context.mode);
+                            state_machine.reinitialize(new_context.mode());
                             reported_task_total = 0;
                             slot = new_context.bank().slot();
                             log_scheduler!(info, "started");
