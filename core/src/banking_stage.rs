@@ -695,7 +695,7 @@ impl BankingStage {
                                             bank.vote_only_bank(),
                                             &**bank,
                                             bank.get_reserved_account_keys(),
-                                        )
+                                        ).map(|t| (t, i))
                                     })
                                     .collect::<Vec<_>>();
 
