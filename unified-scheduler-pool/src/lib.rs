@@ -1234,9 +1234,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
+                            session_started_at = Instant::now();
                             (log_reported_at, reported_task_count) = (session_started_at, 0);
                             slot = new_context.bank().slot();
-                            session_started_at = Instant::now();
                             log_scheduler!(info, "started");
 
                             runnable_task_sender
