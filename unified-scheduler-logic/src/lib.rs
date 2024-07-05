@@ -701,6 +701,7 @@ pub struct SchedulingStateMachine {
     task_total: ShortCounter,
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
+    scheduling_mode: SchedulingMode,
 }
 
 #[cfg(test)]
