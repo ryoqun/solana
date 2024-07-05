@@ -20,6 +20,7 @@ use {
     solana_ledger::blockstore_processor::{
         execute_batch, TransactionBatchWithIndexes, TransactionStatusSender,
     },
+    solana_poh::poh_recorder::TransactionRecorder,
     solana_program_runtime::timings::ExecuteTimings,
     solana_runtime::{
         bank::Bank,
@@ -35,7 +36,7 @@ use {
     solana_sdk::{
         pubkey::Pubkey,
         scheduling::SchedulingMode,
-        transaction::{Result, SanitizedTransaction, TransactionError},
+        transaction::{Result, SanitizedTransaction, TransactionError, VersionedTransaction},
     },
     solana_unified_scheduler_logic::{Index, SchedulingStateMachine, Task, UsageQueue},
     std::{
@@ -51,8 +52,6 @@ use {
     },
     vec_extract_if_polyfill::MakeExtractIf,
 };
-use solana_sdk::transaction::VersionedTransaction;
-use solana_poh::poh_recorder::TransactionRecorder;
 
 mod sleepless_testing;
 use crate::sleepless_testing::BuilderTracked;
