@@ -694,6 +694,7 @@ pub struct SchedulingStateMachine {
     handled_task_count: ShortCounter,
     unblocked_task_count: ShortCounter,
     blocked_task_count: ShortCounter,
+    replaced_lock_count: ShortCounter,
     total_task_count: ShortCounter,
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
