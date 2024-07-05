@@ -992,6 +992,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // another blocking new task is arriving to finalize the tentatively extended
         // prioritization further. Consequently, this also contributes to alleviate the known
         // heuristic's caveat for the first task of linearized runs, which is described above.
+        let mode = context.mode();
         let (mut runnable_task_sender, runnable_task_receiver) =
             chained_channel::unbounded::<Task, SchedulingContext>(context);
         // Create two handler-to-scheduler channels to prioritize the finishing of blocked tasks,
@@ -1074,7 +1075,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
 
                 let mut state_machine = unsafe {
-                    SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling(context.mode())
+                    SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling(mode)
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
