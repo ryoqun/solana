@@ -661,108 +661,111 @@ impl BankingStage {
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
-        let bank_thread_hdls =
-            [
-                (gossip_vote_receiver, 0),
-                (tpu_vote_receiver, 1),
-                (non_vote_receiver.clone(), 2),
-                (non_vote_receiver, 3),
-            ]
-            .into_iter()
-            .map(|(receiver, thx)| {
-                let decision_maker = decision_maker.clone();
-                let id_generator = id_generator.clone();
-                let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
+        let bank_thread_hdls = [
+            (gossip_vote_receiver, 0),
+            (tpu_vote_receiver, 1),
+            (non_vote_receiver.clone(), 2),
+            (non_vote_receiver, 3),
+        ]
+        .into_iter()
+        .map(|(receiver, thx)| {
+            let decision_maker = decision_maker.clone();
+            let id_generator = id_generator.clone();
+            let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
 
-                std::thread::Builder::new()
-                    .name(format!("solScSubmit{:02}", thx))
-                    .spawn(move || loop {
-                        let decision = decision_maker.make_consume_or_forward_decision();
-                        match decision {
-                            BufferedPacketsDecision::Consume(bank_start) => {
-                                let bank = bank_start.working_bank;
-                                let transaction_account_lock_limit =
-                                    bank.get_transaction_account_lock_limit();
-                                let recv_timeout = Duration::from_millis(10);
+            std::thread::Builder::new()
+                .name(format!("solScSubmit{:02}", thx))
+                .spawn(move || 'outer: loop {
+                    let decision = decision_maker.make_consume_or_forward_decision();
+                    match decision {
+                        BufferedPacketsDecision::Consume(bank_start) => {
+                            let bank = bank_start.working_bank;
+                            let transaction_account_lock_limit =
+                                bank.get_transaction_account_lock_limit();
+                            let recv_timeout = Duration::from_millis(10);
 
-                                let start = Instant::now();
+                            let start = Instant::now();
 
-                                loop {
-                                match packet_deserializer .packet_batch_receiver .recv_timeout(recv_timeout) {
-                                Ok(aaa) => {
-                                    for pp in &aaa.0 {
-                                        // over-provision
-                                        let task_id = id_generator.bulk_assign_task_ids(pp.len());
-                                        let task_ids =
-                                            (task_id..(task_id + pp.len())).collect::<Vec<_>>();
+                            loop {
+                                match packet_deserializer
+                                    .packet_batch_receiver
+                                    .recv_timeout(recv_timeout)
+                                {
+                                    Ok(aaa) => {
+                                        for pp in &aaa.0 {
+                                            // over-provision
+                                            let task_id =
+                                                id_generator.bulk_assign_task_ids(pp.len());
+                                            let task_ids =
+                                                (task_id..(task_id + pp.len())).collect::<Vec<_>>();
 
-                                        let indexes =
-                                            PacketDeserializer::generate_packet_indexes(&pp);
-                                        let ppp = PacketDeserializer::deserialize_packets2(
-                                            &pp, &indexes,
-                                        )
-                                        .filter_map(|(i, p)| {
-                                            let Some(tx) = p.build_sanitized_transaction(
-                                                bank.vote_only_bank(),
-                                                &**bank,
-                                                bank.get_reserved_account_keys(),
-                                            ) else {
-                                                return None;
-                                            };
+                                            let indexes =
+                                                PacketDeserializer::generate_packet_indexes(&pp);
+                                            let ppp = PacketDeserializer::deserialize_packets2(
+                                                &pp, &indexes,
+                                            )
+                                            .filter_map(|(i, p)| {
+                                                let Some(tx) = p.build_sanitized_transaction(
+                                                    bank.vote_only_bank(),
+                                                    &**bank,
+                                                    bank.get_reserved_account_keys(),
+                                                ) else {
+                                                    return None;
+                                                };
 
-                                            if let Err(_) =
-                                                SanitizedTransaction::validate_account_locks(
-                                                    tx.message(),
-                                                    transaction_account_lock_limit,
-                                                )
-                                            {
-                                                return None;
-                                            }
+                                                if let Err(_) =
+                                                    SanitizedTransaction::validate_account_locks(
+                                                        tx.message(),
+                                                        transaction_account_lock_limit,
+                                                    )
+                                                {
+                                                    return None;
+                                                }
 
-                                            let Ok(fb) = process_compute_budget_instructions(
-                                                tx.message().program_instructions_iter(),
-                                            ) else {
-                                                return None;
-                                            };
+                                                let Ok(fb) = process_compute_budget_instructions(
+                                                    tx.message().program_instructions_iter(),
+                                                ) else {
+                                                    return None;
+                                                };
 
-                                            let (priority, _cost) =
+                                                let (priority, _cost) =
                                                 SchedulerController::calculate_priority_and_cost(
                                                     &tx,
                                                     &fb.into(),
                                                     &bank,
                                                 );
-                                            // wire cost tracker....
-                                            let i = ((u64::MAX - priority) as u128) << 64
-                                                | task_ids[*i] as u128;
+                                                // wire cost tracker....
+                                                let i = ((u64::MAX - priority) as u128) << 64
+                                                    | task_ids[*i] as u128;
 
-                                            Some((tx, i))
-                                        })
-                                        .collect::<Vec<_>>();
+                                                Some((tx, i))
+                                            })
+                                            .collect::<Vec<_>>();
 
-                                        if let Err(_) = bank.schedule_transaction_executions(
-                                            ppp.iter().map(|(a, b)| (a, b)),
-                                        ) {
+                                            if let Err(_) = bank.schedule_transaction_executions(
+                                                ppp.iter().map(|(a, b)| (a, b)),
+                                            ) {
+                                                break;
+                                            }
+                                        }
+
+                                        if start.elapsed() >= recv_timeout {
                                             break;
                                         }
                                     }
-
-                                    if start.elapsed() >= recv_timeout {
-                                        break;
-                                    }
+                                    Err(RecvTimeoutError::Timeout) => continue,
+                                    Err(RecvTimeoutError::Disconnected) => break 'outer,
                                 }
-                                Err(RecvTimeoutError::Timeout) => continue,
-                                Err(RecvTimeoutError::Disconnected) => break,
-                            }
-                                }
-                            },
-                            _ => {
-                                std::thread::sleep(Duration::from_millis(10));
                             }
                         }
-                    })
-                    .unwrap()
-            })
-            .collect();
+                        _ => {
+                            std::thread::sleep(Duration::from_millis(10));
+                        }
+                    }
+                })
+                .unwrap()
+        })
+        .collect();
 
         Self { bank_thread_hdls }
     }
