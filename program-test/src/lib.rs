@@ -1140,11 +1140,12 @@ impl ProgramTestContext {
         // from Bank::warp_from_parent() is frozen. If the desired slot is one
         // slot *after* the working_slot, no need to warp at all.
         let pre_warp_slot = warp_slot - 1;
-        let warp_bank = if pre_warp_slot == working_slot {
-            bank.freeze();
-            bank
-        } else {
-            bank_forks
+        let warp_bank =
+            if pre_warp_slot == working_slot {
+                bank.freeze();
+                bank
+            } else {
+                bank_forks
                 .insert(panic!(), Bank::warp_from_parent(
                     bank,
                     &Pubkey::default(),
@@ -1153,7 +1154,7 @@ impl ProgramTestContext {
                     solana_accounts_db::accounts_db::CalcAccountsHashDataSource::IndexForTests,
                 ))
                 .clone_without_scheduler()
-        };
+            };
 
         let (snapshot_request_sender, snapshot_request_receiver) = crossbeam_channel::unbounded();
         let abs_request_sender = AbsRequestSender::new(snapshot_request_sender);
@@ -1184,11 +1185,10 @@ impl ProgramTestContext {
             });
 
         // warp_bank is frozen so go forward to get unfrozen bank at warp_slot
-        bank_forks.insert(panic!(), Bank::new_from_parent(
-            warp_bank,
-            &Pubkey::default(),
-            warp_slot,
-        ));
+        bank_forks.insert(
+            panic!(),
+            Bank::new_from_parent(warp_bank, &Pubkey::default(), warp_slot),
+        );
 
         // Update block commitment cache, otherwise banks server will poll at
         // the wrong slot
