@@ -60,7 +60,7 @@ use crate::sleepless_testing::BuilderTracked;
 #[derive(Debug)]
 enum CheckPoint {
     NewTask(usize),
-    TaskHandled(usize),
+    TaskHandled(Index),
     SchedulerThreadAborted,
     IdleSchedulerCleaned(usize),
     TrashedSchedulerCleaned(usize),
