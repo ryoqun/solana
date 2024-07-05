@@ -708,6 +708,8 @@ impl BankingStage {
                                             return None;
                                         };
 
+                                        let (priority, cost) = Self::calculate_priority_and_cost(&tx, &fb, &bank);
+
                                         Some((tx, i))
                                     })
                                     .collect::<Vec<_>>();
