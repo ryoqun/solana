@@ -716,7 +716,7 @@ impl Drop for SchedulingStateMachine {
 
 impl SchedulingStateMachine {
     pub fn mode(&self) -> SchedulingMode {
-        self.mode
+        self.scheduling_mode
     }
 
     pub fn has_no_active_task(&self) -> bool {
