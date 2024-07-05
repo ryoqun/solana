@@ -429,7 +429,7 @@ pub trait TaskHandler: Send + Sync + Debug + Sized + 'static {
         timings: &mut ExecuteTimings,
         bank: &Arc<Bank>,
         transaction: &SanitizedTransaction,
-        index: usize,
+        index: Index,
         handler_context: &HandlerContext,
     );
 }
