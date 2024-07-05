@@ -535,7 +535,7 @@ impl BankWithSchedulerInner {
                 // This is the fast path, needing single read-lock most of time.
                 f(scheduler)
             }
-            SchedulerStatus::Stale(_pool, (result, _timings)) if result.is_err() => {
+            SchedulerStatus::Stale(_pool, _mode, (result, _timings)) if result.is_err() => {
                 trace!(
                     "with_active_scheduler: bank (slot: {}) has a stale aborted scheduler...",
                     self.bank.slot(),
