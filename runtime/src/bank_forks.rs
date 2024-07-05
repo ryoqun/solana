@@ -228,7 +228,7 @@ impl BankForks {
         for (slot, bank) in self.banks.iter_mut() {
             if !bank.is_frozen() {
                 trace!("Installed scheduler into existing unfrozen slot: {slot}");
-                *bank = Self::install_scheduler_into_bank(&self.scheduler_pool, mode, bank.clone_without_scheduler());
+                *bank = Self::install_scheduler_into_bank(&self.scheduler_pool.unwrap(), mode, bank.clone_without_scheduler());
             }
         }
     }
