@@ -794,14 +794,12 @@ impl SchedulingStateMachine {
                 let lock_result = match &mut usage_queue.current_usage {
                     Some(a) if a.should_revert(&mut self.count_token, &new_task) => {
                         let (current_usage, current_tasks) = a;
-                        // introduce some counter for this branch...
-                        //
-
                         match (&current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
+                                self.replaced_lock_count.increment_self();
                                 Ok(())
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
@@ -809,6 +807,7 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
+                                self.replaced_lock_count.increment_self();
                                 Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
@@ -842,6 +841,7 @@ impl SchedulingStateMachine {
                                 for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
+                                    self.replaced_lock_count.increment_self();
                                 }
                                 r
                             },
