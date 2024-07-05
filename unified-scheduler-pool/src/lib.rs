@@ -1599,7 +1599,7 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
     }
 
     fn pause_for_recent_blockhash(&mut self) {
-        if let SchedulingMode::BlockVerification = self.context().mode() {
+        if matches!(self.context().mode(), SchedulingMode::BlockVerification) {
             self.inner.thread_manager.end_session();
         }
     }
