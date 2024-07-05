@@ -1088,7 +1088,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
                             state_machine.total_task_count(),
                             state_machine.unblocked_task_count(),
-                            state_machine.replaced_lock_count(),
+                            state_machine.replaced_lock_total(),
                             new_task_receiver.len(),
                             runnable_task_sender.len(), runnable_task_sender.aux_len(),
                             finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
