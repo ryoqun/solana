@@ -661,18 +661,18 @@ impl BankingStage {
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
         let bank_thread_hdls = [
-            non_vote_receiver.clone(),
-            non_vote_receiver,
-            tpu_vote_receiver,
-            gossip_vote_receiver,
+            [tpu_vote_receiver, 0],
+            [gossip_vote_receiver, 1],
+            [non_vote_receiver.clone(), 2],
+            [non_vote_receiver, 3],
         ]
         .into_iter()
-        .map(|receiver| {
+        .map(|receiver, thx| {
             let decision_maker = decision_maker.clone();
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
 
-            std::thread::spawn(move || loop {
+            std::thread::Builder::new().name(format!("solScSubmit{}", thx)).spawn(move || loop {
                 let decision = decision_maker.make_consume_or_forward_decision();
                 match decision {
                     BufferedPacketsDecision::Consume(bank_start) => {
@@ -732,7 +732,7 @@ impl BankingStage {
                         std::thread::sleep(Duration::from_millis(10));
                     }
                 }
-            })
+            }).unwrap()
         })
         .collect();
 
