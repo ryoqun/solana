@@ -444,7 +444,7 @@ impl TaskHandler for DefaultTaskHandler {
         timings: &mut ExecuteTimings,
         bank: &Arc<Bank>,
         transaction: &SanitizedTransaction,
-        index: usize,
+        index: Index,
         handler_context: &HandlerContext,
     ) {
         if handler_context.dummy_sender.is_none() {
