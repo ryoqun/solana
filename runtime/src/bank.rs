@@ -4841,8 +4841,11 @@ impl Bank {
         );
 
         if let Some(pre_commit_callback) = pre_commit_callback {
-            if !pre_commit_callback() {
-                return None;
+            if let Some(e) = execution_results.first() {
+                assert_eq!(execution_results.len(), 1);
+                if e.was_executed() && !pre_commit_callback() {
+                    return None;
+                }
             }
         }
 
