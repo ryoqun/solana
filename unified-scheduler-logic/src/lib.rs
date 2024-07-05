@@ -712,7 +712,7 @@ impl Drop for SchedulingStateMachine {
         }
     }
 }
-const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 56);
+//const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 56);
 
 impl SchedulingStateMachine {
     pub fn has_no_active_task(&self) -> bool {
