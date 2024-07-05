@@ -1074,7 +1074,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
 
                 let mut state_machine = unsafe {
-                    SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling()
+                    SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling(context.mode())
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
