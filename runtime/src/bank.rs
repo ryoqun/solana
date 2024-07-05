@@ -4840,7 +4840,7 @@ impl Bank {
             },
         );
 
-        if Some(pre_commit_callback) = pre_commit_callback {
+        if let Some(pre_commit_callback) = pre_commit_callback {
             if !pre_commit_callback() {
                 return None;
             }
