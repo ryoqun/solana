@@ -89,6 +89,7 @@ use {
         time::{Duration, Instant},
     },
 };
+use solana_sdk::scheduling::SchedulingMode;
 
 pub const MAX_ENTRY_RECV_PER_ITER: usize = 512;
 pub const SUPERMINORITY_THRESHOLD: f64 = 1f64 / 3f64;
