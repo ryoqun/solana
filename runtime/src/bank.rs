@@ -4952,7 +4952,7 @@ impl Bank {
             ExecutionRecordingConfig::new_single_setting(false),
             &mut ExecuteTimings::default(),
             None,
-            || true,
+            None::<fn() -> bool>,
         )
         .unwrap()
         .0
