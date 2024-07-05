@@ -470,7 +470,7 @@ impl TaskHandler for DefaultTaskHandler {
                             vec![transaction.to_versioned_transaction()],
                         );
                     summary.result.is_ok()
-                }
+                })
                 }
             };
 
