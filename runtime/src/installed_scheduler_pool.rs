@@ -340,8 +340,9 @@ impl SchedulerStatus {
         let Self::Active(scheduler) = mem::replace(self, Self::Unavailable) else {
             unreachable!("not active: {self:?}");
         };
+        let mode = scheduler.context().mode;
         let (pool, result_with_timings) = f(scheduler);
-        *self = Self::Stale(pool, result_with_timings);
+        *self = Self::Stale(pool, mode, result_with_timings);
     }
 
     fn transition_from_active_to_unavailable(&mut self) -> InstalledSchedulerBox {
