@@ -506,6 +506,10 @@ fn main() {
             .write()
             .unwrap()
             .install_scheduler_pool(scheduler_pool);
+        bank_forks
+            .write()
+            .unwrap()
+            .reinstall_schedulers(SchedulingMode::BlockProduction);
         bank = bank_forks
             .read()
             .unwrap()
