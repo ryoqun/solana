@@ -485,7 +485,7 @@ impl BankWithScheduler {
             // Lastly, this non-atomic nature is intentional for optimizing the fast code-path
             return Err(self.inner.retrieve_error_after_schedule_failure());
         }
-        if let Err(SchedulerError::Aborted) = schedule_result {
+        if let Err(SchedulerError::Terminated) = schedule_result {
             return Err(TransactionError::CommitFailed);
         }
 
