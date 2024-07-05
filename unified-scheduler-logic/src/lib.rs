@@ -1012,7 +1012,7 @@ impl SchedulingStateMachine {
     /// # Safety
     /// Call this exactly once for each thread. See [`TokenCell`] for details.
     #[must_use]
-    pub unsafe fn exclusively_initialize_current_thread_for_scheduling() -> Self {
+    pub unsafe fn exclusively_initialize_current_thread_for_scheduling(scheduling_mode: SchedulingMode) -> Self {
         Self {
             // It's very unlikely this is desired to be configurable, like
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
@@ -1025,6 +1025,7 @@ impl SchedulingStateMachine {
             task_total: ShortCounter::zero(),
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
+            scheduling_mode,
         }
     }
 }
