@@ -641,6 +641,8 @@ impl BankingStage {
         gossip_vote_receiver: BankingPacketReceiver,
         bank_forks: Arc<RwLock<BankForks>>,
     ) -> Self {
+        // todo: qos, forwarding, proper handling of buffered packets, vote storage, vote only
+        // blocks...
         struct MonotonicIdGenerator {
             next_task_id: AtomicUsize,
         }
@@ -672,7 +674,7 @@ impl BankingStage {
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
 
-            std::thread::Builder::new().name(format!("solScSubmit{}", thx)).spawn(move || loop {
+            std::thread::Builder::new().name(format!("solScSubmit{:02}", thx)).spawn(move || loop {
                 let decision = decision_maker.make_consume_or_forward_decision();
                 match decision {
                     BufferedPacketsDecision::Consume(bank_start) => {
