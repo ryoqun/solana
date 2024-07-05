@@ -1086,7 +1086,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             scheduler_id, slot,
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
-                            state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+                            state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_total(),
                             state_machine.total_task_count(),
                             state_machine.unblocked_task_count(),
                             state_machine.reblocked_lock_total(),
@@ -1103,8 +1103,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         "tps({}us|{}us): ({}|{})",
                                         log_elapsed_us,
                                         session_elapsed_us,
-                                        1_000_000_u128 * ((state_machine.handled_task_count() - reported_task_count) as u128) / log_elapsed_us,
-                                        1_000_000_u128 * (state_machine.handled_task_count() as u128) / session_elapsed_us
+                                        1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_count) as u128) / log_elapsed_us,
+                                        1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us
                                     );
                                     #[allow(unused_assignments)]
                                     {
