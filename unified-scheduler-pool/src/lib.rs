@@ -1103,10 +1103,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     log_elapsed_us,
                                     session_elapsed_us,
                                     if log_elapsed_us > 0 {
-                                        1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_total) as u128) / log_elapsed_us 
+                                        format!("{}", 1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_total) as u128) / log_elapsed_us)
                                     } else { "-".to_string() },
                                     if session_elapsed_us > 0 {
-                                        1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us
+                                        format!("{}", 1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us)
                                     } else { "-".to_string() },
                                 );
                                 #[allow(unused_assignments)]
