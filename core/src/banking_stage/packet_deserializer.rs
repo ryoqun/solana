@@ -252,7 +252,7 @@ impl PacketDeserializer {
                 .meta_mut()
                 .set_round_compute_unit_price(true /* todo */);
 
-            (packet_index, ImmutableDeserializedPacket::new(packet_clone).ok())
+            ImmutableDeserializedPacket::new(packet_clone).ok().map(|p| (packet_index, p))
         })
     }
 }
