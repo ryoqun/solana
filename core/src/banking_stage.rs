@@ -667,7 +667,7 @@ impl BankingStage {
             (non_vote_receiver, 3),
         ]
         .into_iter()
-        .map(|receiver, thx| {
+        .map(|(receiver, thx)| {
             let decision_maker = decision_maker.clone();
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
