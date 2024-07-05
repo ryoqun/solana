@@ -880,21 +880,17 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         //trace!("accumulate begin!!");
         //timings.accumulate(&executed_task.result_with_timings.1);
         //trace!("accumulate end!!");
-        match executed_task.result_with_timings.0 {
-            Ok(()) => Some(executed_task),
-            Err(ref error) => {
-                match mode {
-                    SchedulingMode::BlockVerification => {
-                        error!("error is detected while accumulating....: {error:?}");
-                        *result = Err(error);
-                        None
-                    }
-                    SchedulingMode::BlockProduction => {
-                        debug!("error is detected while accumulating....: {error:?}");
-                        Some(executed_task)
-                    }
-                }
-            }
+        match (executed_task.result_with_timings.0, mode) {
+            (Ok(()), _) => Some(executed_task),
+            (Err(error), SchedulingMode::BlockVerification) => {
+                error!("error is detected while accumulating....: {error:?}");
+                *result = Err(error);
+                None
+            },
+            (Err(ref error), SchedulingMode::BlockProduction) => {
+                debug!("error is detected while accumulating....: {error:?}");
+                Some(executed_task)
+            },
         }
     }
 
