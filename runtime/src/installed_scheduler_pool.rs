@@ -234,13 +234,13 @@ pub type SchedulerId = u64;
 /// `SchedulingContext`s.
 #[derive(Clone, Debug)]
 pub struct SchedulingContext {
-    // mode: SchedulingMode, // this will be added later.
+    mode: SchedulingMode,
     bank: Arc<Bank>,
 }
 
 impl SchedulingContext {
-    pub fn new(bank: Arc<Bank>) -> Self {
-        Self { bank }
+    pub fn new(mode: SchedulingMode, bank: Arc<Bank>) -> Self {
+        Self { mode, bank }
     }
 
     pub fn bank(&self) -> &Arc<Bank> {
