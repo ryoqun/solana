@@ -655,7 +655,7 @@ impl BankWithSchedulerInner {
                 uninstalled_scheduler.return_to_pool();
                 (false, Some(result_with_timings))
             }
-            SchedulerStatus::Stale(_pool, _result_with_timings) if reason.is_paused() => {
+            SchedulerStatus::Stale(_pool, _mode, _result_with_timings) if reason.is_paused() => {
                 // Do nothing for pauses because the scheduler termination is guaranteed to be
                 // called later.
                 (true, None)
