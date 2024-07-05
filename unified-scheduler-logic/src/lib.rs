@@ -984,6 +984,7 @@ impl SchedulingStateMachine {
             handled_task_count,
             unblocked_task_count,
             blocked_task_count: _,
+            replaced_lock_count,
             total_task_count,
             count_token: _,
             usage_queue_token: _,
@@ -992,6 +993,7 @@ impl SchedulingStateMachine {
         active_task_count.reset_to_zero();
         handled_task_count.reset_to_zero();
         unblocked_task_count.reset_to_zero();
+        replaced_lock_count.reset_to_zero();
         total_task_count.reset_to_zero();
     }
 
