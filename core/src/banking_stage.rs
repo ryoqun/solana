@@ -661,10 +661,10 @@ impl BankingStage {
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
         let bank_thread_hdls = [
-            [tpu_vote_receiver, 0],
-            [gossip_vote_receiver, 1],
-            [non_vote_receiver.clone(), 2],
-            [non_vote_receiver, 3],
+            (tpu_vote_receiver, 0),
+            (gossip_vote_receiver, 1),
+            (non_vote_receiver.clone(), 2),
+            (non_vote_receiver, 3),
         ]
         .into_iter()
         .map(|receiver, thx| {
