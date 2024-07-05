@@ -613,7 +613,7 @@ fn main() {
             new_bank_time.stop();
 
             let mut insert_time = Measure::start("insert_time");
-            bank_forks.write().unwrap().insert(new_bank);
+            bank_forks.write().unwrap().insert(SchedulingMode::BlockProduction, new_bank);
             bank = bank_forks
                 .read()
                 .unwrap()
