@@ -51,6 +51,7 @@ use {
         time::{Duration, Instant},
     },
 };
+use solana_sdk::transaction::SanitizedTransaction;
 
 // Below modules are pub to allow use by banking_stage bench
 pub mod committer;
