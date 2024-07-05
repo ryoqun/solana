@@ -1098,22 +1098,22 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let session_elapsed_us = now.duration_since(session_started_at).as_micros();
                                 let log_elapsed_us = now.duration_since(log_reported_at).as_micros();
 
-                                if log_elapsed_us > 0 {
-                                    let l = format!(
-                                        "tps({}us|{}us): ({}|{})",
-                                        log_elapsed_us,
-                                        session_elapsed_us,
-                                        1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_total) as u128) / log_elapsed_us,
+                                let l = format!(
+                                    "tps({}us|{}us): ({}|{})",
+                                    log_elapsed_us,
+                                    session_elapsed_us,
+                                    if log_elapsed_us > 0 {
+                                        1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_total) as u128) / log_elapsed_us 
+                                    } else { "-".to_string() },
+                                    if session_elapsed_us > 0 {
                                         1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us
-                                    );
-                                    #[allow(unused_assignments)]
-                                    {
-                                        (log_reported_at, reported_task_total) = (now, state_machine.handled_task_total());
-                                    }
-                                    l
-                                } else {
-                                    "tps: -".to_string()
+                                    } else { "-".to_string() },
+                                );
+                                #[allow(unused_assignments)]
+                                {
+                                    (log_reported_at, reported_task_total) = (now, state_machine.handled_task_total());
                                 }
+                                l
                             },
                         }
                     }
