@@ -676,6 +676,7 @@ impl BankingStage {
                 match decision {
                     BufferedPacketsDecision::Consume(bank_start) => {
                         let bank = bank_start.working_bank;
+                        let transaction_account_lock_limit = bank.get_transaction_account_lock_limit();
                         let recv_timeout = Duration::from_millis(10);
 
                         let start = Instant::now();
