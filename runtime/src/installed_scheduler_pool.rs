@@ -612,7 +612,7 @@ impl BankWithSchedulerInner {
         let mut scheduler = self.scheduler.write().unwrap();
         match &mut *scheduler {
             SchedulerStatus::Active(scheduler) => scheduler.recover_error_after_abort(),
-            SchedulerStatus::Stale(_pool, (result, _timings)) if result.is_err() => {
+            SchedulerStatus::Stale(_pool, _mode, (result, _timings)) if result.is_err() => {
                 result.clone().unwrap_err()
             }
             _ => unreachable!("no error in {:?}", self.scheduler),
