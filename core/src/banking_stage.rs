@@ -691,11 +691,21 @@ impl BankingStage {
                                 let indexes = PacketDeserializer::generate_packet_indexes(&pp);
                                 let ppp = PacketDeserializer::deserialize_packets2(&pp, &indexes)
                                     .filter_map(|(i, p)| {
-                                        p.build_sanitized_transaction(
+                                        let Some(tx) = p.build_sanitized_transaction(
                                             bank.vote_only_bank(),
                                             &**bank,
                                             bank.get_reserved_account_keys(),
-                                        ).map(|t| (t, i))
+                                        ) else { return None };
+
+                                        if SanitizedTransaction::validate_account_locks(
+                                            tx.message(),
+                                            transaction_account_lock_limit,
+                                        )
+                                        .is_err() {
+                                            return None
+                                        }
+
+                                        Some((tx, i))
                                     })
                                     .collect::<Vec<_>>();
 
