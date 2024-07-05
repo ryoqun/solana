@@ -1088,7 +1088,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             (if session_ending {"S"} else {"-"}),
                             state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_total(),
                             state_machine.task_total(),
-                            state_machine.unblocked_task_count(),
+                            state_machine.unblocked_task_total(),
                             state_machine.reblocked_lock_total(),
                             new_task_receiver.len(),
                             runnable_task_sender.len(), runnable_task_sender.aux_len(),
