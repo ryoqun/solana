@@ -715,6 +715,10 @@ impl Drop for SchedulingStateMachine {
 //const_assert_eq!(mem::size_of::<SchedulingStateMachine>(), 56);
 
 impl SchedulingStateMachine {
+    pub fn mode(&self) -> SchedulingMode {
+        self.mode
+    }
+
     pub fn has_no_active_task(&self) -> bool {
         self.active_task_count.is_zero()
     }
