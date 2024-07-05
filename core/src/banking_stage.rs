@@ -52,6 +52,7 @@ use {
     },
 };
 use solana_sdk::transaction::SanitizedTransaction;
+use solana_compute_budget::compute_budget_processor::process_compute_budget_instructions;
 
 // Below modules are pub to allow use by banking_stage bench
 pub mod committer;
