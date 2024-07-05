@@ -1082,7 +1082,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
                         $level! {
-                            "sch: {}: slot: {}[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}Tb|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
+                            "sch: {}: slot: {}[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}TB|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
                             scheduler_id, slot,
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
