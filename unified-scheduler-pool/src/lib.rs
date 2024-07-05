@@ -464,7 +464,7 @@ impl TaskHandler for DefaultTaskHandler {
                 timings,
                 handler_context.log_messages_bytes_limit,
                 &handler_context.prioritization_fee_cache,
-                || {
+                Some(|| {
                     //trace!("poh record start!");
                     let summary = handler_context
                         .transaction_recorder
@@ -478,7 +478,7 @@ impl TaskHandler for DefaultTaskHandler {
                     summary.result.is_ok()
                     //handler_context.dummy_sender.as_ref().unwrap().send(vec![transaction.to_versioned_transaction()]).unwrap();
                     //true
-                },
+                }),
             );
         } else {
             //handler_context.transaction_recorder.as_ref().unwrap().record_transactions(bank.slot(), vec![transaction.to_versioned_transaction()]);
