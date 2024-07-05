@@ -146,7 +146,7 @@ fn make_accounts_txs(
                 mint_txs_percentage,
             );
             // simulated mint transactions have higher compute-unit-price
-            let compute_unit_price = if is_simulated_mint { 5 } else { 1 };
+            let compute_unit_price = if is_simulated_mint { thread_rng().gen_range(5..100) } else { 1 };
             let mut new = make_transfer_transaction_with_compute_unit_price(
                 &payer_key,
                 &to_pubkey,
