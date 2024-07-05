@@ -51,6 +51,7 @@ use {
     vec_extract_if_polyfill::MakeExtractIf,
 };
 use solana_unified_scheduler_logic::Index;
+use solana_sdk::scheduling::SchedulingMode;
 
 mod sleepless_testing;
 use crate::sleepless_testing::BuilderTracked;
