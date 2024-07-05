@@ -1077,7 +1077,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let mut last_log = Instant::now();
+                let mut log_reported_at = Instant::now();
+
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
                         $level! {
@@ -1093,7 +1094,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             runnable_task_sender.len(), runnable_task_sender.aux_len(),
                             finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
                             {
-                                let elapsed_us = session_started_at.elapsed().as_micros();
+                                let now = Instant::now();
+                                let elapsed_us = now.duration_since(session_started_at).as_micros();
+                                log_reported_at = now;
 
                                 if elapsed_us > 0 {
                                     format!("{}", 1_000_000_u128 * (state_machine.handled_task_count() as u128) / elapsed_us)
