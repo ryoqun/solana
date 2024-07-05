@@ -822,7 +822,7 @@ struct LogInterval(usize);
 
 impl LogInterval {
     fn increment(&mut self) -> bool {
-        let should_log = self.0 % 100 == 0;
+        let should_log = self.0 % 1000 == 0;
         self.0 = self.0.checked_add(1).unwrap();
         should_log
     }
