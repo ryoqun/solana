@@ -27,6 +27,7 @@ use {
     solana_sdk::{
         clock::Slot,
         hash::Hash,
+        scheduling::SchedulingMode,
         transaction::{Result, SanitizedTransaction, TransactionError},
     },
     std::{
@@ -37,7 +38,6 @@ use {
         thread,
     },
 };
-use solana_sdk::scheduling::SchedulingMode;
 #[cfg(feature = "dev-context-only-utils")]
 use {mockall::automock, qualifier_attr::qualifiers};
 
@@ -328,7 +328,8 @@ impl SchedulerStatus {
         &mut self,
         f: impl FnOnce(InstalledSchedulerPoolArc, ResultWithTimings) -> InstalledSchedulerBox,
     ) {
-        let Self::Stale(pool, _mode, result_with_timings) = mem::replace(self, Self::Unavailable) else {
+        let Self::Stale(pool, _mode, result_with_timings) = mem::replace(self, Self::Unavailable)
+        else {
             panic!("transition to Active failed: {self:?}");
         };
         *self = Self::Active(f(pool, result_with_timings));
@@ -357,7 +358,8 @@ impl SchedulerStatus {
     }
 
     fn transition_from_stale_to_unavailable(&mut self) -> ResultWithTimings {
-        let Self::Stale(_pool, _mode, result_with_timings) = mem::replace(self, Self::Unavailable) else {
+        let Self::Stale(_pool, _mode, result_with_timings) = mem::replace(self, Self::Unavailable)
+        else {
             panic!("transition to Unavailable failed: {self:?}");
         };
         result_with_timings

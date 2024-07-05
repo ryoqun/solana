@@ -29,6 +29,7 @@ use {
         hash::Hash,
         message::Message,
         pubkey::{self, Pubkey},
+        scheduling::SchedulingMode,
         signature::{Keypair, Signature, Signer},
         system_instruction, system_transaction,
         timing::{duration_as_us, timestamp},
@@ -43,7 +44,6 @@ use {
         time::{Duration, Instant},
     },
 };
-use solana_sdk::scheduling::SchedulingMode;
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
@@ -147,7 +147,11 @@ fn make_accounts_txs(
                 mint_txs_percentage,
             );
             // simulated mint transactions have higher compute-unit-price
-            let compute_unit_price = if is_simulated_mint { thread_rng().gen_range(5..5_000_000) } else { 1 };
+            let compute_unit_price = if is_simulated_mint {
+                thread_rng().gen_range(5..5_000_000)
+            } else {
+                1
+            };
             let mut new = make_transfer_transaction_with_compute_unit_price(
                 &payer_key,
                 &to_pubkey,
@@ -618,7 +622,10 @@ fn main() {
             new_bank_time.stop();
 
             let mut insert_time = Measure::start("insert_time");
-            bank_forks.write().unwrap().insert(SchedulingMode::BlockProduction, new_bank);
+            bank_forks
+                .write()
+                .unwrap()
+                .insert(SchedulingMode::BlockProduction, new_bank);
             bank = bank_forks
                 .read()
                 .unwrap()

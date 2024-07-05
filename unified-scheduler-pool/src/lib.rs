@@ -34,9 +34,10 @@ use {
     },
     solana_sdk::{
         pubkey::Pubkey,
+        scheduling::SchedulingMode,
         transaction::{Result, SanitizedTransaction, TransactionError},
     },
-    solana_unified_scheduler_logic::{SchedulingStateMachine, Task, UsageQueue},
+    solana_unified_scheduler_logic::{Index, SchedulingStateMachine, Task, UsageQueue},
     std::{
         fmt::Debug,
         marker::PhantomData,
@@ -50,8 +51,6 @@ use {
     },
     vec_extract_if_polyfill::MakeExtractIf,
 };
-use solana_unified_scheduler_logic::Index;
-use solana_sdk::scheduling::SchedulingMode;
 
 mod sleepless_testing;
 use crate::sleepless_testing::BuilderTracked;
@@ -1076,7 +1075,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
 
                 let mut state_machine = unsafe {
-                    SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling(mode)
+                    SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling(
+                        mode,
+                    )
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();

@@ -72,6 +72,7 @@ use {
         hash::Hash,
         pubkey::Pubkey,
         saturating_add_assign,
+        scheduling::SchedulingMode,
         signature::{Keypair, Signature, Signer},
         timing::timestamp,
         transaction::Transaction,
@@ -89,7 +90,6 @@ use {
         time::{Duration, Instant},
     },
 };
-use solana_sdk::scheduling::SchedulingMode;
 
 pub const MAX_ENTRY_RECV_PER_ITER: usize = 512;
 pub const SUPERMINORITY_THRESHOLD: f64 = 1f64 / 3f64;
@@ -2154,7 +2154,10 @@ impl ReplayStage {
             // new()-ing of its child bank
             banking_tracer.hash_event(parent.slot(), &parent.last_blockhash(), &parent.hash());
 
-            let tpu_bank = bank_forks.write().unwrap().insert(SchedulingMode::BlockProduction, tpu_bank);
+            let tpu_bank = bank_forks
+                .write()
+                .unwrap()
+                .insert(SchedulingMode::BlockProduction, tpu_bank);
             poh_recorder
                 .write()
                 .unwrap()

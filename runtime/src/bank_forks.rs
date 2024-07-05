@@ -16,6 +16,7 @@ use {
     solana_sdk::{
         clock::{Epoch, Slot},
         hash::Hash,
+        scheduling::SchedulingMode,
         timing,
     },
     std::{
@@ -29,7 +30,6 @@ use {
     },
     thiserror::Error,
 };
-use solana_sdk::scheduling::SchedulingMode;
 
 pub const MAX_ROOT_DISTANCE_FOR_VOTE_ONLY: Slot = 400;
 pub type AtomicSlot = AtomicU64;
@@ -228,7 +228,11 @@ impl BankForks {
         for (slot, bank) in self.banks.iter_mut() {
             if !bank.is_frozen() {
                 trace!("Installed scheduler into existing unfrozen slot: {slot}");
-                *bank = Self::install_scheduler_into_bank(&self.scheduler_pool.as_ref().unwrap(), mode, bank.clone_without_scheduler());
+                *bank = Self::install_scheduler_into_bank(
+                    &self.scheduler_pool.as_ref().unwrap(),
+                    mode,
+                    bank.clone_without_scheduler(),
+                );
             }
         }
     }

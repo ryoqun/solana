@@ -2139,12 +2139,15 @@ fn maybe_warp_slot(
         root_bank.squash();
         root_bank.force_flush_accounts_cache();
 
-        bank_forks.insert(panic!(), Bank::warp_from_parent(
-            root_bank,
-            &Pubkey::default(),
-            warp_slot,
-            solana_accounts_db::accounts_db::CalcAccountsHashDataSource::Storages,
-        ));
+        bank_forks.insert(
+            panic!(),
+            Bank::warp_from_parent(
+                root_bank,
+                &Pubkey::default(),
+                warp_slot,
+                solana_accounts_db::accounts_db::CalcAccountsHashDataSource::Storages,
+            ),
+        );
         bank_forks
             .set_root(
                 warp_slot,

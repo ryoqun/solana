@@ -52,6 +52,7 @@ use {
         pubkey::Pubkey,
         rent_debits::RentDebits,
         saturating_add_assign,
+        scheduling::SchedulingMode,
         signature::{Keypair, Signature},
         timing,
         transaction::{
@@ -83,7 +84,6 @@ use {
     thiserror::Error,
     ExecuteTimingType::{NumExecuteBatches, TotalBatchesLen},
 };
-use solana_sdk::scheduling::SchedulingMode;
 
 pub struct TransactionBatchWithIndexes<'a, 'b> {
     pub batch: TransactionBatch<'a, 'b>,
@@ -462,7 +462,10 @@ fn schedule_batches_for_execution(
         transaction_indexes,
     } in batches
     {
-        let transaction_indexes2 = transaction_indexes.iter().map(|&i| i as u128).collect::<Vec<u128>>();
+        let transaction_indexes2 = transaction_indexes
+            .iter()
+            .map(|&i| i as u128)
+            .collect::<Vec<u128>>();
         bank.schedule_transaction_executions(
             batch
                 .sanitized_transactions()
@@ -1869,7 +1872,10 @@ fn load_frozen_forks(
 
             let mut progress = ConfirmationProgress::new(last_entry_hash);
             let mut m = Measure::start("process_single_slot");
-            let bank = bank_forks.write().unwrap().insert_from_ledger(SchedulingMode::BlockVerification, bank);
+            let bank = bank_forks
+                .write()
+                .unwrap()
+                .insert_from_ledger(SchedulingMode::BlockVerification, bank);
             if process_single_slot(
                 blockstore,
                 &bank,
