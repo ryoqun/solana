@@ -44,6 +44,8 @@ pub fn initialized_result_with_timings() -> ResultWithTimings {
     (Ok(()), ExecuteTimings::default())
 }
 
+type Index = u128;
+
 pub trait InstalledSchedulerPool: Send + Sync + Debug {
     fn take_scheduler(&self, context: SchedulingContext) -> InstalledSchedulerBox {
         self.take_resumed_scheduler(context, initialized_result_with_timings())
