@@ -107,6 +107,7 @@ use {
         sync::Arc,
     },
 };
+use solana_sdk::scheduling::SchedulingMode;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
