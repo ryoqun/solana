@@ -750,7 +750,8 @@ impl BankingStage {
                                         break;
                                     }
                                 }
-                                _ => {}
+                                Err(RecvTimeoutError::Timeout) => continue,
+                                Err(RecvTimeoutError::Disconnected) => break,
                             }
                                 }
                             },
