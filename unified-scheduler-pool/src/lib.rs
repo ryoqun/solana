@@ -458,7 +458,7 @@ impl TaskHandler for DefaultTaskHandler {
 
             *result = execute_batch(
                 &batch_with_indexes,
-                bank,
+                scheduling_context.bank(),
                 handler_context.transaction_status_sender.as_ref(),
                 handler_context.replay_vote_sender.as_ref(),
                 timings,
