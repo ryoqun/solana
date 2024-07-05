@@ -1077,7 +1077,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let (mut log_reported_at, mut reported_task_count) = (session_started_at, 0);
+                let (mut log_reported_at, mut reported_task_total) = (session_started_at, 0);
 
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
@@ -1103,12 +1103,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         "tps({}us|{}us): ({}|{})",
                                         log_elapsed_us,
                                         session_elapsed_us,
-                                        1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_count) as u128) / log_elapsed_us,
+                                        1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_total) as u128) / log_elapsed_us,
                                         1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us
                                     );
                                     #[allow(unused_assignments)]
                                     {
-                                        (log_reported_at, reported_task_count) = (now, state_machine.handled_task_total());
+                                        (log_reported_at, reported_task_total) = (now, state_machine.handled_task_total());
                                     }
                                     l
                                 } else {
@@ -1235,7 +1235,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
                             session_started_at = Instant::now();
-                            reported_task_count = 0;
+                            reported_task_total = 0;
                             slot = new_context.bank().slot();
                             log_scheduler!(info, "started");
 
