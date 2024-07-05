@@ -703,7 +703,7 @@ impl BankingStage {
                                             return None;
                                         }
 
-                                        if let Ok(fb) = process_compute_budget_instructions(tx.message().program_instructions_iter()) else {
+                                        let Ok(fb) = process_compute_budget_instructions(tx.message().program_instructions_iter()) else {
                                             return None;
                                         }
 
