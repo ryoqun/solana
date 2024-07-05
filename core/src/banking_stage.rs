@@ -700,7 +700,7 @@ impl BankingStage {
                                     .collect::<Vec<_>>();
 
                                 if let Err(_) =
-                                    bank.schedule_transaction_executions(ppp.iter().map(|(a, b)| (a, b)))
+                                    bank.schedule_transaction_executions(ppp.iter().map(|(a, &b)| (a, b)))
                                 {
                                     break;
                                 }
