@@ -83,6 +83,7 @@ use {
     thiserror::Error,
     ExecuteTimingType::{NumExecuteBatches, TotalBatchesLen},
 };
+use solana_sdk::scheduling::SchedulingMode;
 
 pub struct TransactionBatchWithIndexes<'a, 'b> {
     pub batch: TransactionBatch<'a, 'b>,
