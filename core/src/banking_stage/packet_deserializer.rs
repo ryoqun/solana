@@ -245,14 +245,14 @@ impl PacketDeserializer {
     pub(crate) fn deserialize_packets2<'a>(
         packet_batch: &'a PacketBatch,
         packet_indexes: &'a [usize],
-    ) -> impl Iterator<Item = ImmutableDeserializedPacket> + 'a {
+    ) -> impl Iterator<Item = (usize, ImmutableDeserializedPacket)> + 'a {
         packet_indexes.iter().filter_map(move |packet_index| {
             let mut packet_clone = packet_batch[*packet_index].clone();
             packet_clone
                 .meta_mut()
                 .set_round_compute_unit_price(true /* todo */);
 
-            ImmutableDeserializedPacket::new(packet_clone).ok()
+            (packet_index, ImmutableDeserializedPacket::new(packet_clone).ok())
         })
     }
 }
