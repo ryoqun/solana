@@ -978,7 +978,7 @@ impl SchedulingStateMachine {
     /// [constructor](SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling)
     /// as much as possible) and its (possibly cached) associated [`UsageQueue`]s for processing
     /// other slots.
-    pub fn reinitialize(&mut self) {
+    pub fn reinitialize(&mut self, mode: SchedulingMode) {
         assert!(self.has_no_active_task());
         assert_eq!(self.unblocked_task_queue.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
