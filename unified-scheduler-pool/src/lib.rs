@@ -450,7 +450,7 @@ impl TaskHandler for DefaultTaskHandler {
         if handler_context.dummy_sender.is_none() {
             // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
             // responsible for locking.
-            let batch = bank.prepare_unlocked_batch_from_single_tx(transaction);
+            let batch = scheduling_context.bank().prepare_unlocked_batch_from_single_tx(transaction);
             let batch_with_indexes = TransactionBatchWithIndexes {
                 batch,
                 transaction_indexes: vec![(index as usize)],
