@@ -1077,7 +1077,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let mut (log_reported_at, reported_task_count) = (Instant::now(), 0);
+                let (mut log_reported_at, mut reported_task_count) = (Instant::now(), 0);
 
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
