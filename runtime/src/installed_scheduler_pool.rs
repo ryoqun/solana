@@ -543,10 +543,11 @@ impl BankWithSchedulerInner {
                 Err(SchedulerError::Aborted)
             }
             SchedulerStatus::Stale(pool, mode, _result_with_timings) => {
+                let mode = *mode;
                 let pool = pool.clone();
                 drop(scheduler);
 
-                let context = SchedulingContext::new(*mode, self.bank.clone());
+                let context = SchedulingContext::new(mode, self.bank.clone());
                 let mut scheduler = self.scheduler.write().unwrap();
                 trace!("with_active_scheduler: {:?}", scheduler);
                 scheduler.transition_from_stale_to_active(|pool, result_with_timings| {
