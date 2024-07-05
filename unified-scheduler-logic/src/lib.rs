@@ -994,6 +994,7 @@ impl SchedulingStateMachine {
             task_total,
             count_token: _,
             usage_queue_token: _,
+            scheduling_mode,
             // don't add ".." here
         } = self;
         active_task_count.reset_to_zero();
@@ -1001,6 +1002,7 @@ impl SchedulingStateMachine {
         unblocked_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
         task_total.reset_to_zero();
+        scheduling_mode = mode;
     }
 
     /// Creates a new instance of [`SchedulingStateMachine`] with its `unsafe` fields created as
