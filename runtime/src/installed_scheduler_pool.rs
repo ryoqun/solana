@@ -660,7 +660,7 @@ impl BankWithSchedulerInner {
                 // called later.
                 (true, None)
             }
-            SchedulerStatus::Stale(_pool, _result_with_timings) => {
+            SchedulerStatus::Stale(_pool, _mode, _result_with_timings) => {
                 let result_with_timings = scheduler.transition_from_stale_to_unavailable();
                 (true, Some(result_with_timings))
             }
