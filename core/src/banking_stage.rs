@@ -697,14 +697,14 @@ impl BankingStage {
                                             bank.vote_only_bank(),
                                             &**bank,
                                             bank.get_reserved_account_keys(),
-                                        ) else { return None };
+                                        ) else { return None; };
 
-                                        if SanitizedTransaction::validate_account_locks(
-                                            tx.message(),
-                                            transaction_account_lock_limit,
-                                        )
-                                        .is_err() {
-                                            return None
+                                        if let Err(_) = SanitizedTransaction::validate_account_locks(tx.message(), transaction_account_lock_limit) {
+                                            return None;
+                                        }
+
+                                        if let Ok(fb) = process_compute_budget_instructions(tx.message().program_instructions_iter()) else {
+                                            return None;
                                         }
 
                                         Some((tx, i))
