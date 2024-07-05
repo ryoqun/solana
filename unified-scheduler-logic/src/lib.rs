@@ -694,7 +694,7 @@ pub struct SchedulingStateMachine {
     handled_task_count: ShortCounter,
     unblocked_task_count: ShortCounter,
     blocked_task_count: ShortCounter,
-    replaced_lock_count: ShortCounter,
+    replaced_lock_total: ShortCounter,
     total_task_count: ShortCounter,
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
@@ -739,8 +739,8 @@ impl SchedulingStateMachine {
         self.blocked_task_count.current()
     }
 
-    pub fn replaced_lock_count(&self) -> u32 {
-        self.replaced_lock_count.current()
+    pub fn replaced_lock_total(&self) -> u32 {
+        self.replaced_lock_total.current()
     }
     pub fn total_task_count(&self) -> u32 {
         self.total_task_count.current()
@@ -799,7 +799,7 @@ impl SchedulingStateMachine {
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                self.replaced_lock_count.increment_self();
+                                self.replaced_lock_total.increment_self();
                                 Ok(())
                             },
                             (Usage::Writable, RequestedUsage::Readonly) => {
@@ -807,7 +807,7 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(reverted_task.index, (RequestedUsage::Writable, reverted_task));
-                                self.replaced_lock_count.increment_self();
+                                self.replaced_lock_total.increment_self();
                                 Ok(())
                             },
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
@@ -841,7 +841,7 @@ impl SchedulingStateMachine {
                                 for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(tt.index, (RequestedUsage::Readonly, tt));
-                                    self.replaced_lock_count.increment_self();
+                                    self.replaced_lock_total.increment_self();
                                 }
                                 r
                             },
@@ -987,7 +987,7 @@ impl SchedulingStateMachine {
             handled_task_count,
             unblocked_task_count,
             blocked_task_count: _,
-            replaced_lock_count,
+            replaced_lock_total,
             total_task_count,
             count_token: _,
             usage_queue_token: _,
@@ -996,7 +996,7 @@ impl SchedulingStateMachine {
         active_task_count.reset_to_zero();
         handled_task_count.reset_to_zero();
         unblocked_task_count.reset_to_zero();
-        replaced_lock_count.reset_to_zero();
+        replaced_lock_total.reset_to_zero();
         total_task_count.reset_to_zero();
     }
 
@@ -1015,7 +1015,7 @@ impl SchedulingStateMachine {
             handled_task_count: ShortCounter::zero(),
             unblocked_task_count: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
-            replaced_lock_count: ShortCounter::zero(),
+            replaced_lock_total: ShortCounter::zero(),
             total_task_count: ShortCounter::zero(),
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },

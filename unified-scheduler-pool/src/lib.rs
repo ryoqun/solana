@@ -1080,13 +1080,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
                         $level! {
-                            "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}(+{})=>{})/{}|{}) channels(<{} >{}+{} <{}+{}) tps: {}",
+                            "[sch_{:0width$x}]: slot: {}[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}Tb|{}Lr) channels(<{} >{}+{} <{}+{}) tps: {}",
                             scheduler_id, slot,
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
-                            state_machine.active_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
+                            state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_count(),
                             state_machine.total_task_count(),
                             state_machine.unblocked_task_count(),
+                            state_machine.replaced_lock_count(),
                             new_task_receiver.len(),
                             runnable_task_sender.len(), runnable_task_sender.aux_len(),
                             finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
