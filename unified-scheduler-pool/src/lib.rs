@@ -895,7 +895,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 match executed_task.result_with_timings.0 {
                     Ok(()) => Some(executed_task),
                     Err(ref error) => {
-                        error!("error is detected while accumulating....: {error:?}");
+                        debug!("error is detected while accumulating....: {error:?}");
                         Some(executed_task)
                     }
                 }
@@ -1599,7 +1599,9 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
     }
 
     fn pause_for_recent_blockhash(&mut self) {
-        self.inner.thread_manager.end_session();
+        if let SchedulingMode::BlockVerification = self.context().mode() {
+            self.inner.thread_manager.end_session();
+        }
     }
 }
 
