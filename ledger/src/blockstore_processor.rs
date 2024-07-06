@@ -170,6 +170,7 @@ pub fn execute_batch(
         vec![]
     };
 
+    let is_unified_scheduler_for_block_production = pre_commit_callback.is_some();
     let Some((tx_results, balances)) = batch.bank().load_execute_and_commit_transactions(
         batch,
         MAX_PROCESSING_AGE,
@@ -247,7 +248,6 @@ pub fn execute_batch(
 
     prioritization_fee_cache.update(bank, executed_transactions.into_iter());
 
-    let is_unified_scheduler_for_block_production = pre_commit_callback.is_some();
     let first_err = get_first_error(
         batch,
         fee_collection_results,
