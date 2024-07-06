@@ -108,6 +108,7 @@ fn first_err(results: &[Result<()>]) -> Result<()> {
 fn get_first_error(
     batch: &TransactionBatch,
     fee_collection_results: Vec<Result<()>>,
+    is_unified_scheduler_for_block_production: bool,
 ) -> Option<(Result<()>, Signature)> {
     let mut first_err = None;
     for (result, transaction) in fee_collection_results
@@ -118,18 +119,20 @@ fn get_first_error(
             if first_err.is_none() {
                 first_err = Some((result.clone(), *transaction.signature()));
             }
-            warn!(
-                "Unexpected validator error: {:?}, transaction: {:?}",
-                err, transaction
-            );
-            datapoint_error!(
-                "validator_process_entry_error",
-                (
-                    "error",
-                    format!("error: {err:?}, transaction: {transaction:?}"),
-                    String
-                )
-            );
+            if !is_unified_scheduler_for_block_production {
+                warn!(
+                    "Unexpected validator error: {:?}, transaction: {:?}",
+                    err, transaction
+                );
+                datapoint_error!(
+                    "validator_process_entry_error",
+                    (
+                        "error",
+                        format!("error: {err:?}, transaction: {transaction:?}"),
+                        String
+                    )
+                );
+            }
         }
     }
     first_err
@@ -244,7 +247,12 @@ pub fn execute_batch(
 
     prioritization_fee_cache.update(bank, executed_transactions.into_iter());
 
-    let first_err = get_first_error(batch, fee_collection_results);
+    let is_unified_scheduler_for_block_production = pre_commit_callback.is_some();
+    let first_err = get_first_error(
+        batch,
+        fee_collection_results,
+        is_unified_scheduler_for_block_production,
+    );
     first_err.map(|(result, _)| result).unwrap_or(Ok(()))
 }
 
