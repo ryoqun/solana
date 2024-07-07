@@ -873,6 +873,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         mode: SchedulingMode,
         (result, timings): &mut ResultWithTimings,
         executed_task: HandlerResult,
+        ignored_error_count: &mut usize,
     ) -> Option<Box<ExecutedTask>> {
         let Ok(executed_task) = executed_task else {
             return None;
@@ -888,8 +889,15 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             },
             SchedulingMode::BlockProduction => match executed_task.result_with_timings.0 {
                 Ok(()) => Some(executed_task),
+                Err(ref error @ TransactionError::CommitFailed) => {
+                    debug!("maybe reached max tick height...: {error:?}");
+                    // it's okay to abort scheduler as this error gurantees determinstic bank
+                    // freezing...
+                    None
+                }
                 Err(ref error) => {
                     debug!("error is detected while accumulating....: {error:?}");
+                    ignored_error_count += 1;
                     Some(executed_task)
                 }
             },
@@ -1086,11 +1094,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
                 let (mut log_reported_at, mut reported_task_total) = (session_started_at, 0);
+                let mut ignored_error_count = 0;
 
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
                         $level! {
-                            "sch: {}: slot: {}({})[{:12}]({}): state_machine(({}({}b{}B)=>{})/{}|{}TB|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
+                            "sch: {}: slot: {}({})[{:12}]({}): state_machine(({}({}b{}B)=>{}({}E))/{}|{}TB|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
                             scheduler_id, slot,
                             match state_machine.mode() {
                                 SchedulingMode::BlockVerification => "v",
@@ -1099,6 +1108,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
                             state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_total(),
+                            ignored_error_count,
                             state_machine.task_total(),
                             state_machine.unblocked_task_total(),
                             state_machine.reblocked_lock_total(),
@@ -1163,7 +1173,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     state_machine.mode(),
                                     &mut result_with_timings,
-                                    executed_task.expect("alive handler")
+                                    executed_task.expect("alive handler"),
+                                    &mut ignored_error_count,
                                 ) else {
                                     break 'nonaborted_main_loop;
                                 };
@@ -1210,7 +1221,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     state_machine.mode(),
                                     &mut result_with_timings,
-                                    executed_task.expect("alive handler")
+                                    executed_task.expect("alive handler"),
+                                    &mut ignored_error_count,
                                 ) else {
                                     break 'nonaborted_main_loop;
                                 };
@@ -1249,6 +1261,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             session_started_at = Instant::now();
                             state_machine.reinitialize(new_context.mode());
                             reported_task_total = 0;
+                            ignored_error_count = 0;
                             slot = new_context.bank().slot();
                             log_scheduler!(info, "started");
 
