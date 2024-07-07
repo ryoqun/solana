@@ -889,7 +889,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             },
             SchedulingMode::BlockProduction => match executed_task.result_with_timings.0 {
                 Ok(()) => Some(executed_task),
-                Err(ref error @ TransactionError::CommitFailed) => {
+                Err(error @ TransactionError::CommitFailed) => {
                     info!("maybe reached max tick height...: {error:?}");
                     *result = Err(error);
                     // it's okay to abort scheduler as this error gurantees determinstic bank
