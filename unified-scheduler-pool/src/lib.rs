@@ -1602,14 +1602,20 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
         self: Box<Self>,
         _is_dropped: bool,
     ) -> (ResultWithTimings, UninstalledSchedulerBox) {
-        let (result_with_timings, uninstalled_scheduler) = self.into_inner();
+        let ignore_commit_failed = matches!(self.context().mode(), SchedulingMode::BlockProduction;
+        let (mut result_with_timings, uninstalled_scheduler) = self.into_inner();
+        if matches!(result_with_timings, TransactionError::CommitFailed) {
+            result_with_timings.0 = Ok(());
+        }
         (result_with_timings, Box::new(uninstalled_scheduler))
     }
 
     fn pause_for_recent_blockhash(&mut self) {
-        if matches!(self.context().mode(), SchedulingMode::BlockVerification) {
-            self.inner.thread_manager.end_session();
+        if matches!(self.context().mode(), SchedulingMode::BlockProduction) {
+            return;
         }
+
+        self.inner.thread_manager.end_session();
     }
 }
 
