@@ -1431,9 +1431,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 self.put_session_result_with_timings(result_with_timings);
             }
         } else {
-            if matches!(self.context().mode(), SchedulingMode::BlockVerification) {
-                warn!("ensure_join_threads(): skipping; already joined...");
-            }
+            debug!("ensure_join_threads(): skipping; already joined...");
         };
     }
 
