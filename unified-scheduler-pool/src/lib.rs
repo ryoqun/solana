@@ -1279,6 +1279,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 session_result_sender
                     .send(result_with_timings)
                     .expect("always outlived receiver");
+                log_scheduler!(info, "aborted");
 
                 // Next, drop `new_task_receiver`. After that, the paired singleton
                 // `new_task_sender` will start to error when called by external threads, resulting
