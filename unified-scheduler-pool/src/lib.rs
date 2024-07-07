@@ -1602,9 +1602,11 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
         self: Box<Self>,
         _is_dropped: bool,
     ) -> (ResultWithTimings, UninstalledSchedulerBox) {
+        let (id, slot) = (self.id(), self.context.slot());
         let mode = self.context().mode();
         let (mut result_with_timings, uninstalled_scheduler) = self.into_inner();
-        if matches!((mode, result_with_timings), (SchedulingMode::BlockProduction, (TransactionError::CommitFailed, _)) {
+        if matches!((mode, result_with_timings), (SchedulingMode::BlockProduction, (TransactionError::CommitFailed, _))) {
+            info!("clearing commit failed for tpu bank on wait_for_termination... {id}, {slot}");
             result_with_timings.0 = Ok(());
         }
         (result_with_timings, Box::new(uninstalled_scheduler))
