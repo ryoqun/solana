@@ -897,7 +897,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 }
                 Err(ref error) => {
                     debug!("error is detected while accumulating....: {error:?}");
-                    ignored_error_count += 1;
+                    *ignored_error_count += 1;
                     Some(executed_task)
                 }
             },
