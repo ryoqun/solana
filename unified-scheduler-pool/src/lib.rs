@@ -1602,9 +1602,9 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
         self: Box<Self>,
         _is_dropped: bool,
     ) -> (ResultWithTimings, UninstalledSchedulerBox) {
-        let ignore_commit_failed = matches!(self.context().mode(), SchedulingMode::BlockProduction;
+        let mode = self.context().mode();
         let (mut result_with_timings, uninstalled_scheduler) = self.into_inner();
-        if matches!(result_with_timings, TransactionError::CommitFailed) {
+        if matches!((mode, result_with_timings), (SchedulingMode::BlockProduction, (TransactionError::CommitFailed, _)) {
             result_with_timings.0 = Ok(());
         }
         (result_with_timings, Box::new(uninstalled_scheduler))
