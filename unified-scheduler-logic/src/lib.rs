@@ -634,8 +634,10 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
-            Some((Usage::Writable, _task)) => match requested_usage {
+            Some((Usage::Writable, current_tasks)) => match requested_usage {
                 RequestedUsage::Writable => {
+                    assert_eq!(1, current_tasks.len());
+                    current_tasks.remove(&task_index).unwrap();
                     is_unused_now = true;
                 }
                 RequestedUsage::Readonly => unreachable!(),
@@ -794,9 +796,7 @@ impl SchedulingStateMachine {
         self.unlock_usage_queues(task);
         if self.blocked_task_count() > 0 {
             assert_gt!(
-                (self.active_task_count() as usize)
-                    .checked_add(self.unblocked_task_queue_count())
-                    .unwrap(),
+                self.active_task_count(),
                 self.blocked_task_count() as usize,
                 "no deadlock"
             );
@@ -818,6 +818,7 @@ impl SchedulingStateMachine {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 assert_eq!(1, current_tasks.len());
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
+                                assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
@@ -829,6 +830,7 @@ impl SchedulingStateMachine {
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 assert_eq!(1, current_tasks.len());
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
+                                assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(
@@ -867,7 +869,7 @@ impl SchedulingStateMachine {
                                 }
                                 let r = if current_tasks.is_empty() {
                                     *current_usage = Usage::Writable;
-                                    current_tasks.insert(new_task.index, new_task.clone());
+                                    assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
                                     Ok(())
                                 } else {
                                     *current_usage = Usage::Readonly(new_c);
