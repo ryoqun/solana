@@ -797,7 +797,7 @@ impl SchedulingStateMachine {
         if self.blocked_task_count() > 0 {
             assert_gt!(
                 self.active_task_count(),
-                self.blocked_task_count() as usize,
+                self.blocked_task_count(),
                 "no deadlock"
             );
         }
