@@ -816,6 +816,7 @@ impl SchedulingStateMachine {
                         let (current_usage, current_tasks) = a;
                         match (&current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
+                                assert_eq!(1, current_tasks.len());
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
@@ -826,6 +827,7 @@ impl SchedulingStateMachine {
                                 Ok(())
                             }
                             (Usage::Writable, RequestedUsage::Readonly) => {
+                                assert_eq!(1, current_tasks.len());
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
@@ -934,7 +936,7 @@ impl SchedulingStateMachine {
 
                     match usage_queue.try_lock(
                         requested_usage,
-                        &task_with_unblocked_queue, /* was task and had bug.. write test...*/
+                        &task_with_unblocked_queue, /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
