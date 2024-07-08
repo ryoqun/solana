@@ -818,7 +818,7 @@ impl SchedulingStateMachine {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 assert_eq!(1, current_tasks.len());
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
-                                //assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
+                                assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
@@ -830,7 +830,7 @@ impl SchedulingStateMachine {
                             (Usage::Writable, RequestedUsage::Readonly) => {
                                 assert_eq!(1, current_tasks.len());
                                 let reverted_task = current_tasks.pop_first().unwrap().1;
-                                //assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
+                                assert!(current_tasks.insert(new_task.index, new_task.clone()).is_none());
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = Usage::Readonly(ShortCounter::one());
                                 usage_queue.insert_blocked_usage_from_task(
