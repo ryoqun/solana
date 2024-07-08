@@ -794,7 +794,7 @@ impl SchedulingStateMachine {
         self.unlock_usage_queues(task);
         if self.blocked_task_count() > 0 {
             assert_gt!(
-                self.active_task_count().checked_add(self.unblocked_task_queue_count()).unwrap(),
+                (self.active_task_count() as usize).checked_add(self.unblocked_task_queue_count()).unwrap(),
                 self.blocked_task_count(),
                 "no deadlock"
             );
