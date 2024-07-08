@@ -623,7 +623,10 @@ impl BankWithSchedulerInner {
             SchedulerStatus::Stale(_pool, _mode, (result, _timings)) if result.is_err() => {
                 result.clone().unwrap_err()
             }
-            _ => unreachable!("no error in {:?}", self.scheduler),
+            SchedulerStatus::Unavailable => {
+                trace!("no error in {:?}", self.scheduler);
+                TransactionError::CommitFailed
+            }
         }
     }
 
