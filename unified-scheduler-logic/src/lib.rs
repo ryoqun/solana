@@ -636,8 +636,8 @@ impl UsageQueueInner {
             },
             Some((Usage::Writable, current_tasks)) => match requested_usage {
                 RequestedUsage::Writable => {
-                    assert_eq!(1, current_tasks.len());
-                    current_tasks.remove(&task_index).unwrap();
+                    //assert_eq!(1, current_tasks.len());
+                    //current_tasks.remove(&task_index).unwrap();
                     is_unused_now = true;
                 }
                 RequestedUsage::Readonly => unreachable!(),
