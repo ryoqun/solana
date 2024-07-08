@@ -41,7 +41,10 @@ use {
         bank_forks::BankForks, prioritization_fee_cache::PrioritizationFeeCache,
         vote_sender_types::ReplayVoteSender,
     },
-    solana_sdk::{timing::AtomicInterval, transaction::SanitizedTransaction},
+    solana_sdk::{
+        timing::AtomicInterval,
+        transaction::{SanitizedTransaction, TransactionError},
+    },
     std::{
         cmp, env,
         sync::{
@@ -742,7 +745,9 @@ impl BankingStage {
                                             })
                                             .collect::<Vec<_>>();
 
-                                            match bank.schedule_transaction_executions(ppp.iter().map(|(a, b)| (a, b))) {
+                                            match bank.schedule_transaction_executions(
+                                                ppp.iter().map(|(a, b)| (a, b)),
+                                            ) {
                                                 Ok(()) => continue,
                                                 Err(TransactionError::CommitFailed) => break,
                                                 _ => unreachable!(),
