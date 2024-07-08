@@ -748,7 +748,7 @@ impl BankingStage {
                                             match bank.schedule_transaction_executions(
                                                 ppp.iter().map(|(a, b)| (a, b)),
                                             ) {
-                                                Ok(()) => continue,
+                                                Ok(()) => (),
                                                 Err(TransactionError::CommitFailed) => break,
                                                 _ => unreachable!(),
                                             }
