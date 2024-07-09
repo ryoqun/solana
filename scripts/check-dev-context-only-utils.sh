@@ -43,7 +43,7 @@ allowed="${allowed%,}"
 
 mode=${1:-full}
 case "$mode" in
-  tree | check-bins | check-all-targets | full)
+  tree | check-bins | check-lib | check-all-targets | full)
     ;;
   *)
     echo "$0: unrecognized mode: $mode";
@@ -156,7 +156,7 @@ fi
 # consistency with other CI steps and for the possibility of new similar lints.
 export RUSTFLAGS="-D warnings -Z threads=8 $RUSTFLAGS"
 
-if [[ $mode = "check-bins" || $mode = "full" ]]; then
+if [[ $mode = "check-bins" || $mode = "check-lib" || $mode = "full" ]]; then
   # Until https://github.com/rust-lang/cargo/pull/14163 is applied for our
   # chosen nightly toolchain, dcou needs custom-built cargo to avoid
   # false-negatives.
@@ -183,10 +183,13 @@ if [[ $mode = "check-bins" || $mode = "full" ]]; then
   )
 
   # Use `cargo "+${rust_nightly}" hack ..` once we stop using custom-built one.
-  PATH="./cargo-for-dcou/target/release:$PATH" \
-    RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --bins
-  PATH="./cargo-for-dcou/target/release:$PATH" \
-    RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --lib
+  if [[ $mode = "check-bins" ]]; then
+    PATH="./cargo-for-dcou/target/release:$PATH" \
+      RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --bins
+  else
+    PATH="./cargo-for-dcou/target/release:$PATH" \
+      RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --lib
+  fi
 fi
 if [[ $mode = "check-all-targets" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack check --all-targets
