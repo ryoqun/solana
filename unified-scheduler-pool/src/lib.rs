@@ -12,7 +12,7 @@
 use qualifier_attr::qualifiers;
 use {
     assert_matches::assert_matches,
-    crossbeam_channel::{self, never, select_biased, Receiver, RecvError, SendError, Sender},
+    crossbeam_channel::{self, never, select, select_biased, Receiver, RecvError, SendError, Sender},
     dashmap::DashMap,
     derivative::Derivative,
     log::*,
@@ -1170,7 +1170,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // consistent. Note that unified scheduler will go
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
-                        let step_type = select_biased! {
+                        let step_type = select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
                                     state_machine.mode(),
