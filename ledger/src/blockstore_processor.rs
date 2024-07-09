@@ -1494,16 +1494,14 @@ pub fn confirm_slot(
         recyclers,
         log_messages_bytes_limit,
         prioritization_fee_cache,
-    ).inspect_ok(|| {
-        progress.num_shreds += num_shreds;
-    })
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
 fn confirm_slot_entries(
     bank: &BankWithScheduler,
     replay_tx_thread_pool: &ThreadPool,
-    slot_entries_load_result: (Vec<Entry>, bool),
+    slot_entries_load_result: (Vec<Entry>, u64, bool),
     timing: &mut ConfirmationTiming,
     progress: &mut ConfirmationProgress,
     skip_verification: bool,
@@ -1558,19 +1556,28 @@ fn confirm_slot_entries(
             num_txs
         })
         .sum::<usize>();
+    trace!(
+        "Fetched entries for slot {}, num_entries: {}, num_shreds: {}, num_txs: {}, slot_full: {}",
+        slot,
+        num_entries,
+        num_shreds,
+        num_txs,
+        slot_full,
+    );
 
     if !skip_verification {
         let tick_hash_count = &mut progress.tick_hash_count;
         verify_ticks(bank, &entries, slot_full, tick_hash_count).map_err(|err| {
             warn!(
                 "{:#?}, slot: {}, entry len: {}, tick_height: {}, last entry: {}, last_blockhash: \
-                 {}, slot_full: {}",
+                 {}, shred_index: {}, slot_full: {}",
                 err,
                 slot,
                 num_entries,
                 bank.tick_height(),
                 progress.last_entry,
                 bank.last_blockhash(),
+                num_shreds,
                 slot_full,
             );
             err
@@ -1684,6 +1691,7 @@ fn confirm_slot_entries(
 
     process_result?;
 
+    progress.num_shreds += num_shreds;
     progress.num_entries += num_entries;
     progress.num_txs += num_txs;
     if let Some(last_entry_hash) = last_entry_hash {
