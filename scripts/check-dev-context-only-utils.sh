@@ -184,9 +184,9 @@ if [[ $mode = "check-bins" || $mode = "full" ]]; then
 
   # Use `cargo "+${rust_nightly}" hack ..` once we stop using custom-built one.
   PATH="./cargo-for-dcou/target/release:$PATH" \
-    RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --lib
-  PATH="./cargo-for-dcou/target/release:$PATH" \
     RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --bins
+  PATH="./cargo-for-dcou/target/release:$PATH" \
+    RUSTUP_TOOLCHAIN="${rust_nightly}" _ cargo hack check --lib
 fi
 if [[ $mode = "check-all-targets" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack check --all-targets
