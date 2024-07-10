@@ -2193,7 +2193,7 @@ impl ReplayStage {
             replay_tx_thread_pool,
             &mut w_replay_stats,
             &mut w_replay_progress,
-            false,
+            true /* skip verification */,
             transaction_status_sender,
             entry_notification_sender,
             Some(replay_vote_sender),
