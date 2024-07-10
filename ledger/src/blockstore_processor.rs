@@ -1565,7 +1565,8 @@ fn confirm_slot_entries(
         slot_full,
     );
 
-    if !skip_verification {
+    // seems needed to avoid consensus stall....
+    if true || !skip_verification {
         let tick_hash_count = &mut progress.tick_hash_count;
         verify_ticks(bank, &entries, slot_full, tick_hash_count).map_err(|err| {
             warn!(
