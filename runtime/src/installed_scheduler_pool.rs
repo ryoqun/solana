@@ -256,7 +256,7 @@ impl SchedulingContext {
     }
 
     pub fn elapsed(&self) -> Duration {
-        &self.started_at.elapsed()
+        self.started_at.elapsed()
     }
 
     pub fn slot(&self) -> Slot {
