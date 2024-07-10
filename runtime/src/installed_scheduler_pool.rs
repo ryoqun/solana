@@ -237,11 +237,12 @@ pub type SchedulerId = u64;
 pub struct SchedulingContext {
     mode: SchedulingMode,
     bank: Arc<Bank>,
+    started_at: Instant,
 }
 
 impl SchedulingContext {
     pub fn new(mode: SchedulingMode, bank: Arc<Bank>) -> Self {
-        Self { mode, bank }
+        Self { mode, bank, started_at: Instant::now() }
     }
 
     pub fn mode(&self) -> SchedulingMode {
