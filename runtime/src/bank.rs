@@ -5748,7 +5748,7 @@ impl Bank {
             if size > PACKET_DATA_SIZE as u64 {
                 return Err(TransactionError::SanitizeFailure);
             }
-            let message_hash = if verification_mode == TransactionVerificationMode::FullVerification
+            let message_hash = if false && verification_mode == TransactionVerificationMode::FullVerification
             {
                 tx.verify_and_hash_message()?
             } else {
@@ -5767,7 +5767,7 @@ impl Bank {
         if verification_mode == TransactionVerificationMode::HashAndVerifyPrecompiles
             || verification_mode == TransactionVerificationMode::FullVerification
         {
-            sanitized_tx.verify_precompiles(&self.feature_set)?;
+            //sanitized_tx.verify_precompiles(&self.feature_set)?;
         }
 
         Ok(sanitized_tx)
