@@ -254,6 +254,10 @@ impl SchedulingContext {
         &self.bank
     }
 
+    pub fn elapsed(&self) -> Duration {
+        &self.started_at.elapsed()
+    }
+
     pub fn slot(&self) -> Slot {
         self.bank().slot()
     }
