@@ -895,7 +895,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 if !context.can_commit() {
                     info!("detected max tick height at scheduler thread...");
                     *result = Err(TransactionError::CommitFailed);
-                    None
+                    return None;
                 }
                 match executed_task.result_with_timings.0 {
                 Ok(()) => Some(executed_task),
@@ -933,7 +933,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     // for type safety.
     fn start_threads(
         &mut self,
-        context: SchedulingContext,
+        mut context: SchedulingContext,
         mut result_with_timings: ResultWithTimings,
     ) {
         let scheduler_id = self.scheduler_id;
