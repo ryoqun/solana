@@ -38,6 +38,7 @@ use {
         thread,
     },
 };
+use std::time::Instant;
 #[cfg(feature = "dev-context-only-utils")]
 use {mockall::automock, qualifier_attr::qualifiers};
 
