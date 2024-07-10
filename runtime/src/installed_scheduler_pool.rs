@@ -258,10 +258,10 @@ impl SchedulingContext {
 
     pub fn can_commit(&self) -> bool {
         let (started_at, reached_max_height) = &mut *self.started_at.lock().unwrap();
-        if !reached_max_height && started_at.elapsed().as_millis() < 350 {
+        if !*reached_max_height && started_at.elapsed().as_millis() < 350 {
             return true;
         } else {
-            reached_max_height = true;
+            *reached_max_height = true;
             return false;
         }
     }
