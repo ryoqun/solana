@@ -1466,7 +1466,6 @@ pub fn confirm_slot(
     prioritization_fee_cache: &PrioritizationFeeCache,
 ) -> result::Result<(), BlockstoreProcessorError> {
     let slot = bank.slot();
-
     let slot_meta = blockstore.get_slot_meta(slot);
     let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds as u32, &slot_meta);
 
@@ -1474,11 +1473,14 @@ pub fn confirm_slot(
     loop {
         let next_entry = chunked_entries.next();
         let is_full = next_entry.is_none() && slot_meta.is_full();
+        let Some(entry) = entry {
+            return Ok(());
+        }
 
         let r = confirm_slot_entries(
             bank,
             replay_tx_thread_pool,
-            (entry.unwrap(), is_full),
+            (entry, is_full),
             timing,
             progress,
             skip_verification,
@@ -1492,35 +1494,6 @@ pub fn confirm_slot(
         entry = next_entry;
         r?;
     }
-
-    let slot_entries_load_result = {
-        let mut load_elapsed = Measure::start("load_elapsed");
-        let load_result = blockstore
-            .get_slot_entries_with_shred_info(slot, progress.num_shreds, allow_dead_slots)
-            .map_err(BlockstoreProcessorError::FailedToLoadEntries);
-        load_elapsed.stop();
-        if load_result.is_err() {
-            timing.fetch_fail_elapsed += load_elapsed.as_us();
-        } else {
-            timing.fetch_elapsed += load_elapsed.as_us();
-        }
-        load_result
-    }?;
-
-    confirm_slot_entries(
-        bank,
-        replay_tx_thread_pool,
-        (slot_entries_load_result.0, slot_entries_load_result.2),
-        timing,
-        progress,
-        skip_verification,
-        transaction_status_sender,
-        entry_notification_sender,
-        replay_vote_sender,
-        recyclers,
-        log_messages_bytes_limit,
-        prioritization_fee_cache,
-    )
 }
 
 #[allow(clippy::too_many_arguments)]
