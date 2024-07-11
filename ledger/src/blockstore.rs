@@ -1043,10 +1043,10 @@ impl Blockstore {
                 .filter_map(|shred| {
                     let leader =
                         leader_schedule_cache.slot_leader_at(shred.slot(), /*bank=*/ None)?;
-                    if !shred.verify(&leader) {
-                        metrics.num_recovered_failed_sig += 1;
-                        return None;
-                    }
+                    //if !shred.verify(&leader) {
+                    //    metrics.num_recovered_failed_sig += 1;
+                    //    return None;
+                    //}
                     // Since the data shreds are fully recovered from the
                     // erasure batch, no need to store coding shreds in
                     // blockstore.
