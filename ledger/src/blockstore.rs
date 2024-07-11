@@ -3682,7 +3682,7 @@ impl Blockstore {
                 .data_shred_cf
                 .multi_get_bytes(keys)
                 .into_iter()
-                .map(|shread_bytes| {
+                .map(|shred_bytes| {
                     Shred::new_from_serialized_shred(shred_bytes.unwrap())
                 })
                 .collect();
