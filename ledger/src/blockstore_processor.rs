@@ -1473,7 +1473,7 @@ pub fn confirm_slot(
     loop {
         let next_entry = chunked_entries.next();
         let is_full = next_entry.is_none() && slot_meta.is_full();
-        let Some(entry) = entry {
+        let Some(entry) = entry else {
             return Ok(());
         };
 
