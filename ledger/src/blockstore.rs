@@ -3670,6 +3670,15 @@ impl Blockstore {
             .collect()
     }
 
+    pub fn get_slot_chunked_entries_in_block(
+        &self,
+        slot: Slot,
+        completed_ranges: CompletedRanges,
+        slot_meta: Option<&SlotMeta>,
+    ) -> impl Iterator<Item = usize> {
+        completed_ranges.into_iter().map()
+    }
+
     pub fn get_entries_in_data_block(
         &self,
         slot: Slot,
