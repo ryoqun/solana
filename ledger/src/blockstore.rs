@@ -3675,7 +3675,7 @@ impl Blockstore {
         slot: Slot,
         completed_ranges: CompletedRanges,
         slot_meta: Option<&SlotMeta>,
-    ) -> impl Iterator<Item = Vec<Entry>> {
+    ) -> impl Iterator<Item = usize> {
         completed_ranges.into_iter().map(|(start_index, end_index)| {
             let keys = (start_index..=end_index).map(|index| (slot, u64::from(index)));
             let data_shreds: Result<Vec<Shred>> = self
@@ -3689,7 +3689,7 @@ impl Blockstore {
             let range_shreds = data_shreds.unwrap();
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
-            Shredder::deshred(&range_shreds)
+            let a: usize = Shredder::deshred(&range_shreds)
                 .map_err(|e| {
                     BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
                         format!("could not reconstruct entries buffer from shreds: {e:?}"),
@@ -3702,7 +3702,8 @@ impl Blockstore {
                         )))
                     })
                 })
-                .unwrap()
+                .unwrap();
+            a
         })
     }
 
