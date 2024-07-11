@@ -1473,6 +1473,7 @@ pub fn confirm_slot(
     let mut last_end_index: u32;
     loop {
         let Some((entry, last_end_index)) = current_entry else {
+            progress.num_shreds += (last_end_index as u64 - start_index + 1);
             return Ok(());
         };
         let next_entry = chunked_entries.next();
