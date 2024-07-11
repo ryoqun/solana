@@ -3678,11 +3678,12 @@ impl Blockstore {
     ) -> impl Iterator<Item = usize> {
         completed_ranges.into_iter().map(|(start_index, end_index)| {
             let keys = (start_index..=end_index).map(|index| (slot, u64::from(index)));
-            let data_shreds: Vec<Option<Vec<u8>>> = self
+            let data_shreds: Result<Vec<Option<Vec<u8>>>> = self
                 .data_shred_cf
                 .multi_get_bytes(keys)
                 .into_iter()
-                .collect().unwrap();
+                .collect();
+            let data_shreds.unwrap();
         })
     }
 
