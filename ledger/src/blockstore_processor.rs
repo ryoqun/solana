@@ -1475,7 +1475,7 @@ pub fn confirm_slot(
         let is_full = next_entry.is_none() && slot_meta.is_full();
         let Some(entry) = entry {
             return Ok(());
-        }
+        };
 
         let r = confirm_slot_entries(
             bank,
