@@ -3702,6 +3702,7 @@ impl Blockstore {
                         )))
                     })
                 })
+                .unwrap()
         })
     }
 
