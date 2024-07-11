@@ -1478,7 +1478,7 @@ pub fn confirm_slot(
         } else {
             timing.fetch_elapsed += load_elapsed.as_us();
         }
-        load_result
+        (load_result.0, load_result.2)
     }?;
 
     confirm_slot_entries(
@@ -1501,7 +1501,7 @@ pub fn confirm_slot(
 fn confirm_slot_entries(
     bank: &BankWithScheduler,
     replay_tx_thread_pool: &ThreadPool,
-    slot_entries_load_result: (Vec<Entry>, u64, bool),
+    slot_entries_load_result: (Vec<Entry>, bool),
     timing: &mut ConfirmationTiming,
     progress: &mut ConfirmationProgress,
     skip_verification: bool,
@@ -1527,7 +1527,7 @@ fn confirm_slot_entries(
     };
 
     let slot = bank.slot();
-    let (entries, num_shreds, slot_full) = slot_entries_load_result;
+    let (entries, slot_full) = slot_entries_load_result;
     let num_entries = entries.len();
     let mut entry_tx_starting_indexes = Vec::with_capacity(num_entries);
     let mut entry_tx_starting_index = progress.num_txs;
@@ -1557,10 +1557,9 @@ fn confirm_slot_entries(
         })
         .sum::<usize>();
     trace!(
-        "Fetched entries for slot {}, num_entries: {}, num_shreds: {}, num_txs: {}, slot_full: {}",
+        "Fetched entries for slot {}, num_entries: {}, num_txs: {}, slot_full: {}",
         slot,
         num_entries,
-        num_shreds,
         num_txs,
         slot_full,
     );
@@ -1571,14 +1570,13 @@ fn confirm_slot_entries(
         verify_ticks(bank, &entries, slot_full, tick_hash_count).map_err(|err| {
             warn!(
                 "{:#?}, slot: {}, entry len: {}, tick_height: {}, last entry: {}, last_blockhash: \
-                 {}, shred_index: {}, slot_full: {}",
+                 {}, slot_full: {}",
                 err,
                 slot,
                 num_entries,
                 bank.tick_height(),
                 progress.last_entry,
                 bank.last_blockhash(),
-                num_shreds,
                 slot_full,
             );
             err
@@ -1692,7 +1690,6 @@ fn confirm_slot_entries(
 
     process_result?;
 
-    progress.num_shreds += num_shreds;
     progress.num_entries += num_entries;
     progress.num_txs += num_txs;
     if let Some(last_entry_hash) = last_entry_hash {
