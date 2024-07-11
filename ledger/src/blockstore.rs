@@ -3676,7 +3676,7 @@ impl Blockstore {
 
     pub fn get_slot_chunked_entries_in_block<'a>(
         &'a self,
-        slot: Slot,
+        slot: &'a Slot,
         start_index: u32,
         slot_meta: &'a SlotMeta,
     ) -> impl Iterator<Item = (Vec<Entry>, u32)> + 'a {
