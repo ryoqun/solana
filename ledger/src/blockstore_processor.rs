@@ -1478,13 +1478,13 @@ pub fn confirm_slot(
         } else {
             timing.fetch_elapsed += load_elapsed.as_us();
         }
-        (load_result.0, load_result.2)
+        load_result
     }?;
 
     confirm_slot_entries(
         bank,
         replay_tx_thread_pool,
-        slot_entries_load_result,
+        (slot_entries_load_result.0, slot_entries_load_result.2),
         timing,
         progress,
         skip_verification,
