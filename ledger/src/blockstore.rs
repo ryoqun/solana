@@ -3676,7 +3676,7 @@ impl Blockstore {
         completed_ranges: CompletedRanges,
         slot_meta: Option<&SlotMeta>,
     ) -> impl Iterator<Item = usize> {
-        completed_ranges.into_iter().map()
+        completed_ranges.into_iter().map(|_| 3)
     }
 
     pub fn get_entries_in_data_block(
