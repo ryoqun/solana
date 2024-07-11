@@ -3675,8 +3675,8 @@ impl Blockstore {
         slot: Slot,
         start_index: u32,
         slot_meta: &'a SlotMeta,
-    ) -> impl Iterator<Item = Vec<Entry>> + 'a {
-        slot_meta.completed_data_indexes
+    ) -> (impl Iterator<Item = Vec<Entry>> + 'a) {
+        let aaa = slot_meta.completed_data_indexes
             .range(start_index..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
@@ -3710,7 +3710,8 @@ impl Blockstore {
                 })
                 .unwrap();
             a
-        })
+        });
+        (aaa,)
     }
 
     pub fn get_entries_in_data_block(
