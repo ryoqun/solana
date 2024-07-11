@@ -1467,7 +1467,7 @@ pub fn confirm_slot(
 ) -> result::Result<(), BlockstoreProcessorError> {
     let slot = bank.slot();
 
-    let slot_meta = blockstore.et_slot_meta(slot);
+    let slot_meta = blockstore.get_slot_meta(slot);
 
     let slot_entries_load_result = {
         let mut load_elapsed = Measure::start("load_elapsed");
