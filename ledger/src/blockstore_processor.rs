@@ -1475,7 +1475,7 @@ pub fn confirm_slot(
         let next_entry = chunked_entries.next();
         let is_full = next_entry.is_none() && slot_meta.is_full();
 
-        confirm_slot_entries(
+        let r = confirm_slot_entries(
             bank,
             replay_tx_thread_pool,
             (entry.unwrap(), is_full),
@@ -1488,7 +1488,9 @@ pub fn confirm_slot(
             recyclers,
             log_messages_bytes_limit,
             prioritization_fee_cache,
-        )?
+        );
+        entry = next_entry;
+        r
     }
 
     let slot_entries_load_result = {
