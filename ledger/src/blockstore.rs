@@ -3674,11 +3674,10 @@ impl Blockstore {
         &'a self,
         slot: Slot,
         start_index: u32,
-        consumed: u32,
+        slot_meta: &'a SlotMeta,
     ) -> impl Iterator<Item = Vec<Entry>> + 'a {
-        let slot_meta = self.meta_cf.get(slot).unwrap().unwrap();
-        slot_meta.completed_data_indexes.clone()
-            .range(start_index..consumed)
+        slot_meta.completed_data_indexes
+            .range(start_index..slot_meta.consumed)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
                 *begin = index + 1;
