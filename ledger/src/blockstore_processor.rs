@@ -1470,7 +1470,7 @@ pub fn confirm_slot(
     let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds as u32, &slot_meta);
 
     let mut current_entry = chunked_entries.next();
-    let mut last_end_index;
+    let mut last_end_index: u32;
     loop {
         let Some((entry, last_end_index)) = current_entry else {
             return Ok(());
