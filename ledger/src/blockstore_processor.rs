@@ -1476,10 +1476,7 @@ pub fn confirm_slot(
     let mut last_end_index: u32 = u32::MAX;
     loop {
         let Some((entry, last_end_index)) = current_entry else {
-            if last_end_index != u32::MAX {
-                progress.num_shreds = last_end_index as u64 + 1;
-            }
-            return Ok(());
+            break;
         };
         let next_entry = chunked_entries.next();
         let is_full = next_entry.is_none() && slot_meta.is_full();
@@ -1500,6 +1497,10 @@ pub fn confirm_slot(
         )?;
         current_entry = next_entry;
     }
+    if last_end_index != u32::MAX {
+        progress.num_shreds = last_end_index as u64 + 1;
+    }
+    return Ok(());
 }
 
 #[allow(clippy::too_many_arguments)]
