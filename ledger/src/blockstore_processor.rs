@@ -1470,6 +1470,8 @@ pub fn confirm_slot(
     let slot_meta = blockstore.get_slot_meta(slot);
     let chunked_entries = blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds as u32, &slot_meta);
 
+    let entry = chunked_entries.next();
+
     let slot_entries_load_result = {
         let mut load_elapsed = Measure::start("load_elapsed");
         let load_result = blockstore
