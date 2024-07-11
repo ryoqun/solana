@@ -3678,7 +3678,7 @@ impl Blockstore {
     ) -> impl Iterator<Item = Vec<Entry>> {
         completed_ranges.into_iter().map(|(start_index, end_index)| {
             let keys = (start_index..=end_index).map(|index| (slot, u64::from(index)));
-            let data_shreds: Result<Vec<Shred>> = self
+            let range_shreds: Vec<Shred> = self
                 .data_shred_cf
                 .multi_get_bytes(keys)
                 .into_iter()
@@ -3686,7 +3686,6 @@ impl Blockstore {
                     Shred::new_from_serialized_shred(shred_bytes.unwrap()).unwrap()
                 })
                 .collect();
-            let range_shreds = data_shreds.unwrap();
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
             let a: Vec<Entry> = Shredder::deshred(&range_shreds)
