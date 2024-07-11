@@ -1490,7 +1490,7 @@ pub fn confirm_slot(
             prioritization_fee_cache,
         );
         entry = next_entry;
-        r
+        r?;
     }
 
     let slot_entries_load_result = {
