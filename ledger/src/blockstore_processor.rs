@@ -1469,11 +1469,11 @@ pub fn confirm_slot(
     let slot_meta = blockstore.get_slot_meta(slot);
     let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds as u32, &slot_meta);
 
-    let mut entry = chunked_entries.next();
+    let mut current_entry = chunked_entries.next();
     loop {
         let next_entry = chunked_entries.next();
         let is_full = next_entry.is_none() && slot_meta.is_full();
-        let Some(entry) = entry else {
+        let Some(entry) = current_entry else {
             return Ok(());
         };
 
@@ -1491,7 +1491,7 @@ pub fn confirm_slot(
             log_messages_bytes_limit,
             prioritization_fee_cache,
         );
-        entry = next_entry;
+        current_entry = next_entry;
         r?;
     }
 }
