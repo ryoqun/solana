@@ -3686,7 +3686,9 @@ impl Blockstore {
                     Shred::new_from_serialized_shred(shred_bytes.unwrap())
                 })
                 .collect();
-            let data_shreds = data_shreds.unwrap();
+            let range_shreds = data_shreds.unwrap();
+            let last_shred = range_shreds.last().unwrap();
+            assert!(last_shred.data_complete() || last_shred.last_in_slot());
         })
     }
 
