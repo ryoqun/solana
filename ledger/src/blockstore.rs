@@ -3683,7 +3683,7 @@ impl Blockstore {
                 .multi_get_bytes(keys)
                 .into_iter()
                 .map(|shred_bytes| {
-                    Shred::new_from_serialized_shred(shred_bytes.unwrap()).unwrap()
+                    Shred::new_from_serialized_shred(shred_bytes.unwrap().unwrap()).unwrap()
                 })
                 .collect();
             let last_shred = range_shreds.last().unwrap();
