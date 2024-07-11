@@ -3673,10 +3673,17 @@ impl Blockstore {
     pub fn get_slot_chunked_entries_in_block<'a>(
         &'a self,
         slot: Slot,
-        completed_ranges: CompletedRanges,
+        completed_data_indexes: &BTreeSet<u32>,
         slot_meta: Option<&'a SlotMeta>,
     ) -> impl Iterator<Item = Vec<Entry>> + 'a {
-        completed_ranges.into_iter().map(move |(start_index, end_index)| {
+        completed_data_indexes
+            .range(start_index..consumed)
+            .scan(start_index, |begin, index| {
+                let out = (*begin, *index);
+                *begin = index + 1;
+                Some(out)
+            })
+            .map(move |(start_index, end_index)| {
             let keys = (start_index..=end_index).map(|index| (slot, u64::from(index)));
             let range_shreds: Vec<Shred> = self
                 .data_shred_cf
