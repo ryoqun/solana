@@ -3674,6 +3674,7 @@ impl Blockstore {
         &'a self,
         slot: Slot,
         completed_data_indexes: &BTreeSet<u32>,
+        start_index: u32,
         slot_meta: Option<&'a SlotMeta>,
     ) -> impl Iterator<Item = Vec<Entry>> + 'a {
         completed_data_indexes
