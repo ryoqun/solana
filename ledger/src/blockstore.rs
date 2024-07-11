@@ -3689,7 +3689,7 @@ impl Blockstore {
             let range_shreds = data_shreds.unwrap();
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
-            Shredder::deshred(range_shreds)
+            Shredder::deshred(&range_shreds)
                 .map_err(|e| {
                     BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
                         format!("could not reconstruct entries buffer from shreds: {e:?}"),
