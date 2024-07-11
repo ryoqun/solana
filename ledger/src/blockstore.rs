@@ -3673,11 +3673,16 @@ impl Blockstore {
     pub fn get_slot_chunked_entries_in_block<'a>(
         &'a self,
         slot: Slot,
-        completed_data_indexes: &'a BTreeSet<u32>,
         start_index: u32,
         consumed: u32,
     ) -> impl Iterator<Item = Vec<Entry>> + 'a {
-        completed_data_indexes
+        let slot_meta = self.meta_cf.get(slot)?;
+        if slot_meta.is_none() {
+            return Ok((vec![], slot_meta));
+        }
+
+        let slot_meta = slot_meta.unwrap();
+        slot_meta.completed_data_indexes
             .range(start_index..consumed)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
