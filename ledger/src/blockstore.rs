@@ -3676,7 +3676,7 @@ impl Blockstore {
         start_index: u32,
         consumed: u32,
     ) -> impl Iterator<Item = Vec<Entry>> + 'a {
-        let slot_meta = self.meta_cf.get(slot).unwrap();
+        let slot_meta = self.meta_cf.get(slot).unwrap().unwrap();
         slot_meta.completed_data_indexes
             .range(start_index..consumed)
             .scan(start_index, |begin, index| {
