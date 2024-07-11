@@ -1468,7 +1468,7 @@ pub fn confirm_slot(
     let slot = bank.slot();
 
     let slot_meta = blockstore.get_slot_meta(slot);
-    let blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds, &slot_meta);
+    let chunked_entries = blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds, &slot_meta);
 
     let slot_entries_load_result = {
         let mut load_elapsed = Measure::start("load_elapsed");
