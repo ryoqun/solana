@@ -3683,7 +3683,7 @@ impl Blockstore {
                 .multi_get_bytes(keys)
                 .into_iter()
                 .collect();
-            let data_shreds.unwrap();
+            let data_shreds = data_shreds.unwrap();
         })
     }
 
