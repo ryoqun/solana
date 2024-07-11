@@ -1488,7 +1488,7 @@ pub fn confirm_slot(
             recyclers,
             log_messages_bytes_limit,
             prioritization_fee_cache,
-        )
+        )?
     }
 
     let slot_entries_load_result = {
