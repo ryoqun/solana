@@ -1471,6 +1471,25 @@ pub fn confirm_slot(
     let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(slot, progress.num_shreds as u32, &slot_meta);
 
     let entry = chunked_entries.next();
+    loop {
+        let next_entry = chunked_entries.next();
+        let is_full = next_entry.is_none() && slot_meta.is_full;
+
+        confirm_slot_entries(
+            bank,
+            replay_tx_thread_pool,
+            (entry.unwrap(), is_full),
+            timing,
+            progress,
+            skip_verification,
+            transaction_status_sender,
+            entry_notification_sender,
+            replay_vote_sender,
+            recyclers,
+            log_messages_bytes_limit,
+            prioritization_fee_cache,
+        )
+    }
 
     let slot_entries_load_result = {
         let mut load_elapsed = Measure::start("load_elapsed");
