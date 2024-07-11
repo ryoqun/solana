@@ -1477,7 +1477,7 @@ pub fn confirm_slot(
             return Ok(());
         };
 
-        let r = confirm_slot_entries(
+        confirm_slot_entries(
             bank,
             replay_tx_thread_pool,
             (entry, is_full),
@@ -1490,9 +1490,8 @@ pub fn confirm_slot(
             recyclers,
             log_messages_bytes_limit,
             prioritization_fee_cache,
-        );
+        )?;
         current_entry = next_entry;
-        r?;
     }
 }
 
