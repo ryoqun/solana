@@ -1481,14 +1481,14 @@ pub fn confirm_slot(
             break;
         };
         let next_entry = chunked_entries.next();
-        let is_full = next_entry.is_none() && slot_meta.is_full();
+        //let is_full = next_entry.is_none() && slot_meta.is_full();
         all_entry.append(entry);
         current_entry = next_entry;
     }
     confirm_slot_entries(
         bank,
         replay_tx_thread_pool,
-        (all_entry, is_full),
+        (all_entry, slot_meta.is_full()),
         timing,
         progress,
         skip_verification,
