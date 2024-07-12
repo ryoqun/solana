@@ -1209,6 +1209,7 @@ impl Blockstore {
         metrics.commit_working_sets_elapsed_us += start.as_us();
 
         let mut start = Measure::start("Write Batch");
+        use rocksdb::WriteOptions;
         let mut write_options = WriteOptions::default();
         write_options.disable_wal(true);
         self.db.write_opt(write_batch, &write_options)?;
