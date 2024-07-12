@@ -972,7 +972,7 @@ impl Blockstore {
                         shred,
                         &mut erasure_metas,
                         &mut merkle_root_metas,
-                        &mut index_working_set,
+                        index_working_set,
                         &mut slot_meta_working_set,
                         &mut write_batch,
                         &mut just_inserted_shreds,
@@ -1010,7 +1010,7 @@ impl Blockstore {
                         shred,
                         &mut erasure_metas,
                         &mut merkle_root_metas,
-                        &mut index_working_set,
+                        index_working_set,
                         &mut write_batch,
                         &mut just_inserted_shreds,
                         &mut index_meta_time_us,
@@ -1029,7 +1029,7 @@ impl Blockstore {
         if let Some(leader_schedule_cache) = leader_schedule {
             let recovered_shreds = self.try_shred_recovery(
                 &erasure_metas,
-                &mut index_working_set,
+                index_working_set,
                 &just_inserted_shreds,
                 reed_solomon_cache,
             );
@@ -1057,7 +1057,7 @@ impl Blockstore {
                         shred.clone(),
                         &mut erasure_metas,
                         &mut merkle_root_metas,
-                        &mut index_working_set,
+                        index_working_set,
                         &mut slot_meta_working_set,
                         &mut write_batch,
                         &mut just_inserted_shreds,
