@@ -3679,52 +3679,16 @@ impl Blockstore {
         slot: &'a Slot,
         start_index: u32,
         slot_meta: &'a SlotMeta,
-    ) -> Vec<(Vec<Entry>, u32)> {
+    ) -> impl Iterator<Item = (Vec<Entry>, u32)> + 'a {
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
-        let completed_ranges = Self::get_completed_data_ranges(
-            start_index as u32,
-            &slot_meta.completed_data_indexes,
-            slot_meta.consumed as u32,
-        );
-
-        let Some((all_ranges_start_index, _)) = completed_ranges.first().copied() else {
-            return vec![];
-        };
-        let Some((_, all_ranges_end_index)) = completed_ranges.last().copied() else {
-            return vec![];
-        };
-        let keys =
-            (all_ranges_start_index..=all_ranges_end_index).map(|index| (*slot, u64::from(index)));
-        let data_shreds: Result<Vec<Option<Vec<u8>>>> = self
-            .data_shred_cf
-            .multi_get_bytes(keys)
-            .into_iter()
-            .collect();
-        let data_shreds = data_shreds.unwrap();
-        let data_shreds: Result<Vec<Shred>> = data_shreds
-            .into_iter()
-            .enumerate()
-            .map(|(idx, shred_bytes)| {
-                if shred_bytes.is_none() {
-                    return Err(BlockstoreError::InvalidShredData(Box::new(
-                        bincode::ErrorKind::Custom(format!(
-                            "Missing shred for slot {slot}, index {idx}"
-                        )),
-                    )));
-                }
-                Shred::new_from_serialized_shred(shred_bytes.unwrap()).map_err(|err| {
-                    BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
-                        format!("Could not reconstruct shred from shred payload: {err:?}"),
-                    )))
-                })
+        slot_meta.completed_data_indexes
+            .range(start_index..slot_meta.consumed as u32)
+            .scan(start_index, |begin, index| {
+                let out = (*begin, *index);
+                *begin = index + 1;
+                Some(out)
             })
-            .collect();
-        let data_shreds = data_shreds.unwrap();
-
-
-        completed_ranges.into_iter()
             .map(|(start, end)| {
-                /*
             let keys = (start..=end).map(|index| (*slot, u64::from(index)));
             let range_shreds: Vec<Shred> = self
                 .data_shred_cf
@@ -3734,13 +3698,6 @@ impl Blockstore {
                     Shred::new_from_serialized_shred(shred_bytes.unwrap().unwrap()).unwrap()
                 })
                 .collect();
-                */
-                // The indices from completed_ranges refer to shred indices in the
-                // entire block; map those indices to indices within data_shreds
-                let range_start_index = (start - all_ranges_start_index) as usize;
-                let range_end_index = (end - all_ranges_start_index) as usize;
-                let range_shreds = &data_shreds[range_start_index..=range_end_index];
-
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
             let a: Vec<Entry> = Shredder::deshred(&range_shreds)
@@ -3758,7 +3715,7 @@ impl Blockstore {
                 })
                 .unwrap();
             (a, end)
-        }).collect()
+        })
     }
 
     pub fn get_entries_in_data_block(
