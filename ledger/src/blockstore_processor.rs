@@ -1479,7 +1479,7 @@ pub fn confirm_slot(
     let mut current_entry = chunked_entries.next();
     let mut last_end_index: u32 = u32::MAX;
     loop {
-        let Some((entry, last_end_index)) = current_entry else {
+        let Some(/*(*/entry/*, last_end_index)*/) = current_entry else {
             break;
         };
         let next_entry = chunked_entries.next();
