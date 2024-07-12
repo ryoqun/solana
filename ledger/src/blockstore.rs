@@ -3694,7 +3694,7 @@ impl Blockstore {
             return Ok(vec![]);
         };
         let keys =
-            (all_ranges_start_index..=all_ranges_end_index).map(|index| (slot, u64::from(index)));
+            (all_ranges_start_index..=all_ranges_end_index).map(|index| (*slot, u64::from(index)));
         let data_shreds: Result<Vec<Option<Vec<u8>>>> = self
             .data_shred_cf
             .multi_get_bytes(keys)
