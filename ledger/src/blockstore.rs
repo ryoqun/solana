@@ -3687,6 +3687,14 @@ impl Blockstore {
             slot_meta.consumed as u32,
         );
 
+        let Some((all_ranges_start_index, _)) = completed_ranges.first().copied() else {
+            return Ok(vec![]);
+        };
+        let Some((_, all_ranges_end_index)) = completed_ranges.last().copied() else {
+            return Ok(vec![]);
+        };
+        let keys =
+            (all_ranges_start_index..=all_ranges_end_index).map(|index| (slot, u64::from(index)));
         let data_shreds: Result<Vec<Option<Vec<u8>>>> = self
             .data_shred_cf
             .multi_get_bytes(keys)
