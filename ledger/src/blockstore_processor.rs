@@ -1479,7 +1479,7 @@ pub fn confirm_slot(
     let mut current_entry = chunked_entries.next();
     let mut last_end_index: u32 = u32::MAX;
     loop {
-        let Some((entry, last_end_index)) = current_entry else {
+        let Some((entry, end_index)) = current_entry else {
             break;
         };
         let next_entry = chunked_entries.next();
@@ -1501,6 +1501,7 @@ pub fn confirm_slot(
             prioritization_fee_cache,
         )?;
         current_entry = next_entry;
+        last_end_index = end_index;
     }
     if last_end_index != u32::MAX {
         progress.num_shreds = last_end_index as u64 + 1;
