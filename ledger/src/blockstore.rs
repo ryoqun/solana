@@ -3715,7 +3715,7 @@ impl Blockstore {
                 })
                 .unwrap();
             (a, end)
-        })
+        }).collect()
     }
 
     pub fn get_entries_in_data_block(
