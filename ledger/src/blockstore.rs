@@ -3681,13 +3681,12 @@ impl Blockstore {
         slot_meta: &'a SlotMeta,
     ) -> Vec<(Vec<Entry>, u32)> {
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
-        slot_meta.completed_data_indexes
-            .range(start_index..slot_meta.consumed as u32)
-            .scan(start_index, |begin, index| {
-                let out = (*begin, *index);
-                *begin = index + 1;
-                Some(out)
-            })
+        let completed_ranges = Self::get_completed_data_ranges(
+            start_index as u32,
+            &slot_meta.completed_data_indexes,
+            slot_meta.consumed as u32,
+        );
+        completed_ranges.into_iter()
             .map(|(start, end)| {
             let keys = (start..=end).map(|index| (*slot, u64::from(index)));
             let range_shreds: Vec<Shred> = self
