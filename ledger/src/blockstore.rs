@@ -1201,7 +1201,7 @@ impl Blockstore {
             )?;
         }
 
-        index_working_set.retain(|(&slot, index_working_set_entry)| {
+        index_working_set.retain(|&slot, index_working_set_entry| {
             if index_working_set_entry.did_insert_occur {
                 index_working_set_entry.did_insert_occur = false;
                 write_batch.put::<cf::Index>(slot, &index_working_set_entry.index)?;
