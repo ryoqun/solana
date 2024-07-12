@@ -1496,7 +1496,7 @@ impl Database {
         self.backend.write(batch.write_batch)
     }
 
-    pub fn write(&self, batch: WriteBatch, write_options: &rocksdb::WriteOptions) -> Result<()> {
+    pub fn write_opt(&self, batch: WriteBatch, write_options: &rocksdb::WriteOptions) -> Result<()> {
         self.backend.write_opt(batch.write_batch, write_options)
     }
 
