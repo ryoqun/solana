@@ -1488,7 +1488,7 @@ pub fn confirm_slot(
         confirm_slot_entries(
             bank,
             replay_tx_thread_pool,
-            (entry, is_full),
+            (entry.to_vec(), is_full),
             timing,
             progress,
             skip_verification,
