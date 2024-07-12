@@ -1474,7 +1474,7 @@ pub fn confirm_slot(
     let (entries, num_shreds, is_full) = blockstore
         .get_slot_entries_with_shred_info(slot, progress.num_shreds, allow_dead_slots)
         .unwrap();
-    let chunked_entries = entries.into_iter().chunks(100);
+    let chunked_entries = entries.iter().chunks(100);
 
     let mut current_entry = chunked_entries.next();
     let mut last_end_index: u32 = u32::MAX;
