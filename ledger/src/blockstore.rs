@@ -3724,6 +3724,7 @@ impl Blockstore {
 
         completed_ranges.into_iter()
             .map(|(start, end)| {
+                /*
             let keys = (start..=end).map(|index| (*slot, u64::from(index)));
             let range_shreds: Vec<Shred> = self
                 .data_shred_cf
@@ -3733,6 +3734,13 @@ impl Blockstore {
                     Shred::new_from_serialized_shred(shred_bytes.unwrap().unwrap()).unwrap()
                 })
                 .collect();
+                */
+                // The indices from completed_ranges refer to shred indices in the
+                // entire block; map those indices to indices within data_shreds
+                let range_start_index = (start_index - all_ranges_start_index) as usize;
+                let range_end_index = (end_index - all_ranges_start_index) as usize;
+                let range_shreds = &data_shreds[range_start_index..=range_end_index];
+
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
             let a: Vec<Entry> = Shredder::deshred(&range_shreds)
