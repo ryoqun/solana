@@ -48,6 +48,7 @@ use {
     },
     tokio::sync::mpsc::Sender as AsyncSender,
 };
+use solana_ledger::blockstore::IndexMetaWorkingSetEntry;
 
 type ShredPayload = Vec<u8>;
 type DuplicateSlotSender = Sender<Slot>;
