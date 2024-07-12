@@ -3688,10 +3688,10 @@ impl Blockstore {
         );
 
         let Some((all_ranges_start_index, _)) = completed_ranges.first().copied() else {
-            return Ok(vec![]);
+            return vec![];
         };
         let Some((_, all_ranges_end_index)) = completed_ranges.last().copied() else {
-            return Ok(vec![]);
+            return vec![];
         };
         let keys =
             (all_ranges_start_index..=all_ranges_end_index).map(|index| (*slot, u64::from(index)));
