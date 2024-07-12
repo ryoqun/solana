@@ -1466,12 +1466,12 @@ pub fn confirm_slot(
     prioritization_fee_cache: &PrioritizationFeeCache,
 ) -> result::Result<(), BlockstoreProcessorError> {
     let slot = bank.slot();
-    let slot_meta = blockstore.get_slot_meta(slot);
+    //let slot_meta = blockstore.get_slot_meta(slot);
     //let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(&slot, progress.num_shreds as u32, &slot_meta);
     //if blockstore.is_dead(slot) {
     //    Err(BlockstoreError::DeadSlot)?;
     //}
-    let (entries, num_shreds, is_full) = blockstore
+    let (entries, num_shreds, all_is_full) = blockstore
         .get_slot_entries_with_shred_info(slot, progress.num_shreds, allow_dead_slots)
         .unwrap();
     let mut chunked_entries = entries.chunks(100);
@@ -1483,7 +1483,7 @@ pub fn confirm_slot(
             break;
         };
         let next_entry = chunked_entries.next();
-        let is_full = next_entry.is_none() && slot_meta.is_full();
+        let is_full = next_entry.is_none() && all_is_full; //slot_meta.is_full();
 
         confirm_slot_entries(
             bank,
