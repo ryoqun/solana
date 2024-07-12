@@ -957,7 +957,7 @@ impl Blockstore {
         let mut duplicate_shreds = vec![];
 
         metrics.num_shreds += shreds.len();
-        let recent_slot = shreads.first().map(|a| a.slot());
+        let recent_slot = shreds.first().map(|a| a.slot());
         let mut start = Measure::start("Shred insertion");
         let mut index_meta_time_us = 0;
         let mut newly_completed_data_sets: Vec<CompletedDataSetInfo> = vec![];
