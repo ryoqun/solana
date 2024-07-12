@@ -1485,6 +1485,7 @@ pub fn confirm_slot(
         let next_entry = chunked_entries.next();
         let is_full = next_entry.is_none() && slot_meta.is_full();
 
+        info!("chunking {slot}, {last_end_index} {}", entry.len());
         confirm_slot_entries(
             bank,
             replay_tx_thread_pool,
