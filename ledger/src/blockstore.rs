@@ -1204,7 +1204,7 @@ impl Blockstore {
         index_working_set.retain(|&slot, index_working_set_entry| {
             if index_working_set_entry.did_insert_occur {
                 index_working_set_entry.did_insert_occur = false;
-                write_batch.put::<cf::Index>(slot, &index_working_set_entry.index)?;
+                write_batch.put::<cf::Index>(slot, &index_working_set_entry.index).unwrap();
             }
             slot >= recent_slot.saturating_sub(200)
         });
