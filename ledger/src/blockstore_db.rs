@@ -1496,6 +1496,10 @@ impl Database {
         self.backend.write(batch.write_batch)
     }
 
+    pub fn write(&self, batch: WriteBatch, write_options: &rocksdb::WriteOptions) -> Result<()> {
+        self.backend.write_opt(batch.write_batch, write_options)
+    }
+
     pub fn storage_size(&self) -> Result<u64> {
         Ok(fs_extra::dir::get_size(&self.path)?)
     }
