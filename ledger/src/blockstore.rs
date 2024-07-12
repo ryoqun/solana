@@ -1201,11 +1201,13 @@ impl Blockstore {
             )?;
         }
 
-        for (&slot, index_working_set_entry) in index_working_set.iter() {
+        index_working_set.retain(|(&slot, index_working_set_entry)| {
             if index_working_set_entry.did_insert_occur {
+                index_working_set_entry.did_insert_occur = false;
                 write_batch.put::<cf::Index>(slot, &index_working_set_entry.index)?;
             }
-        }
+            slot >= recent_slot.saturating_sub(200)
+        });
         start.stop();
         metrics.commit_working_sets_elapsed_us += start.as_us();
 
