@@ -3686,6 +3686,48 @@ impl Blockstore {
             &slot_meta.completed_data_indexes,
             slot_meta.consumed as u32,
         );
+
+        let data_shreds: Result<Vec<Option<Vec<u8>>>> = self
+            .data_shred_cf
+            .multi_get_bytes(keys)
+            .into_iter()
+            .collect();
+        let data_shreds = data_shreds.unwrap();
+        let data_shreds: Result<Vec<Shred>> = data_shreds
+            .into_iter()
+            .enumerate()
+            .map(|(idx, shred_bytes)| {
+                if shred_bytes.is_none() {
+                    if let Some(slot_meta) = slot_meta {
+                        if slot > self.lowest_cleanup_slot() {
+                            panic!(
+                                "Shred with slot: {}, index: {}, consumed: {}, completed_indexes: \
+                                 {:?} must exist if shred index was included in a range: {} {}",
+                                slot,
+                                idx,
+                                slot_meta.consumed,
+                                slot_meta.completed_data_indexes,
+                                all_ranges_start_index,
+                                all_ranges_end_index
+                            );
+                        }
+                    }
+                    return Err(BlockstoreError::InvalidShredData(Box::new(
+                        bincode::ErrorKind::Custom(format!(
+                            "Missing shred for slot {slot}, index {idx}"
+                        )),
+                    )));
+                }
+                Shred::new_from_serialized_shred(shred_bytes.unwrap()).map_err(|err| {
+                    BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
+                        format!("Could not reconstruct shred from shred payload: {err:?}"),
+                    )))
+                })
+            })
+            .collect();
+        let data_shreds = data_shreds.unwrap();
+
+
         completed_ranges.into_iter()
             .map(|(start, end)| {
             let keys = (start..=end).map(|index| (*slot, u64::from(index)));
