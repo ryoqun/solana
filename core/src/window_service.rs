@@ -372,6 +372,7 @@ where
         &handle_duplicate,
         reed_solomon_cache,
         metrics,
+        index_working_set,
     )?;
 
     if let Some(sender) = completed_data_sets_sender {
