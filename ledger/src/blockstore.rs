@@ -1323,6 +1323,7 @@ impl Blockstore {
         is_trusted: bool,
     ) -> Result<Vec<CompletedDataSetInfo>> {
         let shreds_len = shreds.len();
+        let mut index_working_set = HashMap::new();
         let insert_results = self.do_insert_shreds(
             shreds,
             vec![false; shreds_len],
@@ -1331,6 +1332,7 @@ impl Blockstore {
             None, // retransmit-sender
             &ReedSolomonCache::default(),
             &mut BlockstoreInsertionMetrics::default(),
+            &mut index_working_set,
         )?;
         Ok(insert_results.completed_data_set_infos)
     }
