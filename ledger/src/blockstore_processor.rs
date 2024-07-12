@@ -1467,38 +1467,40 @@ pub fn confirm_slot(
 ) -> result::Result<(), BlockstoreProcessorError> {
     let slot = bank.slot();
     let slot_meta = blockstore.get_slot_meta(slot);
-    let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(&slot, progress.num_shreds as u32, &slot_meta);
-    if blockstore.is_dead(slot) {
-        Err(BlockstoreError::DeadSlot)?;
-    }
+    //let mut chunked_entries = blockstore.get_slot_chunked_entries_in_block(&slot, progress.num_shreds as u32, &slot_meta);
+    //if blockstore.is_dead(slot) {
+    //    Err(BlockstoreError::DeadSlot)?;
+    //}
+    let (entries, num_shreds, is_full) = blockstore
+        .get_slot_entries_with_shred_info(slot, progress.num_shreds, allow_dead_slots)
+        .unwrap();
+    let chunked_entries = entries.into_iter().chunk(100);
 
     let mut current_entry = chunked_entries.next();
     let mut last_end_index: u32 = u32::MAX;
-    let mut all_entry = vec![];
-
     loop {
         let Some((entry, last_end_index)) = current_entry else {
             break;
         };
         let next_entry = chunked_entries.next();
-        //let is_full = next_entry.is_none() && slot_meta.is_full();
-        all_entry.extend(entry.into_iter());
+        let is_full = next_entry.is_none() && slot_meta.is_full();
+
+        confirm_slot_entries(
+            bank,
+            replay_tx_thread_pool,
+            (entry, is_full),
+            timing,
+            progress,
+            skip_verification,
+            transaction_status_sender,
+            entry_notification_sender,
+            replay_vote_sender,
+            recyclers,
+            log_messages_bytes_limit,
+            prioritization_fee_cache,
+        )?;
         current_entry = next_entry;
     }
-    confirm_slot_entries(
-        bank,
-        replay_tx_thread_pool,
-        (all_entry, slot_meta.is_full()),
-        timing,
-        progress,
-        skip_verification,
-        transaction_status_sender,
-        entry_notification_sender,
-        replay_vote_sender,
-        recyclers,
-        log_messages_bytes_limit,
-        prioritization_fee_cache,
-    )?;
     if last_end_index != u32::MAX {
         progress.num_shreds = last_end_index as u64 + 1;
     }
