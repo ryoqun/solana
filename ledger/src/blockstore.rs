@@ -3737,8 +3737,8 @@ impl Blockstore {
                 */
                 // The indices from completed_ranges refer to shred indices in the
                 // entire block; map those indices to indices within data_shreds
-                let range_start_index = (start_index - all_ranges_start_index) as usize;
-                let range_end_index = (end_index - all_ranges_start_index) as usize;
+                let range_start_index = (start - all_ranges_start_index) as usize;
+                let range_end_index = (end - all_ranges_start_index) as usize;
                 let range_shreds = &data_shreds[range_start_index..=range_end_index];
 
             let last_shred = range_shreds.last().unwrap();
