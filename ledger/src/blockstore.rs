@@ -3706,20 +3706,6 @@ impl Blockstore {
             .enumerate()
             .map(|(idx, shred_bytes)| {
                 if shred_bytes.is_none() {
-                    if let Some(slot_meta) = slot_meta {
-                        if slot > self.lowest_cleanup_slot() {
-                            panic!(
-                                "Shred with slot: {}, index: {}, consumed: {}, completed_indexes: \
-                                 {:?} must exist if shred index was included in a range: {} {}",
-                                slot,
-                                idx,
-                                slot_meta.consumed,
-                                slot_meta.completed_data_indexes,
-                                all_ranges_start_index,
-                                all_ranges_end_index
-                            );
-                        }
-                    }
                     return Err(BlockstoreError::InvalidShredData(Box::new(
                         bincode::ErrorKind::Custom(format!(
                             "Missing shred for slot {slot}, index {idx}"
