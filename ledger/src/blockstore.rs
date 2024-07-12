@@ -939,6 +939,7 @@ impl Blockstore {
         retransmit_sender: Option<&Sender<Vec</*shred:*/ Vec<u8>>>>,
         reed_solomon_cache: &ReedSolomonCache,
         metrics: &mut BlockstoreInsertionMetrics,
+        index_working_set: &mut HashMap<u64, IndexMetaWorkingSetEntry>,
     ) -> Result<InsertResults> {
         assert_eq!(shreds.len(), is_repaired.len());
         let mut total_start = Measure::start("Total elapsed");
@@ -953,7 +954,6 @@ impl Blockstore {
         let mut erasure_metas = BTreeMap::new();
         let mut merkle_root_metas = HashMap::new();
         let mut slot_meta_working_set = HashMap::new();
-        let mut index_working_set = HashMap::new();
         let mut duplicate_shreds = vec![];
 
         metrics.num_shreds += shreds.len();
@@ -1244,6 +1244,7 @@ impl Blockstore {
         handle_duplicate: &F,
         reed_solomon_cache: &ReedSolomonCache,
         metrics: &mut BlockstoreInsertionMetrics,
+        index_working_set: &mut HashMap<u64, IndexMetaWorkingSetEntry>,
     ) -> Result<Vec<CompletedDataSetInfo>>
     where
         F: Fn(PossibleDuplicateShred),
@@ -1259,6 +1260,7 @@ impl Blockstore {
             retransmit_sender,
             reed_solomon_cache,
             metrics,
+            index_working_set,
         )?;
 
         for shred in duplicate_shreds {
