@@ -1206,7 +1206,11 @@ impl Blockstore {
                 index_working_set_entry.did_insert_occur = false;
                 write_batch.put::<cf::Index>(slot, &index_working_set_entry.index).unwrap();
             }
-            slot >= recent_slot.saturating_sub(200)
+            if let Some(recent_slot) = recent_slot {
+               slot >= recent_slot.saturating_sub(200)
+            }  else {
+               true
+            }
         });
         start.stop();
         metrics.commit_working_sets_elapsed_us += start.as_us();
