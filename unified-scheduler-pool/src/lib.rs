@@ -1432,9 +1432,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
-                () = join_with_panic_message(thread).unwrap();
+                //() = join_with_panic_message(thread).unwrap();
             }
-            () = join_with_panic_message(scheduler_thread).unwrap();
+            //() = join_with_panic_message(scheduler_thread).unwrap();
 
             if should_receive_session_result {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
