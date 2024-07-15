@@ -199,7 +199,7 @@ fn make_transfer_transaction_with_compute_unit_price(
     compute_unit_price: u64,
 ) -> Transaction {
     let from_pubkey = from_keypair.pubkey();
-    let instructions = vec![
+    let mut instructions = vec![
         system_instruction::transfer(&from_pubkey, to, lamports),
         ComputeBudgetInstruction::set_compute_unit_price(compute_unit_price),
         ComputeBudgetInstruction::set_compute_unit_limit(TRANSFER_TRANSACTION_COST),
