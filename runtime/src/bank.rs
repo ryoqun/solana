@@ -704,8 +704,8 @@ impl AbiExample for OptionalDropCallback {
 }
 
 /// Manager for the state of all accounts and programs after processing its entries.
-/// AbiExample is needed even without Serialize/Deserialize; actual (de-)serialization
-/// are implemented elsewhere for versioning
+/// AbiExample is needed even without Serialize/Deserialize and the actual frozen abi digest here;
+/// actual (de-)serialization are implemented elsewhere. See BankAbiTestWrapper for details.
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
 #[derive(Debug)]
 pub struct Bank {

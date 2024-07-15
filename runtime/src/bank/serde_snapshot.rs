@@ -483,8 +483,28 @@ mod tests {
             solana_sdk::clock::Slot,
         };
 
-        // This some what long test harness is required to freeze the ABI of
-        // Bank's serialization due to versioned nature
+        // This some what long test harness is required to freeze the ABI of Bank's serialization,
+        // which is implemented manually by calling serialize_bank_snapshot_with() mainly based on
+        // get_fields_to_serialize(). However, note that Bank's serialization is coupled with
+        // snapshot storages as well.
+        //
+        // Bank needs to impl AbiExample because it's contained in this BankAbiTestWrapper, which
+        // does derive(AbiExample) in turn. frozen-abi doesn't take arbitrary inputs, only the
+        // return value of AbiExample::example(). So, we must provide such an entry point, which
+        // does the heavy object graph building of Bank under the hood.
+        //
+        // In this way, frozen abi can increase the coverage of the serialization code path as much
+        // as possible. Alternatively, we could derive AbiExample for the minimum set of actually
+        // serialized fields of bank as an ad-hoc tuple. But that was avoided to avoid maintenance
+        // burden instead.
+        //
+        // Involving the Bank here is preferred conceptually because snapshot abi is
+        // important and snapshot is just a (rooted) serialized bank at the high level. Only
+        // abi-freezing bank.get_fields_to_serialize() is kind of relying on the implementation
+        // detail.
+        //
+        // (Lastly, Bank was a good testbed to improve AbiExample's type coverage over various
+        // popular data type libraries.)
         #[cfg_attr(
             feature = "frozen-abi",
             derive(AbiExample),
