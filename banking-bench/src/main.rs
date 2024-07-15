@@ -208,7 +208,7 @@ fn make_transfer_transaction_with_compute_unit_price(
     for _ in 0..20 {
         instructions[0].accounts.push(AccountMeta::new(pubkey::new_rand(), false));
     }
-    instructions[0].accounts.push(AccountMeta::new(Pubkey::new_from_array([1; 16]), false));
+    instructions[0].accounts.push(AccountMeta::new(Pubkey::new_from_array([3; 32]), false));
     let message = Message::new(&instructions, Some(&from_pubkey));
     Transaction::new(&[from_keypair], message, recent_blockhash)
 }
