@@ -675,12 +675,15 @@ fn main() {
         total_us += duration_as_us(&now.elapsed());
         total_sent += sent;
 
+        /*
         if current_iteration_index % num_chunks == 0 {
             let last_blockhash = bank.last_blockhash();
             for packets_for_single_iteration in all_packets.iter_mut() {
                 packets_for_single_iteration.refresh_blockhash(last_blockhash);
             }
         }
+        */
+        assert!(bank.slot() < 100);
     }
     txs_processed += bank_forks
         .read()
