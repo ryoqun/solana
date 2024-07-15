@@ -204,6 +204,7 @@ fn make_transfer_transaction_with_compute_unit_price(
         ComputeBudgetInstruction::set_compute_unit_price(compute_unit_price),
         ComputeBudgetInstruction::set_compute_unit_limit(TRANSFER_TRANSACTION_COST),
     ];
+    use solana_sdk::instruction::AccountMeta;
     instructions[0].accounts.push(AccountMeta::new(pubkey::new_rand(), false));
     let message = Message::new(&instructions, Some(&from_pubkey));
     Transaction::new(&[from_keypair], message, recent_blockhash)
