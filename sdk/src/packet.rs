@@ -239,7 +239,7 @@ impl Meta {
 
     #[inline]
     pub fn set_tracer(&mut self, is_tracer: bool) {
-        warn!("pipeline_tracer: set_tracker", std::backtrace::Backtrace::force_capture());
+        warn!("pipeline_tracer: set_tracker {:?}", std::backtrace::Backtrace::force_capture());
         self.flags.set(PacketFlags::TRACER_PACKET, is_tracer);
     }
 
@@ -279,7 +279,7 @@ impl Meta {
 
     #[inline]
     pub fn is_tracer_packet(&self) -> bool {
-        warn!("pipeline_tracer: is_tracer_packet", std::backtrace::Backtrace::force_capture());
+        warn!("pipeline_tracer: is_tracer_packet {:?}", std::backtrace::Backtrace::force_capture());
         self.flags.contains(PacketFlags::TRACER_PACKET)
     }
 
