@@ -584,7 +584,7 @@ impl SendTransactionService {
         let wire_transactions = transactions
             .iter()
             .map(|(_, transaction_info)| {
-                if transaction_info.wire_transaction[TRACER_KEY_OFFSET_IN_TRANSACTION..(TRACER_KEY_OFFSET_IN_TRANSACTION+std::size_of::<Pubkey>())] == &solana_sdk::packet::id()[..] {
+                if transaction_info.wire_transaction[TRACER_KEY_OFFSET_IN_TRANSACTION..(TRACER_KEY_OFFSET_IN_TRANSACTION+std::mem::size_of::<Pubkey>())] == &solana_sdk::packet::id()[..] {
                     warn!("pipeline_tracer: sts {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
                 }
                 debug!(
