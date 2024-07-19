@@ -1515,7 +1515,7 @@ pub fn process_ping(
                             Ok(()) => {
                                 let elapsed_time_millis = elapsed_time.as_millis() as u64;
                                 confirmation_time.push_back(elapsed_time_millis);
-                                log::warn!("ping succeeded: {elapsed_time_millis}!");
+                                log::warn!("ping succeeded: {elapsed_time_millis}ms!");
                                 let cli_ping_data = CliPingData {
                                     success: true,
                                     signature: Some(signature.to_string()),
