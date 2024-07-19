@@ -85,7 +85,7 @@ impl TransactionSigVerifier {
 impl SigVerifier for TransactionSigVerifier {
     type SendType = BankingPacketBatch;
 
-    #[inline(always)]
+    #[inline(never)]
     fn process_received_packet(
         &mut self,
         packet: &mut Packet,
@@ -107,14 +107,14 @@ impl SigVerifier for TransactionSigVerifier {
         }
     }
 
-    #[inline(always)]
+    #[inline(never)]
     fn process_excess_packet(&mut self, packet: &Packet) {
         if packet.meta().is_tracer_packet() {
             self.tracer_packet_stats.total_excess_tracer_packets += 1;
         }
     }
 
-    #[inline(always)]
+    #[inline(never)]
     fn process_passed_sigverify_packet(&mut self, packet: &Packet) {
         if packet.meta().is_tracer_packet() {
             self.tracer_packet_stats
