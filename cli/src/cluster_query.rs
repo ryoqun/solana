@@ -1503,7 +1503,7 @@ pub fn process_ping(
             format!("[{}.{:06}] ", micros / 1_000_000, micros % 1_000_000)
         };
 
-        info!("before send_transaction");
+        log::warn!("before send_transaction");
         match tps_client.send_transaction(tx) {
             Ok(signature) => {
                 let transaction_sent = Instant::now();
