@@ -389,6 +389,10 @@ impl PohRecorder {
             .slot_leader_at(current_slot + slots, None)
     }
 
+    pub fn current_slot() -> Slot {
+        self.slot_for_tick_height(self.tick_height)
+    }
+
     /// Return the leader and slot pair after `slots_in_the_future` slots.
     pub fn leader_and_slot_after_n_slots(
         &self,
