@@ -389,7 +389,7 @@ impl PohRecorder {
             .slot_leader_at(current_slot + slots, None)
     }
 
-    pub fn current_slot() -> Slot {
+    pub fn current_slot(&self) -> Slot {
         self.slot_for_tick_height(self.tick_height)
     }
 
