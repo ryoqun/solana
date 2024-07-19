@@ -109,6 +109,7 @@ fn get_first_error(
     batch: &TransactionBatch,
     fee_collection_results: Vec<Result<()>>,
     is_unified_scheduler_for_block_production: bool,
+    slot: Slot,
 ) -> Option<(Result<()>, Signature)> {
     let mut first_err = None;
     for (result, transaction) in fee_collection_results
@@ -116,7 +117,7 @@ fn get_first_error(
         .zip(batch.sanitized_transactions())
     {
         if transaction.message().fee_payer() == &solana_sdk::packet::id() {
-            warn!("pipeline_tracer: get_first_error {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
+            warn!("pipeline_tracer: get_first_error {:?} {:?} {:?}", (slot, is_unified_scheduler_for_block_production), std::thread::current(), std::backtrace::Backtrace::force_capture());
         }
         if let Err(ref err) = result {
             if first_err.is_none() {
@@ -255,6 +256,7 @@ pub fn execute_batch(
         batch,
         fee_collection_results,
         is_unified_scheduler_for_block_production,
+        bank.slot(),
     );
     first_err.map(|(result, _)| result).unwrap_or(Ok(()))
 }
