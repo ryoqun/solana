@@ -3055,7 +3055,6 @@ impl fmt::Display for CliPingData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (mark, msg) = if let Some(signature) = &self.signature {
             if self.success {
-                log::warn!("ping succeeded!");
                 (
                     CHECK_MARK,
                     format!(
