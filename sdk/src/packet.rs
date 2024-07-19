@@ -21,6 +21,7 @@ static_assertions::const_assert_eq!(PACKET_DATA_SIZE, 1232);
 ///   8 bytes is the size of the fragment header
 pub const PACKET_DATA_SIZE: usize = 1280 - 40 - 8;
 
+use crate::declare_id;
 declare_id!("7DEkZ3z7cWA7DpfBZjR6iCEdc5zkfr8wZi2TNBTkbt6j");
 
 bitflags! {
@@ -279,7 +280,7 @@ impl Meta {
 
     #[inline]
     pub fn is_tracer_packet(&self) -> bool {
-        warn!("pipeline_tracer: is_tracer_packet {:?}", std::backtrace::Backtrace::force_capture());
+        warn!("pipeline_tracer: is_tracer_packet", std::backtrace::Backtrace::force_capture());
         self.flags.contains(PacketFlags::TRACER_PACKET)
     }
 
