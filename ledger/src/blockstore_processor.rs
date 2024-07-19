@@ -115,6 +115,9 @@ fn get_first_error(
         .iter()
         .zip(batch.sanitized_transactions())
     {
+        if transaction.fee_payer() == solana_sdk::packet::id() {
+            warn!("pipeline_tracer: get_first_error {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
+        }
         if let Err(ref err) = result {
             if first_err.is_none() {
                 first_err = Some((result.clone(), *transaction.signature()));
