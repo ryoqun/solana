@@ -240,7 +240,7 @@ impl Meta {
 
     #[inline]
     pub fn set_tracer(&mut self, is_tracer: bool) {
-        warn!("pipeline_tracer: set_tracker {:?} {:?}", std::thread::current(), stad::backtrace::Backtrace::force_capture());
+        warn!("pipeline_tracer: set_tracker {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
         self.flags.set(PacketFlags::TRACER_PACKET, is_tracer);
     }
 
