@@ -280,8 +280,11 @@ impl Meta {
 
     #[inline]
     pub fn is_tracer_packet(&self) -> bool {
-        warn!("pipeline_tracer: is_tracer_packet {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
-        self.flags.contains(PacketFlags::TRACER_PACKET)
+        let r = self.flags.contains(PacketFlags::TRACER_PACKET);
+        if r {
+            warn!("pipeline_tracer: is_tracer_packet {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
+        }
+        r 
     }
 
     #[inline]
