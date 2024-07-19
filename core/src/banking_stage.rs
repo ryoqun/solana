@@ -708,7 +708,7 @@ impl BankingStage {
                                                 &pp, &indexes,
                                             )
                                             .filter_map(|(i, p)| {
-                                                if p.is_tracer_packet() {
+                                                if p.original_packet.is_tracer_packet() {
                                                     warn!("pipeline_tracer: unified_scheduler submit {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
                                                 }
                                                 let Some(tx) = p.build_sanitized_transaction(
