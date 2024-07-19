@@ -11,6 +11,7 @@ use {
         slice::SliceIndex,
     },
 };
+use log::warn;
 
 #[cfg(test)]
 static_assertions::const_assert_eq!(PACKET_DATA_SIZE, 1232);
