@@ -23,12 +23,14 @@ use {
     std::{convert::TryFrom, mem::size_of},
 };
 
+/*
 // Representing key tKeYE4wtowRb8yRroZShTipE18YVnqwXjsSAoNsFU6g
 const TRACER_KEY_BYTES: [u8; 32] = [
     13, 37, 180, 170, 252, 137, 36, 194, 183, 143, 161, 193, 201, 207, 211, 23, 189, 93, 33, 110,
     155, 90, 30, 39, 116, 115, 238, 38, 126, 21, 232, 133,
 ];
 const TRACER_KEY: Pubkey = Pubkey::new_from_array(TRACER_KEY_BYTES);
+*/
 const TRACER_KEY_OFFSET_IN_TRANSACTION: usize = 69;
 // Empirically derived to constrain max verify latency to ~8ms at lower packet counts
 pub const VERIFY_PACKET_CHUNK_SIZE: usize = 128;
