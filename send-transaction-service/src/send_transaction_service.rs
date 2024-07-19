@@ -762,7 +762,7 @@ impl SendTransactionService {
         for wire_transaction in wire_transactions {
             const TRACER_KEY_OFFSET_IN_TRANSACTION: usize = 69;
             if wire_transaction[TRACER_KEY_OFFSET_IN_TRANSACTION..(TRACER_KEY_OFFSET_IN_TRANSACTION+std::mem::size_of::<Pubkey>())] == *solana_sdk::packet::id().as_ref() {
-                warn!("pipeline_tracer: sts {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
+                warn!("pipeline_tracer: sts to {:?} {:?} {:?}", tpu_address, std::thread::current(), std::backtrace::Backtrace::force_capture());
             }
         }
         let result = if wire_transactions.len() == 1 {
