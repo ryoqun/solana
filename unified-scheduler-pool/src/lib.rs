@@ -599,8 +599,8 @@ mod chained_channel {
             context: C,
             count: usize,
         ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
-            let (chained_sender, chained_receiver) = crossbeam_channel::unbounded();
-            let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::unbounded();
+            let (chained_sender, chained_receiver) = crossbeam_channel::bounded(1_000_000);
+            let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::bounded(1_000_000);
             for _ in 0..count {
                 self.sender.send(ChainedChannel::chain_to_new_channel(
                     context.clone(),
@@ -677,8 +677,8 @@ mod chained_channel {
     pub(super) fn unbounded<P, C: Clone>(
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
-        let (sender, receiver) = crossbeam_channel::unbounded();
-        let (aux_sender, aux_receiver) = crossbeam_channel::unbounded();
+        let (sender, receiver) = crossbeam_channel::bounded(1_000_000);
+        let (aux_sender, aux_receiver) = crossbeam_channel::bounded(1_000_000);
         (
             ChainedChannelSender::new(sender, aux_sender),
             ChainedChannelReceiver::new(receiver, aux_receiver, initial_context),
@@ -838,8 +838,8 @@ type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 
 impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     fn new(pool: Arc<SchedulerPool<S, TH>>) -> Self {
-        let (new_task_sender, new_task_receiver) = crossbeam_channel::unbounded();
-        let (session_result_sender, session_result_receiver) = crossbeam_channel::unbounded();
+        let (new_task_sender, new_task_receiver) = crossbeam_channel::bounded(1_000_000);
+        let (session_result_sender, session_result_receiver) = crossbeam_channel::bounded(1_000_000);
         let handler_count = pool.handler_count;
 
         Self {
@@ -1023,9 +1023,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
         // as fast as possible.
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
-            crossbeam_channel::unbounded::<HandlerResult>();
+            crossbeam_channel::bounded::<HandlerResult>(1_000_000);
         let (finished_idle_task_sender, finished_idle_task_receiver) =
-            crossbeam_channel::unbounded::<HandlerResult>();
+            crossbeam_channel::bounded::<HandlerResult>(1_000_000);
 
         assert_matches!(self.session_result_with_timings, None);
 
@@ -1226,6 +1226,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                std::mem::forget(executed_task);
                                 "desc_b_task"
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
@@ -1238,6 +1239,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                std::mem::forget(executed_task);
                                 "desc_i_task"
                             },
                         };
