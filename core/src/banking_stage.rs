@@ -664,13 +664,14 @@ impl BankingStage {
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
+        use solana_rayon_threadlimit::get_thread_count;
         let bank_thread_hdls = [
             gossip_vote_receiver,
             tpu_vote_receiver,
         ].into_iter().chain(std::iter::repeat(
             non_vote_receiver
         ))
-        .take(get_thread_count())
+        .take(std::cmp::max(2, get_thread_count()))
         .enumerate()
         .map(|(thx, receiver)| {
             let decision_maker = decision_maker.clone();
