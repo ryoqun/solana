@@ -361,11 +361,7 @@ impl TracedSender {
     }
 
     pub fn len(&self) -> usize {
-        if let Some(ActiveTracer { trace_sender, exit: _exit }) = &self.active_tracer {
-            trace_sender.len()
-        } else {
-            0
-        }
+        self.sender.len()
     }
 }
 
