@@ -85,7 +85,7 @@ impl TpuInfo for ClusterTpuInfo {
                     })
             })
             .collect();
-        warn!("pipeline_tracer: get_leader_tpus: {} {max_count} {leaders:?} {:?} {:?}", recorder.current_slot(), std::thread::current(), std::backtrace::Backtrace::force_capture());
+        warn!("pipeline_tracer: get_leader_tpus_with_slots: {} {max_count} {leaders:?} {:?} {:?}", recorder.current_slot(), std::thread::current(), std::backtrace::Backtrace::force_capture());
         drop(recorder);
         let addrs_to_slots = leaders
             .into_iter()
