@@ -359,6 +359,14 @@ impl TracedSender {
         }
         self.sender.send(batch)
     }
+
+    pub fn len(&self) -> usize {
+        if let Some(ActiveTracer { trace_sender, _exit }) = &self.active_tracer {
+            trace_sender.len()
+        } else {
+            0
+        }
+    }
 }
 
 #[cfg(any(test, feature = "dev-context-only-utils"))]
