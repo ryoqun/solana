@@ -665,13 +665,14 @@ impl BankingStage {
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
         let bank_thread_hdls = [
-            (gossip_vote_receiver, 0),
-            (tpu_vote_receiver, 1),
-            (non_vote_receiver.clone(), 2),
-            (non_vote_receiver, 3),
-        ]
-        .into_iter()
-        .map(|(receiver, thx)| {
+            gossip_vote_receiver,
+            tpu_vote_receiver,
+        ].into_iter().chain(std::iter::repeat(
+            non_vote_receiver
+        ))
+        .take(get_thread_count())
+        .enumerate()
+        .map(|(thx, receiver)| {
             let decision_maker = decision_maker.clone();
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
