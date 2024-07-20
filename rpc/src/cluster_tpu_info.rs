@@ -76,12 +76,12 @@ impl TpuInfo for ClusterTpuInfo {
     ) -> Vec<(&SocketAddr, Slot)> {
         let recorder = self.poh_recorder.read().unwrap();
         let leaders: Vec<_> = (0..max_count)
-            .filter_map(|future_slot| {
-                let future_slot = max_count.wrapping_sub(future_slot);
-                NUM_CONSECUTIVE_LEADER_SLOTS
-                    .checked_mul(future_slot)
-                    .and_then(|slots_in_the_future| {
-                        recorder.leader_and_slot_after_n_slots(slots_in_the_future)
+            .rev()
+            .filter_map(|leader_offset| {
+                leader_offset
+                    .checked_mul(NUM_CONSECUTIVE_LEADER_SLOTS)
+                    .and_then(|slot_offset| {
+                        recorder.leader_and_slot_after_n_slots(slot_offset)
                     })
             })
             .collect();

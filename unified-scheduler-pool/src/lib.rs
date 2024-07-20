@@ -1430,11 +1430,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         }
 
         if let Some(scheduler_thread) = self.scheduler_thread.take() {
+            info!("join started at {:?}", std::thread::current());
             for thread in self.handler_threads.drain(..) {
                 debug!("joining...: {:?}", thread);
-                //() = join_with_panic_message(thread).unwrap();
+                () = join_with_panic_message(thread).unwrap();
             }
-            //() = join_with_panic_message(scheduler_thread).unwrap();
+            () = join_with_panic_message(scheduler_thread).unwrap();
+            info!("join ended at {:?}", std::thread::current());
 
             if should_receive_session_result {
                 let result_with_timings = self.session_result_receiver.recv().unwrap();
@@ -1623,7 +1625,7 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
                 (Err(TransactionError::CommitFailed), _)
             )
         ) {
-            info!("clearing commit failed for tpu bank on wait_for_termination... {id}, {slot}");
+            info!("clearing commit failed for tpu bank on wait_for_termination... {id}, {slot} {:?}", std::thread::current());
             result_with_timings.0 = Ok(());
         }
         (result_with_timings, Box::new(uninstalled_scheduler))
