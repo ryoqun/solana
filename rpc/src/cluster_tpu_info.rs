@@ -32,10 +32,11 @@ impl ClusterTpuInfo {
 
 impl TpuInfo for ClusterTpuInfo {
     fn refresh_recent_peers(&mut self) {
-        self.recent_peers = self
+        self.recent_peers = std::iter::once(self.cluster_info.my_contact_info()).chain(self
             .cluster_info
             .tpu_peers()
             .into_iter()
+            )
             .filter_map(|node| {
                 Some((
                     *node.pubkey(),
