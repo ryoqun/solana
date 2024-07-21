@@ -846,10 +846,17 @@ impl SchedulingStateMachine {
                                 Ok(())
                             }
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
+                                /*
                                 usage_queue
                                     .try_lock(context.requested_usage, &new_task)
                                     .unwrap();
                                 Ok(())
+                                */
+                                if usage_queue.has_no_blocked_usage() {
+                                    usage_queue.try_lock(context.requested_usage, &new_task)
+                                } else {
+                                    Err(())
+                                }
                             }
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
