@@ -2003,7 +2003,7 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 let task_index = task.index;
-                usage_queue.current_usage = Some(CurrentUsage::new(Usage::Writable, task));
+                usage_queue.current_usage = Some(CurrentUsage::new(RequestedUsage::Writable, task));
                 let _ = usage_queue.unlock(RequestedUsage::Readonly, task_index);
             });
     }
