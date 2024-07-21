@@ -535,7 +535,7 @@ impl Usage {
         match self {
             Self::Readonly(current_tasks) => {
                 if matches!(requested_usage, RequestedUsage::Readonly) {
-                    return true;
+                    return false;
                 }
 
                 current_tasks.range(new_task_index..).any(|(_index, current_task)| 
