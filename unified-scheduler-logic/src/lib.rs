@@ -621,9 +621,9 @@ impl UsageQueueInner {
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some((Usage::Readonly(ref mut count), current_tasks)) => match requested_usage {
+            Some(CurrentUsage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    if count.is_one() {
+                    if current_tasks.len() == 1 {
                         is_unused_now = true;
                     } else {
                         // todo test this for unbounded growth of inifnite readable only locks....
