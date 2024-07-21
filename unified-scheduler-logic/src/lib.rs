@@ -531,10 +531,10 @@ impl Usage {
         }
     }
 
-    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task: &Task) -> bool {
+    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index) -> bool {
         match self {
             Self::Readonly(current_tasks) => {
-                current_tasks.range(new_task.index..).any(|(_index, current_task)| 
+                current_tasks.range(new_task_index..).any(|(_index, current_task)| 
                     current_task.blocked_usage_count(count_token) > 0
                 )
             },
@@ -780,7 +780,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match usage_queue.current_usage.as_mut() {
-                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, &new_task) => {
+                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
                         let a = &mut current_usage;
