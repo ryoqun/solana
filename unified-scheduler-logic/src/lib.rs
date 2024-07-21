@@ -501,7 +501,7 @@ impl LockContext {
 #[derive(Copy, Clone, Debug)]
 enum Usage {
     Readonly(ShortCounter),
-    Writable,
+    Writable(Task),
 }
 
 /*
