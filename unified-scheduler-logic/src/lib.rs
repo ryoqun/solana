@@ -598,7 +598,7 @@ impl UsageQueueInner {
         match &mut self.current_usage {
             None => {
                 self.current_usage = Some(CurrentUsage::new(
-                    Usage::from(requested_usage),
+                    requested_usage,
                     task.clone(),
                 ));
                 Ok(())
