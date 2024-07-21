@@ -869,7 +869,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 let r = if current_tasks.is_empty() {
-                                    *current_usage = CurrentUsage::Writable(new_task);
+                                    *current_usage = CurrentUsage::Writable(new_task.clone());
                                     Ok(())
                                 } else {
                                     Err(())
