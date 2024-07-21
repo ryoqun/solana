@@ -8,6 +8,7 @@ use {
     solana_send_transaction_service::tpu_info::TpuInfo,
     std::{
         collections::HashMap,
+        iter::once,
         net::SocketAddr,
         sync::{Arc, RwLock},
     },
@@ -36,6 +37,7 @@ impl TpuInfo for ClusterTpuInfo {
             .cluster_info
             .tpu_peers()
             .into_iter()
+            .chain(once(self.cluster_info.my_contact_info()))
             .filter_map(|node| {
                 Some((
                     *node.pubkey(),
