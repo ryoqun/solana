@@ -871,7 +871,6 @@ impl SchedulingStateMachine {
                                     *current_usage = CurrentUsage::Writable(new_task);
                                     Ok(())
                                 } else {
-                                    *current_usage = Usage::Readonly(new_c);
                                     Err(())
                                 };
                                 for tt in t.into_iter() {
