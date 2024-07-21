@@ -534,7 +534,7 @@ impl Usage {
     fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage) -> bool {
         match self {
             Self::Readonly(current_tasks) => {
-                if matches!(requested_usage, RequestedUsage::Readonly) && usage_queue.has_no_blocked_usage() {
+                if matches!(requested_usage, RequestedUsage::Readonly) {
                     return true;
                 }
 
