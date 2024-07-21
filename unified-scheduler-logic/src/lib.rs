@@ -497,30 +497,6 @@ impl LockContext {
     }
 }
 
-/// Status about how the [`UsageQueue`] is used currently.
-#[derive(Copy, Clone, Debug)]
-enum Usage {
-    Readonly(ShortCounter),
-    Writable,
-}
-
-/*
-enum Usage {
-    Readonly(BTreeMap<Index, Task>),
-    Writable(Task),
-}
-*/
-const_assert_eq!(mem::size_of::<Usage>(), 8);
-
-impl From<RequestedUsage> for Usage {
-    fn from(requested_usage: RequestedUsage) -> Self {
-        match requested_usage {
-            RequestedUsage::Readonly => Usage::Readonly(ShortCounter::one()),
-            RequestedUsage::Writable => Usage::Writable,
-        }
-    }
-}
-
 /// Status about how a task is requesting to use a particular [`UsageQueue`].
 #[derive(Clone, Copy, Debug)]
 enum RequestedUsage {
