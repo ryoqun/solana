@@ -632,7 +632,6 @@ impl UsageQueueInner {
                     } else {
                         // todo test this for unbounded growth of inifnite readable only locks....
                         current_tasks.remove(&task_index).unwrap();
-                        count.decrement_self();
                     }
                 }
                 RequestedUsage::Writable => unreachable!(),
