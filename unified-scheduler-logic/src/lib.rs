@@ -823,15 +823,9 @@ impl SchedulingStateMachine {
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
                             }
-                            (Usage::Writable, RequestedUsage::Readonly) => {
-                                assert_eq!(1, current_tasks.len());
-                                let reverted_task = current_tasks.pop_first().unwrap().1;
-                                // this assert(....is_none()) isn't tested...
-                                assert!(current_tasks
-                                    .insert(new_task.index, new_task.clone())
-                                    .is_none());
+                            (Usage::Writable(reverted_task), RequestedUsage::Readonly) => {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
-                                *current_usage = Usage::Readonly(ShortCounter::one());
+                                *current_usage = CurrentUsage::new(Usage::Readonly(ShortCounter::one()), new_task);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
                                     (RequestedUsage::Writable, reverted_task),
