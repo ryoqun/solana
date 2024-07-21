@@ -597,7 +597,7 @@ impl UsageQueueInner {
                 ));
                 Ok(())
             }
-            Some((Usage::Readonly(count), current_tasks)) => match requested_usage {
+            Some(CurrentUsage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     count.increment_self();
 
@@ -609,7 +609,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => Err(()),
             },
-            Some((Usage::Writable, _task)) => Err(()),
+            Some(CurrentUsage::Writable(_task)) => Err(()),
         }
     }
 
