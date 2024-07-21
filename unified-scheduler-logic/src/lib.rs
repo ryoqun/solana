@@ -868,10 +868,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 let r = if current_tasks.is_empty() {
-                                    *current_usage = Usage::Writable;
-                                    assert!(current_tasks
-                                        .insert(new_task.index, new_task.clone())
-                                        .is_none());
+                                    *current_usage = CurrentUsage::Writable(new_task);
                                     Ok(())
                                 } else {
                                     *current_usage = Usage::Readonly(new_c);
