@@ -833,7 +833,7 @@ impl SchedulingStateMachine {
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
                             }
-                            (Usage::Readonly(_count), RequestedUsage::Readonly) => {
+                            (CurrentUsage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
                                 /*
                                 usage_queue
                                     .try_lock(context.requested_usage, &new_task)
