@@ -813,17 +813,13 @@ impl SchedulingStateMachine {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
                         match (&current_usage, context.requested_usage) {
-                            (Usage::Writable, RequestedUsage::Writable) => {
-                                assert_eq!(1, current_tasks.len());
-                                let reverted_task = current_tasks.pop_first().unwrap().1;
-                                assert!(current_tasks
-                                    .insert(new_task.index, new_task.clone())
-                                    .is_none());
+                            (CurrentUsage::Writable(reverted_task), RequestedUsage::Writable) => {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
                                     (RequestedUsage::Writable, reverted_task),
                                 );
+                                *current_usage = CurrentUsage::Writable(new_task);
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
                             }
