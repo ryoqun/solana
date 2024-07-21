@@ -848,8 +848,6 @@ impl SchedulingStateMachine {
                                 }
                             }
                             (CurrentUsage::Readonly(current_tasks), RequestedUsage::Writable) => {
-                                assert_eq!(count.current() as usize, current_tasks.len());
-                                let mut new_c = count.clone();
                                 let idx: Vec<Index> =
                                     current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
@@ -862,7 +860,6 @@ impl SchedulingStateMachine {
                                         .unwrap()
                                         .blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
-                                        new_c.decrement_self();
                                         let reverted_task =
                                             current_tasks.remove(&current_index).unwrap();
                                         t.push(reverted_task);
