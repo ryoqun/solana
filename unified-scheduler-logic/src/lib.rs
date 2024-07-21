@@ -1595,7 +1595,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                assert_matches!(usage_queue.current_usage, Some((Usage::Writable, _)));
+                assert_matches!(usage_queue.current_usage, Some(CurrentUsageUsage::Writable(_))));
             });
         // task2's fee payer should have been locked already even if task2 is blocked still via the
         // above the schedule_task(task2) call
