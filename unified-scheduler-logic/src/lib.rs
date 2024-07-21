@@ -846,7 +846,7 @@ impl SchedulingStateMachine {
                                     Err(())
                                 }
                             }
-                            (Usage::Readonly(count), RequestedUsage::Writable) => {
+                            (CurrentUsage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 assert_eq!(count.current() as usize, current_tasks.len());
                                 let mut new_c = count.clone();
                                 let idx: Vec<Index> =
