@@ -583,7 +583,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => Err(()),
             },
-            Some(Usage::Writable(_task)) => Err(()),
+            Some(Usage::Writable(_current_task)) => Err(()),
         }
     }
 
@@ -606,7 +606,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
-            Some(Usage::Writable(task)) => match requested_usage {
+            Some(Usage::Writable(_current_task)) => match requested_usage {
                 RequestedUsage::Writable => {
                     is_unused_now = true;
                 }
