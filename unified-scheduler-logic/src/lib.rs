@@ -813,7 +813,8 @@ impl SchedulingStateMachine {
                     Some(current_usage) if current_usage.should_revert(&mut self.count_token, &new_task) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
-                        match (current_usage, context.requested_usage) {
+                        let a = &current_usage;
+                        match (a, context.requested_usage) {
                             (CurrentUsage::Writable(reverted_task), RequestedUsage::Writable) => {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = CurrentUsage::Writable(new_task);
