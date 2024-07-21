@@ -1104,7 +1104,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let (mut log_reported_at, mut reported_task_total) = (session_started_at, 0);
+                let (mut log_reported_at, mut reported_new_task_total, mut reported_retired_task_total) = (session_started_at, 0);
                 let mut ignored_error_count = 0;
 
                 macro_rules! log_scheduler {
@@ -1136,15 +1136,23 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     log_elapsed_us,
                                     session_elapsed_us,
                                     if log_elapsed_us > 0 {
-                                        format!("{}", 1_000_000_u128 * ((state_machine.handled_task_total() - reported_task_total) as u128) / log_elapsed_us)
+                                        format!(
+                                            "<{}>{}",
+                                            1_000_000_u128 * ((state_machine.task_total() - reported_new_task_total) as u128) / log_elapsed_us,
+                                            1_000_000_u128 * ((state_machine.handled_task_total() - reported_retired_task_total) as u128) / log_elapsed_us,
+                                        )
                                     } else { "-".to_string() },
                                     if session_elapsed_us > 0 {
-                                        format!("{}", 1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us)
+                                        format!(
+                                            "<{}>{}",
+                                            1_000_000_u128 * (state_machine.task_total() as u128) / session_elapsed_us,
+                                            1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us,
+                                        )
                                     } else { "-".to_string() },
                                 );
                                 #[allow(unused_assignments)]
                                 {
-                                    (log_reported_at, reported_task_total) = (now, state_machine.handled_task_total());
+                                    (log_reported_at, reported_new_task_total, reported_retired_task_total) = (now, state_machine.task_total(), state_machine.handled_task_total());
                                 }
                                 l
                             },
@@ -1273,7 +1281,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // Before that, propagate new SchedulingContext to handler threads
                             session_started_at = Instant::now();
                             state_machine.reinitialize(new_context.mode());
-                            reported_task_total = 0;
+                            reported_new_task_total = 0;
+                            reported_retired_task_total = 0;
                             ignored_error_count = 0;
                             slot = new_context.bank().slot();
                             log_scheduler!(info, "started");
