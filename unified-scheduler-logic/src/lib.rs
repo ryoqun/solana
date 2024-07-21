@@ -547,13 +547,7 @@ enum CurrentUsage {
     Writable(Task),
 }
 
-trait CurrentUsageExt {
-    fn new(requested_usage: RequestedUsage, task: Task) -> Self;
-
-    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task: &Task) -> bool;
-}
-
-impl CurrentUsageExt for CurrentUsage {
+impl CurrentUsage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
             RequestedUsage::Readonly => Self::Readonly(BTreeMap::from([(task.index, task)])),
