@@ -541,6 +541,7 @@ struct UsageQueueInner {
 
 type UsageFromTask = (RequestedUsage, Task);
 
+#[derive(Debug)]
 enum CurrentUsage {
     Readonly(BTreeMap<Index, Task>),
     Writable(Task),
