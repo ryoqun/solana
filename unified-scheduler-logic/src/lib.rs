@@ -501,7 +501,7 @@ impl LockContext {
 #[derive(Copy, Clone, Debug)]
 enum Usage {
     Readonly(ShortCounter),
-    Writable(Task),
+    Writable,
 }
 
 /*
@@ -541,7 +541,10 @@ struct UsageQueueInner {
 
 type UsageFromTask = (RequestedUsage, Task);
 
-type CurrentUsage = (Usage, BTreeMap<Index, Task>);
+enum CurrentUsage {
+    Readonly(BTreeMap<Index, Task>),
+    Writable(Task),
+}
 
 trait CurrentUsageExt {
     fn new(usage: Usage, task: Task) -> Self;
@@ -551,7 +554,10 @@ trait CurrentUsageExt {
 
 impl CurrentUsageExt for CurrentUsage {
     fn new(usage: Usage, task: Task) -> Self {
-        (usage, BTreeMap::from([(task.index, task)]))
+        match usage {
+            Usage::Readonly(_) => Self::Readonly(BTreeMap::from([(task.index, task)])),
+            Usage::Writable => Self::Writable(task),
+        }
     }
 
     fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task: &Task) -> bool {
