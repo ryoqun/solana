@@ -816,7 +816,7 @@ impl SchedulingStateMachine {
                         let a = &mut current_usage;
                         match (a, context.requested_usage) {
                             (CurrentUsage::Writable(_), RequestedUsage::Writable) => {
-                                let old_usage = std::mem::replace(current_usage, CurrentUsage::Writable(new_task));
+                                let old_usage = std::mem::replace(current_usage, CurrentUsage::Writable(new_task.clone()));
                                 let CurrentUsage::Writable(reverted_task) = old_usage else { panic!() };
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
