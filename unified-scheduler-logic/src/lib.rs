@@ -810,10 +810,10 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match usage_queue.current_usage.as_mut() {
-                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, &new_task) => {
+                    Some(current_usage) if current_usage.should_revert(&mut self.count_token, &new_task) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
-                        match (&mut current_usage, context.requested_usage) {
+                        match (current_usage, context.requested_usage) {
                             (CurrentUsage::Writable(reverted_task), RequestedUsage::Writable) => {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = CurrentUsage::Writable(new_task);
