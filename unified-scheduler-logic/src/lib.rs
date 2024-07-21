@@ -1604,7 +1604,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                assert_matches!(usage_queue.current_usage, Some((Usage::Writable, _)));
+                assert_matches!(usage_queue.current_usage, Some((CurrentUsage::Writable(_)));
             });
         state_machine.deschedule_task(&task1);
         assert_matches!(
