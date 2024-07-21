@@ -783,7 +783,7 @@ impl SchedulingStateMachine {
                     Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
-                        match (current_usage, context.requested_usage) {
+                        match (&mut current_usage, context.requested_usage) {
                             (Usage::Writable(_), RequestedUsage::Writable) => {
                                 let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                 let Usage::Writable(reverted_task) = old_usage else { panic!() };
