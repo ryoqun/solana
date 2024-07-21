@@ -808,17 +808,18 @@ impl SchedulingStateMachine {
                                 Ok(())
                             }
                             (Usage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
-                                /*
                                 usage_queue
                                     .try_lock(context.requested_usage, &new_task)
                                     .unwrap();
                                 Ok(())
-                                */
+                                // even the following passes the unit tests... think about this
+                                /*
                                 if usage_queue.has_no_blocked_usage() {
                                     usage_queue.try_lock(context.requested_usage, &new_task)
                                 } else {
                                     Err(())
                                 }
+                                */
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let idx: Vec<Index> =
