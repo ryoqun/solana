@@ -511,19 +511,19 @@ enum RequestedUsage {
 /// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
 struct UsageQueueInner {
-    current_usage: Option<CurrentUsage>, // Option<Usage>
+    current_usage: Option<Usage>, // Option<Usage>
     blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
 }
 
 type UsageFromTask = (RequestedUsage, Task);
 
 #[derive(Debug)]
-enum CurrentUsage {
+enum Usage {
     Readonly(BTreeMap<Index, Task>),
     Writable(Task),
 }
 
-impl CurrentUsage {
+impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
             RequestedUsage::Readonly => Self::Readonly(BTreeMap::from([(task.index, task)])),
@@ -567,13 +567,13 @@ impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match &mut self.current_usage {
             None => {
-                self.current_usage = Some(CurrentUsage::new(
+                self.current_usage = Some(Usage::new(
                     requested_usage,
                     task.clone(),
                 ));
                 Ok(())
             }
-            Some(CurrentUsage::Readonly(current_tasks)) => match requested_usage {
+            Some(Usage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     //dbg!(&current_tasks.keys());
                     let old = current_tasks.insert(task.index, task.clone());
@@ -583,7 +583,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => Err(()),
             },
-            Some(CurrentUsage::Writable(_task)) => Err(()),
+            Some(Usage::Writable(_task)) => Err(()),
         }
     }
 
@@ -595,7 +595,7 @@ impl UsageQueueInner {
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some(CurrentUsage::Readonly(current_tasks)) => match requested_usage {
+            Some(Usage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     if current_tasks.len() == 1 {
                         is_unused_now = true;
@@ -606,7 +606,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
-            Some(CurrentUsage::Writable(task)) => match requested_usage {
+            Some(Usage::Writable(task)) => match requested_usage {
                 RequestedUsage::Writable => {
                     is_unused_now = true;
                 }
@@ -641,7 +641,7 @@ impl UsageQueueInner {
                 .map(|(_key, usage)| usage),
             Some((RequestedUsage::Readonly, _))
         ) {
-            assert_matches!(self.current_usage, Some(CurrentUsage::Readonly(_)));
+            assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
             self.blocked_usages_from_tasks
                 .pop_first()
                 .map(|(_key, usage)| usage)
@@ -785,9 +785,9 @@ impl SchedulingStateMachine {
 
                         let a = &mut current_usage;
                         match (a, context.requested_usage) {
-                            (CurrentUsage::Writable(_), RequestedUsage::Writable) => {
-                                let old_usage = std::mem::replace(current_usage, CurrentUsage::Writable(new_task.clone()));
-                                let CurrentUsage::Writable(reverted_task) = old_usage else { panic!() };
+                            (Usage::Writable(_), RequestedUsage::Writable) => {
+                                let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
+                                let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
@@ -796,9 +796,9 @@ impl SchedulingStateMachine {
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
                             }
-                            (CurrentUsage::Writable(_), RequestedUsage::Readonly) => {
-                                let old_usage = std::mem::replace(current_usage, CurrentUsage::new(RequestedUsage::Readonly, new_task.clone()));
-                                let CurrentUsage::Writable(reverted_task) = old_usage else { panic!() };
+                            (Usage::Writable(_), RequestedUsage::Readonly) => {
+                                let old_usage = std::mem::replace(current_usage, Usage::new(RequestedUsage::Readonly, new_task.clone()));
+                                let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
@@ -807,7 +807,7 @@ impl SchedulingStateMachine {
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
                             }
-                            (CurrentUsage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
+                            (Usage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
                                 /*
                                 usage_queue
                                     .try_lock(context.requested_usage, &new_task)
@@ -820,7 +820,7 @@ impl SchedulingStateMachine {
                                     Err(())
                                 }
                             }
-                            (CurrentUsage::Readonly(current_tasks), RequestedUsage::Writable) => {
+                            (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let idx: Vec<Index> =
                                     current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
@@ -839,7 +839,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 let r = if current_tasks.is_empty() {
-                                    *current_usage = CurrentUsage::Writable(new_task.clone());
+                                    *current_usage = Usage::Writable(new_task.clone());
                                     Ok(())
                                 } else {
                                     Err(())
@@ -1551,7 +1551,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                assert_matches!(usage_queue.current_usage, Some(CurrentUsage::Writable(_)));
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable(_)));
             });
         // task2's fee payer should have been locked already even if task2 is blocked still via the
         // above the schedule_task(task2) call
@@ -1560,7 +1560,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                assert_matches!(usage_queue.current_usage, Some(CurrentUsage::Writable(_)));
+                assert_matches!(usage_queue.current_usage, Some(Usage::Writable(_)));
             });
         state_machine.deschedule_task(&task1);
         assert_matches!(
@@ -1973,7 +1973,7 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 let task_index = task.index;
-                usage_queue.current_usage = Some(CurrentUsage::new(RequestedUsage::Writable, task));
+                usage_queue.current_usage = Some(Usage::new(RequestedUsage::Writable, task));
                 let _ = usage_queue.unlock(RequestedUsage::Readonly, task_index);
             });
     }
@@ -1993,7 +1993,7 @@ mod tests {
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 let task_index = task.index;
-                usage_queue.current_usage = Some(CurrentUsage::new(
+                usage_queue.current_usage = Some(Usage::new(
                     RequestedUsage::Readonly,
                     task,
                 ));
