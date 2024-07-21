@@ -823,7 +823,7 @@ impl SchedulingStateMachine {
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
                             }
-                            (Usage::Writable(reverted_task), RequestedUsage::Readonly) => {
+                            (CurrentUsage::Writable(reverted_task), RequestedUsage::Readonly) => {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 *current_usage = CurrentUsage::new(Usage::Readonly(ShortCounter::one()), new_task);
                                 usage_queue.insert_blocked_usage_from_task(
