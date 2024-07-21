@@ -605,8 +605,6 @@ impl UsageQueueInner {
             }
             Some(CurrentUsage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    count.increment_self();
-
                     //dbg!(&current_tasks.keys());
                     let old = current_tasks.insert(task.index, task.clone());
                     //dbg!(task.index);
