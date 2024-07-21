@@ -497,26 +497,7 @@ impl LockContext {
     }
 }
 
-/// Status about how a task is requesting to use a particular [`UsageQueue`].
-#[derive(Clone, Copy, Debug)]
-enum RequestedUsage {
-    Readonly,
-    Writable,
-}
-
-/// Internal scheduling data about a particular address.
-///
-/// Specifically, it holds the current [`Usage`] (or no usage with [`Usage::Unused`]) and which
-/// [`Task`]s are blocked to be executed after the current task is notified to be finished via
-/// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
-#[derive(Debug)]
-struct UsageQueueInner {
-    current_usage: Option<Usage>,
-    blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
-}
-
-type UsageFromTask = (RequestedUsage, Task);
-
+/// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
     Readonly(BTreeMap<Index, Task>),
@@ -548,6 +529,26 @@ impl Usage {
         }
     }
 }
+
+/// Status about how a task is requesting to use a particular [`UsageQueue`].
+#[derive(Clone, Copy, Debug)]
+enum RequestedUsage {
+    Readonly,
+    Writable,
+}
+
+/// Internal scheduling data about a particular address.
+///
+/// Specifically, it holds the current [`Usage`] (or no usage with [`Usage::Unused`]) and which
+/// [`Task`]s are blocked to be executed after the current task is notified to be finished via
+/// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
+#[derive(Debug)]
+struct UsageQueueInner {
+    current_usage: Option<Usage>,
+    blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
+}
+
+type UsageFromTask = (RequestedUsage, Task);
 
 impl Default for UsageQueueInner {
     fn default() -> Self {
