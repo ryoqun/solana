@@ -809,10 +809,9 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match &mut usage_queue.current_usage {
-                    Some(a) if a.should_revert(&mut self.count_token, &new_task) => {
+                    Some(current_usage) if current_usage.should_revert(&mut self.count_token, &new_task) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
-                        let (current_usage, current_tasks) = a;
                         match (&current_usage, context.requested_usage) {
                             (Usage::Writable, RequestedUsage::Writable) => {
                                 assert_eq!(1, current_tasks.len());
