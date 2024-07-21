@@ -556,7 +556,7 @@ impl CurrentUsageExt for CurrentUsage {
 
     fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task: &Task) -> bool {
         let (_current_usage, current_tasks) = self;
-        current_tasks.range(new_task.index..).rev().any(|_index, current_task| 
+        current_tasks.range(new_task.index..).rev().any(|(_index, current_task)| 
             current_task.blocked_usage_count(count_token) > 0
         )
     }
