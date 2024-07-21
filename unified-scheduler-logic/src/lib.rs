@@ -813,7 +813,7 @@ impl SchedulingStateMachine {
                     Some(current_usage) if current_usage.should_revert(&mut self.count_token, &new_task) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
-                        let a = &current_usage;
+                        let a = &mut current_usage;
                         match (a, context.requested_usage) {
                             (CurrentUsage::Writable(_), RequestedUsage::Writable) => {
                                 let old_usage = std::mem::replace(current_usage, CurrentUsage::Writable(new_task));
