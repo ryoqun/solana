@@ -1104,7 +1104,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 };
                 let mut log_interval = LogInterval::default();
                 let mut session_started_at = Instant::now();
-                let (mut log_reported_at, mut reported_new_task_total, mut reported_retired_task_total) = (session_started_at, 0);
+                let (mut log_reported_at, mut reported_new_task_total, mut reported_retired_task_total) = (session_started_at, 0, 0);
                 let mut ignored_error_count = 0;
 
                 macro_rules! log_scheduler {
