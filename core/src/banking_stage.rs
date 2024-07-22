@@ -744,7 +744,7 @@ impl BankingStage {
                                                 );
                                                 // wire cost tracker....
                                                 let i = /*((u64::MAX - priority) as u128) << 64
-                                                    | */task_ids[*i] /*as u128*/;
+                                                    | */task_ids[*i] as Index;
 
                                                 Some((tx, i))
                                             })
