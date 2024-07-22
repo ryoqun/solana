@@ -475,15 +475,11 @@ fn schedule_batches_for_execution(
         transaction_indexes,
     } in batches
     {
-        let transaction_indexes2 = transaction_indexes
-            .iter()
-            .map(|&i| i as u128)
-            .collect::<Vec<u128>>();
         bank.schedule_transaction_executions(
             batch
                 .sanitized_transactions()
                 .iter()
-                .zip(transaction_indexes2.iter()),
+                .zip(transaction_indexes.iter()),
         )?;
     }
     Ok(())
