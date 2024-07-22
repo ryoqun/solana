@@ -416,7 +416,7 @@ const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 type BlockedUsageCountToken = Token<ShortCounter>;
 const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
-pub type Index = u64;
+pub type Index = u128;
 
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
