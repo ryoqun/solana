@@ -477,7 +477,7 @@ fn schedule_batches_for_execution(
     {
         let transaction_indexes2 = transaction_indexes
             .iter()
-            .map(|&i| i as solana_runtime::installed::Index)
+            .map(|&i| i as solana_runtime::installed_scheduler_pool::Index)
             .collect::<Vec<_>>();
         bank.schedule_transaction_executions(
             batch
