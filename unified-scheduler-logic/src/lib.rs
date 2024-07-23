@@ -2013,7 +2013,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let task_index = task.index;
+                let task_index = task.clone();
                 usage_queue.current_usage = Some(Usage::new(RequestedUsage::Writable, task));
                 let _ = usage_queue.unlock(RequestedUsage::Readonly, task_index);
             });
@@ -2033,7 +2033,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let task_index = task.index;
+                let task_index = task.clone();
                 usage_queue.current_usage = Some(Usage::new(
                     RequestedUsage::Readonly,
                     task,
