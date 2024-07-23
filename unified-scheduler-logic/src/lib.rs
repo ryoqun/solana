@@ -506,7 +506,7 @@ enum Usage {
 
 impl PartialEq for TaskInner {
     fn eq(&self, other: &Self) -> bool {
-        self.index.partial_eq(&other.index)
+        self.index.eq(&other.index)
     }
 }
 
