@@ -412,6 +412,14 @@ impl Task {
     fn new(task: TaskInner) -> Self {
         Self(Arc::new(task))
     }
+
+    #[must_use]
+    fn try_unblock(self: Task, token: &mut BlockedUsageCountToken) -> Option<Task> {
+        let did_unblock = self
+            .blocked_usage_count
+            .with_borrow_mut(token, |usage_count| usage_count.decrement_self().is_zero());
+        did_unblock.then_some(self)
+    }
 }
 
 impl std::ops::Deref for Task {
@@ -472,14 +480,6 @@ impl TaskInner {
             .with_borrow_mut(token, |usage_count| {
                 usage_count.increment_self();
             })
-    }
-
-    #[must_use]
-    fn try_unblock(self: Task, token: &mut BlockedUsageCountToken) -> Option<Task> {
-        let did_unblock = self
-            .blocked_usage_count
-            .with_borrow_mut(token, |usage_count| usage_count.decrement_self().is_zero());
-        did_unblock.then_some(self)
     }
 }
 
