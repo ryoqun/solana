@@ -656,7 +656,7 @@ impl BankingStage {
                 })
             }
 
-            fn bulk_assign_task_ids(&self, count: u32) -> usize {
+            fn bulk_assign_task_ids(&self, count: u32) -> u32 {
                 self.next_task_id.fetch_add(count, Ordering::AcqRel)
             }
         }
