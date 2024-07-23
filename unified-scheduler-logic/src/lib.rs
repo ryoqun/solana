@@ -622,7 +622,7 @@ impl UsageQueueInner {
                     //dbg!(&current_tasks.keys());
                     let old = current_tasks.insert(task.clone());
                     //dbg!(task.index);
-                    assert!(!old, "not existing index: {}", task.index);
+                    assert!(old, "not existing index: {}", task.index);
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
