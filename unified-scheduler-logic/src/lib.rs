@@ -504,6 +504,12 @@ enum Usage {
     Writable(Task),
 }
 
+impl PartialEq for TaskInner {
+    fn partial_eq(&self, other: &Self) -> bool {
+        self.index.partial_eq(&other.index)
+    }
+}
+
 impl Eq for TaskInner {
     fn eq(&self, other: &Self) -> bool {
         self.index.eq(&other.index)
