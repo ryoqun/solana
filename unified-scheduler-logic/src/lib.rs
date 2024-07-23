@@ -939,7 +939,7 @@ impl SchedulingStateMachine {
                 let mut unblocked_task_from_queue =
                     usage_queue.unlock(context.requested_usage, task);
 
-                while let Some((requested_usage, task_with_unblocked_queue)) =
+                while let Some(UsageFromTask::new(requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
                 {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
