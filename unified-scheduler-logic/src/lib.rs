@@ -102,7 +102,7 @@ use {
     solana_sdk::{pubkey::Pubkey, scheduling::SchedulingMode, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
     std::{
-        collections::{BTreeMap, BTreeSet, VecDeque},
+        collections::{BTreeSet, VecDeque},
         mem,
         sync::Arc,
     },
