@@ -875,9 +875,8 @@ impl SchedulingStateMachine {
                                         .unwrap()
                                         .blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
-                                        let reverted_task =
-                                            current_tasks.remove(&current_index).unwrap();
-                                        t.push(reverted_task);
+                                        assert!(current_tasks.remove(&current_index).unwrap());
+                                        t.push(current_index);
                                     }
                                 }
                                 let r = if current_tasks.is_empty() {
