@@ -590,6 +590,12 @@ struct UsageQueueInner {
 
 struct UsageFromTask(RequestedUsage, Task);
 
+impl UsageFromTask {
+    fn new(r: RequestedUsage, t: Task) -> Self {
+        Self(r, t)
+    }
+}
+
 impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
