@@ -504,6 +504,9 @@ enum Usage {
     Writable(Task),
 }
 
+impl Ord For Task {
+}
+
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
