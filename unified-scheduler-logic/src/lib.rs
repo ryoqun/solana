@@ -864,7 +864,7 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let idx: Vec<Index> =
-                                    current_tasks.keys().rev().copied().collect::<Vec<_>>();
+                                    current_tasks.values().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
                                 for current_index in idx {
                                     if current_index < new_task {
