@@ -405,7 +405,7 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Task(Arc<TaskInner>);
 
 impl std::ops::Deref for Task {
