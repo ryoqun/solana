@@ -408,6 +408,12 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 #[derive(Clone, Debug)]
 struct Task(Arc<TaskInner>);
 
+impl Task {
+    fn new(task: TaskInner) -> Self {
+        Self(Arc::new(task))
+    }
+}
+
 impl std::ops::Deref for Task {
     type Target = Arc<TaskInner>;
     fn deref(&self) -> &<Self as Deref>::Target { todo!() }
