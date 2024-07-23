@@ -698,8 +698,7 @@ impl UsageQueueInner {
         assert_matches!(self.current_usage, Some(_));
         assert!(self
             .blocked_usages_from_tasks
-            .insert(index, usage_from_task)
-            .is_none());
+            .insert(index, usage_from_task));
     }
 
     #[must_use]
