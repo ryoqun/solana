@@ -102,7 +102,7 @@ use {
     solana_sdk::{pubkey::Pubkey, scheduling::SchedulingMode, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
     std::{
-        collections::{BTreeSet, VecDeque},
+        collections::{BTreeMap, VecDeque},
         mem,
         sync::Arc,
     },
@@ -405,51 +405,8 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-#[derive(Clone, Debug)]
-pub struct Task(Arc<TaskInner>);
+pub type Task = Arc<TaskInner>;
 const_assert_eq!(mem::size_of::<Task>(), 8);
-
-impl Task {
-    fn new(task: TaskInner) -> Self {
-        Self(Arc::new(task))
-    }
-
-    #[must_use]
-    fn try_unblock(self: Task, token: &mut BlockedUsageCountToken) -> Option<Task> {
-        let did_unblock = self
-            .blocked_usage_count
-            .with_borrow_mut(token, |usage_count| usage_count.decrement_self().is_zero());
-        did_unblock.then_some(self)
-    }
-}
-
-impl std::ops::Deref for Task {
-    type Target = TaskInner;
-    fn deref(&self) -> &<Self as std::ops::Deref>::Target {
-        &self.0
-    }
-}
-
-impl PartialEq for Task {
-    fn eq(&self, other: &Self) -> bool {
-        self.index.eq(&other.index)
-    }
-}
-
-impl Eq for Task {
-}
-
-impl Ord for Task {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.index.cmp(&other.index)
-    }
-}
-
-impl PartialOrd for Task {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
 
 /// [`Token`] for [`UsageQueue`].
 type UsageQueueToken = Token<UsageQueueInner>;
@@ -504,6 +461,14 @@ impl TaskInner {
                 usage_count.increment_self();
             })
     }
+
+    #[must_use]
+    fn try_unblock(self: Task, token: &mut BlockedUsageCountToken) -> Option<Task> {
+        let did_unblock = self
+            .blocked_usage_count
+            .with_borrow_mut(token, |usage_count| usage_count.decrement_self().is_zero());
+        did_unblock.then_some(self)
+    }
 }
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
@@ -535,26 +500,26 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BTreeSet<Task>),
+    Readonly(BTreeMap<Index, Task>),
     Writable(Task),
 }
 
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
-            RequestedUsage::Readonly => Self::Readonly(BTreeSet::from([task])),
+            RequestedUsage::Readonly => Self::Readonly(BTreeMap::from([(task.index, task)])),
             RequestedUsage::Writable => Self::Writable(task),
         }
     }
 
-    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task: &Task, requested_usage: RequestedUsage) -> bool {
+    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage) -> bool {
         match self {
             Self::Readonly(current_tasks) => {
                 if matches!(requested_usage, RequestedUsage::Readonly) {
                     return false;
                 }
 
-                current_tasks.range(new_task..).any(|current_task|
+                current_tasks.range(new_task_index..).any(|(_index, current_task)|
                     current_task.blocked_usage_count(count_token) > 0
                 )
             },
@@ -580,39 +545,10 @@ enum RequestedUsage {
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks: BTreeSet<UsageFromTask>,
+    blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
 }
 
-#[derive(Debug)]
-struct UsageFromTask(RequestedUsage, Task);
-
-impl UsageFromTask {
-    fn new(r: RequestedUsage, t: Task) -> Self {
-        Self(r, t)
-    }
-}
-
-impl PartialEq for UsageFromTask {
-    fn eq(&self, other: &Self) -> bool {
-        self.1.eq(&other.1)
-    }
-}
-
-impl Eq for UsageFromTask {
-}
-
-impl Ord for UsageFromTask {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.1.cmp(&other.1)
-    }
-}
-
-impl PartialOrd for UsageFromTask {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
+type UsageFromTask = (RequestedUsage, Task);
 
 impl Default for UsageQueueInner {
     fn default() -> Self {
@@ -627,7 +563,7 @@ impl Default for UsageQueueInner {
             //
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
-            blocked_usages_from_tasks: BTreeSet::new(),
+            blocked_usages_from_tasks: BTreeMap::new(),
         }
     }
 }
@@ -645,9 +581,9 @@ impl UsageQueueInner {
             Some(Usage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     //dbg!(&current_tasks.keys());
-                    let old = current_tasks.insert(task.clone());
+                    let old = current_tasks.insert(task.index, task.clone());
                     //dbg!(task.index);
-                    assert!(old, "not existing index: {}", task.index);
+                    assert!(old.is_none(), "not existing index: {}", task.index);
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
@@ -660,7 +596,7 @@ impl UsageQueueInner {
     fn unlock(
         &mut self,
         requested_usage: RequestedUsage,
-        task: &Task,
+        task_index: Index,
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
@@ -670,7 +606,7 @@ impl UsageQueueInner {
                         is_unused_now = true;
                     } else {
                         // todo test this for unbounded growth of inifnite readable only locks....
-                        assert!(current_tasks.remove(task));
+                        current_tasks.remove(&task_index).unwrap();
                     }
                 }
                 RequestedUsage::Writable => unreachable!(),
@@ -688,6 +624,7 @@ impl UsageQueueInner {
             self.current_usage = None;
             self.blocked_usages_from_tasks
                 .pop_first()
+                .map(|(_key, usage)| usage)
         } else {
             None
         }
@@ -697,19 +634,22 @@ impl UsageQueueInner {
         assert_matches!(self.current_usage, Some(_));
         assert!(self
             .blocked_usages_from_tasks
-            .insert(usage_from_task));
+            .insert(index, usage_from_task)
+            .is_none());
     }
 
     #[must_use]
     fn pop_unblocked_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
             self.blocked_usages_from_tasks
-                .first(),
-            Some(UsageFromTask(RequestedUsage::Readonly, _))
+                .first_key_value()
+                .map(|(_key, usage)| usage),
+            Some((RequestedUsage::Readonly, _))
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
             self.blocked_usages_from_tasks
                 .pop_first()
+                .map(|(_key, usage)| usage)
         } else {
             None
         }
@@ -845,7 +785,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = match usage_queue.current_usage.as_mut() {
-                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, &new_task, context.requested_usage) => {
+                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index, context.requested_usage) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
                         match (&mut current_usage, context.requested_usage) {
@@ -855,7 +795,7 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
-                                    UsageFromTask::new(RequestedUsage::Writable, reverted_task),
+                                    (RequestedUsage::Writable, reverted_task),
                                 );
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
@@ -866,7 +806,7 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
-                                    UsageFromTask::new(RequestedUsage::Writable, reverted_task),
+                                    (RequestedUsage::Writable, reverted_task),
                                 );
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
@@ -886,11 +826,11 @@ impl SchedulingStateMachine {
                                 */
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
-                                let idx: Vec<Task> =
-                                    current_tasks.iter().rev().cloned().collect::<Vec<_>>();
+                                let idx: Vec<Index> =
+                                    current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
                                 for current_index in idx {
-                                    if current_index < new_task {
+                                    if current_index < new_task.index {
                                         break;
                                     }
                                     let c: u32 = current_tasks
@@ -898,8 +838,9 @@ impl SchedulingStateMachine {
                                         .unwrap()
                                         .blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
-                                        assert!(current_tasks.remove(&current_index));
-                                        t.push(current_index);
+                                        let reverted_task =
+                                            current_tasks.remove(&current_index).unwrap();
+                                        t.push(reverted_task);
                                     }
                                 }
                                 let r = if current_tasks.is_empty() {
@@ -912,7 +853,7 @@ impl SchedulingStateMachine {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
                                         tt.index,
-                                        UsageFromTask::new(RequestedUsage::Readonly, tt),
+                                        (RequestedUsage::Readonly, tt),
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
@@ -931,7 +872,7 @@ impl SchedulingStateMachine {
 
                 if let Err(()) = lock_result {
                     blocked_usage_count.increment_self();
-                    let usage_from_task = UsageFromTask::new(context.requested_usage, new_task.clone());
+                    let usage_from_task = (context.requested_usage, new_task.clone());
                     usage_queue.insert_blocked_usage_from_task(new_task.index, usage_from_task);
                 }
             });
@@ -951,9 +892,9 @@ impl SchedulingStateMachine {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut unblocked_task_from_queue =
-                    usage_queue.unlock(context.requested_usage, task);
+                    usage_queue.unlock(context.requested_usage, task.index);
 
-                while let Some(UsageFromTask(requested_usage, task_with_unblocked_queue)) =
+                while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
                 {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
@@ -2014,15 +1955,11 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
-        let sanitized = simplest_transaction();
-        let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
-            UsageQueue::default()
-        });
         let usage_queue = UsageQueue::default();
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let _ = usage_queue.unlock(RequestedUsage::Writable, &task);
+                let _ = usage_queue.unlock(RequestedUsage::Writable, 0);
             });
     }
 
@@ -2040,9 +1977,9 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let task_index = task.clone();
+                let task_index = task.index;
                 usage_queue.current_usage = Some(Usage::new(RequestedUsage::Writable, task));
-                let _ = usage_queue.unlock(RequestedUsage::Readonly, &task_index);
+                let _ = usage_queue.unlock(RequestedUsage::Readonly, task_index);
             });
     }
 
@@ -2060,12 +1997,12 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let task_index = task.clone();
+                let task_index = task.index;
                 usage_queue.current_usage = Some(Usage::new(
                     RequestedUsage::Readonly,
                     task,
                 ));
-                let _ = usage_queue.unlock(RequestedUsage::Writable, &task_index);
+                let _ = usage_queue.unlock(RequestedUsage::Writable, task_index);
             });
     }
 }
