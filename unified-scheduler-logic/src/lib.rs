@@ -436,6 +436,9 @@ impl PartialEq for Task {
     }
 }
 
+impl Eq for Task {
+}
+
 impl Ord for Task {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.index.cmp(&other.index)
@@ -588,6 +591,28 @@ impl UsageFromTask {
         Self(r, t)
     }
 }
+
+impl PartialEq for UsageFromTask {
+    fn eq(&self, other: &Self) -> bool {
+        self.1.eq(&other.1)
+    }
+}
+
+impl Eq for UsageFromTask {
+}
+
+impl Ord for UsageFromTask {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.1.cmp(&other.1)
+    }
+}
+
+impl PartialOrd for UsageFromTask {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 impl Default for UsageQueueInner {
     fn default() -> Self {
