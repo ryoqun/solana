@@ -646,7 +646,7 @@ impl BankingStage {
         // todo: qos, forwarding, proper handling of buffered packets, vote storage, vote only
         // blocks...
         struct MonotonicIdGenerator {
-            next_task_id: AtomicU32,
+            next_task_id: std::sync::atomic::AtomicU32,
         }
 
         impl MonotonicIdGenerator {
