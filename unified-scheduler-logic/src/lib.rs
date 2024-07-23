@@ -690,7 +690,7 @@ impl UsageQueueInner {
             self.blocked_usages_from_tasks
                 .first_key_value()
                 .map(|(_key, usage)| usage),
-            Some((RequestedUsage::Readonly, _))
+            Some(UsageFromTask::new(RequestedUsage::Readonly, _))
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
             self.blocked_usages_from_tasks
