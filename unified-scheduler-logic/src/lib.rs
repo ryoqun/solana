@@ -409,6 +409,8 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 struct Task(Arc<TaskInner>);
 
 impl std::ops::Deref for Task {
+    type Target = Arc<TaskInner>;
+    fn deref(&self) -> &<Self as Deref>::Target { todo!() }
 }
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
