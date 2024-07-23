@@ -504,6 +504,12 @@ enum Usage {
     Writable(Task),
 }
 
+impl Eq for TaskInner {
+    fn eq(&self, other: &Self) -> bool {
+        self.index.eq(&other.index)
+    }
+}
+
 impl Ord for TaskInner {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.index.cmp(&other.index)
