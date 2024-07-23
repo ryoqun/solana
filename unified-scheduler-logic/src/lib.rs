@@ -618,7 +618,7 @@ impl UsageQueueInner {
             Some(Usage::Readonly(current_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     //dbg!(&current_tasks.keys());
-                    let old = current_tasks.insert(task.index, task.clone());
+                    let old = current_tasks.insert(task.clone());
                     //dbg!(task.index);
                     assert!(!old, "not existing index: {}", task.index);
                     Ok(())
