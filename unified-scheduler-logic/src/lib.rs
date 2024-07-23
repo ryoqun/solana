@@ -706,8 +706,7 @@ impl UsageQueueInner {
     fn pop_unblocked_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
             self.blocked_usages_from_tasks
-                .first_key_value()
-                .map(|(_key, usage)| usage),
+                .first()
             Some(UsageFromTask(RequestedUsage::Readonly, _))
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
