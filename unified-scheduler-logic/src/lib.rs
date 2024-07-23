@@ -588,6 +588,7 @@ struct UsageQueueInner {
     blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
 }
 
+#[derive(Debug)]
 struct UsageFromTask(RequestedUsage, Task);
 
 impl UsageFromTask {
