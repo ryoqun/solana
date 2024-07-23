@@ -867,7 +867,7 @@ impl SchedulingStateMachine {
                                     current_tasks.keys().rev().copied().collect::<Vec<_>>();
                                 let mut t = vec![];
                                 for current_index in idx {
-                                    if current_index < new_task.index {
+                                    if current_index < new_task {
                                         break;
                                     }
                                     let c: u32 = current_tasks
