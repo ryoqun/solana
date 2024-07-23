@@ -416,7 +416,7 @@ impl Task {
 
 impl std::ops::Deref for Task {
     type Target = Arc<TaskInner>;
-    fn deref(&self) -> &<Self as Deref>::Target { todo!() }
+    fn deref(&self) -> &<Self as std::ops::Deref>::Target { todo!() }
 }
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
