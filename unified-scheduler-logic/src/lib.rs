@@ -505,6 +505,15 @@ enum Usage {
 }
 
 impl Ord for TaskInner {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.index.cmp(&other.index)
+    }
+}
+
+impl PartialOrd for TaskInner {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Usage {
