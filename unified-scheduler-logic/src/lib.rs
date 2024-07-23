@@ -405,6 +405,7 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
+#[derive(Clone)]
 struct Task(Arc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
