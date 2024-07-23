@@ -102,7 +102,7 @@ use {
     solana_sdk::{pubkey::Pubkey, scheduling::SchedulingMode, transaction::SanitizedTransaction},
     static_assertions::const_assert_eq,
     std::{
-        collections::{BTreeMap, VecDeque},
+        collections::{BTreeMap, BTreeSet, VecDeque},
         mem,
         sync::Arc,
     },
@@ -500,7 +500,7 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BTreeMap<Index, Task>),
+    Readonly(BTreeSet<Task>),
     Writable(Task),
 }
 
