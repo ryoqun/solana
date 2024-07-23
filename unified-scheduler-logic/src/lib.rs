@@ -407,6 +407,9 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Clone)]
 struct Task(Arc<TaskInner>);
+
+impl Deref for Task {
+}
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 /// [`Token`] for [`UsageQueue`].
