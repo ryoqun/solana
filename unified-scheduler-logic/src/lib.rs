@@ -514,6 +514,7 @@ impl Eq for TaskInner {
 }
 
 impl std::borrow::Borrow<Index> for TaskInner {
+    fn borrow(&self) -> &Index { self.index }
 }
 
 impl Ord for TaskInner {
