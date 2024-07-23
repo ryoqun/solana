@@ -405,7 +405,7 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-pub type Task = Arc<TaskInner>;
+struct Task(Arc<TaskInner>);
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 /// [`Token`] for [`UsageQueue`].
@@ -513,7 +513,7 @@ impl PartialEq for TaskInner {
 impl Eq for TaskInner {
 }
 
-impl std::borrow::Borrow<Index> for Task {
+impl std::borrow::Borrow<Index> for TaskInner {
     fn borrow(&self) -> &Index { &self.index }
 }
 
