@@ -841,7 +841,7 @@ impl SchedulingStateMachine {
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                 usage_queue.insert_blocked_usage_from_task(
                                     reverted_task.index,
-                                    (RequestedUsage::Writable, reverted_task),
+                                    UsageFromTask::new(RequestedUsage::Writable, reverted_task),
                                 );
                                 self.reblocked_lock_total.increment_self();
                                 Ok(())
