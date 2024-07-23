@@ -504,7 +504,7 @@ enum Usage {
     Writable(Task),
 }
 
-impl Ord for Task {
+impl Ord for TaskInner {
 }
 
 impl Usage {
