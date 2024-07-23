@@ -588,7 +588,7 @@ struct UsageQueueInner {
     blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
 }
 
-type UsageFromTask = (RequestedUsage, Task);
+struct UsageFromTask(RequestedUsage, Task);
 
 impl Default for UsageQueueInner {
     fn default() -> Self {
