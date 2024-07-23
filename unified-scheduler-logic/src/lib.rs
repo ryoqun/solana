@@ -513,7 +513,7 @@ impl PartialEq for TaskInner {
 impl Eq for TaskInner {
 }
 
-impl Borrow for TaskInner {
+impl std::borrow::Borrow for TaskInner {
 }
 
 impl Ord for TaskInner {
