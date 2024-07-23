@@ -700,7 +700,7 @@ impl BankingStage {
                                         for pp in &aaa.0 {
                                             // over-provision
                                             let task_id =
-                                                id_generator.bulk_assign_task_ids(pp.len());
+                                                id_generator.bulk_assign_task_ids(pp.len().try_into().unwrap());
                                             let task_ids =
                                                 (task_id..(task_id + pp.len())).collect::<Vec<_>>();
 
