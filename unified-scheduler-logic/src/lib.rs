@@ -510,6 +510,9 @@ impl PartialEq for TaskInner {
     }
 }
 
+impl Eq for TaskInner {
+}
+
 impl Ord for TaskInner {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.index.cmp(&other.index)
