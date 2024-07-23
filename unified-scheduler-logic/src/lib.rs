@@ -516,26 +516,28 @@ enum Usage {
     Writable(Task),
 }
 
-impl PartialEq for TaskInner {
+impl PartialEq for Task {
     fn eq(&self, other: &Self) -> bool {
         self.index.eq(&other.index)
     }
 }
 
-impl Eq for TaskInner {
+impl Eq for Task {
 }
 
+/*
 impl std::borrow::Borrow<Index> for TaskInner {
     fn borrow(&self) -> &Index { &self.index }
 }
+*/
 
-impl Ord for TaskInner {
+impl Ord for Task {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.index.cmp(&other.index)
     }
 }
 
-impl PartialOrd for TaskInner {
+impl PartialOrd for Task {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
