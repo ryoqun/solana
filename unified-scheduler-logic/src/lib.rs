@@ -1991,11 +1991,15 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
+        let sanitized = simplest_transaction();
+        let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
+            UsageQueue::default()
+        });
         let usage_queue = UsageQueue::default();
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let _ = usage_queue.unlock(RequestedUsage::Writable, 0);
+                let _ = usage_queue.unlock(RequestedUsage::Writable, &task);
             });
     }
 
