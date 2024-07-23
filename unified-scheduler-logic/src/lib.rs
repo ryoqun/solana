@@ -633,7 +633,7 @@ impl UsageQueueInner {
     fn unlock(
         &mut self,
         requested_usage: RequestedUsage,
-        task_index: Index,
+        task: &Task,
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
@@ -643,7 +643,7 @@ impl UsageQueueInner {
                         is_unused_now = true;
                     } else {
                         // todo test this for unbounded growth of inifnite readable only locks....
-                        current_tasks.remove(&task_index).unwrap();
+                        assert!(current_tasks.remove(task));
                     }
                 }
                 RequestedUsage::Writable => unreachable!(),
@@ -928,7 +928,7 @@ impl SchedulingStateMachine {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut unblocked_task_from_queue =
-                    usage_queue.unlock(context.requested_usage, task.index);
+                    usage_queue.unlock(context.requested_usage, task);
 
                 while let Some((requested_usage, task_with_unblocked_queue)) =
                     unblocked_task_from_queue
