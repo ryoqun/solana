@@ -898,7 +898,7 @@ impl SchedulingStateMachine {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
                                         tt.index,
-                                        (RequestedUsage::Readonly, tt),
+                                        UsageFromTask::new(RequestedUsage::Readonly, tt),
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
