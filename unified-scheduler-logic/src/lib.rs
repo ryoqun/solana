@@ -875,7 +875,7 @@ impl SchedulingStateMachine {
                                         .unwrap()
                                         .blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
-                                        assert!(current_tasks.remove(&current_index).unwrap());
+                                        assert!(current_tasks.remove(&current_index));
                                         t.push(current_index);
                                     }
                                 }
