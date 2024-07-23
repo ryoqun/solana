@@ -424,7 +424,7 @@ impl Task {
 }
 
 impl std::ops::Deref for Task {
-    type Target = Arc<TaskInner>;
+    type Target = TaskInner;
     fn deref(&self) -> &<Self as std::ops::Deref>::Target {
         &self.0
     }
