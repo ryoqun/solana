@@ -439,10 +439,6 @@ impl PartialEq for Task {
 impl Eq for Task {
 }
 
-impl std::borrow::Borrow<Index> for TaskInner {
-    fn borrow(&self) -> &Index { &self.index }
-}
-
 impl Ord for Task {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.index.cmp(&other.index)
