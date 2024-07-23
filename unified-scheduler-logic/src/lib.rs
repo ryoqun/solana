@@ -556,7 +556,7 @@ impl Usage {
                     return false;
                 }
 
-                current_tasks.range(new_task..).any(|(_index, current_task)|
+                current_tasks.range(new_task..).any(|current_task|
                     current_task.blocked_usage_count(count_token) > 0
                 )
             },
