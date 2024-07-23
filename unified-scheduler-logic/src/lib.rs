@@ -408,7 +408,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 #[derive(Clone)]
 struct Task(Arc<TaskInner>);
 
-impl Deref for Task {
+impl std::ops::Deref for Task {
 }
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
