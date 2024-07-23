@@ -528,7 +528,7 @@ impl PartialOrd for TaskInner {
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
-            RequestedUsage::Readonly => Self::Readonly(BTreeMap::from([(task.index, task)])),
+            RequestedUsage::Readonly => Self::Readonly(BTreeMap::from([task])),
             RequestedUsage::Writable => Self::Writable(task),
         }
     }
