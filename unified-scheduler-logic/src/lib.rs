@@ -407,6 +407,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Clone, Debug)]
 struct Task(Arc<TaskInner>);
+const_assert_eq!(mem::size_of::<Task>(), 8);
 
 impl Task {
     fn new(task: TaskInner) -> Self {
@@ -424,11 +425,36 @@ impl Task {
 
 impl std::ops::Deref for Task {
     type Target = Arc<TaskInner>;
-    fn deref(&self) -> &<Self as std::ops::Deref>::Target { 
+    fn deref(&self) -> &<Self as std::ops::Deref>::Target {
         &self.0
     }
 }
-const_assert_eq!(mem::size_of::<Task>(), 8);
+
+impl PartialEq for Task {
+    fn eq(&self, other: &Self) -> bool {
+        self.index.eq(&other.index)
+    }
+}
+
+impl Eq for Task {
+}
+
+impl std::borrow::Borrow<Index> for TaskInner {
+    fn borrow(&self) -> &Index { &self.index }
+}
+
+impl Ord for Task {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.index.cmp(&other.index)
+    }
+}
+
+impl PartialOrd for Task {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 /// [`Token`] for [`UsageQueue`].
 type UsageQueueToken = Token<UsageQueueInner>;
@@ -516,31 +542,6 @@ impl LockContext {
 enum Usage {
     Readonly(BTreeSet<Task>),
     Writable(Task),
-}
-
-impl PartialEq for Task {
-    fn eq(&self, other: &Self) -> bool {
-        self.index.eq(&other.index)
-    }
-}
-
-impl Eq for Task {
-}
-
-impl std::borrow::Borrow<Index> for TaskInner {
-    fn borrow(&self) -> &Index { &self.index }
-}
-
-impl Ord for Task {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.index.cmp(&other.index)
-    }
-}
-
-impl PartialOrd for Task {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 impl Usage {
