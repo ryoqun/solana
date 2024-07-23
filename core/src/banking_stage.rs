@@ -646,7 +646,7 @@ impl BankingStage {
         // todo: qos, forwarding, proper handling of buffered packets, vote storage, vote only
         // blocks...
         struct MonotonicIdGenerator {
-            next_task_id: AtomicUsize,
+            next_task_id: AtomicU32,
         }
 
         impl MonotonicIdGenerator {
@@ -743,7 +743,7 @@ impl BankingStage {
                                                     &bank,
                                                 );
                                                 // wire cost tracker....
-                                                let i = ((u64::MAX - priority) as u128) << 64
+                                                let i = ((u32::MAX - priority.try_into().unwrap()) as u64) << 32
                                                     | task_ids[*i] as solana_runtime::installed_scheduler_pool::Index;
 
                                                 Some((tx, i))
