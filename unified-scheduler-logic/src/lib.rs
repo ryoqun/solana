@@ -451,7 +451,6 @@ impl PartialOrd for Task {
     }
 }
 
-
 /// [`Token`] for [`UsageQueue`].
 type UsageQueueToken = Token<UsageQueueInner>;
 const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
