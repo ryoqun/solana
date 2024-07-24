@@ -1204,7 +1204,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // consistent. Note that unified scheduler will go
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
-                        let step_type = select_biased! {
+                        let mut step_type = select_biased! {
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
 
