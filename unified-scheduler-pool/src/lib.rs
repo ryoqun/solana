@@ -524,7 +524,8 @@ enum SubchanneledPayload<P1, P2> {
     CloseSubchannel,
 }
 
-type NewTaskPayload = SubchanneledPayload<Task, (SchedulingContext, ResultWithTimings)>;
+type NewTaskPayload = SubchanneledPayload<Task, Box<(SchedulingContext, ResultWithTimings)>>;
+const_assert_eq!(mem::size_of::<NewTaskPayload>(), 16);
 
 // A tiny generic message type to synchronize multiple threads everytime some contextual data needs
 // to be switched (ie. SchedulingContext), just using a single communication channel.
@@ -553,7 +554,7 @@ mod chained_channel {
     // hide variants by putting this inside newtype
     enum ChainedChannelPrivate<P, C> {
         Payload(P),
-        ContextAndChannels(C, Receiver<ChainedChannel<P, C>>, Receiver<P>),
+        ContextAndChannels(Box<(C, Receiver<ChainedChannel<P, C>>, Receiver<P>)>),
     }
 
     pub(super) struct ChainedChannel<P, C>(ChainedChannelPrivate<P, C>);
@@ -564,11 +565,11 @@ mod chained_channel {
             receiver: Receiver<Self>,
             aux_receiver: Receiver<P>,
         ) -> Self {
-            Self(ChainedChannelPrivate::ContextAndChannels(
+            Self(ChainedChannelPrivate::ContextAndChannels(Box::new((
                 context,
                 receiver,
                 aux_receiver,
-            ))
+            ))))
         }
     }
 
@@ -599,8 +600,11 @@ mod chained_channel {
             context: C,
             count: usize,
         ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
+            info!("a1");
             let (chained_sender, chained_receiver) = crossbeam_channel::bounded(1_000_000);
+            info!("a2");
             let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::bounded(1_000_000);
+            info!("a3");
             for _ in 0..count {
                 self.sender.send(ChainedChannel::chain_to_new_channel(
                     context.clone(),
@@ -664,7 +668,8 @@ mod chained_channel {
         pub(super) fn after_select(&mut self, message: ChainedChannel<P, C>) -> Option<P> {
             match message.0 {
                 ChainedChannelPrivate::Payload(payload) => Some(payload),
-                ChainedChannelPrivate::ContextAndChannels(context, channel, idle_channel) => {
+                ChainedChannelPrivate::ContextAndChannels(b) => {
+                    let (context, channel, idle_channel) = *b;
                     self.context = context;
                     self.receiver = channel;
                     self.aux_receiver = idle_channel;
@@ -677,8 +682,12 @@ mod chained_channel {
     pub(super) fn unbounded<P, C: Clone>(
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
+        const { assert!(mem::size_of::<ChainedChannel<P, C>>() == 16); }
+        info!("a4");
         let (sender, receiver) = crossbeam_channel::bounded(1_000_000);
+        info!("a5");
         let (aux_sender, aux_receiver) = crossbeam_channel::bounded(1_000_000);
+        info!("a6");
         (
             ChainedChannelSender::new(sender, aux_sender),
             ChainedChannelReceiver::new(receiver, aux_receiver, initial_context),
@@ -833,13 +842,18 @@ impl LogInterval {
     }
 }
 
+use static_assertions::const_assert_eq;
 struct HandlerPanicked;
 type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
+const_assert_eq!(mem::size_of::<HandlerResult>(), 8);
 
 impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     fn new(pool: Arc<SchedulerPool<S, TH>>) -> Self {
+        info!("a7");
         let (new_task_sender, new_task_receiver) = crossbeam_channel::bounded(1_000_000);
-        let (session_result_sender, session_result_receiver) = crossbeam_channel::bounded(1_000_000);
+        info!("a8");
+        let (session_result_sender, session_result_receiver) = crossbeam_channel::unbounded();
+        info!("a9");
         let handler_count = pool.handler_count;
 
         Self {
@@ -1022,10 +1036,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // because it is more likely that a blocked task will have more blocked tasks behind it,
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
         // as fast as possible.
+        info!("a10");
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
             crossbeam_channel::bounded::<HandlerResult>(1_000_000);
+        info!("a11");
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             crossbeam_channel::bounded::<HandlerResult>(1_000_000);
+        info!("a12");
 
         assert_matches!(self.session_result_with_timings, None);
 
@@ -1272,10 +1289,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                     // Prepare for the new session.
                     match new_task_receiver.recv() {
-                        Ok(NewTaskPayload::OpenSubchannel((
-                            new_context,
-                            new_result_with_timings,
-                        ))) => {
+                        Ok(NewTaskPayload::OpenSubchannel(sc)) => {
+                            let (
+                                new_context,
+                                new_result_with_timings,
+                            ) = *sc;
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
@@ -1526,10 +1544,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         assert!(!self.are_threads_joined());
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
-            .send(NewTaskPayload::OpenSubchannel((
+            .send(NewTaskPayload::OpenSubchannel(Box::new((
                 context,
                 result_with_timings,
-            )))
+            ))))
             .expect("no new session after aborted");
     }
 }
