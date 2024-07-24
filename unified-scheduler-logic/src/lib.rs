@@ -515,6 +515,7 @@ impl Usage {
     fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage) -> bool {
         match self {
             Self::Readonly(current_tasks) => {
+                // this is imprecise....
                 if matches!(requested_usage, RequestedUsage::Readonly) {
                     return false;
                 }
@@ -524,7 +525,8 @@ impl Usage {
                 )
             },
             Self::Writable(current_task) => {
-                current_task.blocked_usage_count(count_token) > 0
+                // write test for <....
+                new_task_index < current_task.index && current_task.blocked_usage_count(count_token) > 0
             },
         }
     }
