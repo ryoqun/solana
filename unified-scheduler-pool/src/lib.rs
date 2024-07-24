@@ -836,9 +836,8 @@ struct LogInterval(usize);
 
 impl LogInterval {
     fn increment(&mut self) -> bool {
-        let should_log = self.0 % 10000 == 0;
         self.0 = self.0.checked_add(1).unwrap();
-        should_log
+        self.0 % 10000 == 0
     }
 }
 
@@ -1120,6 +1119,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     )
                 };
                 let mut log_interval = LogInterval::default();
+                let mut is_running = false;
                 let mut session_started_at = Instant::now();
                 let (mut log_reported_at, mut reported_new_task_total, mut reported_retired_task_total) = (session_started_at, 0, 0);
                 let mut ignored_error_count = 0;
@@ -1268,7 +1268,18 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "desc_i_task"
                             },
                         };
-                        if log_interval.increment() || step_type == "ending" {
+                        let force_log = if !is_running && state_machine.has_no_active_task() {
+                            is_running = true;
+                            step_type = "running";
+                            true
+                        } else if is_running && state_machine.has_no_active_task() {
+                            is_running = false
+                            step_type = "waiting";
+                            true
+                        } else if step_type == "ending" {
+                            true
+                        };
+                        if log_interval.increment() || force_log {
                             log_scheduler!(info, step_type);
                         } else {
                             log_scheduler!(trace, step_type);
@@ -1285,6 +1296,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         .expect("always outlived receiver");
                     log_scheduler!(info, "ended");
                     log_interval = LogInterval::default();
+                    is_running = false;
                     session_ending = false;
 
                     // Prepare for the new session.
