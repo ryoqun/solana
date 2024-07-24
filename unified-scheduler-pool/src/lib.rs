@@ -1274,8 +1274,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             true
                         } else if is_running && state_machine.has_no_active_task() {
                             is_running = false;
-                            step_type = "waiting";
-                            true
+                            if !session_ending {
+                                step_type = "waiting";
+                                true
+                            } else {
+                                false
+                            }
                         } else if step_type == "ending" {
                             true
                         } else {
