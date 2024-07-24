@@ -384,10 +384,9 @@ where
         // Also, if available_parallelism fails (which should be very rare), use 4 threads,
         // as a relatively conservatism assumption of modern multi-core systems ranging from
         // engineers' laptops to production servers.
-        //detected_cpu_core_count
-        //    .map(|core_count| (core_count / 4).max(1))
-        //    .unwrap_or(4)
-        4
+        detected_cpu_core_count
+            .map(|core_count| (core_count / 4).max(1))
+            .unwrap_or(4)
     }
 
     pub fn cli_message() -> &'static str {
