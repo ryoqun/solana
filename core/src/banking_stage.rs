@@ -671,7 +671,7 @@ impl BankingStage {
         ].into_iter().chain(std::iter::repeat(
             non_vote_receiver
         ))
-        .take(std::cmp::max(2, get_thread_count()))
+        .take(4 /*std::cmp::max(2, get_thread_count())*/)
         .enumerate()
         .map(|(thx, receiver)| {
             let decision_maker = decision_maker.clone();
