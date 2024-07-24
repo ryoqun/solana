@@ -1273,11 +1273,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             step_type = "running";
                             true
                         } else if is_running && state_machine.has_no_active_task() {
-                            is_running = false
+                            is_running = false;
                             step_type = "waiting";
                             true
                         } else if step_type == "ending" {
                             true
+                        } else {
+                            false
                         };
                         if log_interval.increment() || force_log {
                             log_scheduler!(info, step_type);
