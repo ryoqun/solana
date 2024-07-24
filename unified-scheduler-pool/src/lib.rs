@@ -1268,7 +1268,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "desc_i_task"
                             },
                         };
-                        let force_log = if !is_running && state_machine.has_no_active_task() {
+                        let force_log = if !is_running && !state_machine.has_no_active_task() {
                             is_running = true;
                             step_type = "running";
                             true
