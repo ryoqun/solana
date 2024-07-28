@@ -1442,7 +1442,7 @@ fn main() {
                     let blockstore = open_blockstore(
                         &ledger_path,
                         arg_matches,
-                        AccessType::Primary, // needed for purging already existing simulated block shreds...
+                        get_access_type(&process_options),
                     );
                     let LoadAndProcessLedgerOutput { bank_forks, .. } =
                         load_and_process_ledger_or_exit(
@@ -2311,7 +2311,7 @@ fn main() {
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
                         arg_matches,
-                        get_access_type(&process_options),
+                        AccessType::Primary, // needed for purging already existing simulated block shreds...
                     ));
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
                     if let Some(end_slot) = blockstore.slot_meta_iterator(first_simulated_slot).unwrap().map(|(s, _)| s).last() {
