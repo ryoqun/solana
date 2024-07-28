@@ -1442,7 +1442,7 @@ fn main() {
                     let blockstore = open_blockstore(
                         &ledger_path,
                         arg_matches,
-                        get_access_type(&process_options),
+                        AccessType::Primary, // needed for purging already existing simulated block shreds...
                     );
                     let LoadAndProcessLedgerOutput { bank_forks, .. } =
                         load_and_process_ledger_or_exit(
