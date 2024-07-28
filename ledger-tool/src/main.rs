@@ -1202,8 +1202,11 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name("simulate-leader-blocks")
-            .about("Simulate recreating blocks with banking trace as if a leader")
-            .arg(&halt_at_slot_arg)
+                .about("Simulate recreating blocks with banking trace as if a leader")
+                .arg(&load_genesis_config_arg)
+                .args(&accounts_db_config_args)
+                .args(&snapshot_config_args)
+                .arg(&halt_at_slot_arg)
         )
         .subcommand(
             SubCommand::with_name("accounts")
