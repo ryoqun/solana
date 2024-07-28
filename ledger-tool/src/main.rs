@@ -2301,10 +2301,8 @@ fn main() {
 
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
-                        AccessType::Primary,
-                        wal_recovery_mode,
-                        false,
-                        force_update_to_open,
+                        arg_matches,
+                        get_access_type(&process_options),
                     ));
                     let first_simulated_slot = halt_at_slot + 1;
                     if let Some(end_slot) = blockstore.slot_meta_iterator(first_simulated_slot).unwrap().map(|(s, _)| s).last() {
