@@ -2322,11 +2322,7 @@ fn main() {
                         blockstore.clone(),
                         process_options,
                         None, // transaction status sender
-                    )
-                    .unwrap_or_else(|err| {
-                        eprintln!("Ledger verification failed: {:?}", err);
-                        exit(1);
-                    });
+                    );
 
                     //simulator.seek(bank); => Ok or Err("no BankStart")
                     simulator.simulate(&genesis_config, bank_forks, blockstore);
