@@ -2297,55 +2297,7 @@ fn main() {
                         return
                     }
 
-                    let mut accounts_index_config = AccountsIndexConfig::default();
-                    if let Some(bins) = value_t!(arg_matches, "accounts_index_bins", usize).ok() {
-                        accounts_index_config.bins = Some(bins);
-                    }
-
-                    accounts_index_config.index_limit_mb = if let Some(limit) =
-                        value_t!(arg_matches, "accounts_index_memory_limit_mb", usize).ok()
-                    {
-                        IndexLimitMb::Limit(limit)
-                    } else if arg_matches.is_present("disable_accounts_disk_index") {
-                        IndexLimitMb::InMemOnly
-                    } else {
-                        IndexLimitMb::Unspecified
-                    };
-
-                    {
-                        let mut accounts_index_paths: Vec<PathBuf> =
-                            if arg_matches.is_present("accounts_index_path") {
-                                values_t_or_exit!(arg_matches, "accounts_index_path", String)
-                                    .into_iter()
-                                    .map(PathBuf::from)
-                                    .collect()
-                            } else {
-                                vec![]
-                            };
-                        if accounts_index_paths.is_empty() {
-                            accounts_index_paths = vec![ledger_path.join("accounts_index")];
-                        }
-                        accounts_index_config.drives = Some(accounts_index_paths);
-                    }
-
-                    let accounts_db_config = Some(AccountsDbConfig {
-                        ancient_append_vec_offset: value_t!(
-                            matches,
-                            "accounts_db_ancient_append_vecs",
-                            i64
-                        )
-                        .ok(),
-                        skip_initial_hash_calc: arg_matches
-                            .is_present("accounts_db_skip_initial_hash_calculation"),
-                        ..AccountsDbConfig::default()
-                    });
-
-                    let halt_at_slot = value_t!(arg_matches, "halt_at_slot", Slot).ok().unwrap();
-                    let process_options = ProcessOptions {
-                        halt_at_slot: Some(halt_at_slot),
-                        accounts_db_config,
-                        ..ProcessOptions::default()
-                    };
+                    let mut process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
