@@ -2305,7 +2305,7 @@ fn main() {
                         arg_matches,
                         get_access_type(&process_options),
                     ));
-                    let first_simulated_slot = process_options.halt_at_slot + 1;
+                    let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
                     if let Some(end_slot) = blockstore.slot_meta_iterator(first_simulated_slot).unwrap().map(|(s, _)| s).last() {
                         info!("purging slots {first_simulated_slot}, {end_slot}");
 
