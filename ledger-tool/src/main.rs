@@ -2316,13 +2316,12 @@ fn main() {
                         info!("skipping purging...");
                     }
                     let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
-                    let (bank_forks, ..) = load_and_process_ledger(
+                    let (bank_forks, ..) = load_and_process_ledger_or_exit(
                         arg_matches,
                         &genesis_config,
                         blockstore.clone(),
                         process_options,
-                        snapshot_archive_path,
-                        incremental_snapshot_archive_path,
+                        None, // transaction status sender
                     )
                     .unwrap_or_else(|err| {
                         eprintln!("Ledger verification failed: {:?}", err);
