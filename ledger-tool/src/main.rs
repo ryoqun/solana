@@ -2316,7 +2316,7 @@ fn main() {
                         info!("skipping purging...");
                     }
                     let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
-                    let LoadAndProcessLedgerOutput { bank_forks, ..) = load_and_process_ledger_or_exit(
+                    let LoadAndProcessLedgerOutput { bank_forks, .. } = load_and_process_ledger_or_exit(
                         arg_matches,
                         &genesis_config,
                         blockstore.clone(),
