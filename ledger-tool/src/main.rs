@@ -1201,6 +1201,11 @@ fn main() {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("simulate-leader-blocks")
+            .about("Simulate recreating blocks with banking trace as if a leader")
+            .arg(&halt_at_slot_arg)
+        )
+        .subcommand(
             SubCommand::with_name("accounts")
                 .about("Print account stats and contents after processing the ledger")
                 .arg(&load_genesis_config_arg)
