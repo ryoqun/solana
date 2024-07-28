@@ -3450,24 +3450,18 @@ impl Bank {
         //self.runtime_config.skip_check_age();
     }
 
-    pub fn check_age_tx(&self, tx: &SanitizedTransaction) -> (Result<()>, std::option::Option<NoncePartial>) {
-        /*
+    pub fn check_age_tx(&self, tx: &SanitizedTransaction) -> TransactionCheckResult {
         let max_age = MAX_PROCESSING_AGE;
         let hash_queue = self.blockhash_queue.read().unwrap();
         let last_blockhash = hash_queue.last_hash();
         let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
-        let recent_blockhash = tx.message().recent_blockhash();
-        if hash_queue.is_hash_valid_for_age(recent_blockhash, max_age) {
-            (Ok(()), None)
-        } else if let Some((address, account)) =
-            self.check_transaction_for_nonce(tx, &next_durable_nonce)
-        {
-            (Ok(()), Some(NoncePartial::new(address, account)))
-        } else {
-            (Err(TransactionError::BlockhashNotFound), None)
-        }
-        */
-        todo!()
+        self.check_transaction_age(
+            tx.borrow(),
+            max_age,
+            &next_durable_nonce,
+            &hash_queue,
+            rmut TransactionErrorMetrics::default(),
+        )
     }
 
     fn check_age(
