@@ -97,10 +97,6 @@ use {
     },
 };
 use solana_core::banking_trace::BankingSimulator;
-use solana_accounts_db::accounts_index::AccountsIndexConfig;
-use solana_accounts_db::accounts_index::IndexLimitMb;
-use solana_accounts_db::accounts_db::AccountsDbConfig;
-use solana_ledger::bank_forks_utils::load_bank_forks;
 use solana_ledger::blockstore::PurgeType;
 use solana_core::validator::BlockProductionMethod;
 
