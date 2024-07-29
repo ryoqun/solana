@@ -1118,7 +1118,7 @@ impl BankingSimulator {
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
         if let Some(retracer_thread) = retracer_thread {
-            retracer_thread.join().unwrap();
+            retracer_thread.join().unwrap().unwrap();
         }
 
         // TODO: add flag to store shreds into ledger so that we can even benchmark replay stgage with
