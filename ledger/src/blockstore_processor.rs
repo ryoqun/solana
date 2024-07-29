@@ -106,6 +106,7 @@ fn first_err(results: &[Result<()>]) -> Result<()> {
 // Includes transaction signature for unit-testing
 fn get_first_error(
     batch: &TransactionBatch,
+    slot: Slot,
     fee_collection_results: Vec<Result<()>>,
 ) -> Option<(Result<()>, Signature)> {
     let mut first_err = None;
@@ -214,7 +215,7 @@ pub fn execute_batch(
 
     prioritization_fee_cache.update(bank, executed_transactions.into_iter());
 
-    let first_err = get_first_error(batch, fee_collection_results);
+    let first_err = get_first_error(batch, bank.slot(), fee_collection_results);
     first_err.map(|(result, _)| result).unwrap_or(Ok(()))
 }
 

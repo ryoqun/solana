@@ -111,6 +111,9 @@ impl ImmutableDeserializedPacket {
         votes_only: bool,
         address_loader: impl AddressLoader,
     ) -> Option<SanitizedTransaction> {
+         if self.original_packet().meta().is_tracer_packet() {
+             warn!("pipeline_tracer: unified_scheduler build_sanitized_transaction {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
+         }
         if votes_only && !self.is_simple_vote() {
             return None;
         }
