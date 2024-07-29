@@ -2311,7 +2311,7 @@ fn main() {
                         return
                     }
 
-                    let mut process_options = parse_process_options(&ledger_path, arg_matches);
+                    let process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
