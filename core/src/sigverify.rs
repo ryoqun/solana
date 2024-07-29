@@ -126,6 +126,9 @@ impl SigVerifier for TransactionSigVerifier {
         packet_batches: Vec<PacketBatch>,
     ) -> Result<(), SigVerifyServiceError<Self::SendType>> {
         let tracer_packet_stats_to_send = std::mem::take(&mut self.tracer_packet_stats);
+        if tracer_packet_stats_to_send.total_tracker_packets_passed_sigverify > 0 {
+            warn!("pipeline_tracer: send_packets len: {} {:?} {:?} {:?}", self.packet_sender.len(), tracer_packet_stats_to_send, std::thread::current(), std::backtrace::Backtrace::force_capture());
+        }
         self.packet_sender.send(BankingPacketBatch::new((
             packet_batches,
             Some(tracer_packet_stats_to_send),
