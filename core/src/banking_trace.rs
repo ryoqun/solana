@@ -775,6 +775,7 @@ impl BankingSimulator {
         genesis_config: &solana_sdk::genesis_config::GenesisConfig,
         bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
         blockstore: Arc<solana_ledger::blockstore::Blockstore>,
+        block_production_method: crate::validator::BlockProductionMethod,
     ) {
         use {
             crate::banking_stage::{BankingStage, NUM_THREADS}, log::*,
@@ -1022,11 +1023,10 @@ impl BankingSimulator {
 
 
         info!("start banking stage!...");
-        use crate::validator::BlockProductionMethod;
         use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
         let pfc = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
-            BlockProductionMethod::ThreadLocalMultiIterator,
+            block_production_method,
             &cluster_info,
             &poh_recorder,
             non_vote_receiver,
@@ -1110,7 +1110,7 @@ impl BankingSimulator {
             sleep(std::time::Duration::from_millis(10));
         }
         info!("sleeping just before exit...");
-        sleep(std::time::Duration::from_millis(300000));
+        sleep(std::time::Duration::from_millis(30_000));
         exit.store(true, Ordering::Relaxed);
         // the order is important. dropping sender_thread will terminate banking_stage, in turn
         // banking_retracer thread

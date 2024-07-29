@@ -1207,6 +1207,14 @@ fn main() {
                 .args(&accounts_db_config_args)
                 .args(&snapshot_config_args)
                 .arg(&halt_at_slot_arg)
+                .arg(
+                    Arg::with_name("block_production_method")
+                        .long("block-production-method")
+                        .value_name("METHOD")
+                        .takes_value(true)
+                        .possible_values(BlockProductionMethod::cli_names())
+                        .help(BlockProductionMethod::cli_message()),
+                )
         )
         .subcommand(
             SubCommand::with_name("accounts")
@@ -2333,7 +2341,17 @@ fn main() {
                     );
 
                     //simulator.seek(bank); => Ok or Err("no BankStart")
-                    simulator.simulate(&genesis_config, bank_forks, blockstore);
+                    let block_production_method = value_t!(
+                        arg_matches,
+                        "block_production_method",
+                        BlockProductionMethod
+                    )
+                    .unwrap_or_default();
+                    info!(
+                        "Using: block-production-method: {}",
+                        block_production_method,
+                    );
+                    simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
 
                     println!("Ok");
                 }
