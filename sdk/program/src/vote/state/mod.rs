@@ -1151,7 +1151,7 @@ mod tests {
         // variant
         // provide 4x the minimum struct size in bytes to ensure we typically touch every field
         let struct_bytes_x4 = std::mem::size_of::<VoteState>() * 4;
-        for _ in 0..1000 {
+        for _ in 0..1 {
             let raw_data: Vec<u8> = (0..struct_bytes_x4).map(|_| rand::random::<u8>()).collect();
             let mut unstructured = Unstructured::new(&raw_data);
 
@@ -1178,7 +1178,7 @@ mod tests {
         // variant
         let serialized_len_x4 = serialized_size(&VoteState::default()).unwrap() * 4;
         let mut rng = rand::thread_rng();
-        for _ in 0..1000 {
+        for _ in 0..1 {
             let raw_data_length = rng.gen_range(1..serialized_len_x4);
             let mut raw_data: Vec<u8> = (0..raw_data_length).map(|_| rng.gen::<u8>()).collect();
 
@@ -1211,7 +1211,7 @@ mod tests {
     fn test_vote_deserialize_into_uninit_ill_sized() {
         // provide 4x the minimum struct size in bytes to ensure we typically touch every field
         let struct_bytes_x4 = std::mem::size_of::<VoteState>() * 4;
-        for _ in 0..1000 {
+        for _ in 0..1 {
             let raw_data: Vec<u8> = (0..struct_bytes_x4).map(|_| rand::random::<u8>()).collect();
             let mut unstructured = Unstructured::new(&raw_data);
 

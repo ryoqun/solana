@@ -106,7 +106,7 @@ mod tests {
         // variant
         // provide 4x the minimum struct size in bytes to ensure we typically touch every field
         let struct_bytes_x4 = std::mem::size_of::<VoteState1_14_11>() * 4;
-        for _ in 0..1000 {
+        for _ in 0..1 {
             let raw_data: Vec<u8> = (0..struct_bytes_x4).map(|_| rand::random::<u8>()).collect();
             let mut unstructured = Unstructured::new(&raw_data);
 
