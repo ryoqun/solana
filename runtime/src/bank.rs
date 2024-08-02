@@ -968,7 +968,7 @@ impl Bank {
             compute_budget: None,
             transaction_account_lock_limit: None,
             fee_structure: FeeStructure::default(),
-            blockhash_override: Default::default(),
+            blockhash_override: None,
         };
 
         bank.transaction_processor =
