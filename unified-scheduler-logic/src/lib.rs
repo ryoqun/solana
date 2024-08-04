@@ -142,12 +142,12 @@ mod utils {
 
         #[must_use]
         pub(super) fn increment(self) -> Self {
-            Self(self.0.wrapping_add(1))
+            Self(self.0.checked_add(1).unwrap())
         }
 
         #[must_use]
         pub(super) fn decrement(self) -> Self {
-            Self(self.0.wrapping_sub(1))
+            Self(self.0.checked_sub(1).unwrap())
         }
 
         pub(super) fn increment_self(&mut self) -> &mut Self {
@@ -399,8 +399,7 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-use std::rc::Rc;
-pub type Task = Rc<TaskInner>;
+pub type Task = Arc<TaskInner>;
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 /// [`Token`] for [`UsageQueue`].
@@ -610,7 +609,7 @@ const_assert_eq!(mem::size_of::<TokenCell<UsageQueueInner>>(), 40);
 /// opaque wrapper type; no methods just with [`::clone()`](Clone::clone) and
 /// [`::default()`](Default::default).
 #[derive(Debug, Clone, Default)]
-pub struct UsageQueue(Rc<TokenCell<UsageQueueInner>>);
+pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
