@@ -1592,7 +1592,7 @@ impl Bank {
             compute_budget: runtime_config.compute_budget,
             transaction_account_lock_limit: runtime_config.transaction_account_lock_limit,
             fee_structure: FeeStructure::default(),
-            blockhash_override: None,
+            blockhash_override: Default::default(),
         };
 
         bank.transaction_processor =
