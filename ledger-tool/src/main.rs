@@ -2304,7 +2304,7 @@ fn main() {
                     }
                 }
                 ("simulate-leader-blocks", Some(arg_matches)) => {
-                    let simulator = BankingSimulator::new(PathBuf::new().join("/dev/stdin"));
+                    let simulator = BankingSimulator::new(vec![PathBuf::new().join("/dev/stdin")]);
 
                     if std::env::var("DUMP").is_ok() {
                         simulator.dump(None);
