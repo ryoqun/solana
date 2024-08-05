@@ -748,7 +748,7 @@ impl BankingSimulator {
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
-                    packet_batches_by_time.insert(event_time, (label.clone(), batch.clone()));
+                    packet_batches_by_time.insert(event_time, (label, batch));
                 }
                 TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
                     hashes_by_slot.insert(slot, (blockhash, bank_hash));
