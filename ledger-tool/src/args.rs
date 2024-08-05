@@ -26,6 +26,7 @@ use {
     },
 };
 use std::process::exit;
+use std::ffi::OsString;
 
 /// Returns the arguments that configure AccountsDb
 pub fn accounts_db_args<'a, 'b>() -> Box<[Arg<'a, 'b>]> {

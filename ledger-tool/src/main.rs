@@ -84,7 +84,7 @@ use {
     },
     std::{
         collections::{HashMap, HashSet},
-        ffi::{OsStr, OsString},
+        ffi::OsStr,
         fs::File,
         io::{self, Write},
         mem::swap,
