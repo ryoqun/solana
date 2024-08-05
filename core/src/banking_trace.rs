@@ -724,7 +724,7 @@ impl BankingSimulator {
         }
     }
 
-    pub fn dump(&self, bank: Option<Arc<Bank>>) -> (BTreeMap<Slot, HashMap<u32, (SystemTime, usize)>>, BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>, HashMap<u64, (Hash, Hash)>) {
+    fn read_events_files(&self) -> (BTreeMap<Slot, HashMap<u32, (SystemTime, usize)>>, BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>, HashMap<u64, (Hash, Hash)>) {
         let mut bank_starts_by_slot = BTreeMap::new();
         let mut packet_batches_by_time = BTreeMap::new();
         let mut hashes_by_slot = HashMap::new();
@@ -765,7 +765,7 @@ impl BankingSimulator {
     pub fn start(&self) {
         let mut bank = self.bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
 
-        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.dump(Some(bank.clone_without_scheduler()));
+        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.read_events_files();
         let bank_slot = bank.slot();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
