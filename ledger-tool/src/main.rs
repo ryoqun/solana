@@ -2362,7 +2362,7 @@ fn main() {
                     } else {
                         None
                     };
-                    let event_dir_path = if let Some(event_pathes) {
+                    let event_dir_path = if let Some(event_pathes) = event_pathes {
                         for event_path in event_pathes {
                             std::path::Path::new(event_path).is_dir()
                         }
