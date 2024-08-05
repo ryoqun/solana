@@ -5492,7 +5492,7 @@ impl Bank {
 
         if let Some(bank_hash_override) = bank_hash_override {
             // Avoid super-smart compiler optimize out hash by black_box()-ing.
-            drop(std::hint::black_box(hash));
+            std::hint::black_box(hash);
             bank_hash_override
         } else {
             hash
