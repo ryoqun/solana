@@ -2374,6 +2374,10 @@ fn main() {
                             // event files.
                             (event_pathes, None)
                         } else if dirs.len() == 1 {
+                            if event_pathes.len() > 1 {
+                                eprintln!("Error: mixed dirs and files: {:?}", event_pathes);
+                                exit(1);
+                            }
                             let event_dir_path = dirs.first().map(|d| PathBuf::from(d).clone());
                             (vec![], event_dir_path)
                         } else {
