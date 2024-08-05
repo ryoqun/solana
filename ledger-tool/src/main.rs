@@ -2381,7 +2381,7 @@ fn main() {
                         (vec![], Some(blockstore.banking_trace_path()))
                     };
                     if let Some(event_dir_path) = event_dir_path {
-                        if let Ok(entries) = std::fs::read_dir(event_dir_path) {
+                        if let Ok(entries) = std::fs::read_dir(&event_dir_path) {
                             let mut e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
                             for events_file_name in (0..).map(|index| BankingSimulator::events_file_name(index)) {
                                 let events_file_name: OsString = events_file_name.into();
