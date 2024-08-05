@@ -2313,13 +2313,6 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
-                    let simulator = BankingSimulator::new(vec![PathBuf::new().join("/dev/stdin")]);
-
-                    if std::env::var("DUMP").is_ok() {
-                        simulator.dump(None);
-                        return
-                    }
-
                     let process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let blockstore = Arc::new(open_blockstore(
@@ -2417,7 +2410,14 @@ fn main() {
                     }
                     info!("Using: event files: {event_file_pathes:?}");
 
-                    simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
+                    let simulator = BankingSimulator::new(event_file_pathes, &genesis_config, bank_forks, blockstore, block_production_method);
+
+                    if std::env::var("DUMP").is_ok() {
+                        simulator.dump(None);
+                        return
+                    }
+
+                    simulator.start();
 
                     println!("Ok");
                 }
