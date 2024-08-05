@@ -721,7 +721,8 @@ impl BankingSimulator {
                 events.push(event);
             }
         }
-        for TimedTracedEvent(&event_time, event) in &events {
+        for TimedTracedEvent(event_time, event) in &events {
+            let event_time = *event_time;
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
                     packet_batches_by_time.insert(event_time, (label.clone(), batch.clone()));
