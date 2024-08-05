@@ -2357,8 +2357,9 @@ fn main() {
                         "Using: block-production-method: {}",
                         block_production_method,
                     );
+                    let banking_trace_path = blockstore.banking_trace_path();
                     let event_pathes = if arg_matches.is_present("banking_trace_events") {
-                        warn!("Supressing to use the default banking trace dir () due to specified `--banking_trace_events`(s)");
+                        warn!("Supressing to use the default banking trace dir ({banking_trace_path}) due to specified --banking-trace-events(s)");
                         Some(values_t_or_exit!(matches, "banking_trace_events", PathBuf))
                     } else {
                         None
@@ -2380,7 +2381,6 @@ fn main() {
                             exit(1);
                         }
                     } else {
-                        let banking_trace_path = blockstore.banking_trace_path();
                         if !banking_trace_path.exists() {
                             eprintln!("Error: ledger doesn't have the banking trace dir: ${banking_trace_path:?}");
                             exit(1);
