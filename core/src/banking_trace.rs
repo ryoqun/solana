@@ -700,7 +700,7 @@ mod tests {
 // simulated block and root block. As soon as warm up is initiated, we invoke
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
-    events_file_pathes: Vec<PathBuf>,
+    event_file_pathes: Vec<PathBuf>,
     genesis_config: GenesisConfig,
     bank_forks: Arc<RwLock<BankForks>>,
     blockstore: Arc<Blockstore>,
@@ -709,14 +709,14 @@ pub struct BankingSimulator {
 
 impl BankingSimulator {
     pub fn new(
-        events_file_pathes: Vec<PathBuf>,
+        event_file_pathes: Vec<PathBuf>,
         genesis_config: GenesisConfig,
         bank_forks: Arc<RwLock<BankForks>>,
         blockstore: Arc<Blockstore>,
         block_production_method: BlockProductionMethod,
     ) -> Self {
         Self {
-            events_file_pathes,
+            event_file_pathes,
             genesis_config,
             bank_forks,
             blockstore,
@@ -732,7 +732,7 @@ impl BankingSimulator {
         HashMap<u64, (Hash, Hash)>,
     ) {
         let mut events = vec![];
-        for events_file_path in &self.events_file_pathes {
+        for events_file_path in &self.event_file_pathes {
             info!("Reading events from {events_file_path:?}");
             let mut stream = BufReader::new(File::open(events_file_path).unwrap());
             let old_len = events.len();
