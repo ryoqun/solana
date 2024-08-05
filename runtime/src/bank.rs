@@ -5493,8 +5493,9 @@ impl Bank {
         if let Some(bank_hash_override) = bank_hash_override {
             // Avoid to optimize out hash along with the whole computation by super smart rustc.
             // bank_hash_override is used by ledger-tool's simulate-block-production, which prefers
-            // the actual bank freezing processing for accurate simulation. 
+            // the actual bank freezing processing for accurate simulation.
             std::hint::black_box(hash);
+
             bank_hash_override
         } else {
             hash
