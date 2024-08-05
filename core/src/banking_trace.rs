@@ -995,10 +995,6 @@ impl BankingSimulator {
                 poh_recorder.write().unwrap().set_bank(bank.clone_with_scheduler(), false);
             }
 
-            if clear_sigs {
-                bank.clear_signatures();
-            }
-
             sleep(Duration::from_millis(10));
         }
         info!("sleeping just before exit...");
