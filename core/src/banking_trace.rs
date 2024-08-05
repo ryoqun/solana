@@ -633,13 +633,12 @@ impl BankingSimulator {
         let (gossip_vote_sender, gossip_vote_receiver) =
             banking_retracer.create_channel_gossip_vote();
 
-        let cluster_info = ClusterInfo::new(
+        let cluster_info = Arc::new(ClusterInfo::new(
             Node::new_localhost_with_pubkey(&simulated_leader).info,
             Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
-        );
-        let cluster_info = Arc::new(cluster_info);
-        let connection_cache = ConnectionCache::new("connection_kache!");
+        ));
+        let connection_cache = Arc::new(ConnectionCache::new("connection_kache!"));
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
         let shred_version = compute_shred_version(
@@ -763,7 +762,7 @@ impl BankingSimulator {
             None,
             replay_vote_sender,
             None,
-            Arc::new(connection_cache),
+            connection_cache,
             self.bank_forks.clone(),
             pfc,
             false,
