@@ -5491,7 +5491,7 @@ impl Bank {
         );
 
         if let Some(bank_hash_override) = bank_hash_override {
-            // Avoid super-smart compiler optimize out hash by black_box()-ing.
+            // Avoid to optimize out hash along with the whole computation by super smart rustc.
             std::hint::black_box(hash);
             bank_hash_override
         } else {
