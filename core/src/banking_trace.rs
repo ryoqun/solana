@@ -550,7 +550,7 @@ impl BankingSimulator {
         (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot)
     }
 
-    pub fn start(&self) {
+    pub fn start(self) {
         let mut bank = self
             .bank_forks
             .read()
