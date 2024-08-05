@@ -2311,7 +2311,7 @@ fn main() {
                         system_monitor_service.join().unwrap();
                     }
                 }
-                ("simulate-leader-blocks", Some(arg_matches)) => {
+                ("simulate-block-production", Some(arg_matches)) => {
                     let simulator = BankingSimulator::new(vec![PathBuf::new().join("/dev/stdin")]);
 
                     if std::env::var("DUMP").is_ok() {
@@ -2356,6 +2356,11 @@ fn main() {
                         "Using: block-production-method: {}",
                         block_production_method,
                     );
+                    let event_pathes = if arg_matches.is_present(name) {
+                        Some(values_t_or_exit!(matches, "banking_trace_events", String))
+                    } else {
+                        None
+                    };
                     simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
 
                     println!("Ok");
