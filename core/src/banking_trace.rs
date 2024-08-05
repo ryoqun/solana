@@ -727,8 +727,8 @@ impl BankingSimulator {
                     packet_batches_by_time.insert(event_time, (label.clone(), batch.clone()));
                 }
                 TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
-                    hashes_by_slot.insert(*slot, (*blockhash, *bank_hash));
-                    bank_starts_by_slot.entry(*slot)
+                    hashes_by_slot.insert(slot, (blockhash, bank_hash));
+                    bank_starts_by_slot.entry(slot)
                         .and_modify(|e: &mut std::collections::HashMap<u32, (SystemTime, usize)>| {e.insert(0, (event_time, 0));})
                         .or_insert(std::collections::HashMap::from([(0, (event_time, 0));1]));
                 },
