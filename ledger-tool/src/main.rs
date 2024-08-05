@@ -2362,7 +2362,7 @@ fn main() {
                         warn!("Supressing to use the default banking trace dir ({banking_trace_path:?}) due to specified --banking-trace-events(s)");
                         let bb: Vec<String> = values_t_or_exit!(matches, "banking_trace_events", String);
                         Some(bb
-                            .into_iter().map(|b| PathBuf::from(b)).collect())
+                            .into_iter().map(|b| PathBuf::from(b)).collect()
                             )
                     } else {
                         None
