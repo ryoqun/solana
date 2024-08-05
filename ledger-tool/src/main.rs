@@ -1198,8 +1198,8 @@ fn main() {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("simulate-leader-blocks")
-                .about("Simulate recreating blocks with banking trace as if a leader")
+            SubCommand::with_name("simulate-block-production")
+                .about("Simulate producing blocks with banking trace in ledger")
                 .arg(&load_genesis_config_arg)
                 .args(&accounts_db_config_args)
                 .args(&snapshot_config_args)
@@ -1211,6 +1211,14 @@ fn main() {
                         .takes_value(true)
                         .possible_values(BlockProductionMethod::cli_names())
                         .help(BlockProductionMethod::cli_message()),
+                )
+                .arg(
+                    Arg::with_name("banking_trace_events")
+                        .long("banking-trace-events")
+                        .value_name("DIR_OR_FILE")
+                        .takes_value(true)
+                        .multiple(true)
+                        .help("Use events files in the supplied dir or supplied event files"),
                 )
         )
         .subcommand(
