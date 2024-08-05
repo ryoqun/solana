@@ -1036,7 +1036,7 @@ impl BankingSimulator {
         use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
         let pfc = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
-            self.block_production_method,
+            self.block_production_method.clone(),
             &cluster_info,
             &poh_recorder,
             non_vote_receiver,
