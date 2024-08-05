@@ -2374,6 +2374,11 @@ fn main() {
                     } else {
                         Some(blockstore.banking_trace_path())
                     };
+                    if let Some(event_dir_path) = event_dir_path {
+                        if let Ok(entries) = std::fs::read_dir(event_dir_path) {
+                            let e2 = entries.collect::<HashSet<usize>>();
+                        }
+                    }
 
                     simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
 
