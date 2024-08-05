@@ -40,6 +40,9 @@ use {
 use solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE;
 use solana_poh::poh_service::PohService;
 use solana_poh::poh_recorder::PohRecorder;
+use std::net::UdpSocket;
+use solana_turbine::broadcast_stage::BroadcastStageType;
+use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
 
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
@@ -757,9 +760,7 @@ impl BankingSimulator {
         (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot)
     }
 
-    pub fn start(
-        &self,
-    ) {
+    pub fn start(&self) {
         let mut bank = self.bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
 
         let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.dump(Some(bank.clone_without_scheduler()));
@@ -775,7 +776,6 @@ impl BankingSimulator {
 
         let (exit, poh_recorder, poh_service, entry_receiver) = {
             let exit = Arc::new(AtomicBool::default());
-            //create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
             info!("poh is starting!");
             let (r, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
                 start_bank.tick_height(),
@@ -849,8 +849,6 @@ impl BankingSimulator {
                     .hard_forks()
             ),
         );
-        use std::net::UdpSocket;
-        use solana_turbine::broadcast_stage::BroadcastStageType;
         let (sender, _receiver) = tokio::sync::mpsc::channel(1);
         let broadcast_stage = BroadcastStageType::Standard.new_broadcast_stage(
             vec![UdpSocket::bind("127.0.0.1:0").unwrap()],
@@ -864,7 +862,7 @@ impl BankingSimulator {
             sender,
         );
 
-        let sender_thread = std::thread::spawn( { let exit = exit.clone(); move || {
+        let sender_thread = thread::spawn( { let exit = exit.clone(); move || {
             let (adjusted_reference, range_iter) = if let Some((most_recent_past_leader_slot, starts)) = bank_starts_by_slot.range(bank_slot..).next() {
                 let mut start = starts.values().map(|a| a.0).min().unwrap();
                 start -= warmup_duration;
@@ -934,7 +932,6 @@ impl BankingSimulator {
 
 
         info!("start banking stage!...");
-        use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
         let pfc = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
             self.block_production_method.clone(),
