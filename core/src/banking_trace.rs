@@ -830,7 +830,7 @@ impl BankingSimulator {
         let (gossip_vote_sender, gossip_vote_receiver) =
             banking_retracer.create_channel_gossip_vote();
 
-        let cluster_info = solana_gossip::cluster_info::ClusterInfo::new(
+        let cluster_info = ClusterInfo::new(
             Node::new_localhost_with_pubkey(&simulated_leader).info,
             Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
@@ -839,7 +839,7 @@ impl BankingSimulator {
         let connection_cache = ConnectionCache::new("connection_kache!");
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
-        let shred_version = solana_sdk::shred_version::compute_shred_version(
+        let shred_version = compute_shred_version(
             &self.genesis_config.hash(),
             Some(
                 &self.bank_forks
