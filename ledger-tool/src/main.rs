@@ -2383,7 +2383,7 @@ fn main() {
                         if let Ok(entries) = std::fs::read_dir(event_dir_path) {
                             let e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
                             for events_file_name in (0..).map(|index| BankingSimulator::events_file_name(index)) {
-                                if !e2.remove(&events_file_name) {
+                                if !e2.remove(&events_file_name.into()) {
                                     break
                                 }
                             }
