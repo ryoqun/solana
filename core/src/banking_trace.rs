@@ -1109,7 +1109,7 @@ impl BankingSimulator {
                 banking_retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
                 retransmit_slots_sender.send(bank.slot()).unwrap();
                 bank_forks.write().unwrap().insert(new_bank);
-                bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
+                bank = self.bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
                 poh_recorder.write().unwrap().set_bank(bank.clone_with_scheduler(), false);
             }
 
