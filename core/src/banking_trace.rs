@@ -1,24 +1,22 @@
 use {
-    crate::banking_stage::{BankingStage, NUM_THREADS},
-    log::*,
-    solana_client::connection_cache::ConnectionCache,
-    solana_gossip::cluster_info::Node,
-    solana_ledger::leader_schedule_cache::LeaderScheduleCache,
-    solana_poh::poh_recorder::create_test_recorder,
-    solana_sdk::signature::Keypair,
-    solana_streamer::socket::SocketAddrSpace,
-    //solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
-};
-use {
-    crate::{sigverify::SigverifyTracerPacketStats, validator::BlockProductionMethod},
+    crate::{
+        banking_stage::{BankingStage, NUM_THREADS},
+        sigverify::SigverifyTracerPacketStats,
+        validator::BlockProductionMethod,
+    },
     bincode::serialize_into,
     chrono::{DateTime, Local},
     crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
+    log::*,
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
-    solana_gossip::cluster_info::ClusterInfo,
-    solana_ledger::blockstore::Blockstore,
+    solana_client::connection_cache::ConnectionCache,
+    solana_gossip::cluster_info::{ClusterInfo, Node},
+    solana_ledger::{blockstore::Blockstore, leader_schedule_cache::LeaderScheduleCache},
     solana_perf::packet::PacketBatch,
-    solana_poh::{poh_recorder::PohRecorder, poh_service::PohService},
+    solana_poh::{
+        poh_recorder::{create_test_recorder, PohRecorder},
+        poh_service::PohService,
+    },
     solana_runtime::{
         bank::{Bank, NewBankOptions},
         bank_forks::BankForks,
@@ -26,8 +24,9 @@ use {
     },
     solana_sdk::{
         genesis_config::GenesisConfig, hash::Hash, shred_version::compute_shred_version,
-        slot_history::Slot,
+        signature::Keypair, slot_history::Slot,
     },
+    solana_streamer::socket::SocketAddrSpace,
     solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE,
     solana_turbine::broadcast_stage::BroadcastStageType,
     std::{
