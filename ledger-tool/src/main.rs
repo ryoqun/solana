@@ -31,12 +31,13 @@ use {
     },
     solana_cli_output::OutputFormat,
     solana_core::{
+        banking_trace::BankingSimulator,
         system_monitor_service::{SystemMonitorService, SystemMonitorStatsReportConfig},
-        validator::BlockVerificationMethod,
+        validator::{BlockProductionMethod, BlockVerificationMethod},
     },
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
     solana_ledger::{
-        blockstore::{create_new_ledger, Blockstore},
+        blockstore::{create_new_ledger, Blockstore, PurgeType},
         blockstore_options::{AccessType, LedgerColumnOptions},
         blockstore_processor::{
             ProcessSlotCallback, TransactionStatusMessage, TransactionStatusSender,
@@ -83,7 +84,7 @@ use {
     },
     std::{
         collections::{HashMap, HashSet},
-        ffi::OsStr,
+        ffi::{OsStr, OsString},
         fs::File,
         io::{self, Write},
         mem::swap,
@@ -96,10 +97,6 @@ use {
         },
     },
 };
-use solana_core::banking_trace::BankingSimulator;
-use solana_ledger::blockstore::PurgeType;
-use solana_core::validator::BlockProductionMethod;
-use std::ffi::OsString;
 
 mod args;
 mod bigtable;
@@ -2321,7 +2318,12 @@ fn main() {
                         AccessType::Primary, // needed for purging already existing simulated block shreds...
                     ));
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
-                    if let Some(end_slot) = blockstore.slot_meta_iterator(first_simulated_slot).unwrap().map(|(s, _)| s).last() {
+                    if let Some(end_slot) = blockstore
+                        .slot_meta_iterator(first_simulated_slot)
+                        .unwrap()
+                        .map(|(s, _)| s)
+                        .last()
+                    {
                         info!("purging slots {first_simulated_slot}, {end_slot}");
 
                         blockstore.purge_from_next_slots(first_simulated_slot, end_slot);
@@ -2331,13 +2333,14 @@ fn main() {
                         info!("skipping purging...");
                     }
                     let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
-                    let LoadAndProcessLedgerOutput { bank_forks, .. } = load_and_process_ledger_or_exit(
-                        arg_matches,
-                        &genesis_config,
-                        blockstore.clone(),
-                        process_options,
-                        None, // transaction status sender
-                    );
+                    let LoadAndProcessLedgerOutput { bank_forks, .. } =
+                        load_and_process_ledger_or_exit(
+                            arg_matches,
+                            &genesis_config,
+                            blockstore.clone(),
+                            process_options,
+                            None, // transaction status sender
+                        );
 
                     //simulator.seek(bank); => Ok or Err("no BankStart")
                     let block_production_method = value_t!(
@@ -2353,14 +2356,21 @@ fn main() {
                     let banking_trace_path = blockstore.banking_trace_path();
                     let event_pathes = if arg_matches.is_present("banking_trace_events") {
                         warn!("Supressing to use the default banking trace dir ({banking_trace_path:?}) due to --banking-trace-events(s)");
-                        Some(values_t_or_exit!(arg_matches, "banking_trace_events", PathBuf))
+                        Some(values_t_or_exit!(
+                            arg_matches,
+                            "banking_trace_events",
+                            PathBuf
+                        ))
                     } else {
                         None
                     };
-                    let (mut event_file_pathes, event_dir_path) = if let Some(event_pathes) = event_pathes {
-                        let dirs = event_pathes.iter().filter( |event_path|
-                            std::path::Path::new(&event_path).is_dir()
-                        ).collect::<Vec<_>>();
+                    let (mut event_file_pathes, event_dir_path) = if let Some(event_pathes) =
+                        event_pathes
+                    {
+                        let dirs = event_pathes
+                            .iter()
+                            .filter(|event_path| std::path::Path::new(&event_path).is_dir())
+                            .collect::<Vec<_>>();
 
                         if dirs.is_empty() {
                             // All of event_pathes items can be regarded as specifying individual
@@ -2389,7 +2399,9 @@ fn main() {
                         info!("Using: banking trace events dir: {event_dir_path:?}");
 
                         if let Ok(entries) = std::fs::read_dir(&event_dir_path) {
-                            let mut e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
+                            let mut e2 = entries
+                                .flat_map(|r| r.ok().map(|r| r.file_name()))
+                                .collect::<HashSet<OsString>>();
                             for events_file_name in (0..).map(BankingSimulator::events_file_name) {
                                 let events_file_name: OsString = events_file_name.into();
                                 if e2.remove(&events_file_name) {
@@ -2400,7 +2412,10 @@ fn main() {
                             }
                             event_file_pathes.reverse();
                             if !e2.is_empty() {
-                                let e3 = e2.into_iter().map(|ee| event_dir_path.join(ee)).collect::<Vec<_>>();
+                                let e3 = e2
+                                    .into_iter()
+                                    .map(|ee| event_dir_path.join(ee))
+                                    .collect::<Vec<_>>();
                                 warn!("Some files in {event_dir_path:?} is ignored due to gapped events file rotation or unrecognized names: {e3:?}");
                             }
                         } else {
@@ -2410,7 +2425,13 @@ fn main() {
                     }
                     info!("Using: event files: {event_file_pathes:?}");
 
-                    let simulator = BankingSimulator::new(event_file_pathes, genesis_config, bank_forks, blockstore, block_production_method);
+                    let simulator = BankingSimulator::new(
+                        event_file_pathes,
+                        genesis_config,
+                        bank_forks,
+                        blockstore,
+                        block_production_method,
+                    );
                     simulator.start();
 
                     println!("Ok");
