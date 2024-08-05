@@ -907,7 +907,7 @@ impl BankingSimulator {
             retransmit_slots_receiver,
             exit.clone(),
             self.blockstore.clone(),
-            bank_forks.clone(),
+            self.bank_forks.clone(),
             shred_version,
             sender,
         );
