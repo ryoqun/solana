@@ -14,7 +14,7 @@ use {
     solana_ledger::{blockstore::Blockstore, leader_schedule_cache::LeaderScheduleCache},
     solana_perf::packet::PacketBatch,
     solana_poh::{
-        poh_recorder::{create_test_recorder, PohRecorder},
+        poh_recorder::PohRecorder,
         poh_service::PohService,
     },
     solana_runtime::{
@@ -27,7 +27,6 @@ use {
         signature::Keypair, slot_history::Slot,
     },
     solana_streamer::socket::SocketAddrSpace,
-    solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE,
     solana_turbine::broadcast_stage::BroadcastStageType,
     std::{
         collections::{BTreeMap, HashMap},
