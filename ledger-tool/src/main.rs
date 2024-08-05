@@ -2353,7 +2353,9 @@ fn main() {
                         "Using: block-production-method: {}",
                         block_production_method,
                     );
-                    let event_file_pathes = parse_banking_trace_event_file_paths();
+                    let event_file_pathes = parse_banking_trace_event_file_paths(
+                        blockstore.banking_trace_path(),
+                    );
                     info!("Using: event files: {event_file_pathes:?}");
                     let simulator = BankingSimulator::new(
                         event_file_pathes,
