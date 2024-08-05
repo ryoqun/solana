@@ -2407,7 +2407,7 @@ fn main() {
                             }
                             event_file_pathes.reverse();
                             if !e2.is_empty() {
-                                let e3 = e2.into_iter().map(|ee| PathBuf::from(event_dir_path).join(ee)).collect::<Vec<_>>();
+                                let e3 = e2.into_iter().map(|ee| PathBuf::from(event_dir_path.clone()).join(ee)).collect::<Vec<_>>();
                                 warn!("Some files in {event_dir_path:?} is ignored due to gapped events file rotation or unrecognized names: {e3:?}");
                             }
                         } else {
