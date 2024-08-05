@@ -886,7 +886,7 @@ impl BankingSimulator {
             let (mut non_vote_count, mut tpu_vote_count, mut gossip_vote_count) = (0, 0, 0);
             let (mut non_vote_tx_count, mut tpu_vote_tx_count, mut gossip_vote_tx_count) = (0, 0, 0);
 
-            let reference_time= adjusted_reference.map(|b| b.2.clone()).unwrap_or_else(|| std::time::SystemTime::now());
+            let reference_time= adjusted_reference.map(|b| b.2).unwrap_or_else(|| std::time::SystemTime::now());
 
             info!("start sending!...");
             let simulation_time = std::time::SystemTime::now();
