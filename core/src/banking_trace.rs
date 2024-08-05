@@ -731,12 +731,7 @@ impl BankingSimulator {
         BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
         HashMap<u64, (Hash, Hash)>,
     ) {
-        let mut bank_starts_by_slot = BTreeMap::new();
-        let mut packet_batches_by_time = BTreeMap::new();
-        let mut hashes_by_slot = HashMap::new();
-
         let mut events = vec![];
-
         for events_file_path in &self.events_file_pathes {
             info!("Reading events from {events_file_path:?}");
             let mut stream = BufReader::new(File::open(events_file_path).unwrap());
@@ -755,6 +750,10 @@ impl BankingSimulator {
                 events.push(event);
             }
         }
+
+        let mut bank_starts_by_slot = BTreeMap::new();
+        let mut packet_batches_by_time = BTreeMap::new();
+        let mut hashes_by_slot = HashMap::new();
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
@@ -765,11 +764,11 @@ impl BankingSimulator {
                     bank_starts_by_slot
                         .entry(slot)
                         .and_modify(
-                            |e: &mut std::collections::HashMap<u32, (SystemTime, usize)>| {
+                            |e| {
                                 e.insert(0, (event_time, 0));
                             },
                         )
-                        .or_insert(std::collections::HashMap::from([(0, (event_time, 0)); 1]));
+                        .or_insert(HashMap::from([(0, (event_time, 0)); 1]));
                 }
             }
         }
