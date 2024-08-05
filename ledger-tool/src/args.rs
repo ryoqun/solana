@@ -25,6 +25,7 @@ use {
         sync::Arc,
     },
 };
+use std::process::exit;
 
 /// Returns the arguments that configure AccountsDb
 pub fn accounts_db_args<'a, 'b>() -> Box<[Arg<'a, 'b>]> {
