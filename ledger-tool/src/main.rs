@@ -2363,7 +2363,7 @@ fn main() {
                         None
                     };
                     let event_dir_path = if let Some(event_pathes) = event_pathes {
-                        let dirs = event_pathes.filter( |event_path|
+                        let dirs = event_pathes.into_iter().filter( |event_path|
                             std::path::Path::new(&event_path).is_dir()
                         ).collect::<Vec<_>>();
                         if dirs.len() > 1 {
