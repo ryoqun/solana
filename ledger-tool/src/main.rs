@@ -2367,7 +2367,7 @@ fn main() {
                             std::path::Path::new(&event_path).is_dir()
                         }
                     } else {
-                        blockstore.banking_tracing_path()
+                        blockstore.banking_trace_path()
                     };
 
                     simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
