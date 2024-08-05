@@ -2366,7 +2366,7 @@ fn main() {
                         let dirs = event_pathes.iter().filter( |event_path|
                             std::path::Path::new(&event_path).is_dir()
                         ).collect::<Vec<_>>();
-                        if dirs.len() == 0 {
+                        if dirs.is_empty() {
                             (event_pathes, None)
                         } else if dirs.len() > 1 {
                             eprintln!("Error: multiple dirs are specified: {:?}", dirs);
