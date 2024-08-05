@@ -1018,8 +1018,8 @@ impl BankingSimulator {
         info!("sleeping just before exit...");
         sleep(Duration::from_millis(30_000));
         exit.store(true, Ordering::Relaxed);
-        // the order is important. dropping sender_thread will terminate banking_stage, in turn
-        // banking_retracer thread
+        // the order is important. consuming sender_thread by joining will terminate banking_stage, in turn
+        // banking_retracer thread will termianl
         sender_thread.join().unwrap();
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
