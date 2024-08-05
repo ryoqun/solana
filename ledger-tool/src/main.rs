@@ -2363,7 +2363,7 @@ fn main() {
                     } else {
                         None
                     };
-                    let (event_file_pathes, event_dir_path) = if let Some(event_pathes) = event_pathes {
+                    let (mut event_file_pathes, event_dir_path) = if let Some(event_pathes) = event_pathes {
                         let dirs = event_pathes.iter().filter( |event_path|
                             std::path::Path::new(&event_path).is_dir()
                         ).collect::<Vec<_>>();
@@ -2384,8 +2384,10 @@ fn main() {
                             let mut e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
                             for events_file_name in (0..).map(|index| BankingSimulator::events_file_name(index)) {
                                 let events_file_name: OsString = events_file_name.into();
-                                if !e2.remove(&events_file_name) {
-                                    break
+                                if e2.remove(&events_file_name) {
+                                    event_file_pathes.push("aa");
+                                } else {
+                                    break;
                                 }
                             }
                         }
