@@ -1200,7 +1200,7 @@ fn main() {
         )
         .subcommand(
             SubCommand::with_name("simulate-block-production")
-                .about("Simulate producing blocks with banking trace in ledger")
+                .about("Simulate producing blocks with banking trace event files in the ledger")
                 .arg(&load_genesis_config_arg)
                 .args(&accounts_db_config_args)
                 .args(&snapshot_config_args)
