@@ -763,11 +763,9 @@ impl BankingSimulator {
                     hashes_by_slot.insert(slot, (blockhash, bank_hash));
                     bank_starts_by_slot
                         .entry(slot)
-                        .and_modify(
-                            |e: &mut HashMap<u32, (SystemTime, usize)>| {
-                                e.insert(0, (event_time, 0));
-                            },
-                        )
+                        .and_modify(|e: &mut HashMap<u32, (SystemTime, usize)>| {
+                            e.insert(0, (event_time, 0));
+                        })
                         .or_insert(HashMap::from([(0, (event_time, 0)); 1]));
                 }
             }
@@ -917,12 +915,12 @@ impl BankingSimulator {
                         (None, packet_batches_by_time.range(..))
                     };
                 info!(
-                "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?})",
-                range_iter.clone().count(),
-                packet_batches_by_time.len(),
-                bank_slot,
-                adjusted_reference,
-            );
+                    "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?})",
+                    range_iter.clone().count(),
+                    packet_batches_by_time.len(),
+                    bank_slot,
+                    adjusted_reference,
+                );
                 let (mut non_vote_count, mut tpu_vote_count, mut gossip_vote_count) = (0, 0, 0);
                 let (mut non_vote_tx_count, mut tpu_vote_tx_count, mut gossip_vote_tx_count) =
                     (0, 0, 0);
