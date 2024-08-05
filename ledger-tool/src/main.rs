@@ -2411,12 +2411,6 @@ fn main() {
                     info!("Using: event files: {event_file_pathes:?}");
 
                     let simulator = BankingSimulator::new(event_file_pathes, genesis_config, bank_forks, blockstore, block_production_method);
-
-                    if std::env::var("DUMP").is_ok() {
-                        simulator.dump(None);
-                        return
-                    }
-
                     simulator.start();
 
                     println!("Ok");
