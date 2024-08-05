@@ -2366,12 +2366,11 @@ fn main() {
                         let dirs = event_pathes.iter().filter( |event_path|
                             std::path::Path::new(&event_path).is_dir()
                         ).collect::<Vec<_>>();
-                        if dirs.len() > 1 {
-                            eprintln!("Error: multiple dirs are specified: {:?}", dirs);
-                            exit(1);
-                        }
                         if dirs.len() == 0 {
                             (event_pathes, None)
+                        } else if dirs.len() > 1 {
+                            eprintln!("Error: multiple dirs are specified: {:?}", dirs);
+                            exit(1);
                         } else {
                             let event_dir_path = dirs.first().map(|d| PathBuf::from(d).clone());
                             (vec![], event_dir_path)
