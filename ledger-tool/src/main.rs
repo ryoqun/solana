@@ -2393,6 +2393,9 @@ fn main() {
                                     break;
                                 }
                             }
+                            if !e2.is_empty() {
+                                warn!("Some files in the banking trace dir is ignored due to bad file rotation or unrecognized names: {e2:?}");
+                            }
                         }
                     }
 
