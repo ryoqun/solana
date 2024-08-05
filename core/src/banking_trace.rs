@@ -20,6 +20,10 @@ use {
     thiserror::Error,
 };
 
+use solana_sdk::genesis_config::GenesisConfig;
+use std::sync::RwLock;
+use solana_runtime::bank_forks::BankForks;
+
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
@@ -674,8 +678,8 @@ mod tests {
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
     events_file_pathes: Vec<PathBuf>,
-    genesis_config: solana_sdk::genesis_config::GenesisConfig,
-    bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
+    genesis_config: GenesisConfig,
+    bank_forks: Arc<RwLock<BankForks>>,
     blockstore: Arc<solana_ledger::blockstore::Blockstore>,
     block_production_method: crate::validator::BlockProductionMethod,
 }
