@@ -2403,7 +2403,7 @@ fn main() {
                             }
                             event_file_pathes.reverse();
                             if !e2.is_empty() {
-                                warn!("Some files in {event_dir_path} is ignored due to bad file rotation or unrecognized names: {e2:?}");
+                                warn!("Some files in {event_dir_path:?} is ignored due to bad file rotation or unrecognized names: {e2:?}");
                             }
                         } else {
                             eprintln!("Error: failed to open event_dir_path");
