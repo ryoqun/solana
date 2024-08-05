@@ -2342,22 +2342,20 @@ fn main() {
                             None, // transaction status sender
                         );
 
-                    //simulator.seek(bank); => Ok or Err("no BankStart")
                     let block_production_method = value_t!(
                         arg_matches,
                         "block_production_method",
                         BlockProductionMethod
                     )
                     .unwrap_or_default();
-                    info!(
-                        "Using: block-production-method: {}",
-                        block_production_method,
-                    );
+                    info!("Using: block-production-method: {}", block_production_method);
+
                     let event_file_pathes = parse_banking_trace_event_file_paths(
                         arg_matches,
                         blockstore.banking_trace_path(),
                     );
                     info!("Using: event files: {event_file_pathes:?}");
+
                     let simulator = BankingSimulator::new(
                         event_file_pathes,
                         genesis_config,
