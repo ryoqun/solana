@@ -563,8 +563,7 @@ impl BankingSimulator {
             .working_bank_with_scheduler()
             .clone_with_scheduler();
 
-        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) =
-            self.read_event_files();
+        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.read_event_files();
         let bank_slot = bank.slot();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
