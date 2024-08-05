@@ -721,11 +721,7 @@ impl BankingSimulator {
                 events.push(event);
             }
         }
-        for event in &events {
-            let event_time = event.0;
-            let event = &event.1;
-            let datetime: chrono::DateTime<chrono::Utc> = event_time.into();
-
+        for (event_time, event) in &events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
                     packet_batches_by_time.insert(event_time, (label.clone(), batch.clone()));
