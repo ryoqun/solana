@@ -697,7 +697,7 @@ impl BankingSimulator {
         }
     }
 
-    pub fn dump(&self, bank: Option<Arc<solana_runtime::bank::Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>, (usize, usize, usize)) {
+    pub fn dump(&self, bank: Option<Arc<solana_runtime::bank::Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>) {
         use std::io::BufReader;
         use std::fs::File;
         let mut bank_starts_by_slot = std::collections::BTreeMap::new();
@@ -736,53 +736,7 @@ impl BankingSimulator {
             }
         }
 
-        let (reference_time, unprocessed_counts) = if let Some(bank) = &bank {
-            let b = bank_starts_by_slot.range(bank.slot()..).next();
-            info!("found: {:?}", b);
-            let (mut non_vote, mut tpu_vote, mut gossip_vote) = (0, 0, 0);
-            for (id, (_time, count)) in b.map(|b| b.1.clone()).unwrap_or_default().iter() {
-                match id {
-                    0 => gossip_vote += count,
-                    1 => tpu_vote += count,
-                    _ => non_vote += count,
-                }
-            }
-            info!("summed: {:?}", (non_vote, tpu_vote, gossip_vote));
-            (b.map(|(_, s)| s.values().map(|a| a.0).min().unwrap()).unwrap().clone(), (non_vote, tpu_vote, gossip_vote))
-        } else {
-            (packet_batches_by_time.keys().next().unwrap().clone(), Default::default())
-        };
-
-        for event in &events {
-            let event_time = event.0;
-            let event = &event.1;
-            let datetime: chrono::DateTime<chrono::Utc> = event_time.into();
-
-            let delta_label = if event_time < reference_time {
-                format!("-{}us", reference_time.duration_since(event_time).unwrap().as_micros())
-            } else {
-                format!("+{}us", event_time.duration_since(reference_time).unwrap().as_micros())
-            };
-
-            match &event {
-                TracedEvent::PacketBatch(_label, batch) => {
-                    let sum = batch.0.iter().map(|v| v.len()).sum::<usize>();
-                    packet_count += sum;
-                    let st_label = if let Some(bank) = &bank {
-                        let st = crate::banking_stage::packet_deserializer::PacketDeserializer::deserialize_and_collect_packets(0, &[batch.clone()], false, |p| Ok(p)).deserialized_packets.iter().filter_map(|ip| ip.build_sanitized_transaction(false, bank.as_ref(), bank.get_reserved_account_keys())).filter_map(|s| bank.check_age_tx(&s).ok()).count();
-                        format!("({})", st)
-                    } else {
-                        "".into()
-                    };
-                    trace!("event parsed: {delta_label} {}: <{}: {}{} = {:?}> {:?}", datetime.format("%Y-%m-%d %H:%M:%S.%f"), packet_count, sum, st_label, &batch.0.iter().map(|v| v.len()).collect::<Vec<_>>(), &event);
-                }
-                _ => {
-                    trace!("event parsed: {delta_label} {}: {:?}", datetime.format("%Y-%m-%d %H:%M:%S.%f"), &event);
-                }
-            }
-        }
-
-        (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot, unprocessed_counts)
+        (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot)
     }
 
     pub fn start(
@@ -801,11 +755,7 @@ impl BankingSimulator {
 
         let mut bank = self.bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
 
-        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot, unprocessed_counts) = self.dump(Some(bank.clone_without_scheduler()));
-        if std::env::var("DUMP_WITH_BANK").is_ok() {
-            return
-        }
-
+        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.dump(Some(bank.clone_without_scheduler()));
         let bank_slot = bank.slot();
 
 
@@ -912,57 +862,6 @@ impl BankingSimulator {
             shred_version,
             sender,
         );
-
-
-        /*
-        let (mut non_vote_tx_count, mut tpu_vote_tx_count, mut gossip_vote_tx_count) = (0, 0, 0);
-        if let Some((most_recent_past_leader_slot, starts)) = bank_starts_by_slot.range(bank_slot..).next() {
-            let start = starts.values().map(|a| a.0).min().unwrap();
-            let mut batches_with_label = vec![];
-            for (&time, ref value)  in packet_batches_by_time.range(..start).rev() {
-                let (label, batch) = &value;
-
-                match label {
-                    ChannelLabel::NonVote => {
-                        batches_with_label.push((ChannelLabel::NonVote, batch.clone()));
-                        non_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
-                    }
-                    ChannelLabel::TpuVote => {
-                        batches_with_label.push((ChannelLabel::TpuVote, batch.clone()));
-                        tpu_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
-                    }
-                    ChannelLabel::GossipVote => {
-                        batches_with_label.push((ChannelLabel::GossipVote, batch.clone()));
-                        gossip_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
-                    }
-                    ChannelLabel::Dummy => unreachable!(),
-                }
-
-                if non_vote_tx_count >= unprocessed_counts.0 &&
-                    tpu_vote_tx_count >= unprocessed_counts.1 &&
-                    gossip_vote_tx_count >= unprocessed_counts.2  {
-                        break;
-                }
-            }
-            for (label, batch) in batches_with_label.iter().rev() {
-                match label {
-                    ChannelLabel::NonVote => {
-                        non_vote_sender.send(batch.clone()).unwrap();
-                    }
-                    ChannelLabel::TpuVote => {
-                        tpu_vote_sender.send(batch.clone()).unwrap();
-                    }
-                    ChannelLabel::GossipVote => {
-                        gossip_vote_sender.send(batch.clone()).unwrap();
-                    }
-                    ChannelLabel::Dummy => unreachable!(),
-                }
-            }
-            info!("finished buffered sending...(non_vote: {}, tpu_vote: {}, gossip_vote: {})", non_vote_tx_count, tpu_vote_tx_count, gossip_vote_tx_count);
-        };
-        */
-
-
 
         let sender_thread = std::thread::spawn( { let exit = exit.clone(); move || {
             let (adjusted_reference, range_iter) = if let Some((most_recent_past_leader_slot, starts)) = bank_starts_by_slot.range(bank_slot..).next() {
