@@ -2400,6 +2400,7 @@ fn main() {
                                     break;
                                 }
                             }
+                            event_file_pathes.rev();
                             if !e2.is_empty() {
                                 warn!("Some files in the banking trace dir is ignored due to bad file rotation or unrecognized names: {e2:?}");
                             }
