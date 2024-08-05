@@ -23,6 +23,8 @@ use {
 use solana_sdk::genesis_config::GenesisConfig;
 use std::sync::RwLock;
 use solana_runtime::bank_forks::BankForks;
+use solana_ledger::blockstore::Blockstore;
+use crate::validator::BlockProductionMethod;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -680,8 +682,8 @@ pub struct BankingSimulator {
     events_file_pathes: Vec<PathBuf>,
     genesis_config: GenesisConfig,
     bank_forks: Arc<RwLock<BankForks>>,
-    blockstore: Arc<solana_ledger::blockstore::Blockstore>,
-    block_production_method: crate::validator::BlockProductionMethod,
+    blockstore: Arc<Blockstore>,
+    block_production_method: BlockProductionMethod,
 }
 
 impl BankingSimulator {
