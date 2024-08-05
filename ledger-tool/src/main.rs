@@ -2376,7 +2376,7 @@ fn main() {
                     };
                     if let Some(event_dir_path) = event_dir_path {
                         if let Ok(entries) = std::fs::read_dir(event_dir_path) {
-                            let e2 = entries.collect::<HashSet<usize>>();
+                            let e2 = entries.flat_map(|r| r.ok()).collect::<HashSet<usize>>();
                         }
                     }
 
