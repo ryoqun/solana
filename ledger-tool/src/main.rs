@@ -2372,7 +2372,7 @@ fn main() {
                         }
                         (event_pathes, dirs.first().map(|d| PathBuf::from(d)))
                     } else {
-                        (vec![], Some(blockstore.banking_trace_path())
+                        (vec![], Some(blockstore.banking_trace_path()))
                     };
                     if let Some(event_dir_path) = event_dir_path {
                         if let Ok(entries) = std::fs::read_dir(event_dir_path) {
