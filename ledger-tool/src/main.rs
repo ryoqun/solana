@@ -2389,6 +2389,7 @@ fn main() {
                     };
                     if let Some(event_dir_path) = event_dir_path {
                         assert!(event_file_pathes.is_empty());
+                        info!("Using: banking trace events dir: {event_dir_path:?}");
 
                         if let Ok(entries) = std::fs::read_dir(&event_dir_path) {
                             let mut e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
@@ -2402,7 +2403,7 @@ fn main() {
                             }
                             event_file_pathes.reverse();
                             if !e2.is_empty() {
-                                warn!("Some files in the banking trace dir is ignored due to bad file rotation or unrecognized names: {e2:?}");
+                                warn!("Some files in {event_dir_path} is ignored due to bad file rotation or unrecognized names: {e2:?}");
                             }
                         } else {
                             eprintln!("Error: failed to open event_dir_path");
