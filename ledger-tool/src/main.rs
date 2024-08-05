@@ -2370,8 +2370,12 @@ fn main() {
                             eprintln!("Error: multiple dirs are specified: {:?}", dirs);
                             exit(1);
                         }
-                        let event_dir_path = dirs.first().map(|d| PathBuf::from(d).clone());
-                        (event_pathes, event_dir_path)
+                        if dirs.len() == 0 {
+                            (event_pathes, None)
+                        } else {
+                            let event_dir_path = dirs.first().map(|d| PathBuf::from(d).clone());
+                            (vec![], event_dir_path)
+                        }
                     } else {
                         (vec![], Some(blockstore.banking_trace_path()))
                     };
