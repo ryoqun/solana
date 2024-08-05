@@ -1,6 +1,7 @@
 use {
     crate::LEDGER_TOOL_DIRECTORY,
     clap::{value_t, value_t_or_exit, values_t, values_t_or_exit, Arg, ArgMatches},
+    log::{info, warn},
     solana_accounts_db::{
         accounts_db::{AccountsDb, AccountsDbConfig, CreateAncientStorage},
         accounts_file::StorageAccess,
@@ -13,6 +14,7 @@ use {
         input_parsers::pubkeys_of,
         input_validators::{is_parsable, is_pow2},
     },
+    solana_core::banking_trace::BankingSimulator,
     solana_ledger::{
         blockstore_processor::ProcessOptions,
         use_snapshot_archives_at_startup::{self, UseSnapshotArchivesAtStartup},
@@ -21,15 +23,12 @@ use {
     solana_sdk::clock::Slot,
     std::{
         collections::HashSet,
+        ffi::OsString,
         path::{Path, PathBuf},
+        process::exit,
         sync::Arc,
     },
 };
-use std::process::exit;
-use std::ffi::OsString;
-use solana_core::banking_trace::BankingSimulator;
-use log::warn;
-use log::info;
 
 /// Returns the arguments that configure AccountsDb
 pub fn accounts_db_args<'a, 'b>() -> Box<[Arg<'a, 'b>]> {
@@ -340,7 +339,10 @@ pub fn hardforks_of(matches: &ArgMatches<'_>, name: &str) -> Option<Vec<Slot>> {
     }
 }
 
-pub(crate) fn parse_banking_trace_event_file_paths(arg_matches: &ArgMatches<'_>, banking_trace_path: PathBuf) -> Vec<PathBuf> {
+pub(crate) fn parse_banking_trace_event_file_paths(
+    arg_matches: &ArgMatches<'_>,
+    banking_trace_path: PathBuf,
+) -> Vec<PathBuf> {
     let event_pathes = if arg_matches.is_present("banking_trace_events") {
         warn!("Supressing to use the default banking trace dir ({banking_trace_path:?}) due to --banking-trace-events(s)");
         Some(values_t_or_exit!(
@@ -351,9 +353,7 @@ pub(crate) fn parse_banking_trace_event_file_paths(arg_matches: &ArgMatches<'_>,
     } else {
         None
     };
-    let (mut event_file_pathes, event_dir_path) = if let Some(event_pathes) =
-        event_pathes
-    {
+    let (mut event_file_pathes, event_dir_path) = if let Some(event_pathes) = event_pathes {
         let dirs = event_pathes
             .iter()
             .filter(|event_path| std::path::Path::new(&event_path).is_dir())
