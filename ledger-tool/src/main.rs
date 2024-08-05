@@ -2354,6 +2354,7 @@ fn main() {
                         block_production_method,
                     );
                     let event_file_pathes = parse_banking_trace_event_file_paths(
+                        arg_matches,
                         blockstore.banking_trace_path(),
                     );
                     info!("Using: event files: {event_file_pathes:?}");
