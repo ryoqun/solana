@@ -704,7 +704,6 @@ impl BankingSimulator {
         let mut packet_batches_by_time = std::collections::BTreeMap::new();
         let mut hashes_by_slot = std::collections::HashMap::new();
 
-        let mut packet_count = 0;
         let mut events = vec![];
 
         for events_file_path in &self.events_file_pathes {
