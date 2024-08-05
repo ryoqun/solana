@@ -43,7 +43,7 @@ use solana_poh::poh_recorder::PohRecorder;
 use std::net::UdpSocket;
 use solana_turbine::broadcast_stage::BroadcastStageType;
 use solana_runtime::prioritization_fee_cache::PrioritizationFeeCache;
-
+use solana_runtime::bank::NewBankOptions;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -963,14 +963,13 @@ impl BankingSimulator {
             bank.clear_signatures();
         }
 
-        use solana_sdk::hash::Hash;
         for i in 0..5000 {
             let slot = poh_recorder.read().unwrap().slot();
             info!("poh: {}, {}", i, slot);
             if slot >= simulated_slot {
                 break;
             }
-            sleep(std::time::Duration::from_millis(10));
+            sleep(Duration::from_millis(10));
         }
 
         for _ in 0..500 {
@@ -980,7 +979,6 @@ impl BankingSimulator {
                     .unwrap()
                     .reset(bank.clone_without_scheduler(), Some((bank.slot(), bank.slot() + 1)));
                 info!("Bank::new_from_parent()!");
-                use solana_runtime::bank::NewBankOptions;
 
                 let old_slot = bank.slot();
                 bank.freeze_with_bank_hash_override(hashes_by_slot.get(&old_slot).map(|hh| hh.1));
@@ -1015,10 +1013,10 @@ impl BankingSimulator {
                 bank.clear_signatures();
             }
 
-            sleep(std::time::Duration::from_millis(10));
+            sleep(Duration::from_millis(10));
         }
         info!("sleeping just before exit...");
-        sleep(std::time::Duration::from_millis(30_000));
+        sleep(Duration::from_millis(30_000));
         exit.store(true, Ordering::Relaxed);
         // the order is important. dropping sender_thread will terminate banking_stage, in turn
         // banking_retracer thread
