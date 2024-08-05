@@ -1130,4 +1130,12 @@ impl BankingSimulator {
         drop(retransmit_slots_sender);
         broadcast_stage.join().unwrap();
     }
+
+    pub fn events_basename(index: usize) -> String {
+        if index == 0 {
+            BASENAME.to_string()
+        } else {
+            format!("{BASENAME}.{index}")
+        }
+    }
 }
