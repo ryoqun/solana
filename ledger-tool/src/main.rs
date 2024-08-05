@@ -2357,10 +2357,19 @@ fn main() {
                         block_production_method,
                     );
                     let event_pathes = if arg_matches.is_present("banking_trace_events") {
+                        warn!("Supressing to use the default banking trace dir () due to specified `--banking_trace_events`(s)");
                         Some(values_t_or_exit!(matches, "banking_trace_events", String))
                     } else {
                         None
                     };
+                    let event_dir_path = if let Some(event_pathes) {
+                        for event_path in event_pathes {
+                            std::path::Path::new(event_path).is_dir()
+                        }
+                    } else {
+                        blockstore.banking_tracer_path()
+                    };
+
                     simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
 
                     println!("Ok");
