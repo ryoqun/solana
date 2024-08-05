@@ -340,7 +340,7 @@ pub fn hardforks_of(matches: &ArgMatches<'_>, name: &str) -> Option<Vec<Slot>> {
     }
 }
 
-pub(crate) fn parse_banking_trace_event_file_paths(banking_trace_path: PathBuf) -> Vec<PathBuf> {
+pub(crate) fn parse_banking_trace_event_file_paths(arg_matches: &ArgMatches<'_>, banking_trace_path: PathBuf) -> Vec<PathBuf> {
     let event_pathes = if arg_matches.is_present("banking_trace_events") {
         warn!("Supressing to use the default banking trace dir ({banking_trace_path:?}) due to --banking-trace-events(s)");
         Some(values_t_or_exit!(
