@@ -571,10 +571,7 @@ impl BankingSimulator {
         let simulated_leader = leader_schedule_cache
             .slot_leader_at(simulated_slot, None)
             .unwrap();
-        info!(
-            "simulated leader and slot: {}, {}",
-            simulated_leader, simulated_slot
-        );
+        info!("simulated leader and slot: {simulated_leader}, {simulated_slot}");
         let start_bank = self.bank_forks.read().unwrap().root_bank();
 
         let (exit, poh_recorder, poh_service, entry_receiver) = {
