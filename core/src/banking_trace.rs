@@ -25,6 +25,10 @@ use std::sync::RwLock;
 use solana_runtime::bank_forks::BankForks;
 use solana_ledger::blockstore::Blockstore;
 use crate::validator::BlockProductionMethod;
+use solana_runtime::bank::Bank;
+use std::io::BufReader;
+use std::fs::File;
+use std::collections::{BTreeMap, HashMap};
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -689,10 +693,10 @@ pub struct BankingSimulator {
 impl BankingSimulator {
     pub fn new(
         events_file_pathes: Vec<PathBuf>,
-        genesis_config: solana_sdk::genesis_config::GenesisConfig,
-        bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
-        blockstore: Arc<solana_ledger::blockstore::Blockstore>,
-        block_production_method: crate::validator::BlockProductionMethod,
+        genesis_config: GenesisConfig,
+        bank_forks: Arc<RwLock<BankForks>>,
+        blockstore: Arc<Blockstore>,
+        block_production_method: BlockProductionMethod,
     ) -> Self {
         Self {
             events_file_pathes,
@@ -703,12 +707,10 @@ impl BankingSimulator {
         }
     }
 
-    pub fn dump(&self, bank: Option<Arc<solana_runtime::bank::Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>) {
-        use std::io::BufReader;
-        use std::fs::File;
-        let mut bank_starts_by_slot = std::collections::BTreeMap::new();
-        let mut packet_batches_by_time = std::collections::BTreeMap::new();
-        let mut hashes_by_slot = std::collections::HashMap::new();
+    pub fn dump(&self, bank: Option<Arc<Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>) {
+        let mut bank_starts_by_slot = BTreeMap::new();
+        let mut packet_batches_by_time = BTreeMap::new();
+        let mut hashes_by_slot = HashMap::new();
 
         let mut events = vec![];
 
@@ -750,7 +752,7 @@ impl BankingSimulator {
             crate::banking_stage::{BankingStage, NUM_THREADS}, log::*,
             solana_client::connection_cache::ConnectionCache, solana_gossip::cluster_info::Node,
             solana_ledger::leader_schedule_cache::LeaderScheduleCache,
-            solana_poh::poh_recorder::create_test_recorder, solana_runtime::bank::Bank,
+            solana_poh::poh_recorder::create_test_recorder, Bank,
             solana_sdk::signature::Keypair, solana_streamer::socket::SocketAddrSpace,
             //solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
         };
