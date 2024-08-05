@@ -700,7 +700,6 @@ impl BankingSimulator {
     pub fn dump(&self, bank: Option<Arc<solana_runtime::bank::Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>, (usize, usize, usize)) {
         use std::io::BufReader;
         use std::fs::File;
-        let mut stream = BufReader::new(File::open(&self.events_file_pathes.first().unwrap()).unwrap());
         let mut bank_starts_by_slot = std::collections::BTreeMap::new();
         let mut packet_batches_by_time = std::collections::BTreeMap::new();
         let mut hashes_by_slot = std::collections::HashMap::new();
@@ -708,10 +707,13 @@ impl BankingSimulator {
         let mut packet_count = 0;
         let mut events = vec![];
 
+        let events_file_path = &self.events_file_pathes.first().unwrap();
+        info!("Reading events from {events_file_path:?}");
+        let mut stream = BufReader::new(File::open(events_file_path).unwrap());
         loop {
             let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
             let Ok(event) = d else {
-                info!("deserialize error: {:?}", &d);
+                info!("deserialize error after {} events: {:?}", events.len(), &d);
                 break;
             };
             events.push(event);
