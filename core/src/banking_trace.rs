@@ -833,7 +833,7 @@ impl BankingSimulator {
                 start_bank.ticks_per_slot(),
                 false,
                 self.blockstore.clone(),
-                blockstore.get_new_shred_signal(0),
+                self.blockstore.get_new_shred_signal(0),
                 &leader_schedule_cache,
                 &self.genesis_config.poh_config,
                 None,
@@ -842,7 +842,7 @@ impl BankingSimulator {
             let r = Arc::new(RwLock::new(r));
             let s = PohService::new(
                 r.clone(),
-                &genesis_config.poh_config,
+                &self.genesis_config.poh_config,
                 exit.clone(),
                 start_bank.ticks_per_slot(),
                 solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE + 4,
@@ -853,7 +853,7 @@ impl BankingSimulator {
         };
         let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
             start_bank.ticks_per_slot(),
-            genesis_config.poh_config.target_tick_duration.as_nanos() as u64,
+            self.genesis_config.poh_config.target_tick_duration.as_nanos() as u64,
         ) * start_bank.ticks_per_slot();
         let warmup_duration = std::time::Duration::from_nanos((simulated_slot - (start_bank.slot() + skipped_slot_offset)) * target_ns_per_slot);
         // if slot is too short => bail
