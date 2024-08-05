@@ -2380,7 +2380,7 @@ fn main() {
                     };
                     if let Some(event_dir_path) = event_dir_path {
                         if let Ok(entries) = std::fs::read_dir(event_dir_path) {
-                            let e2 = entries.flat_map(|r| r.ok().map(|r| r.path())).collect::<HashSet<PathBuf>>();
+                            let e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
                             for file_path in (0..).map(|index| BankingSimulator::events_basename(index)) {
                             }
                         }
