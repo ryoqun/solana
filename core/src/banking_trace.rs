@@ -798,7 +798,7 @@ impl BankingSimulator {
         use solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE;
 
 
-        let mut bank = bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
+        let mut bank = self.bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
 
         let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot, unprocessed_counts) = self.dump(Some(bank.clone_without_scheduler()));
         if std::env::var("DUMP_WITH_BANK").is_ok() {
@@ -815,7 +815,7 @@ impl BankingSimulator {
         let simulated_slot = start_slot + skipped_slot_offset;
         let simulated_leader = leader_schedule_cache.slot_leader_at(simulated_slot, None).unwrap();
         info!("simulated leader and slot: {}, {}", simulated_leader, simulated_slot);
-        let start_bank = bank_forks.read().unwrap().root_bank();
+        let start_bank = self.bank_forks.read().unwrap().root_bank();
 
         let (exit, poh_recorder, poh_service, entry_receiver) = {
             use std::sync::RwLock;
@@ -832,10 +832,10 @@ impl BankingSimulator {
                 Some((simulated_slot, simulated_slot + 4)),
                 start_bank.ticks_per_slot(),
                 false,
-                blockstore.clone(),
+                self.blockstore.clone(),
                 blockstore.get_new_shred_signal(0),
                 &leader_schedule_cache,
-                &genesis_config.poh_config,
+                &self.genesis_config.poh_config,
                 None,
                 exit.clone(),
             );
