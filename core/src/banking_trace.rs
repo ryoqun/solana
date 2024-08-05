@@ -674,12 +674,26 @@ mod tests {
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
     events_file_pathes: Vec<PathBuf>,
+    genesis_config: solana_sdk::genesis_config::GenesisConfig,
+    bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
+    blockstore: Arc<solana_ledger::blockstore::Blockstore>,
+    block_production_method: crate::validator::BlockProductionMethod,
 }
 
 impl BankingSimulator {
-    pub fn new(events_file_pathes: Vec<PathBuf>) -> Self {
+    pub fn new(
+        events_file_pathes: Vec<PathBuf>,
+        genesis_config: solana_sdk::genesis_config::GenesisConfig,
+        bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
+        blockstore: Arc<solana_ledger::blockstore::Blockstore>,
+        block_production_method: crate::validator::BlockProductionMethod,
+    ) -> Self {
         Self {
             events_file_pathes,
+            genesis_config,
+            bank_forks,
+            blockstore,
+            block_production_method,
         }
     }
 
@@ -770,12 +784,8 @@ impl BankingSimulator {
         (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot, unprocessed_counts)
     }
 
-    pub fn simulate(
+    pub fn start(
         &self,
-        genesis_config: &solana_sdk::genesis_config::GenesisConfig,
-        bank_forks: Arc<std::sync::RwLock<solana_runtime::bank_forks::BankForks>>,
-        blockstore: Arc<solana_ledger::blockstore::Blockstore>,
-        block_production_method: crate::validator::BlockProductionMethod,
     ) {
         use {
             crate::banking_stage::{BankingStage, NUM_THREADS}, log::*,
