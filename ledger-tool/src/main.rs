@@ -2369,6 +2369,8 @@ fn main() {
                         ).collect::<Vec<_>>();
 
                         if dirs.is_empty() {
+                            // All of event_pathes items can be regarded as specifying individual
+                            // event files.
                             (event_pathes, None)
                         } else if dirs.len() == 1 {
                             let event_dir_path = dirs.first().map(|d| PathBuf::from(d).clone());
