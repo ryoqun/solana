@@ -1219,7 +1219,7 @@ fn main() {
                         .value_name("DIR_OR_FILE")
                         .takes_value(true)
                         .multiple(true)
-                        .help("Use events files in the supplied dir or supplied event files"),
+                        .help("Use events files in the dir or individual event files"),
                 )
         )
         .subcommand(
