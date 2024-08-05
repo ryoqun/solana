@@ -2362,17 +2362,17 @@ fn main() {
                     } else {
                         None
                     };
-                    let event_dir_path = if let Some(event_pathes) = event_pathes {
-                        let dirs = event_pathes.into_iter().filter( |event_path|
+                    let (event_file_pathes, event_dir_path) = if let Some(event_pathes) = event_pathes {
+                        let dirs = event_pathes.iter().filter( |event_path|
                             std::path::Path::new(&event_path).is_dir()
                         ).collect::<Vec<_>>();
                         if dirs.len() > 1 {
                             eprintln!("Error: multiple dirs are specified: {:?}", dirs);
                             exit(1);
                         }
-                        dirs.first().map(|d| PathBuf::from(d))
+                        (event_pathes, dirs.first().map(|d| PathBuf::from(d)))
                     } else {
-                        Some(blockstore.banking_trace_path())
+                        (vec![], Some(blockstore.banking_trace_path())
                     };
                     if let Some(event_dir_path) = event_dir_path {
                         if let Ok(entries) = std::fs::read_dir(event_dir_path) {
