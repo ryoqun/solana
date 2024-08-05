@@ -860,7 +860,7 @@ impl BankingSimulator {
         info!("warmup_duration: {:?}", warmup_duration);
 
         let (banking_retracer, retracer_thread) = BankingTracer::new(Some((
-            &blockstore.banking_retracer_path(),
+            &self.blockstore.banking_retracer_path(),
             exit.clone(),
             BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT,
         ))).unwrap();
@@ -888,7 +888,7 @@ impl BankingSimulator {
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
         let shred_version = solana_sdk::shred_version::compute_shred_version(
-            &genesis_config.hash(),
+            &self.genesis_config.hash(),
             Some(
                 &bank_forks
                     .read()
