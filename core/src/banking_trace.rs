@@ -887,46 +887,43 @@ impl BankingSimulator {
             let (mut non_vote_tx_count, mut tpu_vote_tx_count, mut gossip_vote_tx_count) = (0, 0, 0);
 
             let reference_time= adjusted_reference.map(|b| b.2.clone()).unwrap_or_else(|| std::time::SystemTime::now());
-            let burst = std::env::var("BURST").is_ok();
 
-            //loop {
-                info!("start sending!...");
-                let simulation_time = std::time::SystemTime::now();
-                for (&time, ref value) in range_iter.clone() {
-                    let (label, batch) = &value;
-                    debug!("sent {:?} {} batches", label, batch.0.len());
+            info!("start sending!...");
+            let simulation_time = std::time::SystemTime::now();
+            for (&time, ref value) in range_iter.clone() {
+                let (label, batch) = &value;
+                debug!("sent {:?} {} batches", label, batch.0.len());
 
-                    if !burst && time > reference_time {
-                        let target_duration = time.duration_since(reference_time).unwrap();
-                        // cache last simulation_time!
-                        while simulation_time.elapsed().unwrap() < target_duration {
-                        }
-                    }
-
-                    match label {
-                        ChannelLabel::NonVote => {
-                            non_vote_sender.send(batch.clone()).unwrap();
-                            non_vote_count += batch.0.len();
-                            non_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
-                        }
-                        ChannelLabel::TpuVote => {
-                            tpu_vote_sender.send(batch.clone()).unwrap();
-                            tpu_vote_count += batch.0.len();
-                            tpu_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
-                        }
-                        ChannelLabel::GossipVote => {
-                            gossip_vote_sender.send(batch.clone()).unwrap();
-                            gossip_vote_count += batch.0.len();
-                            gossip_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
-                        }
-                        ChannelLabel::Dummy => unreachable!(),
-                    }
-
-                    if exit.load(Ordering::Relaxed) {
-                        break
+                if time > reference_time {
+                    let target_duration = time.duration_since(reference_time).unwrap();
+                    // cache last simulation_time!
+                    while simulation_time.elapsed().unwrap() < target_duration {
                     }
                 }
-            //}
+
+                match label {
+                    ChannelLabel::NonVote => {
+                        non_vote_sender.send(batch.clone()).unwrap();
+                        non_vote_count += batch.0.len();
+                        non_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
+                    }
+                    ChannelLabel::TpuVote => {
+                        tpu_vote_sender.send(batch.clone()).unwrap();
+                        tpu_vote_count += batch.0.len();
+                        tpu_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
+                    }
+                    ChannelLabel::GossipVote => {
+                        gossip_vote_sender.send(batch.clone()).unwrap();
+                        gossip_vote_count += batch.0.len();
+                        gossip_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
+                    }
+                    ChannelLabel::Dummy => unreachable!(),
+                }
+
+                if exit.load(Ordering::Relaxed) {
+                    break
+                }
+            }
             info!("finished sending...(non_vote: {}({}), tpu_vote: {}({}), gossip_vote: {}({}))", non_vote_count, non_vote_tx_count, tpu_vote_count, tpu_vote_tx_count, gossip_vote_count, gossip_vote_tx_count);
             // hold these senders in join_handle to control banking stage termination!
             (non_vote_sender, tpu_vote_sender, gossip_vote_sender)
@@ -951,19 +948,6 @@ impl BankingSimulator {
             pfc,
             false,
         );
-
-        let clear_sigs = std::env::var("CLEAR_SIGS").is_ok();
-        if clear_sigs {
-            warn!("will clear sigs as requested....");
-        }
-        if std::env::var("SKIP_CHECK_AGE").is_ok() {
-            warn!("skipping check age as requested....");
-            bank.skip_check_age();
-        }
-
-        if clear_sigs {
-            bank.clear_signatures();
-        }
 
         for i in 0..5000 {
             let slot = poh_recorder.read().unwrap().slot();
