@@ -2398,6 +2398,7 @@ fn main() {
                             }
                         }
                     }
+                    info!("Using following event files: {event_file_pathes}");
 
                     simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
 
