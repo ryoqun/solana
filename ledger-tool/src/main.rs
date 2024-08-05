@@ -2380,9 +2380,16 @@ fn main() {
                             exit(1);
                         }
                     } else {
-                        (vec![], Some(blockstore.banking_trace_path()))
+                        let banking_trace_path = blockstore.banking_trace_path();
+                        if !banking_trace_path.exists() {
+                            eprintln!("Error: ledger doesn't have the banking trace dir: ${banking_trace_path:?}");
+                            exit(1);
+                        }
+                        (vec![], Some(banking_trace_path))
                     };
                     if let Some(event_dir_path) = event_dir_path {
+                        assert!(event_file_pathes.is_empty());
+
                         if let Ok(entries) = std::fs::read_dir(&event_dir_path) {
                             let mut e2 = entries.flat_map(|r| r.ok().map(|r| r.file_name())).collect::<HashSet<OsString>>();
                             for events_file_name in (0..).map(|index| BankingSimulator::events_file_name(index)) {
@@ -2396,9 +2403,12 @@ fn main() {
                             if !e2.is_empty() {
                                 warn!("Some files in the banking trace dir is ignored due to bad file rotation or unrecognized names: {e2:?}");
                             }
+                        } else {
+                            eprintln!("Error: failed to open event_dir_path");
+                            exit(1);
                         }
                     }
-                    info!("Using following event files: {event_file_pathes:?}");
+                    info!("Using: event files: {event_file_pathes:?}");
 
                     simulator.simulate(&genesis_config, bank_forks, blockstore, block_production_method);
 
