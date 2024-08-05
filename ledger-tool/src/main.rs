@@ -2360,7 +2360,7 @@ fn main() {
                     let banking_trace_path = blockstore.banking_trace_path();
                     let event_pathes = if arg_matches.is_present("banking_trace_events") {
                         warn!("Supressing to use the default banking trace dir ({banking_trace_path:?}) due to specified --banking-trace-events(s)");
-                        Some(values_t_or_exit!(matches, "banking_trace_events", String)
+                        Some(values_t_or_exit!(matches, "banking_trace_events", String).into_iter()
                             .map(|b| b.into_iter().map(PathBuf::from).collect())
                             )
                     } else {
