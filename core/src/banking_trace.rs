@@ -184,7 +184,7 @@ impl BankingTracer {
     ) -> Result<(Arc<Self>, TracerThread), TraceError> {
         match maybe_config {
             None => Ok((Self::new_disabled(), None)),
-            Some((path, exit, dir_byte_limit)) => {
+            Some((events_dir_path, exit, dir_byte_limit)) => {
                 let rotate_threshold_size = dir_byte_limit / TRACE_FILE_ROTATE_COUNT;
                 if rotate_threshold_size == 0 {
                     return Err(TraceError::TooSmallDirByteLimit(
@@ -195,7 +195,7 @@ impl BankingTracer {
 
                 let (trace_sender, trace_receiver) = unbounded();
 
-                let file_appender = Self::create_file_appender(path, rotate_threshold_size)?;
+                let file_appender = Self::create_file_appender(events_dir_path, rotate_threshold_size)?;
 
                 let tracer_thread =
                     Self::spawn_background_thread(trace_receiver, file_appender, exit.clone())?;
@@ -673,13 +673,13 @@ mod tests {
 // simulated block and root block. As soon as warm up is initiated, we invoke
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
-    path: PathBuf,
+    path: Vec<PathBuf>,
 }
 
 impl BankingSimulator {
-    pub fn new(path: PathBuf) -> Self {
+    pub fn new(events_file_pathes: Vec<PathBuf>) -> Self {
         Self {
-            path,
+            events_file_pathes,
         }
     }
 
