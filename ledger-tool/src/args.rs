@@ -407,6 +407,7 @@ fn parse_banking_trace_event_file_paths() -> Vec<PathBuf> {
         }
     }
 
+    event_file_pathes
 }
 
 #[cfg(test)]
