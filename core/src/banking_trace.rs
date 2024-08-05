@@ -1047,7 +1047,7 @@ impl BankingSimulator {
             replay_vote_sender,
             None,
             Arc::new(connection_cache),
-            bank_forks.clone(),
+            self.bank_forks.clone(),
             pfc,
             false,
         );
