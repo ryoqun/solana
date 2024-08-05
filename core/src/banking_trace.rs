@@ -890,7 +890,7 @@ impl BankingSimulator {
         let shred_version = solana_sdk::shred_version::compute_shred_version(
             &self.genesis_config.hash(),
             Some(
-                &bank_forks
+                &self.bank_forks
                     .read()
                     .unwrap()
                     .root_bank()
@@ -906,7 +906,7 @@ impl BankingSimulator {
             entry_receiver,
             retransmit_slots_receiver,
             exit.clone(),
-            blockstore.clone(),
+            self.blockstore.clone(),
             bank_forks.clone(),
             shred_version,
             sender,
