@@ -2348,7 +2348,7 @@ fn main() {
                         BlockProductionMethod
                     )
                     .unwrap_or_default();
-                    info!("Using: block-production-method: {}", block_production_method);
+                    info!("Using: block-production-method: {block_production_method}");
 
                     let event_file_pathes = parse_banking_trace_event_file_paths(
                         arg_matches,
