@@ -1131,7 +1131,7 @@ impl BankingSimulator {
         broadcast_stage.join().unwrap();
     }
 
-    pub fn events_basename(index: usize) -> String {
+    pub fn events_file_name(index: usize) -> String {
         if index == 0 {
             BASENAME.to_string()
         } else {
