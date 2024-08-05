@@ -389,10 +389,10 @@ pub(crate) fn parse_banking_trace_event_file_paths(
             let mut e2 = entries
                 .flat_map(|r| r.ok().map(|r| r.file_name()))
                 .collect::<HashSet<OsString>>();
-            for events_file_name in (0..).map(BankingSimulator::events_file_name) {
-                let events_file_name: OsString = events_file_name.into();
-                if e2.remove(&events_file_name) {
-                    event_file_pathes.push(event_dir_path.join(events_file_name));
+            for event_file_name in (0..).map(BankingSimulator::event_file_name) {
+                let event_file_name: OsString = event_file_name.into();
+                if e2.remove(&event_file_name) {
+                    event_file_pathes.push(event_dir_path.join(event_file_name));
                 } else {
                     break;
                 }

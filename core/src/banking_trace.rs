@@ -505,7 +505,7 @@ impl BankingSimulator {
         }
     }
 
-    fn read_events_files(
+    fn read_event_files(
         &self,
     ) -> (
         BTreeMap<Slot, HashMap<u32, (SystemTime, usize)>>,
@@ -513,9 +513,9 @@ impl BankingSimulator {
         HashMap<u64, (Hash, Hash)>,
     ) {
         let mut events = vec![];
-        for events_file_path in &self.event_file_pathes {
-            info!("Reading events from {events_file_path:?}");
-            let mut stream = BufReader::new(File::open(events_file_path).unwrap());
+        for event_file_path in &self.event_file_pathes {
+            info!("Reading events from {event_file_path:?}");
+            let mut stream = BufReader::new(File::open(event_file_path).unwrap());
             let old_len = events.len();
 
             loop {
@@ -564,7 +564,7 @@ impl BankingSimulator {
             .clone_with_scheduler();
 
         let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) =
-            self.read_events_files();
+            self.read_event_files();
         let bank_slot = bank.slot();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
@@ -866,7 +866,7 @@ impl BankingSimulator {
         broadcast_stage.join().unwrap();
     }
 
-    pub fn events_file_name(index: usize) -> String {
+    pub fn event_file_name(index: usize) -> String {
         if index == 0 {
             BASENAME.to_string()
         } else {
