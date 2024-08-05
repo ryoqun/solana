@@ -27,6 +27,7 @@ use {
 };
 use std::process::exit;
 use std::ffi::OsString;
+use solana_core::banking_trace::BankingSimulator;
 
 /// Returns the arguments that configure AccountsDb
 pub fn accounts_db_args<'a, 'b>() -> Box<[Arg<'a, 'b>]> {
