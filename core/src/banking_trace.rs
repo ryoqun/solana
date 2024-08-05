@@ -29,6 +29,18 @@ use solana_runtime::bank::Bank;
 use std::io::BufReader;
 use std::fs::File;
 use std::collections::{BTreeMap, HashMap};
+use {
+    crate::banking_stage::{BankingStage, NUM_THREADS}, log::*,
+    solana_client::connection_cache::ConnectionCache, solana_gossip::cluster_info::Node,
+    solana_ledger::leader_schedule_cache::LeaderScheduleCache,
+    solana_poh::poh_recorder::create_test_recorder, Bank,
+    solana_sdk::signature::Keypair, solana_streamer::socket::SocketAddrSpace,
+    //solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
+};
+use solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE;
+use solana_poh::poh_service::PohService;
+use solana_poh::poh_recorder::PohRecorder;
+
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -748,23 +760,10 @@ impl BankingSimulator {
     pub fn start(
         &self,
     ) {
-        use {
-            crate::banking_stage::{BankingStage, NUM_THREADS}, log::*,
-            solana_client::connection_cache::ConnectionCache, solana_gossip::cluster_info::Node,
-            solana_ledger::leader_schedule_cache::LeaderScheduleCache,
-            solana_poh::poh_recorder::create_test_recorder, Bank,
-            solana_sdk::signature::Keypair, solana_streamer::socket::SocketAddrSpace,
-            //solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
-        };
-        use solana_tpu_client::tpu_client::DEFAULT_TPU_CONNECTION_POOL_SIZE;
-
-
         let mut bank = self.bank_forks.read().unwrap().working_bank_with_scheduler().clone_with_scheduler();
 
         let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.dump(Some(bank.clone_without_scheduler()));
         let bank_slot = bank.slot();
-
-
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let skipped_slot_offset = 4;
@@ -775,10 +774,6 @@ impl BankingSimulator {
         let start_bank = self.bank_forks.read().unwrap().root_bank();
 
         let (exit, poh_recorder, poh_service, entry_receiver) = {
-            use std::sync::RwLock;
-            use solana_poh::poh_service::PohService;
-            use solana_poh::poh_recorder::PohRecorder;
-
             let exit = Arc::new(AtomicBool::default());
             //create_test_recorder(&bank, &blockstore, None, Some(leader_schedule_cache));
             info!("poh is starting!");
