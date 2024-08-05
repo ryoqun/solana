@@ -2356,7 +2356,7 @@ fn main() {
                         "Using: block-production-method: {}",
                         block_production_method,
                     );
-                    let event_pathes = if arg_matches.is_present(name) {
+                    let event_pathes = if arg_matches.is_present("banking_trace_events") {
                         Some(values_t_or_exit!(matches, "banking_trace_events", String))
                     } else {
                         None
