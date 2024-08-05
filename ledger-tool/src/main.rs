@@ -2385,7 +2385,7 @@ fn main() {
                             for events_file_name in (0..).map(|index| BankingSimulator::events_file_name(index)) {
                                 let events_file_name: OsString = events_file_name.into();
                                 if e2.remove(&events_file_name) {
-                                    event_file_pathes.push("aa");
+                                    event_file_pathes.push(event_dir_path.join(event_file_name));
                                 } else {
                                     break;
                                 }
