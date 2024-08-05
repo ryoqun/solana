@@ -33,7 +33,7 @@ use {
     crate::banking_stage::{BankingStage, NUM_THREADS}, log::*,
     solana_client::connection_cache::ConnectionCache, solana_gossip::cluster_info::Node,
     solana_ledger::leader_schedule_cache::LeaderScheduleCache,
-    solana_poh::poh_recorder::create_test_recorder, Bank,
+    solana_poh::poh_recorder::create_test_recorder,
     solana_sdk::signature::Keypair, solana_streamer::socket::SocketAddrSpace,
     //solana_tpu_client::tpu_connection_cache::DEFAULT_TPU_CONNECTION_POOL_SIZE,
 };
