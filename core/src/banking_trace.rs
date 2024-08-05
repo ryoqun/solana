@@ -673,7 +673,7 @@ mod tests {
 // simulated block and root block. As soon as warm up is initiated, we invoke
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
-    path: Vec<PathBuf>,
+    events_file_pathes: Vec<PathBuf>,
 }
 
 impl BankingSimulator {
@@ -686,7 +686,7 @@ impl BankingSimulator {
     pub fn dump(&self, bank: Option<Arc<solana_runtime::bank::Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>, (usize, usize, usize)) {
         use std::io::BufReader;
         use std::fs::File;
-        let mut stream = BufReader::new(File::open(&self.path).unwrap());
+        let mut stream = BufReader::new(File::open(&self.events_file_pathes.first().unwrap()).unwrap());
         let mut bank_starts_by_slot = std::collections::BTreeMap::new();
         let mut packet_batches_by_time = std::collections::BTreeMap::new();
         let mut hashes_by_slot = std::collections::HashMap::new();
