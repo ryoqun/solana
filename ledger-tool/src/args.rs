@@ -376,7 +376,7 @@ pub(crate) fn parse_banking_trace_event_file_paths(
         }
     } else {
         if !banking_trace_path.exists() {
-            eprintln!("Error: ledger doesn't have the banking trace dir: ${banking_trace_path:?}");
+            eprintln!("Error: ledger doesn't have the banking trace dir: {banking_trace_path:?}");
             exit(1);
         }
         (vec![], Some(banking_trace_path))

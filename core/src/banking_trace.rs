@@ -13,10 +13,7 @@ use {
     solana_gossip::cluster_info::{ClusterInfo, Node},
     solana_ledger::{blockstore::Blockstore, leader_schedule_cache::LeaderScheduleCache},
     solana_perf::packet::PacketBatch,
-    solana_poh::{
-        poh_recorder::PohRecorder,
-        poh_service::PohService,
-    },
+    solana_poh::{poh_recorder::PohRecorder, poh_service::PohService},
     solana_runtime::{
         bank::{Bank, NewBankOptions},
         bank_forks::BankForks,
