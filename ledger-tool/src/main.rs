@@ -2359,7 +2359,7 @@ fn main() {
                     );
                     let event_pathes = if arg_matches.is_present("banking_trace_events") {
                         warn!("Supressing to use the default banking trace dir () due to specified `--banking_trace_events`(s)");
-                        Some(values_t_or_exit!(matches, "banking_trace_events", String))
+                        Some(values_t_or_exit!(matches, "banking_trace_events", PathBuf))
                     } else {
                         None
                     };
@@ -2367,6 +2367,7 @@ fn main() {
                         let dirs = event_pathes.iter().filter( |event_path|
                             std::path::Path::new(&event_path).is_dir()
                         ).collect::<Vec<_>>();
+
                         if dirs.is_empty() {
                             (event_pathes, None)
                         } else if dirs.len() == 1 {
