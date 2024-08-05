@@ -764,7 +764,7 @@ impl BankingSimulator {
                     bank_starts_by_slot
                         .entry(slot)
                         .and_modify(
-                            |e| {
+                            |e: &mut HashMap<u32, (SystemTime, usize)>| {
                                 e.insert(0, (event_time, 0));
                             },
                         )
