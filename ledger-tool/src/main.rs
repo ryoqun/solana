@@ -2368,12 +2368,12 @@ fn main() {
                         ).collect::<Vec<_>>();
                         if dirs.is_empty() {
                             (event_pathes, None)
-                        } else if dirs.len() > 1 {
-                            eprintln!("Error: multiple dirs are specified: {:?}", dirs);
-                            exit(1);
-                        } else {
+                        } else if dirs.len() == 1 {
                             let event_dir_path = dirs.first().map(|d| PathBuf::from(d).clone());
                             (vec![], event_dir_path)
+                        } else {
+                            eprintln!("Error: multiple dirs are specified: {:?}", dirs);
+                            exit(1);
                         }
                     } else {
                         (vec![], Some(blockstore.banking_trace_path()))
