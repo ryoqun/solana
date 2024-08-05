@@ -99,6 +99,7 @@ use {
 use solana_core::banking_trace::BankingSimulator;
 use solana_ledger::blockstore::PurgeType;
 use solana_core::validator::BlockProductionMethod;
+use std::ffi::OsString;
 
 mod args;
 mod bigtable;
