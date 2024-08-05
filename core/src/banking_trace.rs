@@ -707,13 +707,15 @@ impl BankingSimulator {
         let mut packet_count = 0;
         let mut events = vec![];
 
-        for events_file_path in self.events_file_pathes {
+        for events_file_path in &self.events_file_pathes {
             info!("Reading events from {events_file_path:?}");
             let mut stream = BufReader::new(File::open(events_file_path).unwrap());
+            let old_len = events.len();
+
             loop {
                 let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
                 let Ok(event) = d else {
-                    info!("deserialize error after {} events: {:?}", events.len(), &d);
+                    info!("deserialize error after {} events: {:?}", events.len() - old_len, &d);
                     break;
                 };
                 events.push(event);
