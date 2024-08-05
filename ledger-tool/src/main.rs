@@ -2381,6 +2381,8 @@ fn main() {
                     if let Some(event_dir_path) = event_dir_path {
                         if let Ok(entries) = std::fs::read_dir(event_dir_path) {
                             let e2 = entries.flat_map(|r| r.ok().map(|r| r.path())).collect::<HashSet<PathBuf>>();
+                            for file_path in (0..).map(|index| BankingTracer::events_basename(index)) {
+                            }
                         }
                     }
 
