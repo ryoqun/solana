@@ -707,7 +707,7 @@ impl BankingSimulator {
         }
     }
 
-    pub fn dump(&self, bank: Option<Arc<Bank>>) -> (std::collections::BTreeMap<Slot, std::collections::HashMap<u32, (std::time::SystemTime, usize)>>, std::collections::BTreeMap<std::time::SystemTime, (ChannelLabel, BankingPacketBatch)>, std::collections::HashMap<u64, (solana_sdk::hash::Hash, solana_sdk::hash::Hash)>) {
+    pub fn dump(&self, bank: Option<Arc<Bank>>) -> (BTreeMap<Slot, HashMap<u32, (SystemTime, usize)>>, BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>, HashMap<u64, (Hash, Hash)>) {
         let mut bank_starts_by_slot = BTreeMap::new();
         let mut packet_batches_by_time = BTreeMap::new();
         let mut hashes_by_slot = HashMap::new();
