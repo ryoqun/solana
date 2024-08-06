@@ -2316,13 +2316,13 @@ fn main() {
                     );
 
                     let process_options = parse_process_options(&ledger_path, arg_matches);
+                    let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
 
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
                         arg_matches,
                         AccessType::Primary, // needed for purging already existing simulated block shreds...
                     ));
-                    let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
                     let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
                     let LoadAndProcessLedgerOutput { bank_forks, .. } =
                         load_and_process_ledger_or_exit(
@@ -2349,6 +2349,7 @@ fn main() {
                         bank_forks,
                         blockstore,
                         block_production_method,
+                        first_simulated_slot,
                     );
 
                     match simulator.start() {
