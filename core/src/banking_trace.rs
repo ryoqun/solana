@@ -513,16 +513,26 @@ impl BankingSimulator {
             let old_len = events.len();
 
             loop {
-                let d = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream);
-                let Ok(event) = d else {
-                    info!(
-                        "deserialize error after {} events: {:?}",
-                        events.len() - old_len,
-                        &d
-                    );
-                    break;
-                };
-                events.push(event);
+                match deserialize_from::<_, TimedTracedEvent>(&mut stream) {
+                    Ok(event) => events.push(event),
+                    Err(error) => {
+                        error!(
+                            "deserialize error after {} events: {:?}",
+                            events.len() - old_len,
+                            &d
+                        );
+                        break;
+                    }
+                }
+
+                match stream.fill_buf().map(|b| b.is_empty()) {
+                    Ok(true) => break;
+                    Ok(false) => continue;
+                    Err(err) => {
+                        error!("deserialize error after {} events: {:?}", events.len() - old_len, err);
+                        break;
+                    }
+                }
             }
         }
 
@@ -742,7 +752,7 @@ impl BankingSimulator {
                     }
                 }
                 info!(
-                    "finished sending...(non_vote: {}({}), tpu_vote: {}({}), gossip_vote: {}({}))",
+                    "terminating to send...: non_vote: {} ({}), tpu_vote: {} ({}), gossip_vote: {} ({})",
                     non_vote_count,
                     non_vote_tx_count,
                     tpu_vote_count,
