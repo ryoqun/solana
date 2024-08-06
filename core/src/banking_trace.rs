@@ -699,7 +699,7 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let base_simulation_time = std::time::SystemTime::now();
-                for (&event_time, (label, batch)) in timed_batches_to_send {
+                for (&event_time, (label, (batch, _stats))) in timed_batches_to_send {
                     if event_time > base_event_time {
                         let duration_since_base = event_time.duration_since(base_event_time).unwrap();
                         // cache last base_simulation_time!
