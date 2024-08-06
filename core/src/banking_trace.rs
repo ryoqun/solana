@@ -714,7 +714,7 @@ impl BankingSimulator {
                     };
                     sender.send(batches_with_stats.clone()).unwrap();
 
-                    let batches = batches_with_stats.0;
+                    let batches = &batches_with_stats.0;
                     let (batch_count, tx_count) = (batches.len(), batches.iter().map(|b| b.len()).sum::<usize>());
                     debug!("sent {:?} {} batches ({} txes)", label, batch_count, tx_count);
                     match label {
