@@ -700,32 +700,37 @@ impl BankingSimulator {
                 info!("start sending!...");
                 let simulation_time = std::time::SystemTime::now();
                 for (&time, (label, batch)) in range_iter {
-                    debug!("sent {:?} {} batches", label, batch.0.len());
-
                     if time > reference_time {
                         let target_duration = time.duration_since(reference_time).unwrap();
                         // cache last simulation_time!
                         while simulation_time.elapsed().unwrap() < target_duration {}
                     }
 
+                    let sender = match label {
+                        ChannelLabel::NonVote => non_vote_sender,
+                        ChannelLabel::TpuVote => tpu_vote_sender,
+                        ChannelLabel::GossipVote => gossip_vote_sender,
+                        ChannelLabel::Dummy => unreachable!(),
+                    }
+                    sender.send(batch.clone()).unwrap();
+
+                    let (batch_count, tx_count) = (batch.0.len(), batch.0.iter().map(|b| b.len()).sum::<usize>());
                     match label {
                         ChannelLabel::NonVote => {
-                            non_vote_sender.send(batch.clone()).unwrap();
-                            non_vote_count += batch.0.len();
-                            non_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
+                            non_vote_count += batch_count;
+                            non_vote_tx_count += tx_count;
                         }
                         ChannelLabel::TpuVote => {
-                            tpu_vote_sender.send(batch.clone()).unwrap();
-                            tpu_vote_count += batch.0.len();
-                            tpu_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
+                            tpu_vote_count += batch_count;
+                            tpu_vote_tx_count += tx_count;
                         }
                         ChannelLabel::GossipVote => {
-                            gossip_vote_sender.send(batch.clone()).unwrap();
-                            gossip_vote_count += batch.0.len();
-                            gossip_vote_tx_count += batch.0.iter().map(|b| b.len()).sum::<usize>();
+                            gossip_vote_count += batch_count;
+                            gossip_vote_tx_count += tx_count;
                         }
                         ChannelLabel::Dummy => unreachable!(),
                     }
+                    debug!("sent {:?} {} batches ({} txes)", label, batch_count, tx_count);
 
                     if exit.load(Ordering::Relaxed) {
                         break;
