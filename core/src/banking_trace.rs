@@ -705,7 +705,7 @@ impl BankingSimulator {
                     let batches = &batches_with_stats.0;
                     let (batch_count, tx_count) = (
                         batches.len(),
-                        batches.iter().map(|b| b.len()).sum::<usize>(),
+                        batches.iter().map(|batch| batch.len()).sum::<usize>(),
                     );
                     debug!(
                         "sent {:?} {} batches ({} txes)",
