@@ -490,7 +490,7 @@ pub enum SimulateError {
     IoError(#[from] std::io::Error),
 
     #[error("Deserialization Error: {0}")]
-    SerializeError(#[from] (PathBuf, bincode::Error)),
+    SerializeError(#[from] bincode::Error),
 }
 
 impl BankingSimulator {
@@ -525,7 +525,7 @@ impl BankingSimulator {
             loop {
                 let eof_after_deserialize = deserialize_from::<_, TimedTracedEvent>(&mut stream).and_then(|event| {
                     events.push(event);
-                    Ok(stream.fill_buf().map(|b| b.is_empty())?)
+                    stream.fill_buf().map(|b| b.is_empty()).into()
                 });
 
                 match eof_after_deserialize {
