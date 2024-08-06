@@ -693,11 +693,11 @@ impl BankingSimulator {
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
+
+                info!("start sending!...");
                 let base_event_time = adjusted_reference
                     .map(|b| b.2)
                     .unwrap_or_else(|| std::time::SystemTime::now());
-
-                info!("start sending!...");
                 let base_simulation_time = std::time::SystemTime::now();
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     if event_time > base_event_time {
