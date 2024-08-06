@@ -703,7 +703,7 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let simulation_time = std::time::SystemTime::now();
-                for (&time, ref value) in range_iter.clone() {
+                for (&time, ref value) in range_iter {
                     let (label, batch) = &value;
                     debug!("sent {:?} {} batches", label, batch.0.len());
 
