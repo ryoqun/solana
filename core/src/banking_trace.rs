@@ -688,20 +688,20 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let base_simulation_time = SystemTime::now();
-                let mut current_simulation_time = base_simulation_time;
+                let mut current_duration_since_base = Duration::new();
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
 
                     // Busy loop for most accurate sending timings
                     loop {
-                        let current_duration_since_base = current_simulation_time
-                            .duration_since(base_simulation_time)
-                            .unwrap();
                         if current_duration_since_base > required_duration_since_base {
                             break;
                         }
-                        current_simulation_time = SystemTime::now();
+                        let current_simulation_time = SystemTime::now();
+                        current_duration_since_base = current_simulation_time
+                            .duration_since(base_simulation_time)
+                            .unwrap();
                     }
 
                     let sender = match label {
