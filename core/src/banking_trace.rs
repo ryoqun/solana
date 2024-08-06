@@ -540,7 +540,6 @@ impl BankingSimulator {
     > {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
-            info!("Reading events from {event_file_path:?}");
             let old_len = events.len();
             Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(
@@ -549,6 +548,7 @@ impl BankingSimulator {
                     error
                 );
             })?;
+            info!("Read {} events from {:?}", events.len() - old_len, event_file_path);
         }
 
         let mut packet_batches_by_time = BTreeMap::new();
