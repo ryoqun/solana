@@ -553,6 +553,7 @@ impl BankingSimulator {
             .clone_with_scheduler();
 
         let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files();
+        let timed_hashes_by_slot = Arc::new(timed_hashes_by_slot);
         let bank_slot = bank.slot();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
@@ -655,6 +656,8 @@ impl BankingSimulator {
 
         let sender_thread = thread::spawn({
             let exit = exit.clone();
+            let timed_hashes_by_slot = timed_hashes_by_slot.clone();
+
             move || {
                 let (adjusted_reference, range_iter) =
                     if let Some((most_recent_past_leader_slot, (mut start, _, _))) =
