@@ -28,7 +28,7 @@ use {
     std::{
         collections::{BTreeMap, HashMap},
         fs::{create_dir_all, remove_dir_all, File},
-        io::{self, BufReader, Write},
+        io::{self, BufRead, BufReader, Write},
         net::UdpSocket,
         path::PathBuf,
         sync::{
@@ -40,7 +40,6 @@ use {
     },
     thiserror::Error,
 };
-use std::io::BufRead;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -532,16 +531,23 @@ impl BankingSimulator {
 
     fn read_event_files(
         &self,
-    ) -> Result<(
-        BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-        BTreeMap<Slot, (SystemTime, Hash, Hash)>,
-    ), SimulateError> {
+    ) -> Result<
+        (
+            BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
+            BTreeMap<Slot, (SystemTime, Hash, Hash)>,
+        ),
+        SimulateError,
+    > {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
             info!("Reading events from {event_file_path:?}");
             let old_len = events.len();
             Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
-                error!("Reading {event_file_path:?} failed after {} events: {:?}", events.len() - old_len, error);
+                error!(
+                    "Reading {event_file_path:?} failed after {} events: {:?}",
+                    events.len() - old_len,
+                    error
+                );
             })?;
         }
 
