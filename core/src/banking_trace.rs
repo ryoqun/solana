@@ -658,7 +658,7 @@ impl BankingSimulator {
             let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
             move || {
-                let (slot_before_next_leader_slot, (start, _, _)) =
+                let (slot_before_next_leader_slot, (&start, _, _)) =
                     timed_hashes_by_slot.range(bank_slot..).next().expect("timed hashes");
                 let base_event_time = start - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(start..);
