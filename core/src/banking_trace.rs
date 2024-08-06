@@ -556,6 +556,8 @@ impl BankingSimulator {
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
+                    // Somewhat naively assume that event_times (nanosecond resolution) won't
+                    // collide.
                     let is_new = packet_batches_by_time
                         .insert(event_time, (label, batch))
                         .is_none();
@@ -630,7 +632,7 @@ impl BankingSimulator {
                 .target_tick_duration
                 .as_nanos() as u64,
         ) * start_bank.ticks_per_slot();
-        let warmup_duration = std::time::Duration::from_nanos(
+        let warmup_duration = Duration::from_nanos(
             (simulated_slot - (start_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
         );
         drop(start_bank);
@@ -867,8 +869,7 @@ impl BankingSimulator {
 
             sleep(Duration::from_millis(10));
         }
-        info!("sleeping just before exit...");
-        sleep(Duration::from_millis(30_000));
+
         exit.store(true, Ordering::Relaxed);
         // the order is important. consuming sender_thread by joining will terminate banking_stage, in turn
         // banking_retracer thread will termianl
