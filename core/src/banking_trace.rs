@@ -779,7 +779,7 @@ impl BankingSimulator {
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
-                bank.freeze_with_bank_hash_override(hashes_by_slot.get(&old_slot).map(|hh| hh.1));
+                bank.freeze_with_bank_hash_override(timed_hashes_by_slot.get(&old_slot).map(|hh| hh.2));
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
                     bank.slot() + skipped_slot_offset
@@ -799,7 +799,7 @@ impl BankingSimulator {
                     break;
                 }
                 let options = NewBankOptions {
-                    blockhash_override: hashes_by_slot.get(&new_slot).map(|hh| hh.0),
+                    blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|hh| hh.1),
                     ..Default::default()
                 };
                 let new_bank = Bank::new_from_parent_with_options(
