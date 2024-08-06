@@ -510,6 +510,26 @@ impl BankingSimulator {
         }
     }
 
+    fn read_event_file(
+        events: &mut Vec<TimedTracedEvent>,
+        event_file_path: &PathBuf,
+    ) -> Result<(), SimulateError> {
+        let mut stream = BufReader::new(File::open(event_file_path)?);
+
+        loop {
+            let event = deserialize_from::<_, TimedTracedEvent>(&mut stream)?;
+            events.push(event);
+            let buf = stream.fill_buf()?;
+            let eof_after_deserialize = buf.is_empty();
+
+            if eof_after_deserialize {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
     fn read_event_files(
         &self,
     ) -> Result<(
@@ -519,19 +539,10 @@ impl BankingSimulator {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
             info!("Reading events from {event_file_path:?}");
-            let mut stream = BufReader::new(File::open(event_file_path).unwrap());
             let old_len = events.len();
-
-            loop {
-                let event = deserialize_from::<_, TimedTracedEvent>(&mut stream)?;
-                events.push(event);
-                let buf = stream.fill_buf()?;
-                let eof_after_deserialize = buf.is_empty();
-
-                if eof_after_deserialize {
-                    break;
-                }
-            }
+            Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
+                error!("Reading {event_file_path:?} failed after {} events: {:?}", events.len() - old_len, error);
+            })?;
         }
 
         let mut packet_batches_by_time = BTreeMap::new();
