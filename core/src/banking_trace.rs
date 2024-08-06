@@ -40,6 +40,7 @@ use {
     },
     thiserror::Error,
 };
+use std::io::BufRead;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
