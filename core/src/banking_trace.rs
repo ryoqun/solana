@@ -679,7 +679,6 @@ impl BankingSimulator {
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
-
                 info!("start sending!...");
                 let base_simulation_time = SystemTime::now();
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
