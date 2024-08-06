@@ -607,7 +607,7 @@ impl BankingSimulator {
 
         let exit = Arc::new(AtomicBool::default());
 
-        if let Some(end_slot) = blockstore
+        if let Some(end_slot) = self.blockstore
             .slot_meta_iterator(self.first_simulated_slot)
             .unwrap()
             .map(|(s, _)| s)
