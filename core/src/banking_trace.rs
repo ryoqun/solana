@@ -669,7 +669,7 @@ impl BankingSimulator {
                     bank_slot,
                     slot_before_next_leader_slot,
                     {
-                        let start: chrono::DateTime<chrono::Utc> = start.into();
+                        let start: chrono::DateTime<chrono::Utc> = (*start).into();
                         start.format("%Y-%m-%d %H:%M:%S.%f")
                     },
                     warmup_duration,
