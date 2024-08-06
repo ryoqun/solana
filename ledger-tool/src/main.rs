@@ -2363,9 +2363,14 @@ fn main() {
                         blockstore,
                         block_production_method,
                     );
-                    simulator.start()?;
 
-                    println!("Ok");
+                    match simulator.start() {
+                        Ok(()) => println!("Ok"),
+                        Err(error) => {
+                            eprintln!("{error:?}");
+                            exit(1);
+                        }
+                    };
                 }
                 ("accounts", Some(arg_matches)) => {
                     let process_options = parse_process_options(&ledger_path, arg_matches);
