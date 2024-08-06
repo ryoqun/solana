@@ -503,9 +503,8 @@ impl BankingSimulator {
     fn read_event_files(
         &self,
     ) -> (
-        BTreeMap<Slot, HashMap<u32, (SystemTime, usize)>>,
         BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-        HashMap<u64, (Hash, Hash)>,
+        HashMap<Slot, (SystemTime, Hash, Hash)>,
     ) {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
@@ -527,27 +526,22 @@ impl BankingSimulator {
             }
         }
 
-        let mut bank_starts_by_slot = BTreeMap::new();
         let mut packet_batches_by_time = BTreeMap::new();
-        let mut hashes_by_slot = HashMap::new();
+        let mut hashes_by_slot = BTreeMap::new();
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
-                    packet_batches_by_time.insert(event_time, (label, batch));
+                    let is_new = packet_batches_by_time.insert(event_time, (label, batch)).is_none();
+                    assert!(is_new);
                 }
                 TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
-                    hashes_by_slot.insert(slot, (blockhash, bank_hash));
-                    bank_starts_by_slot
-                        .entry(slot)
-                        .and_modify(|e: &mut HashMap<u32, (SystemTime, usize)>| {
-                            e.insert(0, (event_time, 0));
-                        })
-                        .or_insert(HashMap::from([(0, (event_time, 0))]));
+                    let is_new = timed_hashes_by_slot.insert(slot, (event_time, blockhash, bank_hash)).is_none();
+                    assert!(is_new);
                 }
             }
         }
 
-        (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot)
+        (packet_batches_by_time, timed_hashes_by_slot)
     }
 
     pub fn start(self) {
@@ -558,7 +552,7 @@ impl BankingSimulator {
             .working_bank_with_scheduler()
             .clone_with_scheduler();
 
-        let (bank_starts_by_slot, packet_batches_by_time, hashes_by_slot) = self.read_event_files();
+        let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files();
         let bank_slot = bank.slot();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
@@ -663,10 +657,9 @@ impl BankingSimulator {
             let exit = exit.clone();
             move || {
                 let (adjusted_reference, range_iter) =
-                    if let Some((most_recent_past_leader_slot, starts)) =
-                        bank_starts_by_slot.range(bank_slot..).next()
+                    if let Some((most_recent_past_leader_slot, (mut start, _, _))) =
+                        timed_hashes_by_slot.range(bank_slot..).next()
                     {
-                        let mut start = starts.values().map(|a| a.0).min().unwrap();
                         start -= warmup_duration;
 
                         (
