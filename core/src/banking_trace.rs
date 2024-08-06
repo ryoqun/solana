@@ -691,9 +691,13 @@ impl BankingSimulator {
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let expected_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
+
                     // Busy loop for most accurate sending timings
-                    let current_duration_since_base = current_simulation_time.duration_since(base_simulation_time).unwrap();
-                    while current_duration_since_base < expected_duration_since_base {
+                    loop {
+                        let current_duration_since_base = current_simulation_time.duration_since(base_simulation_time).unwrap();
+                        if current_duration_since_base > expected_duration_since_base {
+                            break;
+                        }
                         current_simulation_time = SystemTime::now();
                     }
 
