@@ -573,7 +573,7 @@ impl BankingSimulator {
         Ok((packet_batches_by_time, timed_hashes_by_slot))
     }
 
-    pub fn start(self) {
+    pub fn start(self) -> Result<(), SimulateError> {
         let mut bank = self
             .bank_forks
             .read()
@@ -581,7 +581,7 @@ impl BankingSimulator {
             .working_bank_with_scheduler()
             .clone_with_scheduler();
 
-        let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files().unwrap();
+        let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
         let timed_hashes_by_slot = Arc::new(timed_hashes_by_slot);
         let bank_slot = bank.slot();
 
