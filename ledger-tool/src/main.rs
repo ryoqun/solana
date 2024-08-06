@@ -2363,7 +2363,7 @@ fn main() {
                         blockstore,
                         block_production_method,
                     );
-                    simulator.start();
+                    simulator.start()?;
 
                     println!("Ok");
                 }
