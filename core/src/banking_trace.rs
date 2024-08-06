@@ -523,19 +523,13 @@ impl BankingSimulator {
             let old_len = events.len();
 
             loop {
-                let eof_after_deserialize = deserialize_from::<_, TimedTracedEvent>(&mut stream).and_then(|event| {
-                    events.push(event);
-                    let buf = stream.fill_buf()?;
-                    Ok(buf.is_empty())
-                });
+                let event = deserialize_from::<_, TimedTracedEvent>(&mut stream)?;
+                events.push(event);
+                let buf = stream.fill_buf()?;
+                let eof_after_deserialize = buf.is_empty();
 
-                match eof_after_deserialize {
-                    Ok(true) => break,
-                    Ok(false) => continue,
-                    Err(error) => {
-                        error!("deserialize error after {} events: {:?}", events.len() - old_len, error);
-                        Err(error)?;
-                    }
+                if eof_after_deserialize {
+                    break;
                 }
             }
         }
