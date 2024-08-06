@@ -548,7 +548,11 @@ impl BankingSimulator {
                     error
                 );
             })?;
-            info!("Read {} events from {:?}", events.len() - old_len, event_file_path);
+            info!(
+                "Read {} events from {:?}",
+                events.len() - old_len,
+                event_file_path
+            );
         }
 
         let mut packet_batches_by_time = BTreeMap::new();
