@@ -569,7 +569,7 @@ impl BankingSimulator {
             .working_bank_with_scheduler()
             .clone_with_scheduler();
 
-        let Ok((packet_batches_by_time, timed_hashes_by_slot)) = self.read_event_files();
+        let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files().unwrap();
         let timed_hashes_by_slot = Arc::new(timed_hashes_by_slot);
         let bank_slot = bank.slot();
 
