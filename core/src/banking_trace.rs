@@ -513,7 +513,7 @@ impl BankingSimulator {
             let old_len = events.len();
 
             loop {
-                match deserialize_from::<_, TimedTracedEvent>(&mut stream) {
+                match bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream) {
                     Ok(event) => events.push(event),
                     Err(error) => {
                         error!(
@@ -526,8 +526,8 @@ impl BankingSimulator {
                 }
 
                 match stream.fill_buf().map(|b| b.is_empty()) {
-                    Ok(true) => break;
-                    Ok(false) => continue;
+                    Ok(true) => break,
+                    Ok(false) => continue,
                     Err(err) => {
                         error!("deserialize error after {} events: {:?}", events.len() - old_len, err);
                         break;
