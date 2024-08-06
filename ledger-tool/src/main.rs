@@ -37,7 +37,7 @@ use {
     },
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
     solana_ledger::{
-        blockstore::{create_new_ledger, Blockstore, PurgeType},
+        blockstore::{banking_trace_path, create_new_ledger, Blockstore, PurgeType},
         blockstore_options::{AccessType, LedgerColumnOptions},
         blockstore_processor::{
             ProcessSlotCallback, TransactionStatusMessage, TransactionStatusSender,
@@ -97,7 +97,6 @@ use {
         },
     },
 };
-use solana_ledger::blockstore::banking_trace_path;
 
 mod args;
 mod bigtable;
