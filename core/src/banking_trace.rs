@@ -610,6 +610,7 @@ impl BankingSimulator {
         let warmup_duration = std::time::Duration::from_nanos(
             (simulated_slot - (start_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
         );
+        drop(start_bank);
         // if slot is too short => bail
         info!("warmup_duration: {:?}", warmup_duration);
 
