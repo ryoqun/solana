@@ -531,11 +531,15 @@ impl BankingSimulator {
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
-                    let is_new = packet_batches_by_time.insert(event_time, (label, batch)).is_none();
+                    let is_new = packet_batches_by_time
+                        .insert(event_time, (label, batch))
+                        .is_none();
                     assert!(is_new);
                 }
                 TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
-                    let is_new = timed_hashes_by_slot.insert(slot, (event_time, blockhash, bank_hash)).is_none();
+                    let is_new = timed_hashes_by_slot
+                        .insert(slot, (event_time, blockhash, bank_hash))
+                        .is_none();
                     assert!(is_new);
                 }
             }
@@ -658,8 +662,10 @@ impl BankingSimulator {
             let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
             move || {
-                let (slot_before_next_leader_slot, (start, _, _)) =
-                    timed_hashes_by_slot.range(bank_slot..).next().expect("timed hashes");
+                let (slot_before_next_leader_slot, (start, _, _)) = timed_hashes_by_slot
+                    .range(bank_slot..)
+                    .next()
+                    .expect("timed hashes");
                 let base_event_time = *start - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
@@ -682,7 +688,8 @@ impl BankingSimulator {
                 info!("start sending!...");
                 let base_simulation_time = SystemTime::now();
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
-                    let expected_duration_since_base = event_time.duration_since(base_event_time).unwrap();
+                    let expected_duration_since_base =
+                        event_time.duration_since(base_event_time).unwrap();
                     // cache last base_simulation_time!
                     // Busy loop for most accurate sending timings
                     while base_simulation_time.elapsed().unwrap() < expected_duration_since_base {}
@@ -696,8 +703,14 @@ impl BankingSimulator {
                     sender.send(batches_with_stats.clone()).unwrap();
 
                     let batches = &batches_with_stats.0;
-                    let (batch_count, tx_count) = (batches.len(), batches.iter().map(|b| b.len()).sum::<usize>());
-                    debug!("sent {:?} {} batches ({} txes)", label, batch_count, tx_count);
+                    let (batch_count, tx_count) = (
+                        batches.len(),
+                        batches.iter().map(|b| b.len()).sum::<usize>(),
+                    );
+                    debug!(
+                        "sent {:?} {} batches ({} txes)",
+                        label, batch_count, tx_count
+                    );
                     match label {
                         ChannelLabel::NonVote => {
                             non_vote_count += batch_count;
@@ -769,7 +782,9 @@ impl BankingSimulator {
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
-                bank.freeze_with_bank_hash_override(timed_hashes_by_slot.get(&old_slot).map(|hh| hh.2));
+                bank.freeze_with_bank_hash_override(
+                    timed_hashes_by_slot.get(&old_slot).map(|hh| hh.2),
+                );
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
                     bank.slot() + skipped_slot_offset
