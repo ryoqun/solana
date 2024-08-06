@@ -514,14 +514,15 @@ impl BankingSimulator {
         events: &mut Vec<TimedTracedEvent>,
         event_file_path: &PathBuf,
     ) -> Result<(), SimulateError> {
-        let mut stream = BufReader::new(File::open(event_file_path)?);
+        let mut reader = BufReader::new(File::open(event_file_path)?);
 
         loop {
-            let event = deserialize_from::<_, TimedTracedEvent>(&mut stream)?;
+            let event = deserialize_from::<_, TimedTracedEvent>(&mut reader)?;
             events.push(event);
 
-            if stream.fill_buf()?.is_empty() {
+            if reader.fill_buf()?.is_empty() {
                 // EOF is reached at a correct deserialization boundary.
+                // We're looking-ahead the buf, so NOT calling reader.consume(..) is correct.
                 break;
             }
         }
