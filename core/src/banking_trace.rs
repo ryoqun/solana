@@ -715,6 +715,7 @@ impl BankingSimulator {
                     sender.send(batch.clone()).unwrap();
 
                     let (batch_count, tx_count) = (batch.0.len(), batch.0.iter().map(|b| b.len()).sum::<usize>());
+                    debug!("sent {:?} {} batches ({} txes)", label, batch_count, tx_count);
                     match label {
                         ChannelLabel::NonVote => {
                             non_vote_count += batch_count;
@@ -730,7 +731,6 @@ impl BankingSimulator {
                         }
                         ChannelLabel::Dummy => unreachable!(),
                     }
-                    debug!("sent {:?} {} batches ({} txes)", label, batch_count, tx_count);
 
                     if exit.load(Ordering::Relaxed) {
                         break;
