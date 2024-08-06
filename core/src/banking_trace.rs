@@ -4,7 +4,7 @@ use {
         sigverify::SigverifyTracerPacketStats,
         validator::BlockProductionMethod,
     },
-    bincode::serialize_into,
+    bincode::{deserialize_from, serialize_into},
     chrono::{DateTime, Local},
     crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
     log::*,
@@ -523,7 +523,7 @@ impl BankingSimulator {
             let old_len = events.len();
 
             loop {
-                let eof_after_deserialize = bincode::deserialize_from::<_, TimedTracedEvent>(&mut stream).and_then(|event| {
+                let eof_after_deserialize = deserialize_from::<_, TimedTracedEvent>(&mut stream).and_then(|event| {
                     events.push(event);
                     Ok(stream.fill_buf().map(|b| b.is_empty())?)
                 });
