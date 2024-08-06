@@ -566,35 +566,34 @@ impl BankingSimulator {
         info!("simulated leader and slot: {simulated_leader}, {simulated_slot}");
         let start_bank = self.bank_forks.read().unwrap().root_bank();
 
-        let (exit, poh_recorder, poh_service, entry_receiver) = {
-            let exit = Arc::new(AtomicBool::default());
-            info!("poh is starting!");
-            let (r, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
-                start_bank.tick_height(),
-                start_bank.last_blockhash(),
-                start_bank.clone(),
-                Some((simulated_slot, simulated_slot + 4)),
-                start_bank.ticks_per_slot(),
-                false,
-                self.blockstore.clone(),
-                self.blockstore.get_new_shred_signal(0),
-                &leader_schedule_cache,
-                &self.genesis_config.poh_config,
-                None,
-                exit.clone(),
-            );
-            let r = Arc::new(RwLock::new(r));
-            let s = PohService::new(
-                r.clone(),
-                &self.genesis_config.poh_config,
-                exit.clone(),
-                start_bank.ticks_per_slot(),
-                solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE + 4,
-                solana_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
-                record_receiver,
-            );
-            (exit, r, s, entry_receiver)
-        };
+        let exit = Arc::new(AtomicBool::default());
+
+        info!("poh is starting!");
+
+        let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
+            start_bank.tick_height(),
+            start_bank.last_blockhash(),
+            start_bank.clone(),
+            Some((simulated_slot, simulated_slot + 4)),
+            start_bank.ticks_per_slot(),
+            false,
+            self.blockstore.clone(),
+            self.blockstore.get_new_shred_signal(0),
+            &leader_schedule_cache,
+            &self.genesis_config.poh_config,
+            None,
+            exit.clone(),
+        );
+        let poh_recorder = Arc::new(RwLock::new(poh_recorderr));
+        let poh_service = PohService::new(
+            r.clone(),
+            &self.genesis_config.poh_config,
+            exit.clone(),
+            start_bank.ticks_per_slot(),
+            solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE + 4,
+            solana_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
+            record_receiver,
+        );
         let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
             start_bank.ticks_per_slot(),
             self.genesis_config
