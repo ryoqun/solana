@@ -699,7 +699,7 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let base_simulation_time = std::time::SystemTime::now();
-                for (&event_time, (label, ref (batch, _stats))) in timed_batches_to_send {
+                for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     if event_time > base_event_time {
                         let duration_since_base = event_time.duration_since(base_event_time).unwrap();
                         // cache last base_simulation_time!
@@ -714,7 +714,8 @@ impl BankingSimulator {
                     };
                     sender.send(batch.clone()).unwrap();
 
-                    let (batch_count, tx_count) = (batch.0.len(), batch.0.iter().map(|b| b.len()).sum::<usize>());
+                    let (batches, _stats) = &batches_with_stats;
+                    let (batch_count, tx_count) = (batches.len(), batches.iter().map(|b| b.len()).sum::<usize>());
                     debug!("sent {:?} {} batches ({} txes)", label, batch_count, tx_count);
                     match label {
                         ChannelLabel::NonVote => {
