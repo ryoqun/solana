@@ -707,9 +707,9 @@ impl BankingSimulator {
                     }
 
                     let sender = match label {
-                        ChannelLabel::NonVote => non_vote_sender,
-                        ChannelLabel::TpuVote => tpu_vote_sender,
-                        ChannelLabel::GossipVote => gossip_vote_sender,
+                        ChannelLabel::NonVote => &non_vote_sender,
+                        ChannelLabel::TpuVote => &tpu_vote_sender,
+                        ChannelLabel::GossipVote => &gossip_vote_sender,
                         ChannelLabel::Dummy => unreachable!(),
                     };
                     sender.send(batch.clone()).unwrap();
