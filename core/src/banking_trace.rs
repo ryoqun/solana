@@ -703,6 +703,7 @@ impl BankingSimulator {
                     if event_time > base_event_time {
                         let expected_duration_since_base = event_time.duration_since(base_event_time).unwrap();
                         // cache last base_simulation_time!
+                        // Busy loop for most accurate sending timings
                         while base_simulation_time.elapsed().unwrap() < expected_duration_since_base {}
                     }
 
