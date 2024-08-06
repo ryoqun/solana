@@ -887,6 +887,8 @@ impl BankingSimulator {
         drop(poh_recorder);
         drop(retransmit_slots_sender);
         broadcast_stage.join().unwrap();
+
+        Ok(())
     }
 
     pub fn event_file_name(index: usize) -> String {
