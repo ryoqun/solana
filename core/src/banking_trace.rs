@@ -527,7 +527,7 @@ impl BankingSimulator {
         }
 
         let mut packet_batches_by_time = BTreeMap::new();
-        let mut hashes_by_slot = BTreeMap::new();
+        let mut timed_hashes_by_slot = BTreeMap::new();
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
