@@ -97,6 +97,7 @@ use {
         },
     },
 };
+use solana_ledger::blockstore::banking_trace_path;
 
 mod args;
 mod bigtable;
