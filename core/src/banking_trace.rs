@@ -520,7 +520,7 @@ impl BankingSimulator {
                         error!(
                             "deserialize error after {} events: {:?}",
                             events.len() - old_len,
-                            &d
+                            &error
                         );
                         break;
                     }
@@ -530,7 +530,7 @@ impl BankingSimulator {
                     Ok(true) => break,
                     Ok(false) => continue,
                     Err(err) => {
-                        error!("deserialize error after {} events: {:?}", events.len() - old_len, err);
+                        error!("deserialize error after {} events: {:?}", events.len() - old_len, error);
                         break;
                     }
                 }
