@@ -11,7 +11,10 @@ use {
     rolling_file::{RollingCondition, RollingConditionBasic, RollingFileAppender},
     solana_client::connection_cache::ConnectionCache,
     solana_gossip::cluster_info::{ClusterInfo, Node},
-    solana_ledger::{blockstore::Blockstore, leader_schedule_cache::LeaderScheduleCache},
+    solana_ledger::{
+        blockstore::{Blockstore, PurgeType},
+        leader_schedule_cache::LeaderScheduleCache,
+    },
     solana_perf::packet::PacketBatch,
     solana_poh::{poh_recorder::PohRecorder, poh_service::PohService},
     solana_runtime::{
@@ -40,7 +43,6 @@ use {
     },
     thiserror::Error,
 };
-use solana_ledger::blockstore::PurgeType;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -607,15 +609,18 @@ impl BankingSimulator {
 
         let exit = Arc::new(AtomicBool::default());
 
-        if let Some(end_slot) = self.blockstore
+        if let Some(end_slot) = self
+            .blockstore
             .slot_meta_iterator(self.first_simulated_slot)
             .unwrap()
             .map(|(s, _)| s)
             .last()
         {
             info!("purging slots {}, {}", self.first_simulated_slot, end_slot);
-            self.blockstore.purge_from_next_slots(self.first_simulated_slot, end_slot);
-            self.blockstore.purge_slots(self.first_simulated_slot, end_slot, PurgeType::Exact);
+            self.blockstore
+                .purge_from_next_slots(self.first_simulated_slot, end_slot);
+            self.blockstore
+                .purge_slots(self.first_simulated_slot, end_slot, PurgeType::Exact);
             info!("done: purging");
         } else {
             info!("skipping purging...");
@@ -862,9 +867,7 @@ impl BankingSimulator {
                     );
                     break;
                 } else if sender_thread.is_finished() {
-                    warn!(
-                        "sender thread existed maybe due to completion of sending traced events"
-                    );
+                    warn!("sender thread existed maybe due to completion of sending traced events");
                     break;
                 }
                 let options = NewBankOptions {
