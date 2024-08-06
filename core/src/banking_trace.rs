@@ -40,6 +40,7 @@ use {
     },
     thiserror::Error,
 };
+use solana_ledger::blockstore::PurgeType;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
