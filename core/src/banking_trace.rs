@@ -481,6 +481,7 @@ pub struct BankingSimulator {
     bank_forks: Arc<RwLock<BankForks>>,
     blockstore: Arc<Blockstore>,
     block_production_method: BlockProductionMethod,
+    first_simulated_slot: Slot,
 }
 
 #[derive(Error, Debug)]
@@ -499,6 +500,7 @@ impl BankingSimulator {
         bank_forks: Arc<RwLock<BankForks>>,
         blockstore: Arc<Blockstore>,
         block_production_method: BlockProductionMethod,
+        first_simulated_slot: Slot,
     ) -> Self {
         Self {
             event_file_pathes,
@@ -506,6 +508,7 @@ impl BankingSimulator {
             bank_forks,
             blockstore,
             block_production_method,
+            first_simulated_slot,
         }
     }
 
@@ -602,6 +605,20 @@ impl BankingSimulator {
         let start_bank = self.bank_forks.read().unwrap().root_bank();
 
         let exit = Arc::new(AtomicBool::default());
+
+        if let Some(end_slot) = blockstore
+            .slot_meta_iterator(self.first_simulated_slot)
+            .unwrap()
+            .map(|(s, _)| s)
+            .last()
+        {
+            info!("purging slots {}, {}", self.first_simulated_slot, end_slot);
+            self.blockstore.purge_from_next_slots(self.first_simulated_slot, end_slot);
+            self.blockstore.purge_slots(self.first_simulated_slot, end_slot, PurgeType::Exact);
+            info!("done: purging");
+        } else {
+            info!("skipping purging...");
+        }
 
         info!("poh is starting!");
 

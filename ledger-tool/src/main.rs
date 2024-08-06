@@ -2323,20 +2323,6 @@ fn main() {
                         AccessType::Primary, // needed for purging already existing simulated block shreds...
                     ));
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
-                    if let Some(end_slot) = blockstore
-                        .slot_meta_iterator(first_simulated_slot)
-                        .unwrap()
-                        .map(|(s, _)| s)
-                        .last()
-                    {
-                        info!("purging slots {first_simulated_slot}, {end_slot}");
-
-                        blockstore.purge_from_next_slots(first_simulated_slot, end_slot);
-                        blockstore.purge_slots(first_simulated_slot, end_slot, PurgeType::Exact);
-                        info!("done: purging");
-                    } else {
-                        info!("skipping purging...");
-                    }
                     let genesis_config = open_genesis_config_by(&ledger_path, arg_matches);
                     let LoadAndProcessLedgerOutput { bank_forks, .. } =
                         load_and_process_ledger_or_exit(
