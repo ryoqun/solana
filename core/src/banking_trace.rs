@@ -658,45 +658,29 @@ impl BankingSimulator {
             let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
             move || {
-                let (adjusted_reference, timed_batches_to_send) =
-                    if let Some((most_recent_past_leader_slot, (mut start, _, _))) =
-                        timed_hashes_by_slot.range(bank_slot..).next()
-                    {
-                        start -= warmup_duration;
-
-                        (
-                            Some((
-                                {
-                                    let datetime: chrono::DateTime<chrono::Utc> = (start).into();
-                                    format!(
-                                        "{} (warmup: -{warmup_duration:?})",
-                                        datetime.format("%Y-%m-%d %H:%M:%S.%f")
-                                    )
-                                },
-                                most_recent_past_leader_slot,
-                                start,
-                            )),
-                            packet_batches_by_time.range(start..),
-                        )
-                    } else {
-                        (None, packet_batches_by_time.range(..))
-                    };
+                let (slot_before_next_leader_slot, (start, _, _))) =
+                    timed_hashes_by_slot.range(bank_slot..).next().expect("timed hashes");
+                let base_event_time = start - warmup_duration;
+                let timed_batches_to_send = packet_batches_by_time.range(start..);
                 info!(
-                    "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?})",
+                    "simulating banking trace events: {} out of {}, starting at slot {}/{} (adjusted to {:?}) (warmup: -{:?})",
                     timed_batches_to_send.clone().count(),
                     packet_batches_by_time.len(),
                     bank_slot,
-                    adjusted_reference,
+                    slot_before_next_leader_slot,
+                    {
+                        let start: chrono::DateTime<chrono::Utc> = start.into();
+                        start.format("%Y-%m-%d %H:%M:%S.%f")
+                    },
+                    warmup_duration,
                 );
+
                 let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
 
                 info!("start sending!...");
-                let base_event_time = adjusted_reference
-                    .map(|b| b.2)
-                    .unwrap_or_else(|| std::time::SystemTime::now());
                 let base_simulation_time = std::time::SystemTime::now();
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     if event_time > base_event_time {
@@ -752,7 +736,7 @@ impl BankingSimulator {
         });
 
         info!("start banking stage!...");
-        let pfc = &Arc::new(PrioritizationFeeCache::new(0u64));
+        let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
             self.block_production_method.clone(),
             &cluster_info,
@@ -766,7 +750,7 @@ impl BankingSimulator {
             None,
             connection_cache,
             self.bank_forks.clone(),
-            pfc,
+            prioritization_fee_cache,
             false,
         );
 
