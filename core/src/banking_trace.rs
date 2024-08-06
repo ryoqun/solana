@@ -533,7 +533,7 @@ impl BankingSimulator {
                     Ok(false) => continue,
                     Err(error) => {
                         error!("deserialize error after {} events: {:?}", events.len() - old_len, error);
-                        break;
+                        Err(error)?;
                     }
                 }
             }
@@ -558,7 +558,7 @@ impl BankingSimulator {
             }
         }
 
-        (packet_batches_by_time, timed_hashes_by_slot)
+        Ok((packet_batches_by_time, timed_hashes_by_slot))
     }
 
     pub fn start(self) {
