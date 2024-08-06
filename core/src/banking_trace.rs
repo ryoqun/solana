@@ -484,6 +484,15 @@ pub struct BankingSimulator {
     block_production_method: BlockProductionMethod,
 }
 
+#[derive(Error, Debug)]
+pub enum SimulateError {
+    #[error("IO Error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Deserialization Error: {0}")]
+    SerializeError(#[from] bincode::Error),
+}
+
 impl BankingSimulator {
     pub fn new(
         event_file_pathes: Vec<PathBuf>,
@@ -503,10 +512,10 @@ impl BankingSimulator {
 
     fn read_event_files(
         &self,
-    ) -> (
+    ) -> Result<(
         BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
         BTreeMap<Slot, (SystemTime, Hash, Hash)>,
-    ) {
+    ), SimulateError> {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
             info!("Reading events from {event_file_path:?}");
