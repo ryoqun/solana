@@ -687,12 +687,15 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let base_simulation_time = SystemTime::now();
+                let mut current_simulation_time = base_simulation_time;
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let expected_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
-                    // cache last base_simulation_time!
                     // Busy loop for most accurate sending timings
-                    while base_simulation_time.elapsed().unwrap() < expected_duration_since_base {}
+                    let current_duration_since_base = current_simulation_time.duration_since(base_simulation_time).unwrap();
+                    while current_duration_since_base < expected_duration_since_base {
+                        current_simulation_time = SystemTime::now();
+                    }
 
                     let sender = match label {
                         ChannelLabel::NonVote => &non_vote_sender,
