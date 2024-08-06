@@ -309,7 +309,6 @@ pub fn banking_retrace_path(path: &Path) -> PathBuf {
     path.join("banking_retrace")
 }
 
-
 impl Blockstore {
     pub fn db(self) -> Arc<Database> {
         self.db

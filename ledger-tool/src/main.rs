@@ -2310,6 +2310,11 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
+                    let event_file_pathes = parse_banking_trace_event_file_paths(
+                        arg_matches,
+                        banking_trace_path(&ledger_path),
+                    );
+
                     let process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let blockstore = Arc::new(open_blockstore(
@@ -2348,12 +2353,8 @@ fn main() {
                         BlockProductionMethod
                     )
                     .unwrap_or_default();
-                    info!("Using: block-production-method: {block_production_method}");
 
-                    let event_file_pathes = parse_banking_trace_event_file_paths(
-                        arg_matches,
-                        blockstore.banking_trace_path(),
-                    );
+                    info!("Using: block-production-method: {block_production_method}");
                     info!("Using: event files: {event_file_pathes:?}");
 
                     let simulator = BankingSimulator::new(
