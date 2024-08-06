@@ -529,7 +529,7 @@ impl BankingSimulator {
                 match stream.fill_buf().map(|b| b.is_empty()) {
                     Ok(true) => break,
                     Ok(false) => continue,
-                    Err(err) => {
+                    Err(error) => {
                         error!("deserialize error after {} events: {:?}", events.len() - old_len, error);
                         break;
                     }
