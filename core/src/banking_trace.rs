@@ -490,7 +490,7 @@ pub enum SimulateError {
     IoError(#[from] std::io::Error),
 
     #[error("Deserialization Error: {0}")]
-    SerializeError(path, #[from] bincode::Error),
+    SerializeError(PathBuf, #[from] bincode::Error),
 }
 
 impl BankingSimulator {
