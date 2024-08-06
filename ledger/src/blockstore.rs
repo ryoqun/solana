@@ -301,11 +301,11 @@ impl SlotMetaWorkingSetEntry {
     }
 }
 
-pub fn banking_trace_path(path: &PathBuf) -> PathBuf {
+pub fn banking_trace_path(path: &Path) -> PathBuf {
     path.join("banking_trace")
 }
 
-pub fn banking_retrace_path(path: &PathBuf) -> PathBuf {
+pub fn banking_retrace_path(path: &Path) -> PathBuf {
     path.join("banking_retrace")
 }
 
