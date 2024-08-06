@@ -669,15 +669,15 @@ impl BankingSimulator {
                 let base_event_time = *start - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
-                    "simulating banking trace events: {} out of {}, starting at slot {}/{} (adjusted to {:?}) (warmup: -{:?})",
+                    "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?} from {}) (warmup: -{:?})",
                     timed_batches_to_send.clone().count(),
                     packet_batches_by_time.len(),
                     bank_slot,
-                    slot_before_next_leader_slot,
                     {
-                        let base_event_time: chrono::DateTime<chrono::Utc> = (base_event_time).into();
-                        base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
+                        let start: chrono::DateTime<chrono::Utc> = (*start).into();
+                        start.format("%Y-%m-%d %H:%M:%S.%f")
                     },
+                    slot_before_next_leader_slot,
                     warmup_duration,
                 );
 
