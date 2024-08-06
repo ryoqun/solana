@@ -659,7 +659,7 @@ impl BankingSimulator {
             let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
             move || {
-                let (adjusted_reference, range_iter) =
+                let (adjusted_reference, timed_batches_to_send) =
                     if let Some((most_recent_past_leader_slot, (mut start, _, _))) =
                         timed_hashes_by_slot.range(bank_slot..).next()
                     {
@@ -684,14 +684,14 @@ impl BankingSimulator {
                     };
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?})",
-                    range_iter.clone().count(),
+                    timed_batches_to_send.clone().count(),
                     packet_batches_by_time.len(),
                     bank_slot,
                     adjusted_reference,
                 );
-                let (mut non_vote_count, mut tpu_vote_count, mut gossip_vote_count) = (0, 0, 0);
-                let (mut non_vote_tx_count, mut tpu_vote_tx_count, mut gossip_vote_tx_count) =
-                    (0, 0, 0);
+                let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
+                let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
+                let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
                 let reference_time = adjusted_reference
                     .map(|b| b.2)
@@ -699,9 +699,9 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let simulation_time = std::time::SystemTime::now();
-                for (&time, (label, batch)) in range_iter {
-                    if time > reference_time {
-                        let target_duration = time.duration_since(reference_time).unwrap();
+                for (&event_time, (label, batch)) in timed_batches_to_send {
+                    if event_time > reference_time {
+                        let target_duration = event_time.duration_since(reference_time).unwrap();
                         // cache last simulation_time!
                         while simulation_time.elapsed().unwrap() < target_duration {}
                     }
