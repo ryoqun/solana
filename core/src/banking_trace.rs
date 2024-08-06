@@ -670,7 +670,7 @@ impl BankingSimulator {
                 let base_event_time = *raw_base_event_time - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
-                    "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?} from {}) (warmup: -{:?})",
+                    "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     timed_batches_to_send.clone().count(),
                     packet_batches_by_time.len(),
                     bank_slot,
