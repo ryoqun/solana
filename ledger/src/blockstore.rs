@@ -320,11 +320,11 @@ impl Blockstore {
     }
 
     pub fn banking_trace_path(self) -> PathBuf {
-        banking_trace_path(self.ledger_path)
+        banking_trace_path(&self.ledger_path)
     }
 
     pub fn banking_retracer_path(&self) -> PathBuf {
-        banking_retrace_path(self.ledger_path)
+        banking_retrace_path(&self.ledger_path)
     }
 
     /// Opens a Ledger in directory, provides "infinite" window of shreds
