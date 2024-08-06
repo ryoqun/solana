@@ -504,7 +504,7 @@ impl BankingSimulator {
         &self,
     ) -> (
         BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-        HashMap<Slot, (SystemTime, Hash, Hash)>,
+        BTreeMap<Slot, (SystemTime, Hash, Hash)>,
     ) {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
