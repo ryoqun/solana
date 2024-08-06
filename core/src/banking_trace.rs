@@ -662,11 +662,11 @@ impl BankingSimulator {
             let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
             move || {
-                let (slot_before_next_leader_slot, (start, _, _)) = timed_hashes_by_slot
+                let (slot_before_next_leader_slot, (raw_base_event_time, _, _)) = timed_hashes_by_slot
                     .range(bank_slot..)
                     .next()
                     .expect("timed hashes");
-                let base_event_time = *start - warmup_duration;
+                let base_event_time = *raw_base_event_time - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (adjusted to {:?} from {}) (warmup: -{:?})",
@@ -674,8 +674,8 @@ impl BankingSimulator {
                     packet_batches_by_time.len(),
                     bank_slot,
                     {
-                        let start: chrono::DateTime<chrono::Utc> = (*start).into();
-                        start.format("%Y-%m-%d %H:%M:%S.%f")
+                        let raw_base_event_time: chrono::DateTime<chrono::Utc> = (*raw_base_event_time).into();
+                        raw_base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
                     },
                     slot_before_next_leader_slot,
                     warmup_duration,
