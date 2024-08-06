@@ -712,7 +712,7 @@ impl BankingSimulator {
                         ChannelLabel::GossipVote => &gossip_vote_sender,
                         ChannelLabel::Dummy => unreachable!(),
                     };
-                    sender.send(batch.clone()).unwrap();
+                    sender.send(batches_with_stats.clone()).unwrap();
 
                     let (batches, _stats) = &batches_with_stats;
                     let (batch_count, tx_count) = (batches.len(), batches.iter().map(|b| b.len()).sum::<usize>());
