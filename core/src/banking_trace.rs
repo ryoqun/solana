@@ -694,7 +694,9 @@ impl BankingSimulator {
 
                     // Busy loop for most accurate sending timings
                     loop {
-                        let current_duration_since_base = current_simulation_time.duration_since(base_simulation_time).unwrap();
+                        let current_duration_since_base = current_simulation_time
+                            .duration_since(base_simulation_time)
+                            .unwrap();
                         if current_duration_since_base > expected_duration_since_base {
                             break;
                         }
