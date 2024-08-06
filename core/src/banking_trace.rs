@@ -861,6 +861,11 @@ impl BankingSimulator {
                         simulated_leader, new_slot, new_leader
                     );
                     break;
+                } else if sender_thread.is_finished() {
+                    warn!(
+                        "sender thread existed maybe due to completion of sending traced events"
+                    );
+                    break;
                 }
                 let options = NewBankOptions {
                     blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|hh| hh.1),
