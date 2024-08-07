@@ -713,6 +713,8 @@ impl BankingSimulator {
                 .range(start_slot..)
                 .next()
                 .expect("timed hashes").clone();
+        let (slot_before_next_leader_slot, raw_base_event_time) = (slot_before_next_leader_slot.clone(), raw_base_event_time.clone());
+
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
 
