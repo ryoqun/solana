@@ -593,7 +593,6 @@ impl BankingSimulator {
             .clone_with_scheduler();
 
         let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
-        let timed_hashes_by_slot = Arc::new(timed_hashes_by_slot);
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let skipped_slot_offset = 4;
@@ -709,16 +708,15 @@ impl BankingSimulator {
             sender,
         );
 
+        let (slot_before_next_leader_slot, (raw_base_event_time, _, _)) =
+            timed_hashes_by_slot
+                .range(start_slot..)
+                .next()
+                .expect("timed hashes");
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
-            let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
             move || {
-                let (slot_before_next_leader_slot, (raw_base_event_time, _, _)) =
-                    timed_hashes_by_slot
-                        .range(start_slot..)
-                        .next()
-                        .expect("timed hashes");
                 let base_event_time = *raw_base_event_time - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
