@@ -865,7 +865,7 @@ impl BankingSimulator {
                     break;
                 }
                 let options = NewBankOptions {
-                    blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|(_event_time, blockhash, _bank_hash| block_hash),
+                    blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|(_event_time, blockhash, _bank_hash)| block_hash),
                     ..Default::default()
                 };
                 let new_bank = Bank::new_from_parent_with_options(
