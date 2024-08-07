@@ -710,7 +710,7 @@ impl BankingSimulator {
             sender,
         );
 
-        let sender_thread = thread::Builder::new().name("solSimSender").spawn({
+        let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
             let timed_hashes_by_slot = timed_hashes_by_slot.clone();
 
