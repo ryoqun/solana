@@ -806,7 +806,7 @@ impl BankingSimulator {
                 // hold these senders in join_handle to control banking stage termination!
                 (non_vote_sender, tpu_vote_sender, gossip_vote_sender)
             }
-        });
+        })?;
 
         info!("start banking stage!...");
         let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
