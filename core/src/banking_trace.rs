@@ -712,6 +712,7 @@ impl BankingSimulator {
             timed_hashes_by_slot
                 .range(start_slot..)
                 .next()
+                .cloned()
                 .expect("timed hashes");
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
