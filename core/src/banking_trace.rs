@@ -594,7 +594,6 @@ impl BankingSimulator {
 
         let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
         let timed_hashes_by_slot = Arc::new(timed_hashes_by_slot);
-        let bank_slot = bank.slot();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let skipped_slot_offset = 4;
@@ -717,7 +716,7 @@ impl BankingSimulator {
             move || {
                 let (slot_before_next_leader_slot, (raw_base_event_time, _, _)) =
                     timed_hashes_by_slot
-                        .range(bank_slot..)
+                        .range(start_slot..)
                         .next()
                         .expect("timed hashes");
                 let base_event_time = *raw_base_event_time - warmup_duration;
@@ -726,7 +725,7 @@ impl BankingSimulator {
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     timed_batches_to_send.clone().count(),
                     packet_batches_by_time.len(),
-                    bank_slot,
+                    start_slot,
                     {
                         let raw_base_event_time: chrono::DateTime<chrono::Utc> = (*raw_base_event_time).into();
                         raw_base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
@@ -827,10 +826,10 @@ impl BankingSimulator {
             false,
         );
 
-        for i in 0..5000 {
-            let slot = poh_recorder.read().unwrap().slot();
+        loop {
+            let current_slot = poh_recorder.read().unwrap().slot();
             info!("poh: {}, {}", i, slot);
-            if slot >= simulated_slot {
+            if current_slot >= simulated_slot {
                 break;
             }
             sleep(Duration::from_millis(10));
@@ -838,15 +837,11 @@ impl BankingSimulator {
 
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
-                poh_recorder.write().unwrap().reset(
-                    bank.clone_without_scheduler(),
-                    Some((bank.slot(), bank.slot() + 1)),
-                );
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
                 bank.freeze_with_bank_hash_override(
-                    timed_hashes_by_slot.get(&old_slot).map(|hh| hh.2),
+                    timed_hashes_by_slot.get(&old_slot).map(|(_event_time, _blockhash, bank_hash)| bank_hash),
                 );
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
@@ -870,7 +865,7 @@ impl BankingSimulator {
                     break;
                 }
                 let options = NewBankOptions {
-                    blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|hh| hh.1),
+                    blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|(_event_time, blockhash, _bank_hash| block_hash),
                     ..Default::default()
                 };
                 let new_bank = Bank::new_from_parent_with_options(
