@@ -522,8 +522,7 @@ impl BankingSimulator {
         let mut reader = BufReader::new(File::open(event_file_path)?);
 
         loop {
-            let event = deserialize_from::<_, TimedTracedEvent>(&mut reader)?;
-            events.push(event);
+            events.push(deserialize_from::<_, TimedTracedEvent>(&mut reader)?);
 
             if reader.fill_buf()?.is_empty() {
                 // EOF is reached at a correct deserialization boundary.
