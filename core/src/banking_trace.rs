@@ -828,12 +828,16 @@ impl BankingSimulator {
 
         loop {
             let current_slot = poh_recorder.read().unwrap().slot();
-            info!("poh: {}, {}", i, slot);
             if current_slot >= simulated_slot {
                 break;
             }
             sleep(Duration::from_millis(10));
         }
+
+        poh_recorder.write().unwrap().reset(
+            bank.clone_without_scheduler(),
+            Some((bank.slot(), bank.slot() + 1)),
+        );
 
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
