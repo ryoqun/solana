@@ -845,7 +845,7 @@ impl BankingSimulator {
 
                 let old_slot = bank.slot();
                 bank.freeze_with_bank_hash_override(
-                    timed_hashes_by_slot.get(&old_slot).map(|(_event_time, _blockhash, &bank_hash)| bank_hash),
+                    timed_hashes_by_slot.get(&old_slot).map(|&(_event_time, _blockhash, bank_hash)| bank_hash),
                 );
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
