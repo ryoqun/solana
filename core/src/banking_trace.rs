@@ -603,7 +603,7 @@ impl BankingSimulator {
         let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-        let skipped_slot_offset = 4;
+        let skipped_slot_offset = 1;
         let start_slot = bank.slot();
         let simulated_slot = start_slot + skipped_slot_offset;
         let simulated_leader = leader_schedule_cache
