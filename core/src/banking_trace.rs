@@ -718,10 +718,6 @@ impl BankingSimulator {
             raw_base_event_time.clone(),
         );
 
-        let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
-            let exit = exit.clone();
-
-            move || {
                 let base_event_time = raw_base_event_time - warmup_duration;
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
@@ -737,6 +733,11 @@ impl BankingSimulator {
                     warmup_duration,
                 );
 
+
+        let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
+            let exit = exit.clone();
+
+            move || {
                 let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
