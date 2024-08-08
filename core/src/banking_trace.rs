@@ -745,6 +745,7 @@ impl BankingSimulator {
                     slot_before_next_leader_slot,
                     warmup_duration,
                 );
+                let mut last_log_time = SystemTime::now();
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
@@ -768,6 +769,14 @@ impl BankingSimulator {
                         ChannelLabel::Dummy => unreachable!(),
                     };
                     sender.send(batches_with_stats.clone()).unwrap();
+
+                    let last_log_duration = current_simulation_time.duration_since(last_log_time).unwrap();
+                    if last_log_duration > Duration::from_millis(100) {
+                        last_log_time = current_simulation_time;
+                        let current_tx_count = non_vote_tx_count + tpu_vote_tx_count + gossip_vote_tx_count;
+                        info!("sending tps: {}", (current_tx_count - last_tx_count).as_f64() / last_log_duration.as_f64());
+                        last_tx_count = current_tx_count;
+                    }
 
                     let batches = &batches_with_stats.0;
                     let (batch_count, tx_count) = (
