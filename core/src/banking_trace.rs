@@ -816,6 +816,8 @@ impl BankingSimulator {
             }
         })?;
 
+        sleep(warmup_duration);
+
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
                 poh_recorder.write().unwrap().reset(
