@@ -833,8 +833,8 @@ impl BankingSimulator {
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
                 let next_leader_slot = leader_schedule_cache.next_leader_slot(
-                    my_pubkey,
-                    slot,
+                    leader_pubkey,
+                    bank.slot(),
                     &bank,
                     Some(&self.blockstore),
                     GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
