@@ -384,6 +384,10 @@ impl TracedSender {
         }
         self.sender.send(batch)
     }
+
+    fn len(&self) -> usize {
+        self.sender.len()
+    }
 }
 
 #[cfg(any(test, feature = "dev-context-only-utils"))]
