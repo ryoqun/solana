@@ -830,6 +830,7 @@ impl BankingSimulator {
         })?;
 
         sleep(warmup_duration);
+        info!("warmup done!");
 
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
@@ -840,6 +841,7 @@ impl BankingSimulator {
                     Some(&self.blockstore),
                     GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
                 );
+                debug!("{next_leader_slot:?}");
                 poh_recorder
                     .write()
                     .unwrap()
