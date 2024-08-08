@@ -830,9 +830,16 @@ impl BankingSimulator {
 
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
+                let next_leader_slot = leader_schedule_cache.next_leader_slot(
+                    my_pubkey,
+                    slot,
+                    &bank,
+                    Some(self.blockstore),
+                    GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
+                );
                 poh_recorder.write().unwrap().reset(
                     bank.clone_without_scheduler(),
-                    Some((bank.slot(), bank.slot() + 1)),
+                    next_leader_slot,
                 );
                 info!("Bank::new_from_parent()!");
 
