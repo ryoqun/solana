@@ -43,6 +43,8 @@ use {
     },
     thiserror::Error,
 };
+use solana_poh::poh_recorder::MAX_GRACE_SLOTS;
+use solana_poh::poh_recorder::GRACE_TICKS_FACTOR;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
