@@ -16,7 +16,10 @@ use {
         leader_schedule_cache::LeaderScheduleCache,
     },
     solana_perf::packet::PacketBatch,
-    solana_poh::{poh_recorder::PohRecorder, poh_service::PohService},
+    solana_poh::{
+        poh_recorder::{PohRecorder, GRACE_TICKS_FACTOR, MAX_GRACE_SLOTS},
+        poh_service::PohService,
+    },
     solana_runtime::{
         bank::{Bank, NewBankOptions},
         bank_forks::BankForks,
@@ -43,8 +46,6 @@ use {
     },
     thiserror::Error,
 };
-use solana_poh::poh_recorder::MAX_GRACE_SLOTS;
-use solana_poh::poh_recorder::GRACE_TICKS_FACTOR;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
@@ -839,10 +840,10 @@ impl BankingSimulator {
                     Some(&self.blockstore),
                     GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
                 );
-                poh_recorder.write().unwrap().reset(
-                    bank.clone_without_scheduler(),
-                    next_leader_slot,
-                );
+                poh_recorder
+                    .write()
+                    .unwrap()
+                    .reset(bank.clone_without_scheduler(), next_leader_slot);
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
