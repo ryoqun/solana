@@ -709,6 +709,25 @@ impl BankingSimulator {
             sender,
         );
 
+        info!("start banking stage!...");
+        let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
+        let banking_stage = BankingStage::new_num_threads(
+            self.block_production_method.clone(),
+            &cluster_info,
+            &poh_recorder,
+            non_vote_receiver,
+            tpu_vote_receiver,
+            gossip_vote_receiver,
+            BankingStage::num_threads(),
+            None,
+            replay_vote_sender,
+            None,
+            connection_cache,
+            self.bank_forks.clone(),
+            prioritization_fee_cache,
+            false,
+        );
+
         let (&slot_before_next_leader_slot, &(raw_base_event_time, _, _)) = timed_hashes_by_slot
             .range(start_slot..)
             .next()
@@ -806,25 +825,6 @@ impl BankingSimulator {
             }
         })?;
 
-        info!("start banking stage!...");
-        let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
-        let banking_stage = BankingStage::new_num_threads(
-            self.block_production_method.clone(),
-            &cluster_info,
-            &poh_recorder,
-            non_vote_receiver,
-            tpu_vote_receiver,
-            gossip_vote_receiver,
-            BankingStage::num_threads(),
-            None,
-            replay_vote_sender,
-            None,
-            connection_cache,
-            self.bank_forks.clone(),
-            prioritization_fee_cache,
-            false,
-        );
-
         loop {
             let current_slot = poh_recorder.read().unwrap().slot();
             if current_slot >= simulated_slot {
@@ -847,7 +847,7 @@ impl BankingSimulator {
                 {
                     let current_simulation_time = SystemTime::now();
                     info!(
-                        "jitter: slot: {}, {:?} {:?}",
+                        "jitter: slot: {}, event duration: {:?} sim duration: {:?}",
                         old_slot,
                         event_time.duration_since(base_event_time).unwrap(),
                         current_simulation_time
