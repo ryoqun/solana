@@ -745,7 +745,7 @@ impl BankingSimulator {
                     slot_before_next_leader_slot,
                     warmup_duration,
                 );
-                let mut last_log_time = SystemTime::now();
+                let (mut last_log_time, mut last_tx_count) = (SystemTime::now(), 0);
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
