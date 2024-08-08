@@ -731,7 +731,7 @@ impl BankingSimulator {
             let exit = exit.clone();
 
             move || {
-                let &mut (mut non_vote_count, mut non_vote_tx_count) = &mut (0, 0);
+                let (mut non_vote_count, mut non_vote_tx_count) = &mut (0, 0);
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
@@ -783,7 +783,7 @@ impl BankingSimulator {
                         label, batch_count, tx_count
                     );
                     let (total_batch_count, total_tx_count) = match label {
-                        ChannelLabel::NonVote => (non_vote_count, &mut non_vote_tx_count),
+                        ChannelLabel::NonVote => (&mut non_vote_count, &mut non_vote_tx_count),
                         ChannelLabel::TpuVote => (&mut tpu_vote_count, &mut tpu_vote_tx_count),
                         ChannelLabel::GossipVote => (&mut gossip_vote_count, &mut gossip_vote_tx_count),
                         ChannelLabel::Dummy => unreachable!(),
