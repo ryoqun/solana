@@ -708,12 +708,15 @@ impl BankingSimulator {
             sender,
         );
 
-        let (slot_before_next_leader_slot, (raw_base_event_time, _, _)) =
-            timed_hashes_by_slot
-                .range(start_slot..)
-                .next()
-                .expect("timed hashes").clone();
-        let (slot_before_next_leader_slot, raw_base_event_time) = (slot_before_next_leader_slot.clone(), raw_base_event_time.clone());
+        let (slot_before_next_leader_slot, (raw_base_event_time, _, _)) = timed_hashes_by_slot
+            .range(start_slot..)
+            .next()
+            .expect("timed hashes")
+            .clone();
+        let (slot_before_next_leader_slot, raw_base_event_time) = (
+            slot_before_next_leader_slot.clone(),
+            raw_base_event_time.clone(),
+        );
 
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
@@ -844,7 +847,9 @@ impl BankingSimulator {
 
                 let old_slot = bank.slot();
                 bank.freeze_with_bank_hash_override(
-                    timed_hashes_by_slot.get(&old_slot).map(|&(_event_time, _blockhash, bank_hash)| bank_hash),
+                    timed_hashes_by_slot
+                        .get(&old_slot)
+                        .map(|&(_event_time, _blockhash, bank_hash)| bank_hash),
                 );
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
@@ -868,7 +873,9 @@ impl BankingSimulator {
                     break;
                 }
                 let options = NewBankOptions {
-                    blockhash_override: timed_hashes_by_slot.get(&new_slot).map(|&(_event_time, blockhash, _bank_hash)| blockhash),
+                    blockhash_override: timed_hashes_by_slot
+                        .get(&new_slot)
+                        .map(|&(_event_time, blockhash, _bank_hash)| blockhash),
                     ..Default::default()
                 };
                 let new_bank = Bank::new_from_parent_with_options(
