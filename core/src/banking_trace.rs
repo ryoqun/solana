@@ -744,7 +744,6 @@ impl BankingSimulator {
                 let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
-                drop(packet_batches_by_time);
 
                 info!("start sending!...");
                 info!(
@@ -759,6 +758,7 @@ impl BankingSimulator {
                     slot_before_next_leader_slot,
                     warmup_duration,
                 );
+                drop(packet_batches_by_time);
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
