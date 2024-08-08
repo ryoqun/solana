@@ -521,6 +521,7 @@ impl BankingSimulator {
     ) -> Result<(), SimulateError> {
         let mut reader = BufReader::new(File::open(event_file_path)?);
 
+        // flag to ignore deserialize error? and what if the file is empty?
         loop {
             events.push(deserialize_from(&mut reader)?);
 
@@ -718,10 +719,8 @@ impl BankingSimulator {
             raw_base_event_time.clone(),
         );
 
-                let base_event_time = raw_base_event_time - warmup_duration;
-                let base_simulation_time = SystemTime::now();
-                let mut current_duration_since_base = Duration::default();
-
+        let base_event_time = raw_base_event_time - warmup_duration;
+        let base_simulation_time = SystemTime::now();
 
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
@@ -750,12 +749,13 @@ impl BankingSimulator {
                         event_time.duration_since(base_event_time).unwrap();
 
                     // Busy loop for most accurate sending timings
+                    let mut simulation_duration_since_base = Duration::default();
                     loop {
-                        if current_duration_since_base > required_duration_since_base {
+                        if simulation_duration_since_base > required_duration_since_base {
                             break;
                         }
                         let current_simulation_time = SystemTime::now();
-                        current_duration_since_base = current_simulation_time
+                        simulation_duration_since_base = current_simulation_time
                             .duration_since(base_simulation_time)
                             .unwrap();
                     }
@@ -847,11 +847,11 @@ impl BankingSimulator {
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
-                bank.freeze_with_bank_hash_override(
-                    timed_hashes_by_slot
-                        .get(&old_slot)
-                        .map(|&(_event_time, _blockhash, bank_hash)| bank_hash),
-                );
+                if let Some(event_time, _blockhash, bank_hash) = timed_hashes_by_slot.get(&old_slot) {
+                    let current_simulation_time = SystemTime::now();
+                    info!("jitter: {} {}", event_time.duration_since(base_event_time).unwrap(), current_simulation_time.duration_since(base_simulation_time).unwrap());
+                }
+                bank.freeze_with_bank_hash_override(bank_hash);
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
                     bank.slot() + skipped_slot_offset

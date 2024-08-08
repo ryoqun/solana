@@ -386,6 +386,7 @@ pub(crate) fn parse_banking_trace_event_file_paths(
         info!("Using: banking trace events dir: {event_dir_path:?}");
 
         if let Ok(entries) = std::fs::read_dir(&event_dir_path) {
+            // warn if event_dir_path is empty.
             let mut e2 = entries
                 .flat_map(|r| r.ok().map(|r| r.file_name()))
                 .collect::<HashSet<OsString>>();
