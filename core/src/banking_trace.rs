@@ -731,9 +731,9 @@ impl BankingSimulator {
             let exit = exit.clone();
 
             move || {
-                let (non_vote_count, non_vote_tx_count) = (&mut 0, &mut 0);
-                let (tpu_vote_count, tpu_vote_tx_count) = (&mut 0, &mut 0);
-                let (gossip_vote_count, gossip_vote_tx_count) = (&mut 0, &mut 0);
+                let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
+                let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
+                let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
                 info!("start sending!...");
                 let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
@@ -783,9 +783,9 @@ impl BankingSimulator {
                         label, batch_count, tx_count
                     );
                     let (total_batch_count, total_tx_count) = match label {
-                        ChannelLabel::NonVote => (non_vote_count, non_vote_tx_count),
-                        ChannelLabel::TpuVote => (tpu_vote_count, tpu_vote_tx_count),
-                        ChannelLabel::GossipVote => (gossip_vote_count, gossip_vote_tx_count),
+                        ChannelLabel::NonVote => (&mut non_vote_count, &mut non_vote_tx_count),
+                        ChannelLabel::TpuVote => (&mut tpu_vote_count, &mut tpu_vote_tx_count),
+                        ChannelLabel::GossipVote => (&mut gossip_vote_count, &mut gossip_vote_tx_count),
                         ChannelLabel::Dummy => unreachable!(),
                     };
                     *total_batch_count += batch_count;
