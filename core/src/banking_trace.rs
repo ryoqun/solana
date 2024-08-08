@@ -603,7 +603,6 @@ impl BankingSimulator {
             .slot_leader_at(simulated_slot, None)
             .unwrap();
         info!("simulated leader and slot: {simulated_leader}, {simulated_slot}");
-        let start_bank = self.bank_forks.read().unwrap().root_bank();
 
         let exit = Arc::new(AtomicBool::default());
 
@@ -627,11 +626,11 @@ impl BankingSimulator {
         info!("poh is starting!");
 
         let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
-            start_bank.tick_height(),
-            start_bank.last_blockhash(),
-            start_bank.clone(),
+            bank.tick_height(),
+            bank.last_blockhash(),
+            bank.clone(),
             Some((simulated_slot, simulated_slot + 4)),
-            start_bank.ticks_per_slot(),
+            bank.ticks_per_slot(),
             false,
             self.blockstore.clone(),
             self.blockstore.get_new_shred_signal(0),
@@ -645,15 +644,12 @@ impl BankingSimulator {
             poh_recorder.clone(),
             &self.genesis_config.poh_config,
             exit.clone(),
-            start_bank.ticks_per_slot(),
+            bank.ticks_per_slot(),
             solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE + 4,
             solana_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
             record_receiver,
         );
         let warmup_duration = Duration::from_secs(12);
-        drop(start_bank);
-        // if slot is too short => bail
-        info!("warmup_duration: {:?}", warmup_duration);
 
         let (banking_retracer, retracer_thread) = BankingTracer::new(Some((
             &self.blockstore.banking_retracer_path(),
@@ -731,7 +727,7 @@ impl BankingSimulator {
             let exit = exit.clone();
 
             move || {
-                let (mut non_vote_count, mut non_vote_tx_count) = &mut (0, 0);
+                let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
                 let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
