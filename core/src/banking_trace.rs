@@ -554,13 +554,13 @@ impl BankingSimulator {
         let mut events = vec![];
         for event_file_path in &self.event_file_pathes {
             let old_len = events.len();
-            Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
+            let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(
                     "Reading {event_file_path:?} failed after {} events: {:?}",
                     events.len() - old_len,
                     error
                 );
-            })?;
+            });
             info!(
                 "Read {} events from {:?}",
                 events.len() - old_len,

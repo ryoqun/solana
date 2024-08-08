@@ -2315,6 +2315,9 @@ fn main() {
                         banking_trace_path(&ledger_path),
                     );
 
+                    //let prev_slot = simulator.determine_prev_slot_from_event_files(first_simulated_slot);
+                    //process_options.halt_at_slot = prev_slot;
+
                     let process_options = parse_process_options(&ledger_path, arg_matches);
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
 
