@@ -650,16 +650,7 @@ impl BankingSimulator {
             solana_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
             record_receiver,
         );
-        let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
-            start_bank.ticks_per_slot(),
-            self.genesis_config
-                .poh_config
-                .target_tick_duration
-                .as_nanos() as u64,
-        ) * start_bank.ticks_per_slot();
-        let warmup_duration = Duration::from_nanos(
-            (simulated_slot - (start_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
-        );
+        let warmup_duration = Duration::from_secs(12);
         drop(start_bank);
         // if slot is too short => bail
         info!("warmup_duration: {:?}", warmup_duration);
