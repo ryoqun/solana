@@ -834,13 +834,12 @@ impl BankingSimulator {
             sleep(Duration::from_millis(10));
         }
 
-        poh_recorder.write().unwrap().reset(
-            bank.clone_without_scheduler(),
-            Some((bank.slot(), bank.slot() + 1)),
-        );
-
         for _ in 0..500 {
             if poh_recorder.read().unwrap().bank().is_none() {
+                poh_recorder.write().unwrap().reset(
+                    bank.clone_without_scheduler(),
+                    Some((bank.slot(), bank.slot() + 1)),
+                );
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
