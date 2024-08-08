@@ -773,7 +773,8 @@ impl BankingSimulator {
                     let log_interval = simulation_duration_since_base - last_log_duration;
                     if log_interval > Duration::from_millis(100) {
                         let current_tx_count = non_vote_tx_count + tpu_vote_tx_count + gossip_vote_tx_count;
-                        info!("sending tps: {}", (current_tx_count - last_tx_count) as f64 / log_interval.as_secs_f64());
+                        let tps = (current_tx_count - last_tx_count) as f64 / log_interval.as_secs_f64();
+                        info!("sending tps: {} non-vote chan: {} tpu-vote chan: {} gossip vote chan: {}", tps, non_vote_sender.len(), tpu_vote_sender.len(), gossip_vote_sender.len());
                         last_log_duration = simulation_duration_since_base;
                         last_tx_count = current_tx_count;
                     }
