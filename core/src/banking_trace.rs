@@ -712,8 +712,7 @@ impl BankingSimulator {
         let (&slot_before_next_leader_slot, &(raw_base_event_time, _, _)) = timed_hashes_by_slot
             .range(start_slot..)
             .next()
-            .expect("timed hashes")
-            .clone();
+            .expect("timed hashes");
 
         let base_event_time = raw_base_event_time - warmup_duration;
         let base_simulation_time = SystemTime::now();
