@@ -787,9 +787,9 @@ impl BankingSimulator {
                         ChannelLabel::TpuVote => (&mut tpu_vote_count, &mut tpu_vote_tx_count),
                         ChannelLabel::GossipVote => (&mut gossip_vote_count, &mut gossip_vote_tx_count),
                         ChannelLabel::Dummy => unreachable!(),
-                    }
-                    total_batch_count += batch_count;
-                    total_tx_count += tx_count;
+                    };
+                    *total_batch_count += batch_count;
+                    *total_tx_count += tx_count;
 
                     if exit.load(Ordering::Relaxed) {
                         break;
