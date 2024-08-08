@@ -774,7 +774,7 @@ impl BankingSimulator {
                     if last_log_duration > Duration::from_millis(100) {
                         last_log_time = current_simulation_time;
                         let current_tx_count = non_vote_tx_count + tpu_vote_tx_count + gossip_vote_tx_count;
-                        info!("sending tps: {}", (current_tx_count - last_tx_count).as_f64() / last_log_duration.as_f64());
+                        info!("sending tps: {}", (current_tx_count - last_tx_count) as f64 / last_log_duration.as_f64());
                         last_tx_count = current_tx_count;
                     }
 
