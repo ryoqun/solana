@@ -733,7 +733,7 @@ impl BankingSimulator {
                     packet_batches_by_time.len(),
                     start_slot,
                     {
-                        let raw_base_event_time: chrono::DateTime<chrono::Utc> = (raw_base_event_time).into();
+                        let raw_base_event_time: chrono::DateTime<chrono::Utc> = raw_base_event_time.into();
                         raw_base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
                     },
                     slot_before_next_leader_slot,
@@ -847,7 +847,8 @@ impl BankingSimulator {
                 {
                     let current_simulation_time = SystemTime::now();
                     info!(
-                        "jitter: {:?} {:?}",
+                        "jitter: slot: {}, {:?} {:?}",
+                        old_slot,
                         event_time.duration_since(base_event_time).unwrap(),
                         current_simulation_time
                             .duration_since(base_simulation_time)
