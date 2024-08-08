@@ -834,7 +834,7 @@ impl BankingSimulator {
                     my_pubkey,
                     slot,
                     &bank,
-                    Some(self.blockstore),
+                    Some(&self.blockstore),
                     GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
                 );
                 poh_recorder.write().unwrap().reset(
