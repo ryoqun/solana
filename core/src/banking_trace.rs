@@ -783,7 +783,7 @@ impl BankingSimulator {
                         label, batch_count, tx_count
                     );
                     let (total_batch_count, total_tx_count) = match label {
-                        ChannelLabel::NonVote => (&mut non_vote_count, &mut non_vote_tx_count),
+                        ChannelLabel::NonVote => (non_vote_count, &mut non_vote_tx_count),
                         ChannelLabel::TpuVote => (&mut tpu_vote_count, &mut tpu_vote_tx_count),
                         ChannelLabel::GossipVote => (&mut gossip_vote_count, &mut gossip_vote_tx_count),
                         ChannelLabel::Dummy => unreachable!(),
