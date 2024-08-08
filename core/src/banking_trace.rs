@@ -735,7 +735,6 @@ impl BankingSimulator {
 
         let base_event_time = raw_base_event_time - warmup_duration;
         let base_simulation_time = SystemTime::now();
-                let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
 
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
             let exit = exit.clone();
@@ -746,6 +745,7 @@ impl BankingSimulator {
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
                 info!("start sending!...");
+                let timed_batches_to_send = packet_batches_by_time.range(base_event_time..);
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     timed_batches_to_send.clone().count(),
@@ -758,7 +758,6 @@ impl BankingSimulator {
                     slot_before_next_leader_slot,
                     warmup_duration,
                 );
-                drop(packet_batches_by_time);
                 for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
