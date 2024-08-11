@@ -2317,6 +2317,9 @@ fn main() {
 
                     //let prev_slot = simulator.determine_prev_slot_from_event_files(first_simulated_slot);
                     //process_options.halt_at_slot = prev_slot;
+                    //
+                    //let simulator BankingSimulator::new(event_file_pathes, starting_slot);
+                    //process_options.halt_at_slot = simular.parent_slot();
 
                     let process_options = parse_process_options(&ledger_path, arg_matches);
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
