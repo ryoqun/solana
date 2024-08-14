@@ -243,7 +243,10 @@ where
                     #[allow(unstable_name_collisions)]
                     expired_listeners.extend(timeout_listeners.extract_if(
                         |(_callback, registered_at)| {
-                            now.duration_since(*registered_at) > timeout_duration
+                            //now.duration_since(*registered_at) > timeout_duration
+                            sleepless_testing::at(CheckPoint::ExtractExpiredListener(
+                                now.duration_since(*registered_at) > timeout_duration,
+                            ))
                         },
                     ));
                     drop(timeout_listeners);
@@ -1539,6 +1542,7 @@ mod tests {
         let _progress = sleepless_testing::setup(&[
             &TestCheckPoint::BeforeIdleSchedulerCleaned,
             &CheckPoint::IdleSchedulerCleaned(0),
+            &CheckPoint::ExtractExpiredListener(true),
             &CheckPoint::IdleSchedulerCleaned(1),
             &TestCheckPoint::AfterIdleSchedulerCleaned,
         ]);
