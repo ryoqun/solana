@@ -1579,9 +1579,9 @@ mod tests {
         // The following assertion is racy.
         //
         // We need to make sure new_scheduler isn't treated as idle up to now since being returned
-        // to the pool after sleep(SHORTENED_TIMEOUT_DURATION * 10).
+        // to the pool after sleep(SHORTENED_MAX_POOLING_DURATION * 10).
         // Removing only old_scheduler is the expected behavior. So, make
-        // SHORTENED_TIMEOUT_DURATION rather long...
+        // SHORTENED_MAX_POOLING_DURATION rather long...
         assert_eq!(pool_raw.scheduler_inners.lock().unwrap().len(), 1);
         assert_eq!(
             pool_raw
