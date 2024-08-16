@@ -703,7 +703,7 @@ impl BankingStage {
                     .increment_consume_buffered_packets_us(consume_buffered_packets_us);
             }
             BufferedPacketsDecision::Forward => {
-                info!("process_buffered_packets: Forward {metrics_action:?}");
+                info!("process_buffered_packets: Forward {metrics_action:?} {}", slot_metrics_tracker.id);
                 let ((), forward_us) = measure_us!(forwarder.handle_forwarding(
                     unprocessed_transaction_storage,
                     false,
@@ -717,7 +717,7 @@ impl BankingStage {
                 slot_metrics_tracker.apply_action2(metrics_action);
             }
             BufferedPacketsDecision::ForwardAndHold => {
-                info!("process_buffered_packets: ForwardAndHold {metrics_action:?}");
+                info!("process_buffered_packets: ForwardAndHold {metrics_action:?} {}", slot_metrics_tracker.id);
                 let ((), forward_and_hold_us) = measure_us!(forwarder.handle_forwarding(
                     unprocessed_transaction_storage,
                     true,
@@ -730,7 +730,7 @@ impl BankingStage {
                 slot_metrics_tracker.apply_action2(metrics_action);
             }
             BufferedPacketsDecision::Hold => {
-                info!("process_buffered_packets: Hold {metrics_action:?}");
+                info!("process_buffered_packets: Hold {metrics_action:?} {}", slot_metrics_tracker.id);
             }
         }
     }
