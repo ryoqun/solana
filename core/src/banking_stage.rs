@@ -682,11 +682,11 @@ impl BankingStage {
             decision.bank_start(),
             Some(unprocessed_transaction_storage),
         );
-        info!("process_buffered_packets: {metrics_action:?}");
         slot_metrics_tracker.increment_make_decision_us(make_decision_us);
 
         match decision {
             BufferedPacketsDecision::Consume(bank_start) => {
+                info!("process_buffered_packets: Consume {metrics_action:?}");
                 // Take metrics action before consume packets (potentially resetting the
                 // slot metrics tracker to the next slot) so that we don't count the
                 // packet processing metrics from the next slot towards the metrics
@@ -703,6 +703,7 @@ impl BankingStage {
                     .increment_consume_buffered_packets_us(consume_buffered_packets_us);
             }
             BufferedPacketsDecision::Forward => {
+                info!("process_buffered_packets: Forward {metrics_action:?}");
                 let ((), forward_us) = measure_us!(forwarder.handle_forwarding(
                     unprocessed_transaction_storage,
                     false,
@@ -716,6 +717,7 @@ impl BankingStage {
                 slot_metrics_tracker.apply_action2(metrics_action);
             }
             BufferedPacketsDecision::ForwardAndHold => {
+                info!("process_buffered_packets: ForwardAndHold {metrics_action:?}");
                 let ((), forward_and_hold_us) = measure_us!(forwarder.handle_forwarding(
                     unprocessed_transaction_storage,
                     true,
@@ -726,6 +728,9 @@ impl BankingStage {
                 slot_metrics_tracker.increment_forward_and_hold_us(forward_and_hold_us);
                 // Take metrics action after forwarding packets
                 slot_metrics_tracker.apply_action2(metrics_action);
+            }
+            BufferedPacketsDecision::ForwardAndHold => {
+                info!("process_buffered_packets: Hold {metrics_action:?}");
             }
         }
     }
