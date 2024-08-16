@@ -409,11 +409,11 @@ impl LeaderSlotMetrics {
         }
     }
 
-    pub(crate) fn report(&mut self) {
+    pub(crate) fn report2(&mut self) {
         self.is_reported = true;
 
         self.timing_metrics.report(&self.id, self.slot);
-        self.transaction_error_metrics.report(&self.id, self.slot);
+        self.transaction_error_metrics.report2(&self.id, self.slot);
         self.packet_count_metrics.report(&self.id, self.slot);
         self.vote_packet_count_metrics.report(&self.id, self.slot);
         self.prioritization_fees_metric.report(&self.id, self.slot);
