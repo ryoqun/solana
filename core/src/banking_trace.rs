@@ -861,9 +861,9 @@ impl BankingSimulator {
                             old_slot,
                             if elapsed_event_time > elapsed_simulation_time { "+" } else { "-" },
                             if elapsed_event_time > elapsed_simulation_time {
-                                elapsed_event_time - elapsed_simulation_time,
+                                elapsed_event_time - elapsed_simulation_time
                             } else {
-                                elapsed_simulation_time - elapsed_event_time,
+                                elapsed_simulation_time - elapsed_event_time
                             },
                             elapsed_event_time,
                             elapsed_simulation_time,
