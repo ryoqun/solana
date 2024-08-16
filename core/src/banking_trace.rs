@@ -852,15 +852,19 @@ impl BankingSimulator {
                 if let Some((event_time, _blockhash, bank_hash)) =
                     timed_hashes_by_slot.get(&old_slot)
                 {
-                    let current_simulation_time = SystemTime::now();
-                    info!(
-                        "jitter: slot: {}, event duration: {:?} sim duration: {:?}",
-                        old_slot,
-                        event_time.duration_since(base_event_time).unwrap(),
-                        current_simulation_time
-                            .duration_since(base_simulation_time)
-                            .unwrap()
-                    );
+                    if log_enabled!(log::Level::Info) {
+                        let current_simulation_time = SystemTime::now();
+                        let elapsed_event_time = event_time.duration_since(base_event_time).unwrap();
+                        let elapsed_simulation_time = current_simulation_time.duration_since(base_simulation_time).unwrap();
+                        info!(
+                            "jitter(parent_slot: {}): {}{} (event: {:?} sim: {:?})",
+                            old_slot,
+                            if elapsed_event_time > elapsed_simulation_time { "+" } else { "-" },
+                            elapsed_event_time.abs_diff(elapsed_simulation_time),
+                            elapsed_event_time,
+                            elapsed_simulation_time,
+                        );
+                    }
                     bank.freeze_with_bank_hash_override(Some(*bank_hash));
                 } else {
                     bank.freeze_with_bank_hash_override(None);
