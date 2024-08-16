@@ -686,7 +686,7 @@ impl BankingStage {
 
         match decision {
             BufferedPacketsDecision::Consume(bank_start) => {
-                info!("process_buffered_packets: Consume {metrics_action:?} {}", slot_metrics_tracker.leader_slot_metrics.id);
+                info!("process_buffered_packets: Consume {metrics_action:?} {}", slot_metrics_tracker.id);
                 // Take metrics action before consume packets (potentially resetting the
                 // slot metrics tracker to the next slot) so that we don't count the
                 // packet processing metrics from the next slot towards the metrics
