@@ -860,7 +860,11 @@ impl BankingSimulator {
                             "jitter(parent_slot: {}): {}{:?} (event: {:?} sim: {:?})",
                             old_slot,
                             if elapsed_event_time > elapsed_simulation_time { "+" } else { "-" },
-                            elapsed_event_time.abs_diff(elapsed_simulation_time),
+                            if elapsed_event_time > elapsed_simulation_time {
+                                elapsed_event_time - elapsed_simulation_time,
+                            } else {
+                                elapsed_simulation_time - elapsed_event_time,
+                            },
                             elapsed_event_time,
                             elapsed_simulation_time,
                         );
