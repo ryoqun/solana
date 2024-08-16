@@ -525,13 +525,13 @@ impl LeaderSlotMetricsTracker {
         }
     }
 
-    pub(crate) fn apply_action(&mut self, action: MetricsTrackerAction) -> Option<Slot> {
+    pub(crate) fn apply_action2(&mut self, action: MetricsTrackerAction) -> Option<Slot> {
         match action {
             MetricsTrackerAction::Noop => None,
             MetricsTrackerAction::ReportAndResetTracker => {
                 let mut reported_slot = None;
                 if let Some(leader_slot_metrics) = self.leader_slot_metrics.as_mut() {
-                    leader_slot_metrics.report();
+                    leader_slot_metrics.report2();
                     reported_slot = leader_slot_metrics.reported_slot();
                 }
                 self.leader_slot_metrics = None;
@@ -544,7 +544,7 @@ impl LeaderSlotMetricsTracker {
             MetricsTrackerAction::ReportAndNewTracker(new_slot_metrics) => {
                 let mut reported_slot = None;
                 if let Some(leader_slot_metrics) = self.leader_slot_metrics.as_mut() {
-                    leader_slot_metrics.report();
+                    leader_slot_metrics.report2();
                     reported_slot = leader_slot_metrics.reported_slot();
                 }
                 self.leader_slot_metrics = new_slot_metrics;
