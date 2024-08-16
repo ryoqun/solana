@@ -473,7 +473,7 @@ pub struct LeaderSlotMetricsTracker {
     // Only `Some` if BankingStage detects it's time to construct our leader slot,
     // otherwise `None`
     leader_slot_metrics: Option<LeaderSlotMetrics>,
-    id: u32,
+    pub id: u32,
 }
 
 impl LeaderSlotMetricsTracker {
