@@ -857,7 +857,7 @@ impl BankingSimulator {
                         let elapsed_event_time = event_time.duration_since(base_event_time).unwrap();
                         let elapsed_simulation_time = current_simulation_time.duration_since(base_simulation_time).unwrap();
                         info!(
-                            "jitter(parent_slot: {}): {}{} (event: {:?} sim: {:?})",
+                            "jitter(parent_slot: {}): {}{:?} (event: {:?} sim: {:?})",
                             old_slot,
                             if elapsed_event_time > elapsed_simulation_time { "+" } else { "-" },
                             elapsed_event_time.abs_diff(elapsed_simulation_time),
