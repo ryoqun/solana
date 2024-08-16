@@ -682,7 +682,7 @@ impl BankingStage {
             decision.bank_start(),
             Some(unprocessed_transaction_storage),
         );
-        info!("process_buffered_packets: {decision:?} {metrics_action:?}");
+        info!("process_buffered_packets: {metrics_action:?}");
         slot_metrics_tracker.increment_make_decision_us(make_decision_us);
 
         match decision {
