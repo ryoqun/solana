@@ -1218,6 +1218,13 @@ fn main() {
                         .multiple(true)
                         .help("Use events files in the dir or individual event files"),
                 )
+                .arg(
+                    Arg::with_name("block_cost_limits")
+                        .long("block-cost-limits")
+                        //.value_name("DIR_OR_FILE") TODO
+                        .takes_value(false) // TODO
+                        .help("Change block cost limits"),
+                )
         )
         .subcommand(
             SubCommand::with_name("accounts")
@@ -2346,6 +2353,8 @@ fn main() {
                     info!("Using: block-production-method: {block_production_method}");
                     info!("Using: event files: {event_file_pathes:?}");
 
+                    let block_cost_limits = arg_matches.is_present("block_cost_limits");
+
                     let simulator = BankingSimulator::new(
                         event_file_pathes,
                         genesis_config,
@@ -2353,6 +2362,7 @@ fn main() {
                         blockstore,
                         block_production_method,
                         first_simulated_slot,
+                        block_cost_limits,
                     );
 
                     match simulator.start() {

@@ -492,6 +492,7 @@ pub struct BankingSimulator {
     blockstore: Arc<Blockstore>,
     block_production_method: BlockProductionMethod,
     first_simulated_slot: Slot,
+    block_cost_limits: bool,
 }
 
 #[derive(Error, Debug)]
@@ -511,6 +512,7 @@ impl BankingSimulator {
         blockstore: Arc<Blockstore>,
         block_production_method: BlockProductionMethod,
         first_simulated_slot: Slot,
+        block_cost_limits: bool,
     ) -> Self {
         Self {
             event_file_pathes,
@@ -519,6 +521,7 @@ impl BankingSimulator {
             blockstore,
             block_production_method,
             first_simulated_slot,
+            block_cost_limits,
         }
     }
 
@@ -599,6 +602,14 @@ impl BankingSimulator {
             .unwrap()
             .working_bank_with_scheduler()
             .clone_with_scheduler();
+
+        if self.block_cost_limits {
+            info!("setting block cost limits to MAX");
+            bank.write_cost_tracker()
+                .unwrap()
+                .set_limits(u64::MAX, u64::MAX, u64::MAX);
+        }
+
 
         let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
 
