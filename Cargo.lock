@@ -7577,6 +7577,7 @@ dependencies = [
  "lazy_static",
  "libsecp256k1",
  "log",
+ "once_cell",
  "percentage",
  "prost",
  "qualifier_attr",
