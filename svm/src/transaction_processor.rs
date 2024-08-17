@@ -988,6 +988,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         };
 
         //use crate::transaction_priority_details::GetTransactionPriorityDetails;
+        let cpu_elapsed = cpu_time.elapsed();
         let account_locks_in_json = tx.get_account_locks_unchecked().into();
 
         record_transaction_timings(
