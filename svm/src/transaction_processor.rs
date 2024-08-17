@@ -986,6 +986,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             None
         };
 
+        use crate::transaction_priority_details::GetTransactionPriorityDetails;
         record_transaction_timings(
             self.slot,
             tx.signature(),
