@@ -924,7 +924,7 @@ impl BankingSimulator {
                     info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
                 }
                 retransmit_slots_sender.send(bank.slot()).unwrap();
-                self.bank_forks.write().unwrap().insert(new_bank);
+                self.bank_forks.write().unwrap().insert(solana_sdk::scheduling::SchedulingMode::BlockProduction, new_bank);
                 bank = self
                     .bank_forks
                     .read()

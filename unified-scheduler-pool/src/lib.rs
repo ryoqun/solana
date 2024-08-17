@@ -21,7 +21,6 @@ use {
         execute_batch, TransactionBatchWithIndexes, TransactionStatusSender,
     },
     solana_poh::poh_recorder::TransactionRecorder,
-    solana_program_runtime::timings::ExecuteTimings,
     solana_runtime::{
         bank::Bank,
         installed_scheduler_pool::{

@@ -396,7 +396,6 @@ impl BankingStage {
                 connection_cache,
                 bank_forks,
                 prioritization_fee_cache,
-                enable_forwarding,
             ),
             CentralScheduler => Self::new_central_scheduler(
                 cluster_info,
@@ -411,6 +410,7 @@ impl BankingStage {
                 connection_cache,
                 bank_forks,
                 prioritization_fee_cache,
+                enable_forwarding,
             ),
             UnifiedScheduler => Self::new_unified_scheduler(
                 cluster_info,
