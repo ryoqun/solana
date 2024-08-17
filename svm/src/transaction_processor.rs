@@ -987,7 +987,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         };
 
         record_transaction_timings(
-            self.slot(),
+            self.slot,
             tx.signature(),
             &executed_units,
             &process_result,
