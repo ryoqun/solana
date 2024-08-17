@@ -104,7 +104,7 @@ pub struct HandlerContext {
     transaction_status_sender: Option<TransactionStatusSender>,
     replay_vote_sender: Option<ReplayVoteSender>,
     prioritization_fee_cache: Arc<PrioritizationFeeCache>,
-    transaction_recorder: Option<TransactionRecorder>,
+    transaction_recorder: Mutex<Option<TransactionRecorder>>,
     dummy_sender: Option<DummySender>,
 }
 
@@ -188,7 +188,7 @@ where
                 transaction_status_sender,
                 replay_vote_sender,
                 prioritization_fee_cache,
-                transaction_recorder,
+                transaction_recorder: Mutex::new(transaction_recorder),
                 dummy_sender,
             },
             weak_self: weak_self.clone(),
@@ -437,6 +437,8 @@ pub trait TaskHandler: Send + Sync + Debug + Sized + 'static {
 #[derive(Debug)]
 pub struct DefaultTaskHandler;
 
+pub static MY_POH: Mutex<Option<TransactionRecorder>> = Mutex::new(None);
+
 impl TaskHandler for DefaultTaskHandler {
     fn handle(
         result: &mut Result<()>,
@@ -463,8 +465,8 @@ impl TaskHandler for DefaultTaskHandler {
                     if !scheduling_context.can_commit() {
                         return false;
                     }
-                    let summary = handler_context
-                        .transaction_recorder
+                    let summary = MY_POH
+                        .lock().unwrap()
                         .as_ref()
                         .unwrap()
                         .record_transactions(

@@ -657,6 +657,7 @@ impl BankingSimulator {
             exit.clone(),
         );
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
+        solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
         let poh_service = PohService::new(
             poh_recorder.clone(),
             &self.genesis_config.poh_config,
