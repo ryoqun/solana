@@ -205,7 +205,7 @@ fn record_transaction_timings(
 
     if let Some(sender) = maybe_sender {
         sender
-            .send_buffered(TransactionTimings {
+            .send(TransactionTimings {
                 slot,
                 transaction_index: 0, // todo
                 sig,
