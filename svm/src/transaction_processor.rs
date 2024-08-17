@@ -439,17 +439,6 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
                             environment,
                             config,
                         );
-                        record_transaction_timings(
-                            self.slot(),
-                            tx.signature(),
-                            &executed_units,
-                            &process_result,
-                            std::thread::current().name().unwrap().into(),
-                            &process_message_time,
-                            &cpu_elapsed,
-                            tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
-                            account_locks_in_json,
-                        );
 
                         // Update batch specific cache of the loaded programs with the modifications
                         // made by the transaction, if it executed successfully.
@@ -996,6 +985,18 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         } else {
             None
         };
+
+        record_transaction_timings(
+            self.slot(),
+            tx.signature(),
+            &executed_units,
+            &process_result,
+            std::thread::current().name().unwrap().into(),
+            &process_message_time,
+            &cpu_elapsed,
+            tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
+            account_locks_in_json,
+        );
 
         ExecutedTransaction {
             execution_details: TransactionExecutionDetails {
