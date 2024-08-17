@@ -18,8 +18,8 @@ percentage = { workspace = true }
 qualifier_attr = { workspace = true, optional = true }
 serde = { workspace = true, features = ["rc"] }
 serde_derive = { workspace = true }
-serde_json = "1.0.81"
-serde_with = "3.9.0"
+serde_json = { workspace = true }
+serde_with = { workspace = true }
 solana-bpf-loader-program = { workspace = true }
 solana-compute-budget = { workspace = true }
 solana-fee = { workspace = true }
