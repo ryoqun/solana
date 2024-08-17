@@ -13,7 +13,7 @@ edition = { workspace = true }
 crossbeam-channel = { workspace = true }
 itertools = { workspace = true }
 log = { workspace = true }
-once_cell = { workspace = true }
+once-cell = { workspace = true }
 percentage = { workspace = true }
 qualifier_attr = { workspace = true, optional = true }
 serde = { workspace = true, features = ["rc"] }
