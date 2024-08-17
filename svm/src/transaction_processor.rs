@@ -145,7 +145,7 @@ fn record_transaction_timings(
     priority: u64,
     account_locks: OwnedTransactionAccountLocks,
 ) {
-    if slot == 0 {
+    if slot == 0 || slot < 282254384 { // provide flag....
         return;
     }
 
