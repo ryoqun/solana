@@ -559,7 +559,7 @@ impl BankingSimulator {
             let old_len = events.len();
             let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(
-                    "Reading {event_file_path:?} failed after {} events: {:?}",
+                    "Reading {event_file_path:?} failed after {} events: {:?} due to file corruption or unclearn validator shutdown",
                     events.len() - old_len,
                     error
                 );
@@ -931,6 +931,8 @@ impl BankingSimulator {
                     .write()
                     .unwrap()
                     .set_bank(bank.clone_with_scheduler(), false);
+            } else {
+                debug!("bank cost (ongoing): slot {} {:?}", bank.slot(), self.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
             }
 
             sleep(Duration::from_millis(10));
