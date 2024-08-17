@@ -94,6 +94,133 @@ impl ExecutionRecordingConfig {
     }
 }
 
+
+#[derive(Default)]
+struct TransactionTimings {
+    pub slot: solana_sdk::clock::Slot,
+    pub transaction_index: u64,
+    pub sig: Signature,
+    pub cu: u64,
+    pub execution_result: Option<Result<()>>,
+    pub finish_time: Option<std::time::SystemTime>,
+    pub thread_name: String,
+    pub execution_us: u64,
+    pub execution_cpu_us: u128,
+    pub priority: u64,
+    pub account_locks: OwnedTransactionAccountLocks,
+}
+
+use serde_with::*;
+
+#[serde_as]
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct OwnedTransactionAccountLocks {
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub readonly: Vec<Pubkey>,
+    #[serde_as(as = "Vec<DisplayFromStr>")]
+    pub writable: Vec<Pubkey>,
+}
+
+impl<'a> From<solana_sdk::transaction::TransactionAccountLocks<'a>>
+    for OwnedTransactionAccountLocks
+{
+    fn from(locks: solana_sdk::transaction::TransactionAccountLocks) -> Self {
+        Self {
+            readonly: locks.readonly.into_iter().cloned().collect(),
+            writable: locks.writable.into_iter().cloned().collect(),
+        }
+    }
+}
+
+fn record_transaction_timings(
+    slot: Slot,
+    &sig: &Signature,
+    &cu: &u64,
+    execution_result: &Result<crate::message_processor::ProcessedMessageInfo>,
+    thread_name: String,
+    process_message_time: &Measure,
+    cpu_time: &std::time::Duration,
+    priority: u64,
+    account_locks: OwnedTransactionAccountLocks,
+) {
+    if slot == 0 {
+        return;
+    }
+
+    static INSTANCE: once_cell::sync::OnceCell<
+        Option<crossbeam_channel::Sender<TransactionTimings>>,
+    > = once_cell::sync::OnceCell::new();
+    let maybe_sender = INSTANCE.get_or_init(|| {
+        let enable = std::env::var("SOLANA_TRANSACTION_TIMINGS").is_ok();
+        if !enable {
+            return None;
+        }
+        if let Ok(config) = std::env::var("SOLANA_METRICS_CONFIG") {
+            assert!(
+                config.contains("localhost"),
+                "Don't spam non-localhost influxdbs: {}",
+                config
+            )
+        }
+
+        let (sender, receiver) = crossbeam_channel::unbounded::<TransactionTimings>();
+        let _handle = std::thread::Builder::new()
+            .name("solTxTimings".into())
+            .spawn(move || loop {
+                while let Ok(transaction_timings) =
+                    receiver.recv_timeout(std::time::Duration::from_millis(20))
+                {
+                    datapoint_info_at!(
+                        transaction_timings.finish_time.unwrap(),
+                        "transaction_timings",
+                        ("slot", transaction_timings.slot, i64),
+                        ("index", transaction_timings.transaction_index, i64),
+                        ("thread", transaction_timings.thread_name, String),
+                        ("signature", &format!("{}", transaction_timings.sig), String),
+                        (
+                            "account_locks_in_json",
+                            serde_json::to_string(&transaction_timings.account_locks).unwrap(),
+                            String
+                        ),
+                        (
+                            "status",
+                            format!(
+                                "{:?}",
+                                transaction_timings.execution_result.as_ref().unwrap()
+                            ),
+                            String
+                        ),
+                        ("duration", transaction_timings.execution_us, i64),
+                        ("cpu_duration", transaction_timings.execution_cpu_us, i64),
+                        ("compute_units", transaction_timings.cu, i64),
+                        ("priority", transaction_timings.priority, i64),
+                    );
+                }
+            })
+            .unwrap();
+
+        Some(sender)
+    });
+
+    if let Some(sender) = maybe_sender {
+        sender
+            .send_buffered(TransactionTimings {
+                slot,
+                transaction_index: 0, // todo
+                sig,
+                cu,
+                execution_result: Some(execution_result.clone().map(|_| ())),
+                finish_time: Some(std::time::SystemTime::now()),
+                thread_name,
+                execution_us: process_message_time.as_us(),
+                execution_cpu_us: cpu_time.as_micros(),
+                priority,
+                account_locks,
+            })
+            .unwrap()
+    }
+}
+
 /// Configurations for processing transactions.
 #[derive(Default)]
 pub struct TransactionProcessingConfig<'a> {
