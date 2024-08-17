@@ -196,7 +196,7 @@ fn record_transaction_timings(
                         ("priority", transaction_timings.priority, i64),
                     );
                 }
-                sleep(std::time::Duration::from_millis(20));
+                std::thread::sleep(std::time::Duration::from_millis(20));
             })
             .unwrap();
 
