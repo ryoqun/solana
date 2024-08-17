@@ -138,7 +138,7 @@ fn record_transaction_timings(
     slot: Slot,
     &sig: &Signature,
     &cu: &u64,
-    execution_result: &transaction::Result<crate::message_processor::ProcessedMessageInfo>,
+    execution_result: &transaction::Result<()>,
     thread_name: String,
     process_message_time: &Measure,
     cpu_time: &std::time::Duration,
