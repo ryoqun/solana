@@ -899,6 +899,7 @@ impl BankingSimulator {
                         "{} isn't leader anymore at slot {}; new leader: {}",
                         simulated_leader, new_slot, new_leader
                     );
+                    info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
                     break;
                 } else if sender_thread.is_finished() {
                     warn!("sender thread existed maybe due to completion of sending traced events");
@@ -919,7 +920,9 @@ impl BankingSimulator {
                 // make sure parent is frozen for finalized hashes via the above
                 // new()-ing of its child bank
                 banking_retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
-                info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
+                if bank.collector_id == simulated_leader {
+                    info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
+                }
                 retransmit_slots_sender.send(bank.slot()).unwrap();
                 self.bank_forks.write().unwrap().insert(new_bank);
                 bank = self
