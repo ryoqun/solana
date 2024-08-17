@@ -7572,6 +7572,7 @@ name = "solana-svm"
 version = "2.1.0"
 dependencies = [
  "bincode",
+ "crossbeam-channel",
  "itertools 0.12.1",
  "lazy_static",
  "libsecp256k1",

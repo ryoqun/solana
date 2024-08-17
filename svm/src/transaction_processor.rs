@@ -101,7 +101,7 @@ struct TransactionTimings {
     pub transaction_index: u64,
     pub sig: Signature,
     pub cu: u64,
-    pub execution_result: Option<Result<()>>,
+    pub execution_result: Option<transaction::Result<()>>,
     pub finish_time: Option<std::time::SystemTime>,
     pub thread_name: String,
     pub execution_us: u64,
