@@ -932,7 +932,7 @@ impl BankingSimulator {
                     .unwrap()
                     .set_bank(bank.clone_with_scheduler(), false);
             } else {
-                debug!("bank cost (ongoing): slot {} {:?}", bank.slot(), self.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
+                debug!("bank cost: slot: {} {:?} (ongoing)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
             }
 
             sleep(Duration::from_millis(10));
