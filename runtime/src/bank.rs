@@ -5490,7 +5490,7 @@ impl Bank {
                 "".to_string()
             }
         );
-        info!("frozen bank cost: {slot} {}", self.read_cost_tracker().unwrap());
+        info!("frozen bank cost: {slot} {:?}", self.read_cost_tracker().unwrap());
 
         if let Some(bank_hash_override) = bank_hash_override {
             // Avoid to optimize out hash along with the whole computation by super smart rustc.
