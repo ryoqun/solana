@@ -751,7 +751,7 @@ impl BankingStage {
                                                 );
                                                 // wire cost tracker....
                                                 //let i = ((u32::MAX - TryInto::<u32>::try_into(priority).unwrap()) as u64) << 32
-                                                let i = ((u64::MAX - priority) as u64) << 64
+                                                let i = ((u64::MAX - priority) as u128) << 64
                                                     | task_ids[*i] as solana_runtime::installed_scheduler_pool::Index;
 
                                                 Some((tx, i))
