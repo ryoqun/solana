@@ -94,6 +94,7 @@ impl ExecutionRecordingConfig {
     }
 }
 
+use solana_sdk::signature::Signature;
 
 #[derive(Default)]
 struct TransactionTimings {
