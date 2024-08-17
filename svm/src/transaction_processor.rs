@@ -995,7 +995,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             self.slot,
             tx.signature(),
             &executed_units,
-            &process_result,
+            &status,
             std::thread::current().name().unwrap().into(),
             &process_message_time,
             &cpu_elapsed,
