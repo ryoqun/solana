@@ -610,7 +610,6 @@ impl BankingSimulator {
                 .set_limits(u64::MAX, u64::MAX, u64::MAX);
         }
 
-
         let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
