@@ -388,7 +388,7 @@ impl TracedSender {
         self.sender.send(batch)
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.sender.len()
     }
 }

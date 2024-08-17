@@ -62,10 +62,19 @@ type Result<T> = std::result::Result<T, PohRecorderError>;
 
 pub type WorkingBankEntry = (Arc<Bank>, (Entry, u64));
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BankStart {
-    pub working_bank: Arc<Bank>,
+    pub working_bank: BankWithScheduler,
     pub bank_creation_time: Arc<Instant>,
+}
+
+impl Clone for BankStart {
+    fn clone(&self) -> Self {
+        Self {
+            working_bank: self.working_bank.clone_with_scheduler(),
+            bank_creation_time: self.bank_creation_time.clone(),
+        }
+    }
 }
 
 impl BankStart {
@@ -138,7 +147,7 @@ pub struct RecordTransactionsSummary {
     pub starting_transaction_index: Option<usize>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TransactionRecorder {
     // shared by all users of PohRecorder
     pub record_sender: Sender<Record>,
@@ -380,6 +389,10 @@ impl PohRecorder {
             .slot_leader_at(current_slot + slots, None)
     }
 
+    pub fn current_slot(&self) -> Slot {
+        self.slot_for_tick_height(self.tick_height)
+    }
+
     /// Return the leader and slot pair after `slots_in_the_future` slots.
     pub fn leader_and_slot_after_n_slots(
         &self,
@@ -403,7 +416,7 @@ impl PohRecorder {
 
     pub fn bank_start(&self) -> Option<BankStart> {
         self.working_bank.as_ref().map(|w| BankStart {
-            working_bank: w.bank.clone(),
+            working_bank: w.bank.clone_with_scheduler(),
             bank_creation_time: w.start.clone(),
         })
     }
@@ -672,6 +685,11 @@ impl PohRecorder {
         self.leader_first_tick_height_including_grace_ticks =
             leader_first_tick_height_including_grace_ticks;
         self.leader_last_tick_height = leader_last_tick_height;
+    }
+
+    pub fn swap_working_bank(&mut self, bank: BankWithScheduler) {
+        // assert_eq!(slot)
+        self.working_bank.as_mut().unwrap().bank = bank;
     }
 
     pub fn set_bank(&mut self, bank: BankWithScheduler, track_transaction_indexes: bool) {
@@ -1130,7 +1148,7 @@ impl PohRecorder {
 }
 
 pub fn create_test_recorder(
-    bank: Arc<Bank>,
+    bank: BankWithScheduler,
     blockstore: Arc<Blockstore>,
     poh_config: Option<PohConfig>,
     leader_schedule_cache: Option<Arc<LeaderScheduleCache>>,
@@ -1159,7 +1177,7 @@ pub fn create_test_recorder(
     );
     let ticks_per_slot = bank.ticks_per_slot();
 
-    poh_recorder.set_bank(BankWithScheduler::new_without_scheduler(bank), false);
+    poh_recorder.set_bank(bank, false);
     let poh_recorder = Arc::new(RwLock::new(poh_recorder));
     let poh_service = PohService::new(
         poh_recorder.clone(),
