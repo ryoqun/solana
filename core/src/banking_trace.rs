@@ -920,7 +920,7 @@ impl BankingSimulator {
                 // make sure parent is frozen for finalized hashes via the above
                 // new()-ing of its child bank
                 banking_retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
-                if bank.collector_id == simulated_leader {
+                if bank.collector_id() == simulated_leader {
                     info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
                 }
                 retransmit_slots_sender.send(bank.slot()).unwrap();
