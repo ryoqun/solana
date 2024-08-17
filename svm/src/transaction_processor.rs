@@ -169,9 +169,7 @@ fn record_transaction_timings(
         let _handle = std::thread::Builder::new()
             .name("solTxTimings".into())
             .spawn(move || loop {
-                while let Ok(transaction_timings) =
-                    receiver.recv_timeout(std::time::Duration::from_millis(20))
-                {
+                while let Ok(transaction_timings) = receiver.try_recv() {
                     datapoint_info_at!(
                         transaction_timings.finish_time.unwrap(),
                         "transaction_timings",
@@ -198,6 +196,7 @@ fn record_transaction_timings(
                         ("priority", transaction_timings.priority, i64),
                     );
                 }
+                sleep(std::time::Duration::from_millis(20));
             })
             .unwrap();
 
