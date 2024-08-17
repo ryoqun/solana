@@ -986,7 +986,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             None
         };
 
-        use crate::transaction_priority_details::GetTransactionPriorityDetails;
+        //use crate::transaction_priority_details::GetTransactionPriorityDetails;
         record_transaction_timings(
             self.slot,
             tx.signature(),
@@ -995,7 +995,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             std::thread::current().name().unwrap().into(),
             &process_message_time,
             &cpu_elapsed,
-            tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
+            0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
             account_locks_in_json,
         );
 
