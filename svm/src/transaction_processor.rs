@@ -112,6 +112,7 @@ struct TransactionTimings {
 }
 
 use serde_with::*;
+use serde_derive::Serialize;
 
 #[serde_as]
 #[derive(Debug, Clone, Default, Serialize)]
