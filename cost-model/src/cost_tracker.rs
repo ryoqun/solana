@@ -198,6 +198,10 @@ impl CostTracker {
         self.block_cost
     }
 
+    pub fn vote_cost(&self) -> u64 {
+        self.vote_cost
+    }
+
     pub fn transaction_count(&self) -> u64 {
         self.transaction_count
     }
