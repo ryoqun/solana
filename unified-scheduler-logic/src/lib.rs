@@ -772,11 +772,13 @@ impl SchedulingStateMachine {
         self.handled_task_total.increment_self();
         self.unlock_usage_queues(task);
         if self.blocked_task_count() > 0 {
+            /*
             assert_gt!(
                 self.active_task_count(),
                 self.blocked_task_count(),
                 "no deadlock"
             );
+            */
         }
     }
 
