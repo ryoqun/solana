@@ -134,6 +134,7 @@ impl<'a> From<solana_sdk::transaction::TransactionAccountLocks<'a>>
     }
 }
 
+use solana_sdk::transaction::TransactionAccountLocks;
 fn record_transaction_timings<'a>(
     slot: Slot,
     &sig: &Signature,
