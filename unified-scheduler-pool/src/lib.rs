@@ -451,17 +451,19 @@ impl TaskHandler for DefaultTaskHandler {
         if handler_context.dummy_sender.is_none() {
             let wall_time = Instant::now();
             let cpu_time = cpu_time::ThreadTime::now();
-            let cost = None;
 
-            if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
+            let cost = if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
                 use solana_cost_model::cost_model::CostModel;
                 let c = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
                 if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
                     *result = Err(e.into());
                     return;
                 }
-                cost = Some(c);
-            }
+                Some(c)
+            } else {
+                None
+            };
+
             // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
             // responsible for locking.
             let batch = scheduling_context
