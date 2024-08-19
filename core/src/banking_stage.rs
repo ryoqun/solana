@@ -789,7 +789,7 @@ impl BankingStage {
                             std::thread::sleep(Duration::from_millis(10));
                         }
                     }
-                    if poh_recorder.is_exited.fetch(Ordering::Relaxed) {
+                    if poh_recorder.read().unwrap().is_exited.fetch(Ordering::Relaxed) {
                         break;
                     }
                 })
