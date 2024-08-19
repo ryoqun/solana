@@ -451,13 +451,16 @@ impl TaskHandler for DefaultTaskHandler {
         if handler_context.dummy_sender.is_none() {
             let wall_time = Instant::now();
             let cpu_time = cpu_time::ThreadTime::now();
+            let cost = None;
+
             if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
                 use solana_cost_model::cost_model::CostModel;
-                let cost = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
-                if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&cost) {
+                let c = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
+                if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
                     *result = Err(e.into());
                     return;
                 }
+                cost = Some(c);
             }
             // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
             // responsible for locking.
@@ -499,6 +502,9 @@ impl TaskHandler for DefaultTaskHandler {
             );
 
             if result.is_err() {
+                if let Some(cost) = cost {
+                    scheduling_context.bank().write_cost_tracker().unwrap().remove(cost);
+                }
                 use solana_svm::transaction_processor::record_transaction_timings;
                 record_transaction_timings(
                     scheduling_context.slot(),
