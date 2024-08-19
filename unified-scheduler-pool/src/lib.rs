@@ -490,17 +490,17 @@ impl TaskHandler for DefaultTaskHandler {
                 pre_commit_callback,
             );
 
-            if result.is_err {
+            if result.is_err() {
                 record_transaction_timings(
                     scheduling_context.slot(),
-                    tx.signature(),
+                    transaction.signature(),
                     &0,
                     &result
                     std::thread::current().name().unwrap().into(),
                     wall_time.elapsed().as_micros(),
                     &cpu_time.elapsed(),
-                    0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
-                    tx.get_account_locks_unchecked(),
+                    0, // transaction.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
+                    transaction.get_account_locks_unchecked(),
                 );
             }
         } else {
