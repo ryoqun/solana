@@ -452,59 +452,62 @@ impl TaskHandler for DefaultTaskHandler {
             let wall_time = Instant::now();
             let cpu_time = cpu_time::ThreadTime::now();
 
-            let cost = if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
+            let (cost, would_exceed) = if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
                 use solana_cost_model::cost_model::CostModel;
                 let c = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
                 if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
                     *result = Err(e.into());
-                    return;
+                    (Some(c), true)
+                } else {
+                    (Some(c), false)
                 }
-                Some(c)
             } else {
-                None
+                (None, false)
             };
 
-            // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
-            // responsible for locking.
-            let batch = scheduling_context
-                .bank()
-                .prepare_unlocked_batch_from_single_tx(transaction);
-            let batch_with_indexes = TransactionBatchWithIndexes {
-                batch,
-                transaction_indexes: vec![(index as usize)],
-            };
+            if result.is_ok() {
+                // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
+                // responsible for locking.
+                let batch = scheduling_context
+                    .bank()
+                    .prepare_unlocked_batch_from_single_tx(transaction);
+                let batch_with_indexes = TransactionBatchWithIndexes {
+                    batch,
+                    transaction_indexes: vec![(index as usize)],
+                };
 
-            let pre_commit_callback = match scheduling_context.mode() {
-                SchedulingMode::BlockVerification => None,
-                SchedulingMode::BlockProduction => Some(|| {
-                    if !scheduling_context.can_commit() {
-                        return false;
-                    }
-                    let summary = MY_POH
-                        .lock().unwrap()
-                        .as_ref()
-                        .unwrap()
-                        .record_transactions(
-                            scheduling_context.bank().slot(),
-                            vec![transaction.to_versioned_transaction()],
-                        );
-                    summary.result.is_ok()
-                }),
-            };
+                let pre_commit_callback = match scheduling_context.mode() {
+                    SchedulingMode::BlockVerification => None,
+                    SchedulingMode::BlockProduction => Some(|| {
+                        if !scheduling_context.can_commit() {
+                            return false;
+                        }
+                        let summary = MY_POH
+                            .lock().unwrap()
+                            .as_ref()
+                            .unwrap()
+                            .record_transactions(
+                                scheduling_context.bank().slot(),
+                                vec![transaction.to_versioned_transaction()],
+                            );
+                        summary.result.is_ok()
+                    }),
+                };
 
-            *result = execute_batch(
-                &batch_with_indexes,
-                scheduling_context.bank(),
-                handler_context.transaction_status_sender.as_ref(),
-                handler_context.replay_vote_sender.as_ref(),
-                timings,
-                handler_context.log_messages_bytes_limit,
-                &handler_context.prioritization_fee_cache,
-                pre_commit_callback,
-            );
+                *result = execute_batch(
+                    &batch_with_indexes,
+                    scheduling_context.bank(),
+                    handler_context.transaction_status_sender.as_ref(),
+                    handler_context.replay_vote_sender.as_ref(),
+                    timings,
+                    handler_context.log_messages_bytes_limit,
+                    &handler_context.prioritization_fee_cache,
+                    pre_commit_callback,
+                );
+            }
 
             if result.is_err() {
-                if let Some(cost) = cost {
+                if !would_exceed {
                     scheduling_context.bank().write_cost_tracker().unwrap().remove(&cost);
                 }
                 use solana_svm::transaction_processor::record_transaction_timings;
