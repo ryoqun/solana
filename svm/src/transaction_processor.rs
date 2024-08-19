@@ -996,7 +996,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             &executed_units,
             &status,
             std::thread::current().name().unwrap().into(),
-            &process_message_time.as_us(),
+            process_message_time.as_us(),
             &cpu_time.elapsed(),
             0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
             tx.get_account_locks_unchecked(),
