@@ -140,7 +140,7 @@ fn record_transaction_timings(
     &cu: &u64,
     execution_result: &transaction::Result<()>,
     thread_name: String,
-    process_message_time: &Measure,
+    process_message_time: &u64,
     cpu_time: &std::time::Duration,
     priority: u64,
     account_locks: OwnedTransactionAccountLocks,
