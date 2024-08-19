@@ -8000,6 +8000,7 @@ version = "2.1.0"
 dependencies = [
  "ahash 0.8.10",
  "assert_matches",
+ "cpu-time",
  "crossbeam-channel",
  "dashmap",
  "derivative",
@@ -8013,6 +8014,7 @@ dependencies = [
  "solana-program-runtime",
  "solana-runtime",
  "solana-sdk",
+ "solana-svm",
  "solana-timings",
  "solana-unified-scheduler-logic",
  "static_assertions",

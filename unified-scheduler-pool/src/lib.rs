@@ -498,7 +498,7 @@ impl TaskHandler for DefaultTaskHandler {
                     &0,
                     &result,
                     std::thread::current().name().unwrap().into(),
-                    wall_time.elapsed().as_micros(),
+                    wall_time.elapsed().as_micros().try_into().unwrap(),
                     &cpu_time.elapsed(),
                     0, // transaction.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
                     transaction.get_account_locks_unchecked(),
