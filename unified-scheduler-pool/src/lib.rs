@@ -451,6 +451,13 @@ impl TaskHandler for DefaultTaskHandler {
         if handler_context.dummy_sender.is_none() {
             let wall_time = Instant::now();
             let cpu_time = cpu_time::ThreadTime::now();
+            if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
+                let cost = CostModel::calculate_cost(transaction, scheduling_context.bank());
+                if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(cost) {
+                    *result = e.into();
+                    return;
+                }
+            }
             // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
             // responsible for locking.
             let batch = scheduling_context
