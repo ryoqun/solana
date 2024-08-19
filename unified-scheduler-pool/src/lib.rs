@@ -491,6 +491,7 @@ impl TaskHandler for DefaultTaskHandler {
             );
 
             if result.is_err() {
+                use solana_svm::transaction_processor::record_transaction_timings;
                 record_transaction_timings(
                     scheduling_context.slot(),
                     transaction.signature(),
