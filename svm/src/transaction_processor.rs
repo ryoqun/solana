@@ -214,7 +214,7 @@ fn record_transaction_timings(
                 execution_result: Some(execution_result.clone().map(|_| ())),
                 finish_time: Some(std::time::SystemTime::now()),
                 thread_name,
-                execution_us: process_message_time.as_us(),
+                execution_us: process_message_time,
                 execution_cpu_us: cpu_time.as_micros(),
                 priority,
                 account_locks,
