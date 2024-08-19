@@ -449,6 +449,8 @@ impl TaskHandler for DefaultTaskHandler {
         handler_context: &HandlerContext,
     ) {
         if handler_context.dummy_sender.is_none() {
+            let wall_time = Instant::now();
+            let cpu_time = cpu_time::ThreadTime::now();
             // scheduler must properly prevent conflicting tx executions. thus, task handler isn't
             // responsible for locking.
             let batch = scheduling_context
@@ -487,6 +489,20 @@ impl TaskHandler for DefaultTaskHandler {
                 &handler_context.prioritization_fee_cache,
                 pre_commit_callback,
             );
+
+            if result.is_err {
+                record_transaction_timings(
+                    scheduling_context.slot(),
+                    tx.signature(),
+                    &0,
+                    &result
+                    std::thread::current().name().unwrap().into(),
+                    &wall_time.elapsed().as_micros(),
+                    &cpu_elapsed,
+                    0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
+                    account_locks_in_json,
+                );
+            }
         } else {
             handler_context
                 .dummy_sender
@@ -839,7 +855,7 @@ struct LogInterval(usize);
 impl LogInterval {
     fn increment(&mut self) -> bool {
         self.0 = self.0.checked_add(1).unwrap();
-        self.0 % 10000 == 0
+        self.0 % 2000 == 0
     }
 }
 

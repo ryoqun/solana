@@ -204,6 +204,7 @@ fn record_transaction_timings(
     });
 
     if let Some(sender) = maybe_sender {
+        let account_locks = account_locks.into();
         sender
             .send(TransactionTimings {
                 slot,
@@ -988,8 +989,6 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
         };
 
         //use crate::transaction_priority_details::GetTransactionPriorityDetails;
-        let cpu_elapsed = cpu_time.elapsed();
-        let account_locks_in_json = tx.get_account_locks_unchecked().into();
 
         record_transaction_timings(
             self.slot,
@@ -997,10 +996,10 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             &executed_units,
             &status,
             std::thread::current().name().unwrap().into(),
-            &process_message_time,
-            &cpu_elapsed,
+            &process_message_time.as_us(),
+            &cpu_time.elapsed(),
             0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
-            account_locks_in_json,
+            tx.get_account_locks_unchecked(),
         );
 
         ExecutedTransaction {
