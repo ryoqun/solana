@@ -650,7 +650,7 @@ impl BankingStage {
         gossip_vote_receiver: BankingPacketReceiver,
         bank_forks: Arc<RwLock<BankForks>>,
     ) -> Self {
-        // todo: qos, forwarding, proper handling of buffered packets, vote storage, vote only
+        // todo: forwarding, proper handling of buffered packets, vote storage, vote only
         // blocks...
         struct MonotonicIdGenerator {
             next_task_id: std::sync::atomic::AtomicU32,
