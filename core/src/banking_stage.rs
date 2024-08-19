@@ -776,11 +776,16 @@ impl BankingStage {
                                 }
                             }
                         }
-                        /*
-                        _ => {
+                        BufferedPacketsDecision::Forward => {
+                            while let Ok(_) = packet_deserializer.packet_batch_receiver.try_recv() {
+                            }
+                        }
+                        BufferedPacketsDecision::ForwardAndHold => {
                             std::thread::sleep(Duration::from_millis(10));
                         }
-                        */
+                        BufferedPacketsDecision::Hold => {
+                            std::thread::sleep(Duration::from_millis(10));
+                        }
                     }
                 })
                 .unwrap()
