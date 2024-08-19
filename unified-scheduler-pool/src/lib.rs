@@ -495,7 +495,7 @@ impl TaskHandler for DefaultTaskHandler {
                     scheduling_context.slot(),
                     transaction.signature(),
                     &0,
-                    &result
+                    &result,
                     std::thread::current().name().unwrap().into(),
                     wall_time.elapsed().as_micros(),
                     &cpu_time.elapsed(),

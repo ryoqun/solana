@@ -10,6 +10,7 @@ license = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
+cpu-time = "1.0.0"
 ahash = { workspace = true }
 assert_matches = { workspace = true }
 crossbeam-channel = { workspace = true }
@@ -23,6 +24,7 @@ solana-program-runtime = { workspace = true }
 solana-poh = { workspace = true }
 solana-runtime = { workspace = true }
 solana-sdk = { workspace = true }
+solana-svm = { workspace = true }
 solana-timings = { workspace = true }
 solana-unified-scheduler-logic = { workspace = true }
 vec_extract_if_polyfill = { workspace = true }
