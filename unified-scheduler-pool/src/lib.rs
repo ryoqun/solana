@@ -452,14 +452,14 @@ impl TaskHandler for DefaultTaskHandler {
             let wall_time = Instant::now();
             let cpu_time = cpu_time::ThreadTime::now();
 
-            let (cost, would_exceed) = if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
+            let (cost, added_cost) = if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
                 use solana_cost_model::cost_model::CostModel;
                 let c = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
                 if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
                     *result = Err(e.into());
-                    (Some(c), true)
-                } else {
                     (Some(c), false)
+                } else {
+                    (Some(c), true)
                 }
             } else {
                 (None, false)
@@ -507,7 +507,7 @@ impl TaskHandler for DefaultTaskHandler {
             }
 
             if result.is_err() {
-                if !would_exceed {
+                if added_cost {
                     scheduling_context.bank().write_cost_tracker().unwrap().remove(&cost);
                 }
                 use solana_svm::transaction_processor::record_transaction_timings;
