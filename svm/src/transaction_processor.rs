@@ -134,7 +134,7 @@ impl<'a> From<solana_sdk::transaction::TransactionAccountLocks<'a>>
     }
 }
 
-fn record_transaction_timings(
+fn record_transaction_timings<'a>(
     slot: Slot,
     &sig: &Signature,
     &cu: &u64,
@@ -143,7 +143,7 @@ fn record_transaction_timings(
     process_message_time: u64,
     cpu_time: &std::time::Duration,
     priority: u64,
-    account_locks: OwnedTransactionAccountLocks,
+    account_locks: TransactionAccountLocks<'a>,
 ) {
     if slot == 0 || slot < 282254384 { // provide flag....
         return;
