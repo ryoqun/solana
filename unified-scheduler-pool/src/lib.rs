@@ -454,7 +454,7 @@ impl TaskHandler for DefaultTaskHandler {
             if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
                 let cost = CostModel::calculate_cost(transaction, scheduling_context.bank());
                 if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(cost) {
-                    *result = e.into();
+                    *result = Err(e.into());
                     return;
                 }
             }
