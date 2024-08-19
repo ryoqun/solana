@@ -507,7 +507,7 @@ impl TaskHandler for DefaultTaskHandler {
             }
 
             if result.is_err() {
-                if added_cost {
+                if let Some(cost) = cost if added_cost {
                     scheduling_context.bank().write_cost_tracker().unwrap().remove(&cost);
                 }
                 use solana_svm::transaction_processor::record_transaction_timings;
