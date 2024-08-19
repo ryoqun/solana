@@ -776,9 +776,11 @@ impl BankingStage {
                                 }
                             }
                         }
+                        /*
                         _ => {
                             std::thread::sleep(Duration::from_millis(10));
                         }
+                        */
                     }
                 })
                 .unwrap()
