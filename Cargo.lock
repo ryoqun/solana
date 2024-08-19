@@ -8008,6 +8008,7 @@ dependencies = [
  "log",
  "qualifier_attr",
  "scopeguard",
+ "solana-cost-model",
  "solana-ledger",
  "solana-logger",
  "solana-poh",
