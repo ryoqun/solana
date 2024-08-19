@@ -779,6 +779,7 @@ impl BankingStage {
                         BufferedPacketsDecision::Forward => {
                             while let Ok(_) = packet_deserializer.packet_batch_receiver.try_recv() {
                             }
+                            std::thread::sleep(Duration::from_millis(10));
                         }
                         BufferedPacketsDecision::ForwardAndHold => {
                             std::thread::sleep(Duration::from_millis(10));
