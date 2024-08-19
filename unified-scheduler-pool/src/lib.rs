@@ -497,10 +497,10 @@ impl TaskHandler for DefaultTaskHandler {
                     &0,
                     &result
                     std::thread::current().name().unwrap().into(),
-                    &wall_time.elapsed().as_micros(),
-                    &cpu_elapsed,
+                    wall_time.elapsed().as_micros(),
+                    &cpu_time.elapsed(),
                     0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
-                    account_locks_in_json,
+                    tx.get_account_locks_unchecked(),
                 );
             }
         } else {
