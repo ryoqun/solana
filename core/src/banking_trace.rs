@@ -486,7 +486,7 @@ pub mod for_test {
 // simulated block and root block. As soon as warm up is initiated, we invoke
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
-    event_file_pathes: Vec<PathBuf>,
+    banking_trace_events: BankingTraceEvents,
     first_simulated_slot: Slot,
 }
 
@@ -587,11 +587,11 @@ impl BankingTraceEvents {
 
 impl BankingSimulator {
     pub fn new(
-        event_file_pathes: Vec<PathBuf>,
+        banking_trace_events: BankingTraceEvents,
         first_simulated_slot: Slot,
     ) -> Self {
         Self {
-            event_file_pathes,
+            banking_trace_events,
             first_simulated_slot,
         }
     }
@@ -616,8 +616,6 @@ impl BankingSimulator {
                 .unwrap()
                 .set_limits(u64::MAX, u64::MAX, u64::MAX);
         }
-
-        let (packet_batches_by_time, timed_hashes_by_slot) = self.read_event_files()?;
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let skipped_slot_offset = 1;
