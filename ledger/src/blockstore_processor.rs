@@ -819,6 +819,7 @@ pub struct ProcessOptions {
     /// This is useful for debugging.
     pub run_final_accounts_hash_calc: bool,
     pub use_snapshot_archives_at_startup: UseSnapshotArchivesAtStartup,
+    pub hash_overrides: Option<HashOverrides>,
 }
 
 pub fn test_process_blockstore(
