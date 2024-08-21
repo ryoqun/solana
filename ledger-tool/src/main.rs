@@ -2349,6 +2349,14 @@ fn main() {
                         banking_trace_path(&ledger_path),
                     );
 
+                    info!("Using: event files: {event_file_pathes:?}");
+                    let Ok(banking_trace_events) = BankingTraceEvents::load(
+                        event_file_pathes,
+                    ) else {
+                        // msg...
+                        exit(1);
+                    };
+
                     //let banking_trace_events = BankingTraceEvents::load(event_file_pathes);
                     //process_options.hash_overrides = banking_trace_events.hash_overrides();
                     //let simulator BankingSimulator::new(banking_trace_events, starting_slot);
@@ -2382,16 +2390,9 @@ fn main() {
                     .unwrap_or_default();
 
                     info!("Using: block-production-method: {block_production_method}");
-                    info!("Using: event files: {event_file_pathes:?}");
 
                     let block_cost_limits = arg_matches.is_present("block_cost_limits");
 
-                    let Ok(banking_trace_events) = BankingTraceEvents::load(
-                        event_file_pathes,
-                    ) else {
-                        // msg...
-                        exit(1);
-                    };
                     let simulator = BankingSimulator::new(
                         banking_trace_events,
                         first_simulated_slot,
