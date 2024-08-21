@@ -2390,7 +2390,7 @@ fn main() {
                     ) else {
                         // msg...
                         exit(1);
-                    }
+                    };
                     let simulator = BankingSimulator::new(
                         banking_trace_events,
                         first_simulated_slot,
