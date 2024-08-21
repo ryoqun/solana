@@ -958,7 +958,7 @@ pub fn process_blockstore_from_root(
         let bank = bank_forks.read().unwrap().root_bank();
         #[cfg(feature = "dev-context-only-utils")]
         if let Some(hash_overrides) = &opts.hash_overrides {
-            info!("Will Override following slots' hashes: {:#?}", hash_overrides);
+            info!("Will override following slots' hashes: {:#?}", hash_overrides);
             bank.set_hash_overrides(hash_overrides.clone());
         }
         assert!(bank.parent().is_none());
