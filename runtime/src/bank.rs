@@ -849,6 +849,7 @@ pub struct Bank {
     /// Fee structure to use for assessing transaction fees.
     fee_structure: FeeStructure,
 
+    #[cfg(feature = "dev-context-only-utils")]
     pub blockhash_override: Option<Hash>,
 }
 
