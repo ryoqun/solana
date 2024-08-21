@@ -858,7 +858,7 @@ struct HashOverrides {
 }
 
 impl HashOverrides {
-    fn get_override_by_slot(&self, slot: Slot) -> Option<&HashOverride> {
+    fn get_hash_override(&self, slot: Slot) -> Option<&HashOverride> {
         self.hashes.get(slot)
     }
 }
@@ -3165,7 +3165,7 @@ impl Bank {
         // much if the write lock is acquired for each tick.
         let mut w_blockhash_queue = self.blockhash_queue.write().unwrap();
         #[cfg(feature = "dev-context-only-utils")]
-        let blockhash = self.hash_overrides.lock().unwrap().get(self.slot()).copied().unwrap_or(blockhash);
+        let blockhash = self.hash_overrides.lock().unwrap().get_hash_override(self.slot()).copied().unwrap_or(blockhash);
         w_blockhash_queue.register_hash(blockhash, self.fee_rate_governor.lamports_per_signature);
         self.update_recent_blockhashes_locked(&w_blockhash_queue);
     }
