@@ -531,7 +531,7 @@ impl BankingTraceEvents {
     ) -> Result<
         (
             BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-            BTreeMap<Slot, (SystemTime, Hash, Hash)>,
+            BTreeMap<Slot, SystemTime>,
         ),
         SimulateError,
     > {
