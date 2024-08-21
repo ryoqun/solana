@@ -956,6 +956,7 @@ pub fn process_blockstore_from_root(
         assert_eq!(bank_forks.read().unwrap().banks().len(), 1);
         let bank = bank_forks.read().unwrap().root_bank();
         if let Some(hash_overrides) = opts.hash_overrides {
+            info!("Will Override following slots' hashes: {:#?}", hash_overrides);
             bank.set_hash_overrides(hash_overrides.clone());
         }
         assert!(bank.parent().is_none());
