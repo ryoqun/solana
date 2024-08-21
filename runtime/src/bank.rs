@@ -850,6 +850,7 @@ pub struct Bank {
     fee_structure: FeeStructure,
 
     /// Hash overrides keyed by slot for simulated block production
+    #[cfg(feature = "dev-context-only-utils")]
     hash_overrides: Arc<Mutex<HashOverrides>>,
 }
 
@@ -993,6 +994,7 @@ impl Bank {
             compute_budget: None,
             transaction_account_lock_limit: None,
             fee_structure: FeeStructure::default(),
+            #[cfg(feature = "dev-context-only-utils")]
             hash_overrides: Arc::new(Mutex::new(HashOverrides::default())),
         };
 
@@ -1240,6 +1242,7 @@ impl Bank {
             compute_budget: parent.compute_budget,
             transaction_account_lock_limit: parent.transaction_account_lock_limit,
             fee_structure: parent.fee_structure.clone(),
+            #[cfg(feature = "dev-context-only-utils")]
             hash_overrides: parent.hash_overrides.clone(),
         };
 
@@ -1617,6 +1620,7 @@ impl Bank {
             compute_budget: runtime_config.compute_budget,
             transaction_account_lock_limit: runtime_config.transaction_account_lock_limit,
             fee_structure: FeeStructure::default(),
+            #[cfg(feature = "dev-context-only-utils")]
             hash_overrides: Arc::new(Mutex::new(HashOverrides::default())),
         };
 
@@ -5492,8 +5496,13 @@ impl Bank {
             hash = hard_forked_hash;
         }
 
+        #[cfg(feature = "dev-context-only-utils")]
         let g = self.hash_overrides.lock().unwrap();
+        #[cfg(feature = "dev-context-only-utils")]
         let bank_hash_override = g.get_bank_hash_override(self.slot()).copied();
+
+        #[cfg(not(feature = "dev-context-only-utils"))]
+        let bank_hash_override = None;
 
         let bank_hash_stats = self
             .rc
@@ -6759,10 +6768,6 @@ impl Bank {
         self.transaction_processor
             .add_builtin(self, program_id, name, builtin)
     }
-
-    pub fn set_hash_overrides(&self, hash_overrides: HashOverrides) {
-        *self.hash_overrides.lock().unwrap() = hash_overrides;
-    }
 }
 
 impl TransactionProcessingCallback for Bank {
@@ -7070,6 +7075,10 @@ impl Bank {
             }
             None => Err(TransactionError::AccountNotFound),
         }
+    }
+
+    pub fn set_hash_overrides(&self, hash_overrides: HashOverrides) {
+        *self.hash_overrides.lock().unwrap() = hash_overrides;
     }
 }
 
