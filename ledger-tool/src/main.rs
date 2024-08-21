@@ -2369,6 +2369,11 @@ fn main() {
                     process_options.hash_overrides = Some(banking_trace_events.hash_overrides());
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
 
+                    let simulator = BankingSimulator::new(
+                        banking_trace_events,
+                        first_simulated_slot,
+                    );
+
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
                         arg_matches,
@@ -2394,11 +2399,6 @@ fn main() {
                     info!("Using: block-production-method: {block_production_method}");
 
                     let block_cost_limits = arg_matches.is_present("block_cost_limits");
-
-                    let simulator = BankingSimulator::new(
-                        banking_trace_events,
-                        first_simulated_slot,
-                    );
 
                     match simulator.start(
                         genesis_config,
