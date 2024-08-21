@@ -588,14 +588,13 @@ impl BankingSimulator {
         block_production_method: BlockProductionMethod,
         block_cost_limits: bool,
     ) -> Result<(), SimulateError> {
-        let mut bank = self
-            .bank_forks
+        let mut bank = bank_forks
             .read()
             .unwrap()
             .working_bank_with_scheduler()
             .clone_with_scheduler();
 
-        if self.block_cost_limits {
+        if block_cost_limits {
             info!("setting block cost limits to MAX");
             bank.write_cost_tracker()
                 .unwrap()
