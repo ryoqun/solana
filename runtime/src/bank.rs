@@ -864,7 +864,7 @@ impl HashOverrides {
     }
 
     fn get_blockhash_override(&self, slot: Slot) -> Option<&Hash> {
-        self.get_hash_override(slot).map(|hash_override| hash_override.blockhash)
+        self.get_hash_override(slot).map(|hash_override| &hash_override.blockhash)
     }
 }
 
