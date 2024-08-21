@@ -904,17 +904,10 @@ impl BankingSimulator {
                     warn!("sender thread existed maybe due to completion of sending traced events");
                     break;
                 }
-                let options = NewBankOptions {
-                    blockhash_override: timed_hashes_by_slot
-                        .get(&new_slot)
-                        .map(|&(_event_time, blockhash, _bank_hash)| blockhash),
-                    ..Default::default()
-                };
-                let new_bank = Bank::new_from_parent_with_options(
+                let new_bank = Bank::new_from_parent(
                     bank.clone_without_scheduler(),
                     &simulated_leader,
                     new_slot,
-                    options,
                 );
                 // make sure parent is frozen for finalized hashes via the above
                 // new()-ing of its child bank
