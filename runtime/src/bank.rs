@@ -2810,7 +2810,7 @@ impl Bank {
 
             // freeze is a one-way trip, idempotent
             self.freeze_started.store(true, Relaxed);
-            *hash = self._hash_internal_state(bank_hash_override);
+            *hash = self._hash_internal_state();
             self.rc.accounts.accounts_db.mark_slot_frozen(self.slot());
         }
     }
