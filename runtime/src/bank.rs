@@ -859,11 +859,11 @@ struct HashOverrides {
 
 impl HashOverrides {
     fn get_hash_override(&self, slot: Slot) -> Option<&HashOverride> {
-        self.hashes.get(slot)
+        self.hashes.get(&slot)
     }
 
     fn get_blockhash_override(&self, slot: Slot) -> Option<&Hash> {
-        self.hashes.get(slot).blockhash
+        self.get_hash_override(slot).blockhash
     }
 }
 
