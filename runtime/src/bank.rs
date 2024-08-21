@@ -849,8 +849,8 @@ pub struct Bank {
     /// Fee structure to use for assessing transaction fees.
     fee_structure: FeeStructure,
 
-    #[cfg(feature = "dev-context-only-utils")]
-    pub hash_overrides: Arc<Mutex<HashOverrides>>,
+    /// Hash overrides keyed by slot for simulated block production
+    hash_overrides: Arc<Mutex<HashOverrides>>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -1117,9 +1117,7 @@ impl Bank {
         new_bank_options: NewBankOptions,
     ) -> Self {
         let mut time = Measure::start("bank::new_from_parent");
-        let NewBankOptions {
-            vote_only_bank,
-        } = new_bank_options;
+        let NewBankOptions { vote_only_bank } = new_bank_options;
 
         parent.freeze();
         assert_ne!(slot, parent.slot());
