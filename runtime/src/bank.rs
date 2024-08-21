@@ -853,6 +853,15 @@ pub struct Bank {
     pub blockhash_override: Option<Hash>,
 }
 
+struct HashOverrides {
+    hashes: HashMap<Slot, HashOverride>,
+}
+
+struct HashOverride {
+    blockhash: Hash,
+    bank_hash: Hash,
+}
+
 struct VoteWithStakeDelegations {
     vote_state: Arc<VoteState>,
     vote_account: AccountSharedData,
