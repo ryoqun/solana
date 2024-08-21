@@ -869,7 +869,7 @@ impl BankingSimulator {
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
-                if let Some((event_time, _blockhash, _bank_hash)) =
+                if let Some(event_time) =
                     self.banking_trace_events.timed_hashes_by_slot.get(&old_slot)
                 {
                     if log_enabled!(log::Level::Info) {
