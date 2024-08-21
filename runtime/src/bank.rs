@@ -857,6 +857,12 @@ struct HashOverrides {
     hashes: HashMap<Slot, HashOverride>,
 }
 
+impl HashOverrides {
+    fn get_override_by_slot(&self, slot: Slot) -> Option<&HashOverride> {
+        self.hashes.get(slot)
+    }
+}
+
 struct HashOverride {
     blockhash: Hash,
     bank_hash: Hash,
