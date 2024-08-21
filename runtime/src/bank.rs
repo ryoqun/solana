@@ -872,7 +872,7 @@ impl HashOverrides {
         self.get_hash_override(slot).map(|hash_override| &hash_override.bank_hash)
     }
 
-    fn add_override(&mut self, slot: Slot, blockhash: Hash, bank_hash: Hash) {
+    pub fn add_override(&mut self, slot: Slot, blockhash: Hash, bank_hash: Hash) {
         self.hashes.insert(slot, HashOverride { blockhash, bank_hash });
     }
 }
