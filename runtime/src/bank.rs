@@ -3171,10 +3171,9 @@ impl Bank {
         let mut w_blockhash_queue = self.blockhash_queue.write().unwrap();
 
         w_blockhash_queue.register_hash(
-            {
-                #[cfg(not(feature = "dev-context-only-utils"))]
+            if cfg!(not(feature = "dev-context-only-utils")) {
                 blockhash
-                #[cfg(feature = "dev-context-only-utils")]
+            } else {
                 self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).unwrap_or(blockhash)
             },
             self.fee_rate_governor.lamports_per_signature,
