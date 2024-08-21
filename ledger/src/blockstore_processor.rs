@@ -84,6 +84,7 @@ use {
     thiserror::Error,
     ExecuteTimingType::{NumExecuteBatches, TotalBatchesLen},
 };
+use solana_runtime::bank::HashOverrides;
 
 pub struct TransactionBatchWithIndexes<'a, 'b> {
     pub batch: TransactionBatch<'a, 'b>,
