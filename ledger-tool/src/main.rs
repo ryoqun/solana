@@ -1243,7 +1243,7 @@ fn main() {
                             "Load files in the specified dir or specified individual files as \
                              banking trace events, instead of <ledger_dir>/banking_trace"
                         ),
-                ),
+                )
                 .arg(
                     Arg::with_name("block_cost_limits")
                         .long("block-cost-limits")
