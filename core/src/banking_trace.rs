@@ -499,6 +499,14 @@ pub enum SimulateError {
     SerializeError(#[from] bincode::Error),
 }
 
+struct BankingTraceEvents {
+}
+
+impl BankingTraceEvents {
+    fn load(event_file_pathes: Vec<PathBuf>) {
+    }
+}
+
 impl BankingSimulator {
     pub fn new(
         event_file_pathes: Vec<PathBuf>,

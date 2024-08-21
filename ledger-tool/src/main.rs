@@ -2350,7 +2350,7 @@ fn main() {
 
                     //let banking_trace_events = BankingTraceEvents::load(event_file_pathes);
                     //process_options.hash_overrides = banking_trace_events.hash_overrides();
-                    //let simulator BankingSimulator::load(banking_trace_events, starting_slot);
+                    //let simulator BankingSimulator::new(banking_trace_events, starting_slot);
                     //process_options.halt_at_slot = simular.parent_slot();
                     //...
                     //simulator.start(...)
