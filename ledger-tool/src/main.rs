@@ -954,6 +954,25 @@ fn main() {
                         ])
                         .help("In addition to the bank hash, optionally include accounts and/or transactions details for the slot"),
                 ),
+                .arg(
+                    Arg::with_name("enable_hash_overrides")
+                        .long("enable-hash-overrides")
+                        .takes_value(false)
+                        .help(
+                            "Enable to override blockhashes and bank hashes from banking trace \
+                             file to correctly replay blocks produced by \
+                             the simulate-block-production subcommand",
+                        ),
+                )
+                .arg(
+                    Arg::with_name("banking_trace_events")
+                        .long("banking-trace-events")
+                        .value_name("DIR_OR_FILE")
+                        .takes_value(true)
+                        .multiple(true)
+                        .requires("enable_hash_overrides")
+                        .help("Use events files in the dir or individual event files"),
+                )
         )
         .subcommand(
             SubCommand::with_name("graph")
@@ -2322,8 +2341,12 @@ fn main() {
                         banking_trace_path(&ledger_path),
                     );
 
-                    //let simulator BankingSimulator::load(event_file_pathes, starting_slot);
+                    //let banking_trace_events = BankingTraceEvents::load(event_file_pathes);
+                    //process_options.hash_overrides = banking_trace_events.hash_overrides();
+                    //let simulator BankingSimulator::load(banking_trace_events, starting_slot);
                     //process_options.halt_at_slot = simular.parent_slot();
+                    //...
+                    //simulator.start(...)
 
                     let process_options = parse_process_options(&ledger_path, arg_matches);
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
