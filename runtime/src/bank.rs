@@ -1115,7 +1115,6 @@ impl Bank {
         let mut time = Measure::start("bank::new_from_parent");
         let NewBankOptions {
             vote_only_bank,
-            blockhash_override,
         } = new_bank_options;
 
         parent.freeze();
@@ -1239,7 +1238,7 @@ impl Bank {
             compute_budget: parent.compute_budget,
             transaction_account_lock_limit: parent.transaction_account_lock_limit,
             fee_structure: parent.fee_structure.clone(),
-            blockhash_override,
+            hash_overrides: parent.hash_overrides.clone(),
         };
 
         let (_, ancestors_time_us) = measure_us!({
