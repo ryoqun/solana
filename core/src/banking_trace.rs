@@ -500,25 +500,11 @@ pub enum SimulateError {
 }
 
 struct BankingTraceEvents {
+    packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
+    timed_hashes_by_slot: BTreeMap<Slot, (SystemTime, Hash, Hash)>,
 }
 
 impl BankingTraceEvents {
-    fn load(event_file_pathes: Vec<PathBuf>) -> Self {
-        Self {}
-    }
-}
-
-impl BankingSimulator {
-    pub fn new(
-        event_file_pathes: Vec<PathBuf>,
-        first_simulated_slot: Slot,
-    ) -> Self {
-        Self {
-            event_file_pathes,
-            first_simulated_slot,
-        }
-    }
-
     fn read_event_file(
         events: &mut Vec<TimedTracedEvent>,
         event_file_path: &PathBuf,
@@ -540,7 +526,7 @@ impl BankingSimulator {
     }
 
     fn read_event_files(
-        &self,
+        event_file_pathes: Vec<PathBuf>,
     ) -> Result<
         (
             BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
@@ -549,7 +535,7 @@ impl BankingSimulator {
         SimulateError,
     > {
         let mut events = vec![];
-        for event_file_path in &self.event_file_pathes {
+        for event_file_path in &event_file_pathes {
             let old_len = events.len();
             let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(
@@ -587,6 +573,27 @@ impl BankingSimulator {
         }
 
         Ok((packet_batches_by_time, timed_hashes_by_slot))
+    }
+
+    fn load(event_file_pathes: Vec<PathBuf>) -> Result<Self, SimulateError> {
+        let (packet_batches_by_time, timed_hashes_by_slot) = Self::read_event_files(event_file_pathes)?;
+
+        Self {
+            packet_batches_by_time,
+            timed_hashes_by_slot,
+        }
+    }
+}
+
+impl BankingSimulator {
+    pub fn new(
+        event_file_pathes: Vec<PathBuf>,
+        first_simulated_slot: Slot,
+    ) -> Self {
+        Self {
+            event_file_pathes,
+            first_simulated_slot,
+        }
     }
 
     pub fn start(
