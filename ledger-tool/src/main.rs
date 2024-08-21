@@ -2387,15 +2387,16 @@ fn main() {
 
                     let simulator = BankingSimulator::new(
                         event_file_pathes,
+                        first_simulated_slot,
+                    );
+
+                    match simulator.start(
                         genesis_config,
                         bank_forks,
                         blockstore,
                         block_production_method,
-                        first_simulated_slot,
                         block_cost_limits,
-                    );
-
-                    match simulator.start() {
+                    ) {
                         Ok(()) => println!("Ok"),
                         Err(error) => {
                             eprintln!("{error:?}");

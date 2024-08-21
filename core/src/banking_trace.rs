@@ -487,12 +487,7 @@ pub mod for_test {
 // `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
     event_file_pathes: Vec<PathBuf>,
-    genesis_config: GenesisConfig,
-    bank_forks: Arc<RwLock<BankForks>>,
-    blockstore: Arc<Blockstore>,
-    block_production_method: BlockProductionMethod,
     first_simulated_slot: Slot,
-    block_cost_limits: bool,
 }
 
 #[derive(Error, Debug)]
@@ -507,21 +502,11 @@ pub enum SimulateError {
 impl BankingSimulator {
     pub fn new(
         event_file_pathes: Vec<PathBuf>,
-        genesis_config: GenesisConfig,
-        bank_forks: Arc<RwLock<BankForks>>,
-        blockstore: Arc<Blockstore>,
-        block_production_method: BlockProductionMethod,
         first_simulated_slot: Slot,
-        block_cost_limits: bool,
     ) -> Self {
         Self {
             event_file_pathes,
-            genesis_config,
-            bank_forks,
-            blockstore,
-            block_production_method,
             first_simulated_slot,
-            block_cost_limits,
         }
     }
 
@@ -595,7 +580,14 @@ impl BankingSimulator {
         Ok((packet_batches_by_time, timed_hashes_by_slot))
     }
 
-    pub fn start(self) -> Result<(), SimulateError> {
+    pub fn start(
+        self,
+        genesis_config: GenesisConfig,
+        bank_forks: Arc<RwLock<BankForks>>,
+        blockstore: Arc<Blockstore>,
+        block_production_method: BlockProductionMethod,
+        block_cost_limits: bool,
+    ) -> Result<(), SimulateError> {
         let mut bank = self
             .bank_forks
             .read()
