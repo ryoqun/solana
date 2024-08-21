@@ -6781,6 +6781,10 @@ impl Bank {
         self.transaction_processor
             .add_builtin(self, program_id, name, builtin)
     }
+
+    pub fn set_hash_overrides(&self, hash_overrides: HashOverrides) {
+        *self.hash_overrides.lock().unwrap() = hash_overrides;
+    }
 }
 
 impl TransactionProcessingCallback for Bank {
