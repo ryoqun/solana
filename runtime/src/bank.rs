@@ -854,7 +854,7 @@ pub struct Bank {
 }
 
 #[derive(Default, Debug)]
-struct HashOverrides {
+pub struct HashOverrides {
     hashes: HashMap<Slot, HashOverride>,
 }
 
