@@ -499,7 +499,7 @@ pub enum SimulateError {
     SerializeError(#[from] bincode::Error),
 }
 
-struct BankingTraceEvents {
+pub struct BankingTraceEvents {
     packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
     timed_hashes_by_slot: BTreeMap<Slot, (SystemTime, Hash, Hash)>,
 }
