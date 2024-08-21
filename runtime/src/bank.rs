@@ -1616,7 +1616,8 @@ impl Bank {
             compute_budget: runtime_config.compute_budget,
             transaction_account_lock_limit: runtime_config.transaction_account_lock_limit,
             fee_structure: FeeStructure::default(),
-            blockhash_override: Arc::new(Mutex::new(HashOverrides::default())),
+            #[cfg(feature = "dev-context-only-utils")]
+            hash_overrides: Arc::new(Mutex::new(HashOverrides::default())),
         };
 
         bank.transaction_processor =
