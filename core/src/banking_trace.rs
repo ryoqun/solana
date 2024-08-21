@@ -577,7 +577,7 @@ impl BankingTraceEvents {
             }
         }
 
-        Ok((packet_batches_by_time, timed_hashes_by_slot))
+        Ok((packet_batches_by_time, timed_hashes_by_slot, hash_overrides))
     }
 
     pub fn load(event_file_pathes: Vec<PathBuf>) -> Result<Self, SimulateError> {
