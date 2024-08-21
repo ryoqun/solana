@@ -988,7 +988,7 @@ impl Bank {
             compute_budget: None,
             transaction_account_lock_limit: None,
             fee_structure: FeeStructure::default(),
-            blockhash_override: None,
+            hash_overrides: Arc::new(Mutex::new(HashOverrides::default())),
         };
 
         bank.transaction_processor =
