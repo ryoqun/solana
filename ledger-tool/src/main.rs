@@ -97,6 +97,7 @@ use {
         },
     },
 };
+use solana_core::banking_trace::BankingTraceEvents;
 
 mod args;
 mod bigtable;
