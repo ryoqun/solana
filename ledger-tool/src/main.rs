@@ -2350,9 +2350,13 @@ fn main() {
                     );
 
                     info!("Using: event files: {event_file_pathes:?}");
-                    let banking_trace_events = BankingTraceEvents::load(
-                        event_file_pathes,
-                    )?;
+                    let banking_trace_events = match BankingTraceEvents::load(event_file_pathes) {
+                        Ok(banking_trace_events) => banking_trace_events,
+                        Err(error) => {
+                            eprintln!("{error:?}");
+                            exit(1);
+                        }
+                    };
 
                     //let banking_trace_events = BankingTraceEvents::load(event_file_pathes);
                     //process_options.hash_overrides = banking_trace_events.hash_overrides();
