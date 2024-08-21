@@ -578,10 +578,10 @@ impl BankingTraceEvents {
     fn load(event_file_pathes: Vec<PathBuf>) -> Result<Self, SimulateError> {
         let (packet_batches_by_time, timed_hashes_by_slot) = Self::read_event_files(event_file_pathes)?;
 
-        Self {
+        Ok(Self {
             packet_batches_by_time,
             timed_hashes_by_slot,
-        }
+        })
     }
 }
 
@@ -865,7 +865,7 @@ impl BankingSimulator {
 
                 let old_slot = bank.slot();
                 if let Some((event_time, _blockhash, _bank_hash)) =
-                    timed_hashes_by_slot.get(&old_slot)
+                    self.banking_trace_events.timed_hashes_by_slot.get(&old_slot)
                 {
                     if log_enabled!(log::Level::Info) {
                         let current_simulation_time = SystemTime::now();
