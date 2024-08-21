@@ -1528,13 +1528,13 @@ fn main() {
 
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
                     if arg_matches.is_present("enable_hash_overrides") {
-                        let event_file_pathes = parse_banking_trace_event_file_paths(
+                        let file_pathes = parse_banking_trace_event_file_paths(
                             arg_matches,
                             banking_trace_path(&ledger_path),
                         );
 
-                        info!("Using: event files: {event_file_pathes:?}");
-                        let banking_trace_events = match BankingTraceEvents::load(event_file_pathes) {
+                        info!("Using: banking trace event files: {file_pathes:?}");
+                        let banking_trace_events = match BankingTraceEvents::load(file_pathes) {
                             Ok(banking_trace_events) => banking_trace_events,
                             Err(error) => {
                                 eprintln!("{error:?}");
@@ -2360,13 +2360,13 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
-                    let event_file_pathes = parse_banking_trace_event_file_paths(
+                    let file_pathes = parse_banking_trace_event_file_paths(
                         arg_matches,
                         banking_trace_path(&ledger_path),
                     );
 
-                    info!("Using: event files: {event_file_pathes:?}");
-                    let banking_trace_events = match BankingTraceEvents::load(event_file_pathes) {
+                    info!("Using: banking trace event files: {file_pathes:?}");
+                    let banking_trace_events = match BankingTraceEvents::load(file_pathes) {
                         Ok(banking_trace_events) => banking_trace_events,
                         Err(error) => {
                             eprintln!("{error:?}");
@@ -2374,7 +2374,7 @@ fn main() {
                         }
                     };
 
-                    //let banking_trace_events = BankingTraceEvents::load(event_file_pathes);
+                    //let banking_trace_events = BankingTraceEvents::load(file_pathes);
                     //process_options.hash_overrides = banking_trace_events.hash_overrides();
                     //let simulator BankingSimulator::new(banking_trace_events, starting_slot);
                     //process_options.halt_at_slot = simular.parent_slot();
