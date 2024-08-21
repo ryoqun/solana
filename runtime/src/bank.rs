@@ -3168,12 +3168,18 @@ impl Bank {
         // readers can starve this write lock acquisition and ticks would be slowed down too
         // much if the write lock is acquired for each tick.
         let mut w_blockhash_queue = self.blockhash_queue.write().unwrap();
-        #[cfg(feature = "dev-context-only-utils")]
-        let (blockhash, _guard) = {
-            let guard = self.hash_overrides.lock().unwrap();
-            (guard.get_blockhash_override(self.slot()).unwrap_or(blockhash), guard)
-        };
+
+        w_blockhash_queue.register_hash(
+            {
+                #[cfg(not(feature = "dev-context-only-utils"))]
+                blockhash
+                #[cfg(feature = "dev-context-only-utils")]
+                self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).unwrap_or(blockhash)
+            },
+            self.fee_rate_governor.lamports_per_signature,
+        );
         w_blockhash_queue.register_hash(blockhash, self.fee_rate_governor.lamports_per_signature);
+
         self.update_recent_blockhashes_locked(&w_blockhash_queue);
     }
 
