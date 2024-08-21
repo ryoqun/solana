@@ -2779,7 +2779,6 @@ impl Bank {
         }
     }
 
-    pub fn _freeze(&self, bank_hash_override: Option<Hash>) {
     pub fn freeze(&self) {
         // This lock prevents any new commits from BankingStage
         // `Consumer::execute_and_commit_transactions_locked()` from
@@ -5518,6 +5517,9 @@ impl Bank {
             warn!("hard fork at slot {slot} by hashing {buf:?}: {hash} => {hard_forked_hash}");
             hash = hard_forked_hash;
         }
+
+        let g = self.hash_overrides.lock().unwrap();
+        let bank_hash_override = g.get_bank_hash_override(self.slot()).unwrap_or(blockhash);
 
         let bank_hash_stats = self
             .rc
