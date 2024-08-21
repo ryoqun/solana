@@ -953,7 +953,7 @@ fn main() {
                             "geyser_plugin_config",
                         ])
                         .help("In addition to the bank hash, optionally include accounts and/or transactions details for the slot"),
-                ),
+                )
                 .arg(
                     Arg::with_name("enable_hash_overrides")
                         .long("enable-hash-overrides")
@@ -972,7 +972,7 @@ fn main() {
                         .multiple(true)
                         .requires("enable_hash_overrides")
                         .help("Use events files in the dir or individual event files"),
-                )
+                ),
         )
         .subcommand(
             SubCommand::with_name("graph")
