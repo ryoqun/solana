@@ -502,7 +502,7 @@ pub enum SimulateError {
 
 pub struct BankingTraceEvents {
     packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-    timed_hashes_by_slot: HashMap<Slot, (SystemTime, Hash, Hash)>,
+    timed_hashes_by_slot: BTreeMap<Slot, (SystemTime, Hash, Hash)>,
 }
 
 impl BankingTraceEvents {
@@ -531,7 +531,7 @@ impl BankingTraceEvents {
     ) -> Result<
         (
             BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-            HashMap<Slot, (SystemTime, Hash, Hash)>,
+            BTreeMap<Slot, (SystemTime, Hash, Hash)>,
         ),
         SimulateError,
     > {
@@ -553,7 +553,7 @@ impl BankingTraceEvents {
         }
 
         let mut packet_batches_by_time = BTreeMap::new();
-        let mut timed_hashes_by_slot = HashMap::new();
+        let mut timed_hashes_by_slot = BTreeMap::new();
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
