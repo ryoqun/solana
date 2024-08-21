@@ -868,6 +868,7 @@ impl HashOverrides {
     }
 }
 
+#[derive(Debug)]
 struct HashOverride {
     blockhash: Hash,
     bank_hash: Hash,
