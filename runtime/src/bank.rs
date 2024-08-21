@@ -853,6 +853,7 @@ pub struct Bank {
     pub hash_overrides: Arc<Mutex<HashOverrides>>,
 }
 
+#[derive(Default)]
 struct HashOverrides {
     hashes: HashMap<Slot, HashOverride>,
 }
