@@ -860,7 +860,7 @@ impl BankingSimulator {
                 info!("Bank::new_from_parent()!");
 
                 let old_slot = bank.slot();
-                if let Some((event_time, _blockhash, bank_hash)) =
+                if let Some((event_time, _blockhash, _bank_hash)) =
                     timed_hashes_by_slot.get(&old_slot)
                 {
                     if log_enabled!(log::Level::Info) {
@@ -880,10 +880,8 @@ impl BankingSimulator {
                             elapsed_event_time,
                         );
                     }
-                    bank.freeze_with_bank_hash_override(Some(*bank_hash));
-                } else {
-                    bank.freeze_with_bank_hash_override(None);
                 }
+                bank.freeze();
                 let new_slot = if bank.slot() == start_slot {
                     info!("initial leader block!");
                     bank.slot() + skipped_slot_offset
