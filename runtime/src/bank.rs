@@ -2811,14 +2811,6 @@ impl Bank {
         }
     }
 
-    pub fn freeze(&self) {
-        self._freeze(None);
-    }
-
-    pub fn freeze_with_bank_hash_override(&self, bank_hash_override: Option<Hash>) {
-        self._freeze(bank_hash_override);
-    }
-
     // dangerous; don't use this; this is only needed for ledger-tool's special command
     pub fn unfreeze_for_ledger_tool(&self) {
         self.freeze_started.store(false, Relaxed);
