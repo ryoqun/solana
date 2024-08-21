@@ -2780,6 +2780,7 @@ impl Bank {
     }
 
     pub fn _freeze(&self, bank_hash_override: Option<Hash>) {
+    pub fn freeze(&self) {
         // This lock prevents any new commits from BankingStage
         // `Consumer::execute_and_commit_transactions_locked()` from
         // coming in after the last tick is observed. This is because in
@@ -5477,10 +5478,6 @@ impl Bank {
     /// Hash the `accounts` HashMap. This represents a validator's interpretation
     ///  of the delta of the ledger since the last vote and up to now
     fn hash_internal_state(&self) -> Hash {
-        self._hash_internal_state(None)
-    }
-
-    fn _hash_internal_state(&self, bank_hash_override: Option<Hash>) -> Hash {
         let slot = self.slot();
         let ignore = (!self.is_partitioned_rewards_feature_enabled()
             && self.force_partition_rewards_in_first_block_of_epoch())
@@ -5521,6 +5518,9 @@ impl Bank {
             warn!("hard fork at slot {slot} by hashing {buf:?}: {hash} => {hard_forked_hash}");
             hash = hard_forked_hash;
         }
+
+        let g = self.hash_overrides.lock().unwrap();
+        let bank_hash_override = g.get_bank_hash_override(self.slot()).unwrap_or(blockhash);
 
         let bank_hash_stats = self
             .rc
