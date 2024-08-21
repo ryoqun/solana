@@ -503,7 +503,8 @@ struct BankingTraceEvents {
 }
 
 impl BankingTraceEvents {
-    fn load(event_file_pathes: Vec<PathBuf>) {
+    fn load(event_file_pathes: Vec<PathBuf>) -> Self {
+        Self {}
     }
 }
 
