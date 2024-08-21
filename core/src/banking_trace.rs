@@ -502,7 +502,7 @@ pub enum SimulateError {
 
 pub struct BankingTraceEvents {
     packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-    timed_hashes_by_slot: BTreeMap<Slot, SystemTime>,
+    freeze_time_by_slot: BTreeMap<Slot, SystemTime>,
     hash_overrides: HashOverrides,
 }
 
@@ -555,7 +555,7 @@ impl BankingTraceEvents {
         }
 
         let mut packet_batches_by_time = BTreeMap::new();
-        let mut timed_hashes_by_slot = BTreeMap::new();
+        let mut freeze_time_by_slot = BTreeMap::new();
         let mut hash_overrides = HashOverrides::default();
         for TimedTracedEvent(event_time, event) in events {
             match event {
@@ -568,7 +568,7 @@ impl BankingTraceEvents {
                     assert!(is_new);
                 }
                 TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
-                    let is_new = timed_hashes_by_slot
+                    let is_new = freeze_time_by_slot
                         .insert(slot, event_time)
                         .is_none();
                     hash_overrides.add_override(slot, blockhash, bank_hash);
@@ -577,15 +577,15 @@ impl BankingTraceEvents {
             }
         }
 
-        Ok((packet_batches_by_time, timed_hashes_by_slot, hash_overrides))
+        Ok((packet_batches_by_time, freeze_time_by_slot, hash_overrides))
     }
 
     pub fn load(event_file_pathes: Vec<PathBuf>) -> Result<Self, SimulateError> {
-        let (packet_batches_by_time, timed_hashes_by_slot, hash_overrides) = Self::read_event_files(event_file_pathes)?;
+        let (packet_batches_by_time, freeze_time_by_slot, hash_overrides) = Self::read_event_files(event_file_pathes)?;
 
         Ok(Self {
             packet_batches_by_time,
-            timed_hashes_by_slot,
+            freeze_time_by_slot,
             hash_overrides,
         })
     }
@@ -747,7 +747,7 @@ impl BankingSimulator {
             false,
         );
 
-        let (&slot_before_next_leader_slot, &raw_base_event_time) = self.banking_trace_events.timed_hashes_by_slot
+        let (&slot_before_next_leader_slot, &raw_base_event_time) = self.banking_trace_events.freeze_time_by_slot
             .range(start_slot..)
             .next()
             .expect("timed hashes");
@@ -875,7 +875,7 @@ impl BankingSimulator {
 
                 let old_slot = bank.slot();
                 if let Some(event_time) =
-                    self.banking_trace_events.timed_hashes_by_slot.get(&old_slot)
+                    self.banking_trace_events.freeze_time_by_slot.get(&old_slot)
                 {
                     if log_enabled!(log::Level::Info) {
                         let current_simulation_time = SystemTime::now();
