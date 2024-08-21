@@ -850,7 +850,7 @@ pub struct Bank {
     fee_structure: FeeStructure,
 
     #[cfg(feature = "dev-context-only-utils")]
-    pub blockhash_override: Option<Hash>,
+    pub hash_overrides: Arc<Mutex<<HashOverrides>>,
 }
 
 struct HashOverrides {
