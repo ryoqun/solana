@@ -2364,7 +2364,8 @@ fn main() {
                     //...
                     //simulator.start(...)
 
-                    let process_options = parse_process_options(&ledger_path, arg_matches);
+                    let mut process_options = parse_process_options(&ledger_path, arg_matches);
+                    process_options.hash_overrides = banking_trace_events.hash_overrides();
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
 
                     let blockstore = Arc::new(open_blockstore(

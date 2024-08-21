@@ -583,6 +583,10 @@ impl BankingTraceEvents {
             timed_hashes_by_slot,
         })
     }
+
+    pub fn hash_overrides() -> HashOverrides {
+        HashOverrides::default()
+    }
 }
 
 impl BankingSimulator {
