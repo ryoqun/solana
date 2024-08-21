@@ -502,7 +502,7 @@ pub enum SimulateError {
 
 pub struct BankingTraceEvents {
     packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-    timed_hashes_by_slot: BTreeMap<Slot, (SystemTime, Hash, Hash)>,
+    timed_hashes_by_slot: BTreeMap<Slot, SystemTime>,
 }
 
 impl BankingTraceEvents {
@@ -566,7 +566,7 @@ impl BankingTraceEvents {
                 }
                 TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
                     let is_new = timed_hashes_by_slot
-                        .insert(slot, (event_time, blockhash, bank_hash))
+                        .insert(slot, event_time)
                         .is_none();
                     assert!(is_new);
                 }
