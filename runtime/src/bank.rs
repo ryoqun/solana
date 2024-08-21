@@ -1617,7 +1617,6 @@ impl Bank {
             compute_budget: runtime_config.compute_budget,
             transaction_account_lock_limit: runtime_config.transaction_account_lock_limit,
             fee_structure: FeeStructure::default(),
-            #[cfg(feature = "dev-context-only-utils")]
             hash_overrides: Arc::new(Mutex::new(HashOverrides::default())),
         };
 
@@ -3475,25 +3474,6 @@ impl Bank {
 
     pub fn remove_unrooted_slots(&self, slots: &[(Slot, BankId)]) {
         self.rc.accounts.accounts_db.remove_unrooted_slots(slots)
-    }
-
-    // danger
-    pub fn skip_check_age(&self) {
-        //self.runtime_config.skip_check_age();
-    }
-
-    pub fn check_age_tx(&self, tx: &SanitizedTransaction) -> TransactionCheckResult {
-        let max_age = MAX_PROCESSING_AGE;
-        let hash_queue = self.blockhash_queue.read().unwrap();
-        let last_blockhash = hash_queue.last_hash();
-        let next_durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
-        self.check_transaction_age(
-            tx,
-            max_age,
-            &next_durable_nonce,
-            &hash_queue,
-            &mut TransactionErrorMetrics::default(),
-        )
     }
 
     fn check_age(
