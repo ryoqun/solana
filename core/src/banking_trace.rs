@@ -614,17 +614,16 @@ impl BankingSimulator {
 
         let exit = Arc::new(AtomicBool::default());
 
-        if let Some(end_slot) = self
-            .blockstore
+        if let Some(end_slot) = blockstore
             .slot_meta_iterator(self.first_simulated_slot)
             .unwrap()
             .map(|(s, _)| s)
             .last()
         {
             info!("purging slots {}, {}", self.first_simulated_slot, end_slot);
-            self.blockstore
+            blockstore
                 .purge_from_next_slots(self.first_simulated_slot, end_slot);
-            self.blockstore
+            blockstore
                 .purge_slots(self.first_simulated_slot, end_slot, PurgeType::Exact);
             info!("done: purging");
         } else {
@@ -640,10 +639,10 @@ impl BankingSimulator {
             Some((simulated_slot, simulated_slot + 4)),
             bank.ticks_per_slot(),
             false,
-            self.blockstore.clone(),
-            self.blockstore.get_new_shred_signal(0),
+            blockstore.clone(),
+            blockstore.get_new_shred_signal(0),
             &leader_schedule_cache,
-            &self.genesis_config.poh_config,
+            &genesis_config.poh_config,
             None,
             exit.clone(),
         );
@@ -651,7 +650,7 @@ impl BankingSimulator {
         solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
         let poh_service = PohService::new(
             poh_recorder.clone(),
-            &self.genesis_config.poh_config,
+            &genesis_config.poh_config,
             exit.clone(),
             bank.ticks_per_slot(),
             solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE + 4,
@@ -661,7 +660,7 @@ impl BankingSimulator {
         let warmup_duration = Duration::from_secs(12);
 
         let (banking_retracer, retracer_thread) = BankingTracer::new(Some((
-            &self.blockstore.banking_retracer_path(),
+            &blockstore.banking_retracer_path(),
             exit.clone(),
             BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT,
         )))
@@ -689,8 +688,8 @@ impl BankingSimulator {
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
         let shred_version = compute_shred_version(
-            &self.genesis_config.hash(),
-            Some(&self.bank_forks.read().unwrap().root_bank().hard_forks()),
+            &genesis_config.hash(),
+            Some(&bank_forks.read().unwrap().root_bank().hard_forks()),
         );
         let (sender, _receiver) = tokio::sync::mpsc::channel(1);
         let broadcast_stage = BroadcastStageType::Standard.new_broadcast_stage(
@@ -699,8 +698,8 @@ impl BankingSimulator {
             entry_receiver,
             retransmit_slots_receiver,
             exit.clone(),
-            self.blockstore.clone(),
-            self.bank_forks.clone(),
+            blockstore.clone(),
+            bank_forks.clone(),
             shred_version,
             sender,
         );
@@ -708,7 +707,7 @@ impl BankingSimulator {
         info!("start banking stage!...");
         let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
-            self.block_production_method.clone(),
+            block_production_method.clone(),
             &cluster_info,
             &poh_recorder,
             non_vote_receiver,
@@ -719,7 +718,7 @@ impl BankingSimulator {
             replay_vote_sender,
             None,
             connection_cache,
-            self.bank_forks.clone(),
+            bank_forks.clone(),
             prioritization_fee_cache,
             false,
         );
@@ -840,7 +839,7 @@ impl BankingSimulator {
                     &simulated_leader,
                     bank.slot(),
                     &bank,
-                    Some(&self.blockstore),
+                    Some(&blockstore),
                     GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
                 );
                 debug!("{next_leader_slot:?}");
@@ -907,9 +906,8 @@ impl BankingSimulator {
                     info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
                 }
                 retransmit_slots_sender.send(bank.slot()).unwrap();
-                self.bank_forks.write().unwrap().insert(solana_sdk::scheduling::SchedulingMode::BlockProduction, new_bank);
-                bank = self
-                    .bank_forks
+                bank_forks.write().unwrap().insert(solana_sdk::scheduling::SchedulingMode::BlockProduction, new_bank);
+                bank = bank_forks
                     .read()
                     .unwrap()
                     .working_bank_with_scheduler()
