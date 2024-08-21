@@ -581,11 +581,12 @@ impl BankingTraceEvents {
     }
 
     pub fn load(event_file_pathes: Vec<PathBuf>) -> Result<Self, SimulateError> {
-        let (packet_batches_by_time, timed_hashes_by_slot) = Self::read_event_files(event_file_pathes)?;
+        let (packet_batches_by_time, timed_hashes_by_slot, hash_overrides) = Self::read_event_files(event_file_pathes)?;
 
         Ok(Self {
             packet_batches_by_time,
             timed_hashes_by_slot,
+            hash_overrides,
         })
     }
 
