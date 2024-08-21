@@ -873,7 +873,7 @@ impl HashOverrides {
     }
 
     pub fn add_override(&mut self, slot: Slot, blockhash: Hash, bank_hash: Hash) {
-        let is_new = self.hashes.insert(slot, HashOverride { blockhash, bank_hash });
+        let is_new = self.hashes.insert(slot, HashOverride { blockhash, bank_hash }).is_none();
         assert!(is_new);
     }
 }
