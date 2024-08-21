@@ -902,7 +902,6 @@ type VoteRewards = DashMap<Pubkey, VoteReward>;
 #[derive(Debug, Default)]
 pub struct NewBankOptions {
     pub vote_only_bank: bool,
-    pub blockhash_override: Option<Hash>,
 }
 
 #[derive(Debug, Default)]
