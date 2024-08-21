@@ -46,6 +46,7 @@ use {
     },
     thiserror::Error,
 };
+use solana_runtime::bank::HashOverrides;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
