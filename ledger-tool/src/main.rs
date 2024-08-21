@@ -1527,6 +1527,22 @@ fn main() {
                     );
 
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
+                    if arg_matches.is_present("enable_hash_overrides") {
+                        let event_file_pathes = parse_banking_trace_event_file_paths(
+                            arg_matches,
+                            banking_trace_path(&ledger_path),
+                        );
+
+                        info!("Using: event files: {event_file_pathes:?}");
+                        let banking_trace_events = match BankingTraceEvents::load(event_file_pathes) {
+                            Ok(banking_trace_events) => banking_trace_events,
+                            Err(error) => {
+                                eprintln!("{error:?}");
+                                exit(1);
+                            }
+                        };
+                        process_options.hash_overrides = Some(banking_trace_events.hash_overrides());
+                    }
 
                     // .default_value() does not work with .conflicts_with() in clap 2.33
                     // .conflicts_with("verify_slots")
