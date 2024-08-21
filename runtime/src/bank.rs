@@ -5515,7 +5515,7 @@ impl Bank {
         }
 
         let g = self.hash_overrides.lock().unwrap();
-        let bank_hash_override = g.get_bank_hash_override(self.slot()).unwrap_or(blockhash);
+        let bank_hash_override = g.get_bank_hash_override(self.slot()).copied();
 
         let bank_hash_stats = self
             .rc
