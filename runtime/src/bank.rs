@@ -3169,7 +3169,10 @@ impl Bank {
         // much if the write lock is acquired for each tick.
         let mut w_blockhash_queue = self.blockhash_queue.write().unwrap();
         #[cfg(feature = "dev-context-only-utils")]
-        let blockhash = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).unwrap_or(blockhash);
+        let (blockhash, _guard) = {
+            let guard = self.hash_overrides.lock().unwrap();
+            (guard.get_blockhash_override(self.slot()).unwrap_or(blockhash), guard)
+        };
         w_blockhash_queue.register_hash(blockhash, self.fee_rate_governor.lamports_per_signature);
         self.update_recent_blockhashes_locked(&w_blockhash_queue);
     }
