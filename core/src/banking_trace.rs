@@ -742,7 +742,7 @@ impl BankingSimulator {
             false,
         );
 
-        let (&slot_before_next_leader_slot, &(raw_base_event_time, _, _)) = self.banking_trace_events.timed_hashes_by_slot
+        let (&slot_before_next_leader_slot, &raw_base_event_time) = self.banking_trace_events.timed_hashes_by_slot
             .range(start_slot..)
             .next()
             .expect("timed hashes");
