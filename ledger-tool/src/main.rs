@@ -960,7 +960,7 @@ fn main() {
                         .takes_value(false)
                         .help(
                             "Enable to override blockhashes and bank hashes from banking trace \
-                             file to correctly replay blocks produced by \
+                             files to correctly replay blocks produced by \
                              the simulate-block-production subcommand",
                         ),
                 )
