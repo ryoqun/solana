@@ -2385,8 +2385,14 @@ fn main() {
 
                     let block_cost_limits = arg_matches.is_present("block_cost_limits");
 
-                    let simulator = BankingSimulator::new(
+                    let Ok(banking_trace_events) = BankingTraceEvents::load(
                         event_file_pathes,
+                    ) else {
+                        // msg...
+                        exit(1);
+                    }
+                    let simulator = BankingSimulator::new(
+                        banking_trace_events,
                         first_simulated_slot,
                     );
 
