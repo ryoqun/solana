@@ -960,7 +960,7 @@ fn main() {
                         .takes_value(false)
                         .help(
                             "Enable to override blockhashes and bank hashes from banking trace \
-                             files to correctly replay blocks produced by \
+                             event files to correctly verify blocks produced by \
                              the simulate-block-production subcommand",
                         ),
                 )
@@ -971,7 +971,10 @@ fn main() {
                         .takes_value(true)
                         .multiple(true)
                         .requires("enable_hash_overrides")
-                        .help("Use events files in the dir or individual event files"),
+                        .help(
+                            "Load files in the specified dir or specified individual files as \
+                             banking trace events, instead of <ledger_dir>/banking_trace"
+                        ),
                 ),
         )
         .subcommand(
@@ -1235,8 +1238,12 @@ fn main() {
                         .value_name("DIR_OR_FILE")
                         .takes_value(true)
                         .multiple(true)
-                        .help("Use events files in the dir or individual event files"),
-                )
+                        .requires("enable_hash_overrides")
+                        .help(
+                            "Load files in the specified dir or specified individual files as \
+                             banking trace events, instead of <ledger_dir>/banking_trace"
+                        ),
+                ),
                 .arg(
                     Arg::with_name("block_cost_limits")
                         .long("block-cost-limits")
