@@ -5504,8 +5504,8 @@ impl Bank {
         let (bank_hash_override, last_blockhash_override) = if cfg!(feature = "dev-context-only-utils") {
             let hash_overrides = self.hash_overrides.lock().unwrap();
             (
-                hash_overrides.get_bank_hash_override(self.slot()).copied(),
-                hash_overrides.get_blockhash_override(self.slot()).copied(),
+                hash_overrides.get_bank_hash_override(slot).copied(),
+                hash_overrides.get_blockhash_override(slot).copied(),
             )
         } else {
            (None, None)
@@ -5521,10 +5521,10 @@ impl Bank {
             .expect("No bank hash stats were found for this bank, that should not be possible");
         info!(
             "bank frozen: {slot} hash: {} accounts_delta: {} signature_count: {} last_blockhash: {} capitalization: {}{}, stats: {bank_hash_stats:?}",
-            bank_hash_override.map(|ho| format!("{ho} (overrode: {hash})")).unwrap_or_else(|| format!("{hash}")),
+            bank_hash_override.map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
             accounts_delta_hash.0,
             self.signature_count(),
-            last_blockhash_override.map(|bo| format!("{bo} (overrode: {last_blockhash})")).unwrap_or_else(|| format!("{last_blockhash}")),
+            last_blockhash_override.map(|o| format!("{o} (orig: {last_blockhash})")).unwrap_or_else(|| format!("{last_blockhash}")),
             self.capitalization(),
             if let Some(epoch_accounts_hash) = epoch_accounts_hash {
                 format!(", epoch_accounts_hash: {:?}", epoch_accounts_hash.as_ref())
@@ -5534,7 +5534,7 @@ impl Bank {
         );
 
         if let Some(bank_hash_override) = bank_hash_override {
-            // Avoid to optimize out hash along with the whole computation by super smart rustc.
+            // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
             // bank_hash_override is used by ledger-tool's simulate-block-production, which prefers
             // the actual bank freezing processing for accurate simulation.
             std::hint::black_box(hash);
