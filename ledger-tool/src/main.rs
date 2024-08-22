@@ -1564,9 +1564,6 @@ fn main() {
                         };
                         process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
                     }
-                    if arg_matches.is_present("abort_on_invalid_block") {
-                        process_options.abort_on_invalid_block = true;
-                    }
 
                     // .default_value() does not work with .conflicts_with() in clap 2.33
                     // .conflicts_with("verify_slots")
