@@ -343,59 +343,6 @@ pub fn hardforks_of(matches: &ArgMatches<'_>, name: &str) -> Option<Vec<Slot>> {
     }
 }
 
-pub(crate) fn parse_banking_trace_event_file_paths(
-    arg_matches: &ArgMatches<'_>,
-    banking_trace_path: PathBuf,
-) -> Vec<PathBuf> {
-    if !banking_trace_path.exists() {
-        eprintln!("Error: ledger doesn't have the banking trace dir: {banking_trace_path:?}");
-        exit(1);
-    }
-    info!("Using: banking trace events dir: {banking_trace_path:?}");
-
-    let entries = match std::fs::read_dir(&banking_trace_path) {
-        Ok(entries) => entries,
-        Err(error) => {
-            eprintln!("Error: failed to open banking_trace_path: {error:?}");
-            exit(1);
-        }
-    };
-
-    let mut entry_names = entries
-        .flat_map(|entry| entry.ok().map(|entry| entry.file_name()))
-        .collect::<HashSet<OsString>>();
-
-    if entry_names.is_empty() {
-        eprintln!("Error: banking_trace_path dir is empty.");
-        exit(1);
-    }
-
-    let mut event_file_pathes = vec![];
-
-    for index in 0.. {
-        let event_file_name: OsString = BankingSimulator::event_file_name(index).into();
-        if entry_names.remove(&event_file_name) {
-            event_file_pathes.push(banking_trace_path.join(event_file_name));
-        } else {
-            break;
-        }
-    }
-    event_file_pathes.reverse();
-
-    if !entry_names.is_empty() {
-        let full_names = entry_names
-            .into_iter()
-            .map(|name| banking_trace_path.join(name))
-            .collect::<Vec<_>>();
-        warn!(
-            "Some files in {banking_trace_path:?} is ignored due to gapped events file rotation \
-             or unrecognized names: {full_names:?}"
-        );
-    }
-
-    event_file_pathes
-}
-
 #[cfg(test)]
 mod tests {
     use {super::*, solana_accounts_db::hardened_unpack::MAX_GENESIS_ARCHIVE_UNPACKED_SIZE};
