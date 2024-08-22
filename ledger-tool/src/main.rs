@@ -2391,7 +2391,7 @@ fn main() {
                              It's thus a pretty destructive operation on \
                              the ledger ({ledger_path:?}). \
                              Create {marker_file:?} if this is intentional"
-                         )
+                         );
                         exit(1);
                     }
 
