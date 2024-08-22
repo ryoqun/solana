@@ -1232,7 +1232,6 @@ fn main() {
                 .arg(&load_genesis_config_arg)
                 .args(&accounts_db_config_args)
                 .args(&snapshot_config_args)
-                .arg(&halt_at_slot_arg)
                 .arg(
                     Arg::with_name("block_production_method")
                         .long("block-production-method")
@@ -1252,6 +1251,15 @@ fn main() {
                             "Load files in the specified dir or specified individual files as \
                              banking trace events, instead of <ledger_dir>/banking_trace"
                         ),
+                )
+                .arg(
+                    Arg::with_name("first_simulated_slot")
+                        .long("first-simulated-slot")
+                        .value_name("SLOT")
+                        .validator(is_slot)
+                        .takes_value(true)
+                        .required(true)
+                        .help("Start simulation at the given slot")
                 )
                 .arg(
                     Arg::with_name("block_cost_limits")
@@ -2371,6 +2379,8 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
+                    let mut process_options = parse_process_options(&ledger_path, arg_matches);
+
                     let file_pathes = parse_banking_trace_event_file_paths(
                         arg_matches,
                         banking_trace_path(&ledger_path),
@@ -2385,21 +2395,14 @@ fn main() {
                         }
                     };
 
-                    //let banking_trace_events = BankingTraceEvents::load(file_pathes);
-                    //process_options.hash_overrides = banking_trace_events.hash_overrides();
-                    //let simulator BankingSimulator::new(banking_trace_events, starting_slot);
-                    //process_options.halt_at_slot = simular.parent_slot();
-                    //...
-                    //simulator.start(...)
-
-                    let mut process_options = parse_process_options(&ledger_path, arg_matches);
                     process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
-                    let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
+                    let first_simulated_slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
 
                     let simulator = BankingSimulator::new(
                         banking_trace_events,
                         first_simulated_slot,
                     );
+                    process_options.halt_at_slot = Some(simulator.parent_slot());
 
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,

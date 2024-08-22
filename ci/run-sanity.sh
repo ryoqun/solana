@@ -21,7 +21,7 @@ while [[ ! -f config/run/init-completed ]]; do
   fi
 done
 
-snapshot_slot=100
+snapshot_slot=50
 latest_slot=0
 
 # wait a bit longer than snapshot_slot
@@ -39,11 +39,13 @@ $solana_ledger_tool create-snapshot --ledger config/ledger "$snapshot_slot" conf
 cp config/ledger/genesis.tar.bz2 config/snapshot-ledger
 $solana_ledger_tool copy --ledger config/ledger \
   --target-db config/snapshot-ledger --starting-slot "$snapshot_slot" --ending-slot "$latest_slot"
-$solana_ledger_tool verify --ledger config/snapshot-ledger --block-verification-method blockstore-processor
-$solana_ledger_tool verify --ledger config/snapshot-ledger --block-verification-method unified-scheduler
+$solana_ledger_tool verify --abort-on-invalid-block \
+  --ledger config/snapshot-ledger --block-verification-method blockstore-processor
+$solana_ledger_tool verify --abort-on-invalid-block \
+  --ledger config/snapshot-ledger --block-verification-method unified-scheduler
 
 first_simulated_slot=$((latest_slot / 2))
 echo "First simulated slot: ${first_simulated_slot}"
-
-$solana_ledger_tool simulate-block-production --ledger config/ledger --halt-at-slot $first_simulated_slot
-$solana_ledger_tool verify --ledger config/ledger --enable-hash-overrides
+$solana_ledger_tool simulate-block-production --ledger config/ledger --first-simulated-slot $first_simulated_slot
+$solana_ledger_tool verify --abort-on-invalid-block \
+  --ledger config/ledger --enable-hash-overrides
