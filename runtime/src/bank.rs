@@ -5502,7 +5502,7 @@ impl Bank {
 
         let blockhash = self.last_blockhash();
 
-        let (bank_hash_override, blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
+        let (hash_override, blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
             (None, None)
         } else {
             let hash_overrides = self.hash_overrides.lock().unwrap();
@@ -5520,7 +5520,7 @@ impl Bank {
             .expect("No bank hash stats were found for this bank, that should not be possible");
         info!(
             "bank frozen: {slot} hash: {} accounts_delta: {} signature_count: {} last_blockhash: {} capitalization: {}{}, stats: {bank_hash_stats:?}",
-            bank_hash_override.map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
+            hash_override.map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
             accounts_delta_hash.0,
             self.signature_count(),
             blockhash_override.map(|o| format!("{o} (orig: {blockhash})")).unwrap_or_else(|| format!("{blockhash}")),
@@ -5532,13 +5532,13 @@ impl Bank {
             }
         );
 
-        if let Some(bank_hash_override) = bank_hash_override {
+        if let Some(hash_override) = hash_override {
             // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
-            // bank_hash_override is used by ledger-tool's simulate-block-production, which prefers
+            // hash_override is used by ledger-tool's simulate-block-production, which prefers
             // the actual bank freezing processing for accurate simulation.
             std::hint::black_box(hash);
 
-            bank_hash_override
+            hash_override
         } else {
             hash
         }
