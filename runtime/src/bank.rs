@@ -5505,9 +5505,13 @@ impl Bank {
         let g = self.hash_overrides.lock().unwrap();
         #[cfg(feature = "dev-context-only-utils")]
         let bank_hash_override = g.get_bank_hash_override(self.slot()).copied();
+        #[cfg(feature = "dev-context-only-utils")]
+        let last_blockhash_override = g.get_blockhash_override(self.slot()).copied();
 
         #[cfg(not(feature = "dev-context-only-utils"))]
         let bank_hash_override = None;
+
+        let last_blockhash = self.last_blockhash();
 
         let bank_hash_stats = self
             .rc
@@ -5520,7 +5524,7 @@ impl Bank {
             bank_hash_override.map(|ho| format!("{ho} (overrode: {hash})")).unwrap_or_else(|| format!("{hash}")),
             accounts_delta_hash.0,
             self.signature_count(),
-            self.last_blockhash(),
+            last_blockhash_override.map(|bo| format!("{bo} (overrode: {last_blockhash})")).unwrap_or_else(|| format!("{last_blockhash}")),
             self.capitalization(),
             if let Some(epoch_accounts_hash) = epoch_accounts_hash {
                 format!(", epoch_accounts_hash: {:?}", epoch_accounts_hash.as_ref())
