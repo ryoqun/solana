@@ -3185,8 +3185,6 @@ impl Bank {
                 self.fee_rate_governor.lamports_per_signature,
             );
         }
-        w_blockhash_queue.register_hash(blockhash, self.fee_rate_governor.lamports_per_signature);
-
         self.update_recent_blockhashes_locked(&w_blockhash_queue);
     }
 
@@ -5502,6 +5500,8 @@ impl Bank {
             hash = hard_forked_hash;
         }
 
+        let blockhash = self.last_blockhash();
+
         let (bank_hash_override, blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
             (None, None)
         } else {
@@ -5511,8 +5511,6 @@ impl Bank {
                 hash_overrides.get_blockhash_override(slot).copied(),
             )
         };
-
-        let blockhash = self.last_blockhash();
 
         let bank_hash_stats = self
             .rc
