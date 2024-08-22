@@ -1908,7 +1908,7 @@ fn load_frozen_forks(
                 .write()
                 .unwrap()
                 .insert_from_ledger(SchedulingMode::BlockVerification, bank);
-            if process_single_slot(
+            if let Err(error) = process_single_slot(
                 blockstore,
                 &bank,
                 replay_tx_thread_pool,
@@ -1920,10 +1920,11 @@ fn load_frozen_forks(
                 entry_notification_sender,
                 None,
                 timing,
-            )
-            .is_err()
-            {
+            ) {
                 assert!(bank_forks.write().unwrap().remove(bank.slot()).is_some());
+                if process_options.abort_on_invalid_block {
+                    Err(error)?
+                }
                 continue;
             }
             txs += progress.num_txs;
