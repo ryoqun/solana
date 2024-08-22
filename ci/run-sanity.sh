@@ -7,6 +7,11 @@ source multinode-demo/common.sh
 
 rm -rf config/run/init-completed config/ledger config/snapshot-ledger
 
+# Trigger eager build if needed; otherwise following steps cause odd timing error...
+$solana_cli --version
+$solana_ledger_tool --version
+$agave_validator --version
+
 SOLANA_RUN_SH_VALIDATOR_ARGS="--full-snapshot-interval-slots 200" timeout 120 ./scripts/run.sh &
 pid=$!
 
