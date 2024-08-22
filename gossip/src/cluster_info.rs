@@ -491,12 +491,11 @@ impl ClusterInfo {
         contact_info: ContactInfo,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        // Obviously, we cna't arbitrary Keypair for given pubkey... But this is needed for
-        // ledger-tool simulate-block-production. So, fake one.
-        // Note that the returned ClusterInfo is half-broken, but it's okay for minimum usage by
-        // the subcommand.
+        // Obviously, we can't create a Keypair for given pubkey arbitrarily... But ClusterInfo is
+        // needed for ledger-tool simulate-block-production. So, forcibly create one with incorrect
+        // Keypair. Note that the returned ClusterInfo is half-broken, but it's okay for the
+        // minimum usage by the subcommand.
         let keypair = Arc::new(Keypair::new());
-
         Self::do_new(contact_info, keypair, socket_addr_space)
     }
 
@@ -686,10 +685,10 @@ impl ClusterInfo {
     }
 
     pub fn id(&self) -> Pubkey {
-        // self.keypair.read().unwrap().pubkey() is more stragith forward to use here while both
-        // are equivalent.
+        // `self.keypair.read().unwrap().pubkey()` is more straight-forward to use here.
         // However, self.keypair could be dummy in some very odd situation
-        // (i.e. ledger-tool's simulate-leader-production).So, use self.my_contact_info here.
+        // (i.e. ledger-tool's simulate-leader-production). So, use `self.my_contact_info` here.
+        // Other than the edge case, both are equivalent.
         *self.my_contact_info.read().unwrap().pubkey()
     }
 
