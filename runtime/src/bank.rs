@@ -5520,7 +5520,7 @@ impl Bank {
             .expect("No bank hash stats were found for this bank, that should not be possible");
         info!(
             "bank frozen: {slot} hash: {} accounts_delta: {} signature_count: {} last_blockhash: {} capitalization: {}{}, stats: {bank_hash_stats:?}",
-            hash_override.filter(|o| o != hash).map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
+            hash_override.filter(|&o| o != hash).map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
             accounts_delta_hash.0,
             self.signature_count(),
             blockhash_override.map(|o| format!("{o} (orig: {blockhash})")).unwrap_or_else(|| format!("{blockhash}")),
