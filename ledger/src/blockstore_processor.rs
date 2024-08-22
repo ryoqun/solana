@@ -822,6 +822,7 @@ pub struct ProcessOptions {
     pub use_snapshot_archives_at_startup: UseSnapshotArchivesAtStartup,
     #[cfg(feature = "dev-context-only-utils")]
     pub hash_overrides: Option<HashOverrides>,
+    pub abort_on_invalid_block: bool, 
 }
 
 pub fn test_process_blockstore(
