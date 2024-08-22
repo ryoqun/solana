@@ -628,7 +628,7 @@ impl BankingSimulator {
         let simulated_leader = leader_schedule_cache
             .slot_leader_at(simulated_slot, None)
             .unwrap();
-        info!("Simulated leader and slot: {}}, {}", simulated_leader, self.first_simulated_slot);
+        info!("Simulated leader and slot: {}, {}", simulated_leader, self.first_simulated_slot);
 
         let exit = Arc::new(AtomicBool::default());
 
