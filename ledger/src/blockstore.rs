@@ -309,8 +309,8 @@ pub fn banking_retrace_path(path: &Path) -> PathBuf {
     path.join("banking_retrace")
 }
 
-pub fn simulate_leader_block_marker_path(path: &Path) -> PathBuf {
-    path.join("simulate_leader_blocks_allowed")
+pub fn simulate_block_production_allowed(path: &Path) -> PathBuf {
+    path.join("simulate_block_production_allowed")
 }
 
 impl Blockstore {
