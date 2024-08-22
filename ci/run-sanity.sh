@@ -41,3 +41,9 @@ $solana_ledger_tool copy --ledger config/ledger \
   --target-db config/snapshot-ledger --starting-slot "$snapshot_slot" --ending-slot "$latest_slot"
 $solana_ledger_tool verify --ledger config/snapshot-ledger --block-verification-method blockstore-processor
 $solana_ledger_tool verify --ledger config/snapshot-ledger --block-verification-method unified-scheduler
+
+first_simulated_slot=$((latest_slot / 2))
+echo "First simulated slot: ${first_simulated_slot}"
+
+$solana_ledger_tool simulate-block-production --ledger config/ledger --halt-at-slot $first_simulated_slot
+$solana_ledger_tool verify --ledger config/ledger --enable-hash-overrides
