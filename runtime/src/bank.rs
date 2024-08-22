@@ -5501,17 +5501,15 @@ impl Bank {
             hash = hard_forked_hash;
         }
 
-        #[cfg(feature = "dev-context-only-utils")]
-        let (bank_hash_override, last_blockhash_override) = {
-            let g = self.hash_overrides.lock().unwrap();
+        let (bank_hash_override, last_blockhash_override) = if cfg!(feature = "dev-context-only-utils") {
+            let hash_overrides = self.hash_overrides.lock().unwrap();
             (
-                g.get_bank_hash_override(self.slot()).copied(),
-                g.get_blockhash_override(self.slot()).copied(),
+                hash_overrides.get_bank_hash_override(self.slot()).copied(),
+                hash_overrides.get_blockhash_override(self.slot()).copied(),
             )
+        } else {
+           (None, None)
         };
-
-        #[cfg(not(feature = "dev-context-only-utils"))]
-        let (bank_hash_override, last_blockhash_override) = (None, None);
 
         let last_blockhash = self.last_blockhash();
 
