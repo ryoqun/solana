@@ -2139,10 +2139,9 @@ pub fn process_single_slot(
     .and_then(|()| {
         if let Some((result, bank_timings)) = bank.wait_for_completed_scheduler() {
             timing.accumulate(&bank_timings);
-            result.map_err(|e| BlockstoreProcessorError::InvalidTransaction(e))
-        } else {
-            Ok(())
+            result?
         }
+        Ok(())
     })
     .map_err(|err| {
         let slot = bank.slot();
