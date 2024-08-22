@@ -1922,7 +1922,7 @@ fn load_frozen_forks(
                 timing,
             ) {
                 assert!(bank_forks.write().unwrap().remove(bank.slot()).is_some());
-                if process_options.abort_on_invalid_block {
+                if opts.abort_on_invalid_block {
                     Err(error)?
                 }
                 continue;
