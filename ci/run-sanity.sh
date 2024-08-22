@@ -5,12 +5,12 @@ cd "$(dirname "$0")/.."
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
 
-rm -rf config/run/init-completed config/ledger config/snapshot-ledger
-
 # Trigger eager build if needed; otherwise following steps cause odd timing error...
 $solana_cli --version
-$solana_ledger_tool --version
 $agave_validator --version
+$solana_ledger_tool --version
+
+rm -rf config/run/init-completed config/ledger config/snapshot-ledger
 
 SOLANA_RUN_SH_VALIDATOR_ARGS="--full-snapshot-interval-slots 200" \
   SOLANA_VALIDATOR_EXIT_TIMEOUT=30 \
