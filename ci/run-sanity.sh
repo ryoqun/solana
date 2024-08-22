@@ -46,6 +46,7 @@ $solana_ledger_tool verify --abort-on-invalid-block \
 
 first_simulated_slot=$((latest_slot / 2))
 echo "First simulated slot: ${first_simulated_slot}"
-$solana_ledger_tool simulate-block-production --ledger config/ledger --first-simulated-slot $first_simulated_slot
+$solana_ledger_tool simulate-block-production --ledger config/ledger \
+  --first-simulated-slot $first_simulated_slot
 $solana_ledger_tool verify --abort-on-invalid-block \
   --ledger config/ledger --enable-hash-overrides
