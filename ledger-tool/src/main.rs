@@ -2387,10 +2387,10 @@ fn main() {
                     let marker_file = simulate_leader_block_marker_path(&ledger_path);
                     if !marker_file.exists() {
                         eprintln!(
-                            "simulate-block-production is for development purposes only.\
+                            "simulate-block-production is for development purposes only. \
                              It's thus a pretty destructive operation on \
                              the ledger ({ledger_path:?}). \
-                             Create {marker_file:?} if this is intentional"
+                             Create {marker_file:?} if this is intentional."
                          );
                         exit(1);
                     }
