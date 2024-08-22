@@ -493,6 +493,8 @@ impl ClusterInfo {
     ) -> Self {
         // Obviously, we cna't arbitrary Keypair for given pubkey... But this is needed for
         // ledger-tool simulate-block-production. So, fake one.
+        // Note that the returned ClusterInfo is half-broken, but it's okay for minimum usage by
+        // the subcommand.
         let keypair = Arc::new(Keypair::new());
 
         Self::do_new(contact_info, keypair, socket_addr_space)
