@@ -491,7 +491,7 @@ impl ClusterInfo {
         contact_info: ContactInfo,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        let kepair = Arc::new(Keypair::new());
+        let keypair = Arc::new(Keypair::new());
         Self::do_new(contact_info, keypair, socket_addr_space)
     }
 
