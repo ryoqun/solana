@@ -540,6 +540,22 @@ fn assert_capitalization(bank: &Bank) {
     assert!(bank.calculate_and_verify_capitalization(debug_verify));
 }
 
+fn load_banking_trace_events(ledger_path: &Path, arg_matches: &ArgMatches<'_>) -> BankingTraceEvents {
+    let file_pathes = parse_banking_trace_event_file_paths(
+        arg_matches,
+        banking_trace_path(&ledger_path),
+    );
+
+    info!("Using: banking trace event files: {file_pathes:?}");
+    let banking_trace_events = match BankingTraceEvents::load(file_pathes) {
+        Ok(banking_trace_events) => banking_trace_events,
+        Err(error) => {
+            eprintln!("{error:?}");
+            exit(1);
+        }
+    };
+}
+
 #[cfg(not(target_env = "msvc"))]
 use jemallocator::Jemalloc;
 
@@ -1549,19 +1565,7 @@ fn main() {
 
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
                     if arg_matches.is_present("enable_hash_overrides") {
-                        let file_pathes = parse_banking_trace_event_file_paths(
-                            arg_matches,
-                            banking_trace_path(&ledger_path),
-                        );
-
-                        info!("Using: banking trace event files: {file_pathes:?}");
-                        let banking_trace_events = match BankingTraceEvents::load(file_pathes) {
-                            Ok(banking_trace_events) => banking_trace_events,
-                            Err(error) => {
-                                eprintln!("{error:?}");
-                                exit(1);
-                            }
-                        };
+                        let banking_trace_events = load_banking_trace_events(&ledger_path, arg_matches);
                         process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
                     }
 
