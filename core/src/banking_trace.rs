@@ -591,7 +591,7 @@ impl BankingTraceEvents {
     }
 
     pub fn hash_overrides(&self) -> &HashOverrides {
-        self.hash_overrides
+        &self.hash_overrides
     }
 }
 
