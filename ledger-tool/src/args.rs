@@ -359,7 +359,7 @@ pub(crate) fn parse_banking_trace_event_file_paths(
             eprintln!("Error: failed to open banking_trace_path: {error:?}");
             exit(1);
         }
-    };
+    }j
 
     let mut file_names = entries
         .flat_map(|entry| entry.ok().map(|entry| entry.file_name()))
@@ -369,6 +369,8 @@ pub(crate) fn parse_banking_trace_event_file_paths(
         eprintln!("Error: banking_trace_path dir is empty.");
         exit(1);
     }
+
+    let mut event_file_pathes = vec![];
 
     for event_file_name in (0..).map(BankingSimulator::event_file_name) {
         let event_file_name: OsString = event_file_name.into();
