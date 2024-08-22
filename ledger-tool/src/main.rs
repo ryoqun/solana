@@ -980,6 +980,12 @@ fn main() {
                         ),
                 )
                 .arg(
+                    Arg::with_name("no_block_cost_limits")
+                        .long("no-block-cost-limits")
+                        .takes_value(false)
+                        .help("Sets block cost limits to the max"),
+                ),
+                .arg(
                     Arg::with_name("enable_hash_overrides")
                         .long("enable-hash-overrides")
                         .takes_value(false)
@@ -989,24 +995,6 @@ fn main() {
                              the simulate-block-production subcommand",
                         ),
                 )
-                .arg(
-                    Arg::with_name("banking_trace_events")
-                        .long("banking-trace-events")
-                        .value_name("DIR_OR_FILE")
-                        .takes_value(true)
-                        .multiple(true)
-                        .requires("enable_hash_overrides")
-                        .help(
-                            "Load files in the specified dir or specified individual files as \
-                             banking trace events, instead of <ledger_dir>/banking_trace"
-                        ),
-                )
-                .arg(
-                    Arg::with_name("no_block_cost_limits")
-                        .long("no-block-cost-limits")
-                        .takes_value(false)
-                        .help("Sets block cost limits to the max"),
-                ),
         )
         .subcommand(
             SubCommand::with_name("graph")
@@ -1261,18 +1249,6 @@ fn main() {
                         .takes_value(true)
                         .possible_values(BlockProductionMethod::cli_names())
                         .help(BlockProductionMethod::cli_message()),
-                )
-                .arg(
-                    Arg::with_name("banking_trace_events")
-                        .long("banking-trace-events")
-                        .value_name("DIR_OR_FILE")
-                        .takes_value(true)
-                        .multiple(true)
-                        .requires("enable_hash_overrides")
-                        .help(
-                            "Load files in the specified dir or specified individual files as \
-                             banking trace events, instead of <ledger_dir>/banking_trace"
-                        ),
                 )
                 .arg(
                     Arg::with_name("first_simulated_slot")

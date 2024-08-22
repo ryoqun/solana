@@ -232,6 +232,7 @@ pub fn parse_process_options(ledger_path: &Path, arg_matches: &ArgMatches<'_>) -
         allow_dead_slots,
         halt_at_slot,
         use_snapshot_archives_at_startup,
+        abort_on_invalid_block,
         no_block_cost_limits,
         ..ProcessOptions::default()
     }
