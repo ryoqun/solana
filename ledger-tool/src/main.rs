@@ -1541,7 +1541,7 @@ fn main() {
                                 exit(1);
                             }
                         };
-                        process_options.hash_overrides = Some(banking_trace_events.hash_overrides());
+                        process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
                     }
 
                     // .default_value() does not work with .conflicts_with() in clap 2.33
@@ -2382,7 +2382,7 @@ fn main() {
                     //simulator.start(...)
 
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
-                    process_options.hash_overrides = Some(banking_trace_events.hash_overrides());
+                    process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
                     let first_simulated_slot = process_options.halt_at_slot.unwrap() + 1;
 
                     let simulator = BankingSimulator::new(

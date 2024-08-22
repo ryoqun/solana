@@ -21,7 +21,7 @@ while [[ ! -f config/run/init-completed ]]; do
   fi
 done
 
-snapshot_slot=1
+snapshot_slot=100
 latest_slot=0
 
 # wait a bit longer than snapshot_slot

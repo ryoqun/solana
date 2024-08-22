@@ -590,8 +590,8 @@ impl BankingTraceEvents {
         })
     }
 
-    pub fn hash_overrides(&self) -> HashOverrides {
-        HashOverrides::default()
+    pub fn hash_overrides(&self) -> &HashOverrides {
+        self.hash_overrides
     }
 }
 
