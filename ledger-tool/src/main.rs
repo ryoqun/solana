@@ -2400,8 +2400,8 @@ fn main() {
 
                     let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path, arg_matches);
                     process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
-                    let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
 
+                    let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
                     let simulator = BankingSimulator::new(banking_trace_events, slot);
                     process_options.halt_at_slot = Some(simulator.parent_slot());
 
