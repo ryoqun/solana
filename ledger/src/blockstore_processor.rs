@@ -823,6 +823,7 @@ pub struct ProcessOptions {
     #[cfg(feature = "dev-context-only-utils")]
     pub hash_overrides: Option<HashOverrides>,
     pub abort_on_invalid_block: bool, 
+    pub no_block_cost_limits: bool,
 }
 
 pub fn test_process_blockstore(
@@ -961,6 +962,12 @@ pub fn process_blockstore_from_root(
         if let Some(hash_overrides) = &opts.hash_overrides {
             info!("Will override following slots' hashes: {:#?}", hash_overrides);
             bank.set_hash_overrides(hash_overrides.clone());
+        }
+        if opts.no_block_cost_limits {
+            info!("setting block cost limits to MAX");
+            bank.write_cost_tracker()
+                .unwrap()
+                .set_limits(u64::MAX, u64::MAX, u64::MAX);
         }
         assert!(bank.parent().is_none());
         (bank.slot(), bank.hash())

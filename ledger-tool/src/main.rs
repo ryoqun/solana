@@ -985,6 +985,12 @@ fn main() {
                              banking trace events, instead of <ledger_dir>/banking_trace"
                         ),
                 ),
+                .arg(
+                    Arg::with_name("no_block_cost_limits")
+                        .long("no-block-cost-limits")
+                        .takes_value(false)
+                        .help("Sets block cost limits to the max"),
+                )
         )
         .subcommand(
             SubCommand::with_name("graph")
@@ -1262,11 +1268,10 @@ fn main() {
                         .help("Start simulation at the given slot")
                 )
                 .arg(
-                    Arg::with_name("block_cost_limits")
-                        .long("block-cost-limits")
-                        //.value_name("DIR_OR_FILE") TODO
-                        .takes_value(false) // TODO
-                        .help("Change block cost limits"),
+                    Arg::with_name("no_block_cost_limits")
+                        .long("no-block-cost-limits")
+                        .takes_value(false)
+                        .help("Sets block cost limits to the max"),
                 )
         )
         .subcommand(
@@ -2428,14 +2433,11 @@ fn main() {
 
                     info!("Using: block-production-method: {block_production_method}");
 
-                    let block_cost_limits = arg_matches.is_present("block_cost_limits");
-
                     match simulator.start(
                         genesis_config,
                         bank_forks,
                         blockstore,
                         block_production_method,
-                        block_cost_limits,
                     ) {
                         Ok(()) => println!("Ok"),
                         Err(error) => {

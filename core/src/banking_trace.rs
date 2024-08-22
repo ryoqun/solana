@@ -616,20 +616,12 @@ impl BankingSimulator {
         bank_forks: Arc<RwLock<BankForks>>,
         blockstore: Arc<Blockstore>,
         block_production_method: BlockProductionMethod,
-        block_cost_limits: bool,
     ) -> Result<(), SimulateError> {
         let mut bank = bank_forks
             .read()
             .unwrap()
             .working_bank_with_scheduler()
             .clone_with_scheduler();
-
-        if block_cost_limits {
-            info!("setting block cost limits to MAX");
-            bank.write_cost_tracker()
-                .unwrap()
-                .set_limits(u64::MAX, u64::MAX, u64::MAX);
-        }
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let skipped_slot_offset = 1;
