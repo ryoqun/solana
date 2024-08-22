@@ -984,13 +984,13 @@ fn main() {
                             "Load files in the specified dir or specified individual files as \
                              banking trace events, instead of <ledger_dir>/banking_trace"
                         ),
-                ),
+                )
                 .arg(
                     Arg::with_name("no_block_cost_limits")
                         .long("no-block-cost-limits")
                         .takes_value(false)
                         .help("Sets block cost limits to the max"),
-                )
+                ),
         )
         .subcommand(
             SubCommand::with_name("graph")
