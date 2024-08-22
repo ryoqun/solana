@@ -5502,10 +5502,9 @@ impl Bank {
         }
 
         #[cfg(feature = "dev-context-only-utils")]
-        let g = self.hash_overrides.lock().unwrap();
         #[cfg(feature = "dev-context-only-utils")]
         let (g, bank_hash_override, last_blockhash_override) = (
-            true
+            self.hash_overrides.lock().unwrap(),
             g.get_bank_hash_override(self.slot()).copied(),
             g.get_blockhash_override(self.slot()).copied(),
         );
