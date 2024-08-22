@@ -681,7 +681,7 @@ impl ClusterInfo {
     }
 
     pub fn id(&self) -> Pubkey {
-        self.keypair.read().unwrap().pubkey()
+        self.my_contact_info.read().pubkey()
     }
 
     pub fn keypair(&self) -> RwLockReadGuard<Arc<Keypair>> {
