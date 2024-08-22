@@ -373,7 +373,7 @@ pub(crate) fn parse_banking_trace_event_file_paths(
     let mut event_file_pathes = vec![];
 
     for index in 0.. {
-        let event_file_name: OsString = BankingSimulator::event_file_name(index).into();
+        let event_file_name = BankingSimulator::event_file_name(index).into();
         if file_names.remove(&event_file_name) {
             event_file_pathes.push(banking_trace_path.join(event_file_name));
         } else {
