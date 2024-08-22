@@ -5502,8 +5502,8 @@ impl Bank {
             hash = hard_forked_hash;
         }
 
-        let (bank_hash_override, last_blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
-           (None, None)
+        let (bank_hash_override, blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
+            (None, None)
         } else {
             let hash_overrides = self.hash_overrides.lock().unwrap();
             (
@@ -5512,7 +5512,7 @@ impl Bank {
             )
         };
 
-        let last_blockhash = self.last_blockhash();
+        let blockhash = self.last_blockhash();
 
         let bank_hash_stats = self
             .rc
@@ -5525,7 +5525,7 @@ impl Bank {
             bank_hash_override.map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
             accounts_delta_hash.0,
             self.signature_count(),
-            last_blockhash_override.map(|o| format!("{o} (orig: {last_blockhash})")).unwrap_or_else(|| format!("{last_blockhash}")),
+            blockhash_override.map(|o| format!("{o} (orig: {blockhash})")).unwrap_or_else(|| format!("{blockhash}")),
             self.capitalization(),
             if let Some(epoch_accounts_hash) = epoch_accounts_hash {
                 format!(", epoch_accounts_hash: {:?}", epoch_accounts_hash.as_ref())
