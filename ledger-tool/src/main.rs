@@ -37,7 +37,7 @@ use {
     },
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
     solana_ledger::{
-        blockstore::{banking_trace_path, create_new_ledger, simulate_block_production_allowed, Blockstore},
+        blockstore::{banking_trace_path, create_new_ledger, simulate_block_production_marker_path, Blockstore},
         blockstore_options::{AccessType, LedgerColumnOptions},
         blockstore_processor::{
             ProcessSlotCallback, TransactionStatusMessage, TransactionStatusSender,
