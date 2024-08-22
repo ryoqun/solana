@@ -309,7 +309,7 @@ pub fn banking_retrace_path(path: &Path) -> PathBuf {
     path.join("banking_retrace")
 }
 
-pub fn simulate_block_production_allowed(path: &Path) -> PathBuf {
+pub fn simulate_block_production_marker_path(path: &Path) -> PathBuf {
     path.join("simulate_block_production_allowed")
 }
 

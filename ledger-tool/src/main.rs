@@ -2384,7 +2384,7 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
-                    let marker_file = simulate_block_production_allowed(&ledger_path);
+                    let marker_file = simulate_block_production_marker_path(&ledger_path);
                     if !marker_file.exists() {
                         eprintln!(
                             "simulate-block-production is for development purposes only. \

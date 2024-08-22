@@ -703,7 +703,6 @@ struct HashOverride {
     bank_hash: Hash,
 }
 
-
 /// Manager for the state of all accounts and programs after processing its entries.
 #[derive(Debug)]
 pub struct Bank {
