@@ -571,6 +571,7 @@ impl PartialEq for Bank {
             compute_budget: _,
             transaction_account_lock_limit: _,
             fee_structure: _,
+            #[cfg(feature = "dev-context-only-utils")]
             hash_overrides: _,
             // Ignore new fields explicitly if they do not impact PartialEq.
             // Adding ".." will remove compile-time checks that if a new field
@@ -3178,9 +3179,9 @@ impl Bank {
                 self.fee_rate_governor.lamports_per_signature,
             );
         } else {
-            let g = self.hash_overrides.lock().unwrap();
+            let g = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).copied().as_ref();
             w_blockhash_queue.register_hash(
-                g.get_blockhash_override(self.slot()).unwrap_or(blockhash),
+                g.unwrap_or(blockhash),
                 self.fee_rate_governor.lamports_per_signature,
             );
         }
@@ -5501,14 +5502,14 @@ impl Bank {
             hash = hard_forked_hash;
         }
 
-        let (bank_hash_override, last_blockhash_override) = if cfg!(feature = "dev-context-only-utils") {
+        let (bank_hash_override, last_blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
+           (None, None)
+        } else {
             let hash_overrides = self.hash_overrides.lock().unwrap();
             (
                 hash_overrides.get_bank_hash_override(slot).copied(),
                 hash_overrides.get_blockhash_override(slot).copied(),
             )
-        } else {
-           (None, None)
         };
 
         let last_blockhash = self.last_blockhash();
