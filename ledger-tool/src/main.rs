@@ -2384,6 +2384,17 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
+                    let marker_file = simulate_leader_block_marker_path(&ledger_path);
+                    if !marker_file.exists() {
+                        eprintln!(
+                            "simulate-block-production is for development purposes only.\
+                             It's thus a pretty destructive operation on \
+                             the ledger ({ledger_path:?}). \
+                             Create \marker_file:?} if this is intentional"
+                         )
+                        exit(1);
+                    }
+
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let file_pathes = parse_banking_trace_event_file_paths(
@@ -2401,12 +2412,9 @@ fn main() {
                     };
 
                     process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
-                    let first_simulated_slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
+                    let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
 
-                    let simulator = BankingSimulator::new(
-                        banking_trace_events,
-                        first_simulated_slot,
-                    );
+                    let simulator = BankingSimulator::new(banking_trace_events, slot);
                     process_options.halt_at_slot = Some(simulator.parent_slot());
 
                     let blockstore = Arc::new(open_blockstore(
