@@ -37,7 +37,7 @@ use {
     },
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
     solana_ledger::{
-        blockstore::{banking_trace_path, create_new_ledger, Blockstore},
+        blockstore::{banking_trace_path, create_new_ledger, simulate_leader_block_marker_path, Blockstore},
         blockstore_options::{AccessType, LedgerColumnOptions},
         blockstore_processor::{
             ProcessSlotCallback, TransactionStatusMessage, TransactionStatusSender,
@@ -2390,7 +2390,7 @@ fn main() {
                             "simulate-block-production is for development purposes only.\
                              It's thus a pretty destructive operation on \
                              the ledger ({ledger_path:?}). \
-                             Create \marker_file:?} if this is intentional"
+                             Create {marker_file:?} if this is intentional"
                          )
                         exit(1);
                     }
