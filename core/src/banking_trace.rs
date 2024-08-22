@@ -624,9 +624,8 @@ impl BankingSimulator {
             .clone_with_scheduler();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-        let skipped_slot_offset = 1;
-        let start_slot = bank.slot();
-        let simulated_slot = start_slot + skipped_slot_offset;
+        let parent_slot = bank.slot();
+        let first_simulated_slot = self.first_simulated_slot;
         let simulated_leader = leader_schedule_cache
             .slot_leader_at(simulated_slot, None)
             .unwrap();
@@ -650,13 +649,13 @@ impl BankingSimulator {
             info!("skipping purging...");
         }
 
-        info!("poh is starting!");
+        info!("Poh is starting!");
 
         let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
             bank.tick_height(),
             bank.last_blockhash(),
             bank.clone(),
-            Some((simulated_slot, simulated_slot + 4)),
+            None,
             bank.ticks_per_slot(),
             false,
             blockstore.clone(),
@@ -673,7 +672,7 @@ impl BankingSimulator {
             &genesis_config.poh_config,
             exit.clone(),
             bank.ticks_per_slot(),
-            solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE + 4,
+            solana_poh::poh_service::DEFAULT_PINNED_CPU_CORE,
             solana_poh::poh_service::DEFAULT_HASHES_PER_BATCH,
             record_receiver,
         );
@@ -724,7 +723,7 @@ impl BankingSimulator {
             sender,
         );
 
-        info!("start banking stage!...");
+        info!("Start banking stage!...");
         let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
             block_production_method.clone(),
@@ -744,7 +743,7 @@ impl BankingSimulator {
         );
 
         let (&slot_before_next_leader_slot, &raw_base_event_time) = self.banking_trace_events.freeze_time_by_slot
-            .range(start_slot..)
+            .range(parent_slot..)
             .next()
             .expect("timed hashes");
 
@@ -765,7 +764,7 @@ impl BankingSimulator {
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     timed_batches_to_send.clone().count(),
                     self.banking_trace_events.packet_batches_by_time.len(),
-                    start_slot,
+                    self.first_simulated_slot,
                     {
                         let raw_base_event_time: chrono::DateTime<chrono::Utc> = raw_base_event_time.into();
                         raw_base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
@@ -853,7 +852,7 @@ impl BankingSimulator {
         sleep(warmup_duration);
         info!("warmup done!");
 
-        for _ in 0..500 {
+        loop {
             if poh_recorder.read().unwrap().bank().is_none() {
                 let next_leader_slot = leader_schedule_cache.next_leader_slot(
                     &simulated_leader,
@@ -892,9 +891,9 @@ impl BankingSimulator {
                     }
                 }
                 bank.freeze();
-                let new_slot = if bank.slot() == start_slot {
+                let new_slot = if bank.slot() == parent_slot {
                     info!("initial leader block!");
-                    bank.slot() + skipped_slot_offset
+                    self.first_simulated_slot
                 } else {
                     info!("next leader block!");
                     bank.slot() + 1
@@ -904,11 +903,11 @@ impl BankingSimulator {
                     .slot_leader_at(new_slot, None)
                     .unwrap();
                 if simulated_leader != new_leader {
+                    info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
                     info!(
                         "{} isn't leader anymore at slot {}; new leader: {}",
                         simulated_leader, new_slot, new_leader
                     );
-                    info!("bank cost: slot: {} {:?} (frozen)", bank.slot(), bank.read_cost_tracker().map(|t| (t.block_cost(), t.vote_cost())).unwrap());
                     break;
                 } else if sender_thread.is_finished() {
                     warn!("sender thread existed maybe due to completion of sending traced events");
@@ -943,11 +942,12 @@ impl BankingSimulator {
             sleep(Duration::from_millis(10));
         }
 
-        info!("sleeping a bit before setting the exit AtomicBool to true");
+        info!("Sleeping a bit before signaling exit");
         sleep(Duration::from_millis(100));
         exit.store(true, Ordering::Relaxed);
-        // the order is important. consuming sender_thread by joining will terminate banking_stage, in turn
-        // banking_retracer thread will termianl
+
+        // The order is important. consuming sender_thread by joining will terminate banking_stage,
+        // in turn banking_retracer thread will termianl
         sender_thread.join().unwrap();
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
@@ -955,11 +955,7 @@ impl BankingSimulator {
             retracer_thread.join().unwrap().unwrap();
         }
 
-        // TODO: add flag to store shreds into ledger so that we can even benchmark replay stgage with
-        // actua blocks created by these simulation
-        // also sadly need to feed these overriding hashes into replaying stage for those recreted
-        // simulated blocks...
-        info!("joining broadcast stage...");
+        info!("Joining broadcast stage...");
         drop(poh_recorder);
         drop(retransmit_slots_sender);
         broadcast_stage.join().unwrap();
