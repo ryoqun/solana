@@ -23,7 +23,6 @@ use {
     solana_sdk::clock::Slot,
     std::{
         collections::HashSet,
-        ffi::OsString,
         path::{Path, PathBuf},
         process::exit,
         sync::Arc,
