@@ -551,7 +551,7 @@ fn load_banking_trace_events(ledger_path: &Path, arg_matches: &ArgMatches<'_>) -
         Ok(banking_trace_events) => banking_trace_events,
         Err(error) => {
             eprintln!("Failed to load banking trace events: {error:?}");
-            exit(1);
+            exit(1)
         }
     }
 }
