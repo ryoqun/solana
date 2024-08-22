@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 # shellcheck source=multinode-demo/common.sh
 source multinode-demo/common.sh
 
-# Trigger eager build if needed; otherwise following steps cause odd timing error...
+# Build eargerly if needed; otherwise following steps cause odd timing error...
 $solana_cli --version
 $agave_validator --version
 $solana_ledger_tool --version

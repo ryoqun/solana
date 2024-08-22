@@ -448,12 +448,11 @@ fn retain_staked(values: &mut Vec<CrdsValue>, stakes: &HashMap<Pubkey, u64>) {
 }
 
 impl ClusterInfo {
-    pub fn new(
+    fn do_new(
         contact_info: ContactInfo,
         keypair: Arc<Keypair>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        //assert_eq!(contact_info.pubkey(), &keypair.pubkey());
         let id = *contact_info.pubkey();
         let me = Self {
             gossip: CrdsGossip::default(),
@@ -477,6 +476,24 @@ impl ClusterInfo {
         };
         me.refresh_my_gossip_contact_info();
         me
+    }
+
+    pub fn new(
+        contact_info: ContactInfo,
+        keypair: Arc<Keypair>,
+        socket_addr_space: SocketAddrSpace,
+    ) -> Self {
+        assert_eq!(contact_info.pubkey(), &keypair.pubkey());
+        Self::do_new(contact_info, keypair, socket_addr_space)
+    )
+
+    #[cfg(feature = "dev-context-only-utils")]
+    pub fn new_with_dummy_keypair(
+        contact_info: ContactInfo,
+        socket_addr_space: SocketAddrSpace,
+    ) -> Self {
+        let kepair = Arc::new(Keypair::new()),
+        Self::do_new(contact_info, keypair, socket_addr_space)
     }
 
     pub fn set_contact_debug_interval(&mut self, new: u64) {

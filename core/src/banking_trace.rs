@@ -699,9 +699,8 @@ impl BankingSimulator {
         let (gossip_vote_sender, gossip_vote_receiver) =
             banking_retracer.create_channel_gossip_vote();
 
-        let cluster_info = Arc::new(ClusterInfo::new(
+        let cluster_info = Arc::new(ClusterInfo::new_with_dummy_keypair(
             Node::new_localhost_with_pubkey(&simulated_leader).info,
-            Arc::new(Keypair::new()),
             SocketAddrSpace::Unspecified,
         ));
         let connection_cache = Arc::new(ConnectionCache::new("connection_kache!"));
