@@ -487,7 +487,6 @@ impl ClusterInfo {
         Self::do_new(contact_info, keypair, socket_addr_space)
     }
 
-    #[cfg(feature = "dev-context-only-utils")]
     pub fn new_with_dummy_keypair(
         contact_info: ContactInfo,
         socket_addr_space: SocketAddrSpace,
