@@ -984,7 +984,7 @@ fn main() {
                         .long("no-block-cost-limits")
                         .takes_value(false)
                         .help("Sets block cost limits to the max"),
-                ),
+                )
                 .arg(
                     Arg::with_name("enable_hash_overrides")
                         .long("enable-hash-overrides")
@@ -994,7 +994,7 @@ fn main() {
                              event files to correctly verify blocks produced by \
                              the simulate-block-production subcommand",
                         ),
-                )
+                ),
         )
         .subcommand(
             SubCommand::with_name("graph")
@@ -1264,7 +1264,7 @@ fn main() {
                         .long("no-block-cost-limits")
                         .takes_value(false)
                         .help("Sets block cost limits to the max"),
-                )
+                ),
         )
         .subcommand(
             SubCommand::with_name("accounts")
