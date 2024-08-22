@@ -673,6 +673,37 @@ pub trait DropCallback: fmt::Debug {
 #[derive(Debug, Default)]
 pub struct OptionalDropCallback(Option<Box<dyn DropCallback + Send + Sync>>);
 
+#[derive(Default, Debug, Clone)]
+pub struct HashOverrides {
+    hashes: HashMap<Slot, HashOverride>,
+}
+
+impl HashOverrides {
+    fn get_hash_override(&self, slot: Slot) -> Option<&HashOverride> {
+        self.hashes.get(&slot)
+    }
+
+    fn get_blockhash_override(&self, slot: Slot) -> Option<&Hash> {
+        self.get_hash_override(slot).map(|hash_override| &hash_override.blockhash)
+    }
+
+    fn get_bank_hash_override(&self, slot: Slot) -> Option<&Hash> {
+        self.get_hash_override(slot).map(|hash_override| &hash_override.bank_hash)
+    }
+
+    pub fn add_override(&mut self, slot: Slot, blockhash: Hash, bank_hash: Hash) {
+        let is_new = self.hashes.insert(slot, HashOverride { blockhash, bank_hash }).is_none();
+        assert!(is_new);
+    }
+}
+
+#[derive(Debug, Clone)]
+struct HashOverride {
+    blockhash: Hash,
+    bank_hash: Hash,
+}
+
+
 /// Manager for the state of all accounts and programs after processing its entries.
 #[derive(Debug)]
 pub struct Bank {
@@ -850,39 +881,9 @@ pub struct Bank {
     /// Fee structure to use for assessing transaction fees.
     fee_structure: FeeStructure,
 
-    /// Hash overrides keyed by slot for simulated block production
+    /// blockhash and bank_hash overrides keyed by slot for simulated block production
     #[cfg(feature = "dev-context-only-utils")]
     hash_overrides: Arc<Mutex<HashOverrides>>,
-}
-
-#[derive(Default, Debug, Clone)]
-pub struct HashOverrides {
-    hashes: HashMap<Slot, HashOverride>,
-}
-
-impl HashOverrides {
-    fn get_hash_override(&self, slot: Slot) -> Option<&HashOverride> {
-        self.hashes.get(&slot)
-    }
-
-    fn get_blockhash_override(&self, slot: Slot) -> Option<&Hash> {
-        self.get_hash_override(slot).map(|hash_override| &hash_override.blockhash)
-    }
-
-    fn get_bank_hash_override(&self, slot: Slot) -> Option<&Hash> {
-        self.get_hash_override(slot).map(|hash_override| &hash_override.bank_hash)
-    }
-
-    pub fn add_override(&mut self, slot: Slot, blockhash: Hash, bank_hash: Hash) {
-        let is_new = self.hashes.insert(slot, HashOverride { blockhash, bank_hash }).is_none();
-        assert!(is_new);
-    }
-}
-
-#[derive(Debug, Clone)]
-struct HashOverride {
-    blockhash: Hash,
-    bank_hash: Hash,
 }
 
 struct VoteWithStakeDelegations {
