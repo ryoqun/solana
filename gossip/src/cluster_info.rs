@@ -485,7 +485,7 @@ impl ClusterInfo {
     ) -> Self {
         assert_eq!(contact_info.pubkey(), &keypair.pubkey());
         Self::do_new(contact_info, keypair, socket_addr_space)
-    )
+    }
 
     #[cfg(feature = "dev-context-only-utils")]
     pub fn new_with_dummy_keypair(
