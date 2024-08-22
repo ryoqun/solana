@@ -956,6 +956,14 @@ fn main() {
                         .help("In addition to the bank hash, optionally include accounts and/or transactions details for the slot"),
                 )
                 .arg(
+                    Arg::with_name("abort_on_invalid_block")
+                        .long("abort-on-invalid-block")
+                        .takes_value(false)
+                        .help(
+                            "Exits with failed status early as soon as any bad block is detected",
+                        ),
+                )
+                .arg(
                     Arg::with_name("enable_hash_overrides")
                         .long("enable-hash-overrides")
                         .takes_value(false)
@@ -1542,6 +1550,9 @@ fn main() {
                             }
                         };
                         process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
+                    }
+                    if arg_matches.is_present("abort_on_invalid_block") {
+                        process_options.abort_on_invalid_block = true;
                     }
 
                     // .default_value() does not work with .conflicts_with() in clap 2.33
