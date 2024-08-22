@@ -5523,7 +5523,7 @@ impl Bank {
             hash_override.filter(|&o| o != hash).map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
             accounts_delta_hash.0,
             self.signature_count(),
-            blockhash_override.map(|o| format!("{o} (orig: {blockhash})")).unwrap_or_else(|| format!("{blockhash}")),
+            blockhash_override.filter(|&o| o != blockhash).map(|o| format!("{o} (orig: {blockhash})")).unwrap_or_else(|| format!("{blockhash}")),
             self.capitalization(),
             if let Some(epoch_accounts_hash) = epoch_accounts_hash {
                 format!(", epoch_accounts_hash: {:?}", epoch_accounts_hash.as_ref())
