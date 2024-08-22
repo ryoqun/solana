@@ -359,7 +359,7 @@ pub(crate) fn parse_banking_trace_event_file_paths(
             eprintln!("Error: failed to open banking_trace_path: {error:?}");
             exit(1);
         }
-    }j
+    };
 
     let mut file_names = entries
         .flat_map(|entry| entry.ok().map(|entry| entry.file_name()))
