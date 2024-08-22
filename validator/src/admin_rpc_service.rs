@@ -27,6 +27,7 @@ use {
     std::{
         collections::{HashMap, HashSet},
         error,
+        env,
         fmt::{self, Display},
         net::SocketAddr,
         path::{Path, PathBuf},
@@ -266,7 +267,7 @@ impl AdminRpc for AdminRpcImpl {
                 // (rocksdb background processing or some other stuck thread perhaps?).
                 //
                 // If the process is still alive after five seconds, exit harder
-                thread::sleep(Duration::from_secs(std::env::var("SOLANA_VALIDATOR_EXIT_TIMEOUT").ok().and_then(|x| x.parse().ok()).unwrap_or(5)));
+                thread::sleep(Duration::from_secs(env::var("SOLANA_VALIDATOR_EXIT_TIMEOUT").ok().and_then(|x| x.parse().ok()).unwrap_or(5)));
                 warn!("validator exit timeout");
                 std::process::exit(0);
             })
