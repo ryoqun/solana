@@ -12,7 +12,10 @@ $solana_cli --version
 $solana_ledger_tool --version
 $agave_validator --version
 
-SOLANA_RUN_SH_VALIDATOR_ARGS="--full-snapshot-interval-slots 200" timeout 120 ./scripts/run.sh &
+SOLANA_RUN_SH_VALIDATOR_ARGS="--full-snapshot-interval-slots 200" \
+  SOLANA_VALIDATOR_EXIT_TIMEOUT=30 \
+  timeout 120 ./scripts/run.sh &
+
 pid=$!
 
 attempts=20
