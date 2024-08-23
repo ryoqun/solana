@@ -31,7 +31,7 @@ use {
     crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Sender},
     histogram::Histogram,
     solana_client::connection_cache::ConnectionCache,
-    solana_compute_budget::compute_budget_processor::process_compute_budget_instructions,
+    solana_runtime_transaction::instructions_processor::process_compute_budget_instructions,
     solana_gossip::cluster_info::ClusterInfo,
     solana_ledger::blockstore_processor::TransactionStatusSender,
     solana_measure::measure_us,
@@ -738,8 +738,9 @@ impl BankingStage {
                                                     return None;
                                                 }
 
+                                                use solana_svm_transaction::svm_message::SVMMessage;
                                                 let Ok(fb) = process_compute_budget_instructions(
-                                                    tx.message().program_instructions_iter(),
+                                                    SVMMessage::program_instructions_iter(tx.message()),
                                                 ) else {
                                                     return None;
                                                 };
