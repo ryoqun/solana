@@ -541,7 +541,7 @@ fn assert_capitalization(bank: &Bank) {
     assert!(bank.calculate_and_verify_capitalization(debug_verify));
 }
 
-fn load_banking_trace_events_or_exit(ledger_path: &Path, arg_matches: &ArgMatches<'_>) -> BankingTraceEvents {
+fn load_banking_trace_events_or_exit(ledger_path: &Path) -> BankingTraceEvents {
     let file_pathes = read_banking_trace_event_file_paths_or_exit(
         banking_trace_path(&ledger_path),
     );
@@ -1594,7 +1594,7 @@ fn main() {
 
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
                     if arg_matches.is_present("enable_hash_overrides") {
-                        let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path, arg_matches);
+                        let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path);
                         process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
                     }
 
@@ -2427,7 +2427,7 @@ fn main() {
 
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
 
-                    let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path, arg_matches);
+                    let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path);
                     process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
 
                     let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
