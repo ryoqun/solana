@@ -606,8 +606,8 @@ impl BankingSimulator {
         }
     }
 
-    pub fn parent_slot(&self) -> Slot {
-        *self.banking_trace_events.freeze_time_by_slot.range(..self.first_simulated_slot).last().unwrap().0
+    pub fn parent_slot(&self) -> Option<Slot> {
+        *self.banking_trace_events.freeze_time_by_slot.range(..self.first_simulated_slot).last_value()
     }
 
     pub fn start(

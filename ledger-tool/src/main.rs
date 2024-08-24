@@ -593,6 +593,10 @@ fn read_banking_trace_event_file_paths_or_exit(
             break;
         }
     }
+    if event_file_paths.is_empty() {
+        eprintln!("Error: no event files found");
+        exit(1);
+    }
     event_file_pathes.reverse();
 
     if !entry_names.is_empty() {
