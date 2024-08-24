@@ -522,7 +522,7 @@ impl TaskHandler for DefaultTaskHandler {
                     wall_time.elapsed().as_micros().try_into().unwrap(),
                     &cpu_time.elapsed(),
                     0, // transaction.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
-                    transaction.get_account_locks_unchecked(),
+                    transaction.get_account_locks_unchecked().into(),
                 );
             }
         } else {

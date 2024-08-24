@@ -125,7 +125,7 @@ pub struct OwnedTransactionAccountLocks {
 impl<'a> From<solana_sdk::transaction::TransactionAccountLocks<'a>>
     for OwnedTransactionAccountLocks
 {
-    fn from(locks: solana_sdk::transaction::TransactionAccountLocks) -> Self {
+    fn from(locks: solana_sdk::transaction::TransactionAccountLocks<'a>) -> Self {
         Self {
             readonly: locks.readonly.into_iter().cloned().collect(),
             writable: locks.writable.into_iter().cloned().collect(),
@@ -134,7 +134,7 @@ impl<'a> From<solana_sdk::transaction::TransactionAccountLocks<'a>>
 }
 
 use solana_sdk::transaction::TransactionAccountLocks;
-pub fn record_transaction_timings<'a>(
+pub fn record_transaction_timings(
     slot: Slot,
     &sig: &Signature,
     &cu: &u64,
@@ -143,7 +143,7 @@ pub fn record_transaction_timings<'a>(
     process_message_time: u64,
     cpu_time: &std::time::Duration,
     priority: u64,
-    account_locks: TransactionAccountLocks<'a>,
+    account_locks: OwnedTransactionAccountLocks,
 ) {
     if slot == 0 || slot < 282254384 { // provide flag....
         return;
@@ -204,7 +204,6 @@ pub fn record_transaction_timings<'a>(
     });
 
     if let Some(sender) = maybe_sender {
-        let account_locks = account_locks.into();
         sender
             .send(TransactionTimings {
                 slot,
@@ -1008,6 +1007,19 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
 
         //use crate::transaction_priority_details::GetTransactionPriorityDetails;
 
+        let account_keys = tx.account_keys();
+        let (mut writable, mut readonly) = (vec![], vec![]);
+        for i in 0..account_keys.len() {
+            if tx.is_writable(i) {
+                writable.push(account_keys[i]);
+            } else {
+                readonly.push(account_keys[i]);
+            }
+        }
+        let account_locks = OwnedTransactionAccountLocks {
+            writable, readonly
+        };
+
         record_transaction_timings(
             self.slot,
             tx.signature(),
@@ -1017,7 +1029,7 @@ impl<FG: ForkGraph> TransactionBatchProcessor<FG> {
             process_message_time.as_us(),
             &cpu_time.elapsed(),
             0, // tx.get_transaction_priority_details().map(|d| d.priority).unwrap_or_default(),
-            panic!(), // tx.get_account_locks_unchecked(),
+            account_locks,
         );
 
         ExecutedTransaction {
