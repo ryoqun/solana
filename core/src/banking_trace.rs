@@ -625,7 +625,7 @@ impl BankingSimulator {
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
         let parent_slot = bank.slot();
-        assert_eq!(parent_slot, self.parent_slot());
+        assert_eq!(Some(parent_slot), self.parent_slot());
 
         let simulated_leader = leader_schedule_cache
             .slot_leader_at(self.first_simulated_slot, None)
