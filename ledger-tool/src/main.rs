@@ -578,12 +578,12 @@ fn read_banking_trace_event_file_paths_or_exit(
         .flat_map(|entry| entry.ok().map(|entry| entry.file_name()))
         .collect::<HashSet<OsString>>();
 
-    if entry_names.is_empty() {
-        eprintln!("Error: banking_trace_path dir is empty.");
-        exit(1);
-    }
-
     let mut event_file_pathes = vec![];
+
+    if entry_names.is_empty() {
+        warn!("banking_trace_path dir is empty.");
+        return event_file_pathes;
+    }
 
     for index in 0.. {
         let event_file_name: OsString = BankingSimulator::event_file_name(index).into();
@@ -594,8 +594,8 @@ fn read_banking_trace_event_file_paths_or_exit(
         }
     }
     if event_file_paths.is_empty() {
-        eprintln!("Error: no event files found");
-        exit(1);
+        warn!("Error: no event files found");
+        return event_file_pathes;
     }
     event_file_pathes.reverse();
 
@@ -2505,7 +2505,14 @@ fn main() {
 
                     let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
                     let simulator = BankingSimulator::new(banking_trace_events, slot);
-                    process_options.halt_at_slot = Some(simulator.parent_slot());
+                    let parent_slot = simulator.parent_slot() else {
+                        eprintln!(
+                            "Couldn't determine parent_slot of first_simulated_slot: {slot} \
+                             due to missing banking_trace_event data."
+                        );
+                        exit(1);
+                    };
+                    process_options.halt_at_slot = Some(parent_slot);
 
                     let blockstore = Arc::new(open_blockstore(
                         &ledger_path,
