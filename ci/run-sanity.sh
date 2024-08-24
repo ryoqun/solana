@@ -7,8 +7,8 @@ source multinode-demo/common.sh
 
 # Build eargerly if needed; otherwise following steps cause odd timing error...
 $solana_keygen --version
-$solaan_genesis --version
-$solaan_faucet --version
+$solana_genesis --version
+$solana_faucet --version
 $solana_cli --version
 $agave_validator --version
 $solana_ledger_tool --version
