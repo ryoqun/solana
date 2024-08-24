@@ -528,7 +528,7 @@ impl BankingTraceEvents {
     }
 
     fn read_event_files(
-        event_file_pathes: Vec<PathBuf>,
+        event_file_paths: Vec<PathBuf>,
     ) -> Result<
         (
             BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
@@ -538,7 +538,7 @@ impl BankingTraceEvents {
         SimulateError,
     > {
         let mut events = vec![];
-        for event_file_path in &event_file_pathes {
+        for event_file_path in &event_file_paths {
             let old_len = events.len();
             let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(
@@ -580,8 +580,8 @@ impl BankingTraceEvents {
         Ok((packet_batches_by_time, freeze_time_by_slot, hash_overrides))
     }
 
-    pub fn load(event_file_pathes: Vec<PathBuf>) -> Result<Self, SimulateError> {
-        let (packet_batches_by_time, freeze_time_by_slot, hash_overrides) = Self::read_event_files(event_file_pathes)?;
+    pub fn load(event_file_paths: Vec<PathBuf>) -> Result<Self, SimulateError> {
+        let (packet_batches_by_time, freeze_time_by_slot, hash_overrides) = Self::read_event_files(event_file_paths)?;
 
         Ok(Self {
             packet_batches_by_time,

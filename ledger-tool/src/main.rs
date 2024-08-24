@@ -543,12 +543,12 @@ fn assert_capitalization(bank: &Bank) {
 }
 
 fn load_banking_trace_events_or_exit(ledger_path: &Path) -> BankingTraceEvents {
-    let file_pathes = read_banking_trace_event_file_paths_or_exit(
+    let file_paths = read_banking_trace_event_file_paths_or_exit(
         banking_trace_path(&ledger_path),
     );
 
-    info!("Using: banking trace event files: {file_pathes:?}");
-    match BankingTraceEvents::load(file_pathes) {
+    info!("Using: banking trace event files: {file_paths:?}");
+    match BankingTraceEvents::load(file_paths) {
         Ok(banking_trace_events) => banking_trace_events,
         Err(error) => {
             eprintln!("Failed to load banking trace events: {error:?}");
@@ -578,26 +578,26 @@ fn read_banking_trace_event_file_paths_or_exit(
         .flat_map(|entry| entry.ok().map(|entry| entry.file_name()))
         .collect::<HashSet<OsString>>();
 
-    let mut event_file_pathes = vec![];
+    let mut event_file_paths = vec![];
 
     if entry_names.is_empty() {
         warn!("banking_trace_path dir is empty.");
-        return event_file_pathes;
+        return event_file_paths;
     }
 
     for index in 0.. {
         let event_file_name: OsString = BankingSimulator::event_file_name(index).into();
         if entry_names.remove(&event_file_name) {
-            event_file_pathes.push(banking_trace_path.join(event_file_name));
+            event_file_paths.push(banking_trace_path.join(event_file_name));
         } else {
             break;
         }
     }
     if event_file_paths.is_empty() {
         warn!("Error: no event files found");
-        return event_file_pathes;
+        return event_file_paths;
     }
-    event_file_pathes.reverse();
+    event_file_paths.reverse();
 
     if !entry_names.is_empty() {
         let full_names = entry_names
@@ -610,7 +610,7 @@ fn read_banking_trace_event_file_paths_or_exit(
         );
     }
 
-    event_file_pathes
+    event_file_paths
 }
 
 struct SlotRecorderConfig {
