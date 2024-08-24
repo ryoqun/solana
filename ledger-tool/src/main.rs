@@ -2505,7 +2505,7 @@ fn main() {
 
                     let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
                     let simulator = BankingSimulator::new(banking_trace_events, slot);
-                    let parent_slot = simulator.parent_slot() else {
+                    let Some(parent_slot) = simulator.parent_slot() else {
                         eprintln!(
                             "Couldn't determine parent_slot of first_simulated_slot: {slot} \
                              due to missing banking_trace_event data."
