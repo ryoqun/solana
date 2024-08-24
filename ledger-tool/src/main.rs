@@ -596,10 +596,7 @@ fn read_banking_trace_event_file_paths_or_exit(
 
     if event_file_paths.is_empty() {
         warn!("Error: no event files found");
-        return event_file_paths;
     }
-    // Reverse to load in the chronicle order (note that this isn't strictly needed)
-    event_file_paths.reverse();
 
     if !entry_names.is_empty() {
         let full_names = entry_names
@@ -612,6 +609,8 @@ fn read_banking_trace_event_file_paths_or_exit(
         );
     }
 
+    // Reverse to load in the chronicle order (note that this isn't strictly needed)
+    event_file_paths.reverse();
     event_file_paths
 }
 
