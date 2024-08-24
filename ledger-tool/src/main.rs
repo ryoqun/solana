@@ -85,7 +85,7 @@ use {
     std::{
         collections::{HashMap, HashSet},
         ffi::OsStr,
-        fs::File,
+        fs::{read_dir, File},
         io::{self, Write},
         mem::swap,
         path::{Path, PathBuf},
@@ -566,7 +566,7 @@ fn read_banking_trace_event_file_paths_or_exit(
     }
     info!("Using: banking trace events dir: {banking_trace_path:?}");
 
-    let entries = match std::fs::read_dir(&banking_trace_path) {
+    let entries = match read_dir(&banking_trace_path) {
         Ok(entries) => entries,
         Err(error) => {
             eprintln!("Error: failed to open banking_trace_path: {error:?}");
@@ -593,10 +593,12 @@ fn read_banking_trace_event_file_paths_or_exit(
             break;
         }
     }
+
     if event_file_paths.is_empty() {
         warn!("Error: no event files found");
         return event_file_paths;
     }
+    // Reverse to load in the chronicle order (note that this isn't strictly needed)
     event_file_paths.reverse();
 
     if !entry_names.is_empty() {
