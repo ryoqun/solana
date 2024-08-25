@@ -101,6 +101,7 @@ serde_json = { workspace = true }
 serial_test = { workspace = true }
 # See order-crates-for-publishing.py for using this unusual `path = "."`
 solana-core = { path = ".", features = ["dev-context-only-utils"] }
+solana-gossip = { workspace = true, features = ["dev-context-only-utils"] }
 solana-ledger = { workspace = true, features = ["dev-context-only-utils"] }
 solana-logger = { workspace = true }
 solana-poh = { workspace = true, features = ["dev-context-only-utils"] }
@@ -123,7 +124,10 @@ sysctl = { workspace = true }
 rustc_version = { workspace = true, optional = true }
 
 [features]
-dev-context-only-utils = []
+dev-context-only-utils = [
+    "solana-gossip/dev-context-only-utils",
+    "solana-runtime/dev-context-only-utils",
+]
 frozen-abi = [
     "dep:rustc_version",
     "dep:solana-frozen-abi",

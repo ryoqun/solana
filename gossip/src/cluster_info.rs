@@ -453,12 +453,11 @@ fn retain_staked(
 }
 
 impl ClusterInfo {
-    pub fn new(
+    fn do_new(
         contact_info: ContactInfo,
         keypair: Arc<Keypair>,
         socket_addr_space: SocketAddrSpace,
     ) -> Self {
-        assert_eq!(contact_info.pubkey(), &keypair.pubkey());
         let id = *contact_info.pubkey();
         let me = Self {
             gossip: CrdsGossip::default(),
@@ -482,6 +481,28 @@ impl ClusterInfo {
         };
         me.refresh_my_gossip_contact_info();
         me
+    }
+
+    pub fn new(
+        contact_info: ContactInfo,
+        keypair: Arc<Keypair>,
+        socket_addr_space: SocketAddrSpace,
+    ) -> Self {
+        assert_eq!(contact_info.pubkey(), &keypair.pubkey());
+        Self::do_new(contact_info, keypair, socket_addr_space)
+    }
+
+    #[cfg(feature = "dev-context-only-utils")]
+    pub fn new_with_dummy_keypair(
+        contact_info: ContactInfo,
+        socket_addr_space: SocketAddrSpace,
+    ) -> Self {
+        // Obviously, we can't create a Keypair for given pubkey arbitrarily... But ClusterInfo is
+        // needed for ledger-tool simulate-block-production. So, forcibly create one with incorrect
+        // Keypair. Note that the returned ClusterInfo is half-broken, but it's okay for the
+        // minimum usage by the subcommand.
+        let keypair = Arc::new(Keypair::new());
+        Self::do_new(contact_info, keypair, socket_addr_space)
     }
 
     pub fn set_contact_debug_interval(&mut self, new: u64) {
@@ -670,7 +691,11 @@ impl ClusterInfo {
     }
 
     pub fn id(&self) -> Pubkey {
-        self.keypair.read().unwrap().pubkey()
+        // `self.keypair.read().unwrap().pubkey()` is more straight-forward to use here.
+        // However, self.keypair could be dummy in some very odd situation
+        // (i.e. ledger-tool's simulate-leader-production). So, use `self.my_contact_info` here.
+        // Other than the edge case, both are equivalent.
+        *self.my_contact_info.read().unwrap().pubkey()
     }
 
     pub fn keypair(&self) -> RwLockReadGuard<Arc<Keypair>> {
