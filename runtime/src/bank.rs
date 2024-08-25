@@ -3178,9 +3178,11 @@ impl Bank {
             );
         } else {
             let blockhash_override = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).copied();
-            if blockhash_override.is_some() {
-                info!("bank: slot: {}: overrode blockhash: {} with {:?}", self.slot(), blockhash, blockhash_override);
-            }
+            blockhash_override.inspect(|blockhash_override| {
+                if blockhash_override != blockhash {
+                    info!("bank: slot: {}: overrode blockhash: {} with {}", self.slot(), blockhash, blockhash_override);
+                }
+            });
             w_blockhash_queue.register_hash(
                 blockhash_override.as_ref().unwrap_or(blockhash),
                 self.fee_rate_governor.lamports_per_signature,
@@ -5331,9 +5333,11 @@ impl Bank {
             hash
         } else {
             let hash_override = self.hash_overrides.lock().unwrap().get_bank_hash_override(slot).copied();
-            if hash_override.is_some() {
-                info!("bank: slot: {}: overrode bank hash: {} with {:?}", self.slot(), hash, hash_override);
-            }
+            hash_override.inspect(|hash_override| {
+                if hash_override != hash {
+                    info!("bank: slot: {}: overrode bank hash: {} with {}", self.slot(), hash, hash_override);
+                }
+            })
             // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
             // hash_override is used by ledger-tool's simulate-block-production, which prefers
             // the actual bank freezing processing for accurate simulation.
