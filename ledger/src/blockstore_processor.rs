@@ -2110,8 +2110,8 @@ pub fn process_single_slot(
         timing,
     )
     .and_then(|()| {
-        if let Some((result, bank_timings)) = bank.wait_for_completed_scheduler() {
-            timing.accumulate(&bank_timings);
+        if let Some((result, completed_timings)) = bank.wait_for_completed_scheduler() {
+            timing.accumulate(&completed_timings);
             result?
         }
         Ok(())
