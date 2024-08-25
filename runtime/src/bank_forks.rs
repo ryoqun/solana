@@ -14,7 +14,7 @@ use {
     solana_measure::measure::Measure,
     solana_program_runtime::loaded_programs::{BlockRelation, ForkGraph},
     solana_sdk::{
-        clock::{Epoch, Slot},
+        clock::Slot,
         hash::Hash,
         scheduling::SchedulingMode,
     },
@@ -746,10 +746,6 @@ impl ForkGraph for BankForks {
                     .unwrap_or(BlockRelation::Unrelated)
             })
             .unwrap_or(BlockRelation::Unknown)
-    }
-
-    fn slot_epoch(&self, slot: Slot) -> Option<Epoch> {
-        self.banks.get(&slot).map(|bank| bank.epoch())
     }
 }
 
