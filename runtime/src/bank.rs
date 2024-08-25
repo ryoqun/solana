@@ -3178,7 +3178,9 @@ impl Bank {
             );
         } else {
             let blockhash_override = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).copied();
-            info!("bank: slot: {}: overrode blockhash: {} with {}", bank.slot(), blockhash, blockhash_override);
+            if blockhash_override.is_some() {
+                info!("bank: slot: {}: overrode blockhash: {} with {:?}", bank.slot(), blockhash, blockhash_override);
+            }
             w_blockhash_queue.register_hash(
                 blockhash_override.as_ref().unwrap_or(blockhash),
                 self.fee_rate_governor.lamports_per_signature,
