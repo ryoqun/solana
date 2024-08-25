@@ -5337,7 +5337,7 @@ impl Bank {
                 if hash_override != hash {
                     info!("bank: slot: {}: overrode bank hash: {} with {}", self.slot(), hash, hash_override);
                 }
-            })
+            });
             // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
             // hash_override is used by ledger-tool's simulate-block-production, which prefers
             // the actual bank freezing processing for accurate simulation.
