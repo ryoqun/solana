@@ -5334,7 +5334,7 @@ impl Bank {
             let hash_override = hash_overrides.get_bank_hash_override(slot).copied();
             drop(hash_overrides);
             if hash_override.is_some() {
-                info!("bank: slot: {}: overrode blockhash: {} with {:?}", self.slot(), blockhash, blockhash_override);
+                info!("bank: slot: {}: overrode bank hash: {} with {:?}", self.slot(), hash, hash_override);
             }
             // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
             // hash_override is used by ledger-tool's simulate-block-production, which prefers
