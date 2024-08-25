@@ -683,6 +683,10 @@ impl HashOverrides {
         self.get_hash_override(slot).map(|hash_override| std::mem::replace(&mut hash_override.blockhash, hash))
     }
 
+    fn get_blockhash_override(&mut self, slot: Slot) -> Option<&Hash> {
+        self.get_hash_override(slot).map(|hash_override| &hash_override.blockhash)
+    }
+
     fn get_bank_hash_override(&mut self, slot: Slot) -> Option<&Hash> {
         self.get_hash_override(slot).map(|hash_override| &hash_override.bank_hash)
     }
