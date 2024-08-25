@@ -675,7 +675,7 @@ pub struct HashOverrides {
 }
 
 impl HashOverrides {
-    fn get_hash_override(&self, slot: Slot) -> Option<&HashOverride> {
+    fn get_hash_override(&mut self, slot: Slot) -> Option<&mut HashOverride> {
         self.hashes.get_mut(&slot)
     }
 
