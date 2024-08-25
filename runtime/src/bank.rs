@@ -5331,10 +5331,15 @@ impl Bank {
             hash
         } else {
             let hash_overrides = self.hash_overrides.lock().unwrap();
+            let hash_override = hash_overrides.get_bank_hash_override(slot).copied();
+            drop(hash_overrides);
+            if hash_override.is_some() {
+                info!("bank: slot: {}: overrode blockhash: {} with {:?}", self.slot(), blockhash, blockhash_override);
+            }
             // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
             // hash_override is used by ledger-tool's simulate-block-production, which prefers
             // the actual bank freezing processing for accurate simulation.
-            hash_overrides.get_bank_hash_override(slot).copied().unwrap_or(std::hint::black_box(hash))
+            hash_override.unwrap_or(std::hint::black_box(hash))
         };
 
         let bank_hash_stats = self
