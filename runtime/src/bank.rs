@@ -675,19 +675,15 @@ pub struct HashOverrides {
 }
 
 impl HashOverrides {
-    fn get_hash_override(&mut self, slot: Slot) -> Option<&mut HashOverride> {
-        self.hashes.get_mut(&slot)
+    fn get_hash_override(&self, slot: Slot) -> Option<&HashOverride> {
+        self.hashes.get(&slot)
     }
 
-    fn use_blockhash_override(&mut self, slot: Slot, hash: Hash) -> Option<Hash> {
-        self.get_hash_override(slot).map(|hash_override| std::mem::replace(&mut hash_override.blockhash, hash))
-    }
-
-    fn get_blockhash_override(&mut self, slot: Slot) -> Option<&Hash> {
+    fn get_blockhash_override(&self, slot: Slot) -> Option<&Hash> {
         self.get_hash_override(slot).map(|hash_override| &hash_override.blockhash)
     }
 
-    fn get_bank_hash_override(&mut self, slot: Slot) -> Option<&Hash> {
+    fn get_bank_hash_override(&self, slot: Slot) -> Option<&Hash> {
         self.get_hash_override(slot).map(|hash_override| &hash_override.bank_hash)
     }
 
@@ -3181,7 +3177,8 @@ impl Bank {
                 self.fee_rate_governor.lamports_per_signature,
             );
         } else {
-            let mut blockhash_override = self.hash_overrides.lock().unwrap().use_blockhash_override(self.slot(), *blockhash);
+            let blockhash_override = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).copied();
+            info!("bank: slot: {}: overrode blockhash: {} with {}", bank.slot(), blockhash, blockhash_override);
             w_blockhash_queue.register_hash(
                 blockhash_override.as_ref().unwrap_or(blockhash),
                 self.fee_rate_governor.lamports_per_signature,
@@ -5328,16 +5325,14 @@ impl Bank {
             hash = hard_forked_hash;
         }
 
-        let blockhash = self.last_blockhash();
-
-        let (hash_override, blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
-            (None, None)
+        let hash = if cfg!(not(feature = "dev-context-only-utils")) {
+            hash
         } else {
-            let mut hash_overrides = self.hash_overrides.lock().unwrap();
-            (
-                hash_overrides.get_bank_hash_override(slot).copied(),
-                hash_overrides.get_blockhash_override(slot).copied(),
-            )
+            let hash_overrides = self.hash_overrides.lock().unwrap();
+            // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
+            // hash_override is used by ledger-tool's simulate-block-production, which prefers
+            // the actual bank freezing processing for accurate simulation.
+            hash_overrides.get_bank_hash_override(slot).copied().unwrap_or(std::hint::black_box(hash))
         };
 
         let bank_hash_stats = self
@@ -5347,11 +5342,10 @@ impl Bank {
             .get_bank_hash_stats(slot)
             .expect("No bank hash stats were found for this bank, that should not be possible");
         info!(
-            "bank frozen: {slot} hash: {} accounts_delta: {} signature_count: {} last_blockhash: {} capitalization: {}{}, stats: {bank_hash_stats:?}",
-            hash_override.filter(|&o| o != hash).map(|o| format!("{o} (orig: {hash})")).unwrap_or_else(|| format!("{hash}")),
+            "bank frozen: {slot} hash: {hash} accounts_delta: {} signature_count: {} last_blockhash: {} capitalization: {}{}, stats: {bank_hash_stats:?}",
             accounts_delta_hash.0,
             self.signature_count(),
-            blockhash_override.filter(|&o| o != blockhash).map(|o| format!("{o} (orig: {blockhash})")).unwrap_or_else(|| format!("{blockhash}")),
+            self.last_blockhash(),
             self.capitalization(),
             if let Some(epoch_accounts_hash) = epoch_accounts_hash {
                 format!(", epoch_accounts_hash: {:?}", epoch_accounts_hash.as_ref())
@@ -5359,17 +5353,7 @@ impl Bank {
                 "".to_string()
             }
         );
-
-        if let Some(hash_override) = hash_override {
-            // Avoid to optimize out `hash` along with the whole computation by super smart rustc.
-            // hash_override is used by ledger-tool's simulate-block-production, which prefers
-            // the actual bank freezing processing for accurate simulation.
-            std::hint::black_box(hash);
-
-            hash_override
-        } else {
-            hash
-        }
+        hash
     }
 
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
