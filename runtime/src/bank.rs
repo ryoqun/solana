@@ -5333,7 +5333,7 @@ impl Bank {
             hash
         } else {
             let hash_override = self.hash_overrides.lock().unwrap().get_bank_hash_override(slot).copied();
-            hash_override.inspect(|hash_override| {
+            hash_override.inspect(|&hash_override| {
                 if hash_override != hash {
                     info!("bank: slot: {}: overrode bank hash: {} with {}", self.slot(), hash, hash_override);
                 }
