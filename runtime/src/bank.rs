@@ -5330,9 +5330,7 @@ impl Bank {
         let hash = if cfg!(not(feature = "dev-context-only-utils")) {
             hash
         } else {
-            let hash_overrides = self.hash_overrides.lock().unwrap();
-            let hash_override = hash_overrides.get_bank_hash_override(slot).copied();
-            drop(hash_overrides);
+            let hash_override = self.hash_overrides.lock().unwrap().get_bank_hash_override(slot).copied();
             if hash_override.is_some() {
                 info!("bank: slot: {}: overrode bank hash: {} with {:?}", self.slot(), hash, hash_override);
             }
