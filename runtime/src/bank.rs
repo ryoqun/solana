@@ -5333,7 +5333,7 @@ impl Bank {
         let (hash_override, blockhash_override) = if cfg!(not(feature = "dev-context-only-utils")) {
             (None, None)
         } else {
-            let hash_overrides = self.hash_overrides.lock().unwrap();
+            let mut hash_overrides = self.hash_overrides.lock().unwrap();
             (
                 hash_overrides.get_bank_hash_override(slot).copied(),
                 hash_overrides.get_blockhash_override(slot).copied(),
