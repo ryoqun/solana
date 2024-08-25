@@ -3177,7 +3177,7 @@ impl Bank {
                 self.fee_rate_governor.lamports_per_signature,
             );
         } else {
-            let blockhash_override = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).copied();
+            let mut blockhash_override = self.hash_overrides.lock().unwrap().get_blockhash_override(self.slot()).copied();
             w_blockhash_queue.register_hash(
                 blockhash_override.replace(*blockhash).as_ref().unwrap_or(blockhash),
                 self.fee_rate_governor.lamports_per_signature,
