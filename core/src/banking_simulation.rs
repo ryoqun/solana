@@ -397,10 +397,7 @@ impl BankingSimulator {
                         event_time.duration_since(base_event_time).unwrap();
 
                     // Busy loop for most accurate sending timings
-                    loop {
-                        if simulation_duration_since_base > required_duration_since_base {
-                            break;
-                        }
+                    while simulation_duration_since_base < required_duration_since_base {
                         let current_simulation_time = SystemTime::now();
                         simulation_duration_since_base = current_simulation_time
                             .duration_since(base_simulation_time)
