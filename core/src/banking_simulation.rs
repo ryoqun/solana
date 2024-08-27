@@ -117,6 +117,7 @@ pub enum SimulateError {
 }
 
 pub struct BankingTraceEvents {
+    /// BTreeMap is intentional because events could be unordered slightly due to tracing jitter.
     packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
     freeze_time_by_slot: BTreeMap<Slot, SystemTime>,
     hash_overrides: HashOverrides,
@@ -166,6 +167,13 @@ impl BankingTraceEvents {
         for TimedTracedEvent(event_time, event) in events {
             match event {
                 TracedEvent::PacketBatch(label, batch) => {
+                    // Deserialized PacketBatches will mostly be ordered by event_time, but this
+                    // isn't guaranteed when traced, because time are measured by multiple _sender_
+                    // threads withtout synchnotization among them to avoid overhead.
+                    //
+                    // Also, there's a possiblity of system clock change. In this case,
+                    // the simulation is meaningless, though...
+                    //
                     // Somewhat naively assume that event_times (nanosecond resolution) won't
                     // collide.
                     let is_new = packet_batches_by_time
