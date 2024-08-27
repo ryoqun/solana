@@ -378,7 +378,12 @@ impl BankingSimulator {
                         batches.iter().map(|batch| batch.len()).sum::<usize>(),
                     )
                 }).collect::<Vec<_>>();
-                let timed_batches_to_send = timed_batches_to_send.into_iter().zip(batch_and_tx_counts.into_iter());
+                // Convert to a large plain old Vec and drain on it, finally dropping it outside
+                // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
+                let mut timed_batches_to_send = timed_batches_to_send
+                    .into_iter()
+                    .zip(batch_and_tx_counts.into_iter())
+                    .collect::<Vec<_>>();
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     event_count,
@@ -400,7 +405,7 @@ impl BankingSimulator {
                     mut last_gossip_vote_tx_count
                 ) = (Duration::default(), 0, 0, 0, 0);
                 for ((event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
-                    timed_batches_to_send {
+                    timed_batches_to_send.drain(..) {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
 
@@ -472,6 +477,7 @@ impl BankingSimulator {
                     gossip_vote_count,
                     gossip_vote_tx_count
                 );
+                drop(timed_batches_to_send);
                 // hold these senders in join_handle to control banking stage termination!
                 (non_vote_sender, tpu_vote_sender, gossip_vote_sender)
             }
