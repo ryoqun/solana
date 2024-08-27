@@ -362,9 +362,18 @@ impl BankingSimulator {
 
                 info!("start sending!...");
                 let timed_batches_to_send = self.banking_trace_events.packet_batches_by_time.range(base_event_time..);
+                let event_count = timed_batches_to_send.clone().count();
+                let batch_and_tx_counts = timed_batches_to_send.clone().map(|(_, (_label, batches_with_stats))| {
+                    let batches = &batches_with_stats.0;
+                    (
+                        batches.len(),
+                        batches.iter().map(|batch| batch.len()).sum::<usize>(),
+                    )
+                }).collect::<Vec<_>>();
+                let timed_batches_to_send = timed_batches_to_send.zip(batch_and_tx_counts.into_iter());
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
-                    timed_batches_to_send.clone().count(),
+                    event_count,
                     self.banking_trace_events.packet_batches_by_time.len(),
                     self.first_simulated_slot,
                     {
@@ -382,7 +391,8 @@ impl BankingSimulator {
                     mut last_tpu_vote_tx_count,
                     mut last_gossip_vote_tx_count
                 ) = (Duration::default(), 0, 0, 0, 0);
-                for (&event_time, (label, batches_with_stats)) in timed_batches_to_send {
+                for ((&event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
+                    timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
 
@@ -405,11 +415,6 @@ impl BankingSimulator {
                     };
                     sender.send(batches_with_stats.clone()).unwrap();
 
-                    let batches = &batches_with_stats.0;
-                    let (batch_count, tx_count) = (
-                        batches.len(),
-                        batches.iter().map(|batch| batch.len()).sum::<usize>(),
-                    );
                     debug!(
                         "sent {:?} {} batches ({} txes)",
                         label, batch_count, tx_count
