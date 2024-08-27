@@ -211,7 +211,7 @@ impl BankingSimulator {
     }
 
     pub fn start(
-        self,
+        mut self,
         genesis_config: GenesisConfig,
         bank_forks: Arc<RwLock<BankForks>>,
         blockstore: Arc<Blockstore>,
@@ -361,16 +361,16 @@ impl BankingSimulator {
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
                 info!("start sending!...");
-                let timed_batches_to_send = self.banking_trace_events.packet_batches_by_time.range(base_event_time..);
-                let event_count = timed_batches_to_send.clone().count();
-                let batch_and_tx_counts = timed_batches_to_send.clone().map(|(_, (_label, batches_with_stats))| {
+                let timed_batches_to_send = self.banking_trace_events.packet_batches_by_time.split_off(&base_event_time);
+                let event_count = timed_batches_to_send.len();
+                let batch_and_tx_counts = timed_batches_to_send.values().map(|(_label, batches_with_stats)| {
                     let batches = &batches_with_stats.0;
                     (
                         batches.len(),
                         batches.iter().map(|batch| batch.len()).sum::<usize>(),
                     )
                 }).collect::<Vec<_>>();
-                let timed_batches_to_send = timed_batches_to_send.zip(batch_and_tx_counts.into_iter());
+                let timed_batches_to_send = timed_batches_to_send.into_iter().zip(batch_and_tx_counts.into_iter());
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     event_count,
@@ -391,7 +391,7 @@ impl BankingSimulator {
                     mut last_tpu_vote_tx_count,
                     mut last_gossip_vote_tx_count
                 ) = (Duration::default(), 0, 0, 0, 0);
-                for ((&event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
+                for ((event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
                     timed_batches_to_send {
                     let required_duration_since_base =
                         event_time.duration_since(base_event_time).unwrap();
@@ -413,7 +413,7 @@ impl BankingSimulator {
                         ChannelLabel::GossipVote => &gossip_vote_sender,
                         ChannelLabel::Dummy => unreachable!(),
                     };
-                    sender.send(batches_with_stats.clone()).unwrap();
+                    sender.send(batches_with_stats).unwrap();
 
                     debug!(
                         "sent {:?} {} batches ({} txes)",
