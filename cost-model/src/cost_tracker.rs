@@ -106,7 +106,7 @@ impl Default for CostTracker {
 }
 
 impl CostTracker {
-    pub fn new_from_parent(&self) -> Self {
+    pub fn new_from_parent_limits(&self) -> Self {
         let mut new = Self::default();
         new.set_limits(
             self.account_cost_limit,
