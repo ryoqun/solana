@@ -27,7 +27,9 @@ use {
         prioritization_fee_cache::PrioritizationFeeCache,
     },
     solana_sdk::{
-        genesis_config::GenesisConfig, shred_version::compute_shred_version, slot_history::Slot,
+        clock::{Slot, DEFAULT_MS_PER_SLOT, HOLD_TRANSACTIONS_SLOT_OFFSET},
+        genesis_config::GenesisConfig,
+        shred_version::compute_shred_version,
     },
     solana_streamer::socket::SocketAddrSpace,
     solana_turbine::broadcast_stage::BroadcastStageType,
@@ -99,8 +101,7 @@ use {
 /// Both phases just send `BankingPacketBatch` in the same fashion, pretending to be
 /// `SigVerifyStage`/gossip from a single thread to busy loop for precise T=N at ~1us granularity.
 ///
-/// Warm up is defined as T=-N secs using slot distance between immediate ancestor of first
-/// simulated block and root block. As soon as warm up is initiated, we invoke
+/// Warm-up starts at T=-WARMUP_DURATION (~ 13 secs). As soon as warm up is initiated, we invoke
 /// `BankingStage::new_num_threads()` as well to simulate the pre-leader slot's tx-buffering time.
 pub struct BankingSimulator {
     banking_trace_events: BankingTraceEvents,
@@ -115,6 +116,10 @@ pub enum SimulateError {
     #[error("Deserialization Error: {0}")]
     SerializeError(#[from] bincode::Error),
 }
+
+// Defined to be enough to cover the holding phase prior to leader slots with some idling (+5 secs)
+const WARMUP_DURATION: Duration =
+    Duration::from_secs(HOLD_TRANSACTIONS_SLOT_OFFSET * DEFAULT_MS_PER_SLOT + 5);
 
 pub struct BankingTraceEvents {
     /// BTreeMap is intentional because events could be unordered slightly due to tracing jitter.
@@ -285,7 +290,6 @@ impl BankingSimulator {
             DEFAULT_HASHES_PER_BATCH,
             record_receiver,
         );
-        let warmup_duration = Duration::from_secs(12);
 
         // Enable BankingTracer to approximate the real environment as close as possible because
         // it's not expected to disable BankingTracer on production environments.
@@ -363,7 +367,7 @@ impl BankingSimulator {
             .next()
             .expect("timed hashes");
 
-        let base_event_time = raw_base_event_time - warmup_duration;
+        let base_event_time = raw_base_event_time - WARMUP_DURATION;
         let base_simulation_time = SystemTime::now();
 
         let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
@@ -400,7 +404,7 @@ impl BankingSimulator {
                         raw_base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
                     },
                     slot_before_next_leader_slot,
-                    warmup_duration,
+                    WARMUP_DURATION,
                 );
                 let mut simulation_duration_since_base = Duration::default();
                 let (
@@ -489,7 +493,7 @@ impl BankingSimulator {
             }
         })?;
 
-        sleep(warmup_duration);
+        sleep(WARMUP_DURATION);
         info!("warmup done!");
 
         loop {
