@@ -1231,7 +1231,7 @@ fn main() {
                     Arg::with_name("no_block_cost_limits")
                         .long("no-block-cost-limits")
                         .takes_value(false)
-                        .help("Sets block cost limits to the max"),
+                        .help("Disable block cost limits effectively by setting them to the max"),
                 )
                 .arg(
                     Arg::with_name("enable_hash_overrides")
@@ -1511,7 +1511,7 @@ fn main() {
                     Arg::with_name("no_block_cost_limits")
                         .long("no-block-cost-limits")
                         .takes_value(false)
-                        .help("Sets block cost limits to the max"),
+                        .help("Disable block cost limits effectively by setting them to the max"),
                 ),
         )
         .subcommand(
