@@ -287,6 +287,16 @@ impl BankingSimulator {
         );
         let warmup_duration = Duration::from_secs(12);
 
+        // Enable BankingTracer to approximate the real environment as close as possible because
+        // it's not expected to disable BankingTracer on production environments.
+        //
+        // It's not likely for it to affect the banking stage performance noticeably. So, make sure
+        // that assumption is held here. That said, it incurs additional channel sending,
+        // SystemTime::now() and buffered seq IO, and indirectly functions as a background dropper
+        // of `BankingPacketBatch`.
+        //
+        // Lastly, the actual retraced events can be used to evaluate simulation timing accuracy in
+        // the future.
         let (retracer, retracer_thread) = BankingTracer::new(Some((
             &blockstore.banking_retracer_path(),
             exit.clone(),
