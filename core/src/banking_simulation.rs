@@ -47,57 +47,56 @@ use {
     thiserror::Error,
 };
 
-// This creates a simulated environment around the banking stage to reproduce leader's blocks based
+// This creates a simulated environment around `BankingStage` to produce leader's blocks based
 // on recorded banking trace events (`TimedTracedEvent`).
 //
-// The task of banking stage at the highest level is to pack transactions into their blocks as much
-// as possible for scheduled fixed duration. So, there's 3 abstract inputs to simulate: blocks,
+// At a high level, the task of `BankingStage` is to pack transactions into assigned, fixed-duration, leader blocks. So, there are 3 abstract inputs to simulate: blocks,
 // time, and transactions.
 //
 // In the context of simulation, the first two are simple; both are well defined.
 //
-// For ancestor blocks, we firstly replay certain number of blocks immediately up to target
-// simulation leader's slot with halt_at_slot mechanism, possibly priming various caches,
-// ultimately freezing the ancestor block with expected and deterministic hashes.
+// For ancestor blocks, we first replay a certain number of blocks immediately up to target
+// simulation leader's slot with `halt_at_slot` mechanism.
+Ultimately freezing the ancestor block with expected and deterministic hashes.
+This has the added possible benefit of warming caches that may be used during simulation.
 //
 // After replay, a minor tweak is applied during simulation: we forcibly override leader's hashes
-// as simulated banking stage creates them, using recorded `BlockAndBankHash` events. This is to
-// provide undistinguishable sysvars to TX execution and identical TX age resolution as the
-// simulation goes on. Otherwise, vast majority of tx processing would differ because simulated
-// block's hashes would definitely differ than the recorded ones as slight block composition
+// as the simulated `BankingStage` creates them, using recorded `BlockAndBankHash` events. This is to
+// provide indistinguishable sysvars to TX execution and identical TX age resolution as the
+// simulation goes on. Otherwise, the vast majority of TX processing would differ because the simulated
+// block's hashes would differ than the recorded ones as block composition
 // difference is inevitable.
 //
-// For poh time, we just use PohRecorder as same as the real environment, which is just 400ms
-// timer, external to banking stage and thus mostly irrelevant to banking stage performance. For
-// wall time, we use the first BankStatus::BlockAndBankHash and `SystemTime::now()` to define T=0
-// for simulation. Then, simulation progress is timed accordingly. As a context, this syncing is
-// needed because all trace events are recorded in UTC, not relative to poh nor to leader schedule
+// As in the real environment, for PoH time we use the `PohRecorder`. 
+// This is simply a 400ms timer, external to `BankingStage` and thus mostly irrelevant to `BankingStage` performance. For
+// wall time, we use the first `BankStatus::BlockAndBankHash` and `SystemTime::now()` to define T=0
+// for simulation. Then, simulation progress is timed accordingly. For context, this syncing is
+// necessary because all trace events are recorded in UTC, not relative to poh nor to leader schedule
 // for simplicity at recording.
 //
-// Lastly, here's the last and most complicated input to simulate: transactions.
+// Lastly, the last and most complicated input to simulate: transactions.
 //
-// A bit closer look of transaction load profile is like below, regardless of internal banking
+// A closer look of the transaction load profile is below, regardless of internal banking
 // implementation and simulation:
 //
-// There's ever `BufferedPacketsDecision::Hold`-ed transactions to be processed as the first leader
-// slot nears. This is due to solana's general tx broadcast strategy of node's forwarding and
-// client's submission, which are unlikely to chabge soon. So, we take this as granted. Then, any
-// initial leader block creation starts with rather large number of schedule-able transactions.
-// Also, note that additional transactions arrive for the 4 leader slot window (roughly ~1.6
+// Due to solana's general tx broadcast strategy of client's submission and optional
+// node forwarding, many transactions often arrive before the first leader slot begins.
+// Thus, the initial leader block creation typically starts with rather large number of schedule-able transactions.
+// Also, note that additional transactions arrive during the 4 leader slot window (roughly ~1.6
 // seconds).
 //
-// Simulation have to mimic this load pattern while being agnostic to internal bnaking impl as much
-// as possible. For that agnostic objective, `TracedSender`s are sneaked into the SigVerify stage
-// and gossip subsystem by `BankingTracer` to trace **all** of `BankingPacketBatch`s' exact payload
+// Simulation must mimic this load pattern while being agnostic to internal banking impl as much
+// as possible. For that agnostic objective, `TracedSender`s were introduced into the `SigVerify` stage
+// and gossip subsystem by `BankingTracer` to trace **all** `BankingPacketBatch`s' exact payload
 // and _sender_'s timing with `SystemTime::now()` for all `ChannelLabel`s. This deliberate tracing
-// placement is not to be affected by any banking-tage's capping (if any) and its channel
+// placement is not to be affected by any `BankingStage`'s  internal capacity (if any) nor by its channel
 // consumption pattern.
 //
 // BankingSimulator consists of 2 phases chronologically: warm-up and on-the-fly. The 2 phases are
 // segregated by the aforementioned T=0.
 //
-// Both phases just sends BankingPacketBatch in the same fashion, pretending to be sigveirfy
-// stage/gossip while burning 1 thread to busy loop for precise T=N at ~1us granularity.
+// Both phases just send `BankingPacketBatch` in the same fashion, pretending to be
+// `SigVerifyStage`/gossip from a single thread to busy loop for precise T=N at ~1us granularity.
 //
 // Warm up is defined as T=-N secs using slot distance between immediate ancestor of first
 // simulated block and root block. As soon as warm up is initiated, we invoke
