@@ -120,7 +120,7 @@ pub enum SimulateError {
 
 // Defined to be enough to cover the holding phase prior to leader slots with some idling (+5 secs)
 const WARMUP_DURATION: Duration =
-    Duration::from_secs(HOLD_TRANSACTIONS_SLOT_OFFSET * DEFAULT_MS_PER_SLOT + 5);
+    Duration::from_millis(HOLD_TRANSACTIONS_SLOT_OFFSET * DEFAULT_MS_PER_SLOT + 5000);
 
 pub struct BankingTraceEvents {
     /// BTreeMap is intentional because events could be unordered slightly due to tracing jitter.
