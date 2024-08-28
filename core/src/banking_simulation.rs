@@ -1,7 +1,7 @@
 #![cfg(feature = "dev-context-only-utils")]
 use {
     crate::{
-        banking_stage::BankingStage,
+        banking_stage::{BankingStage, LikeClusterInfo},
         banking_trace::{
             BankingPacketBatch, BankingTracer, ChannelLabel, TimedTracedEvent, TracedEvent,
             BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT, BASENAME,
@@ -13,7 +13,10 @@ use {
     itertools::Itertools,
     log::*,
     solana_client::connection_cache::ConnectionCache,
-    solana_gossip::cluster_info::{ClusterInfo, Node},
+    solana_gossip::{
+        cluster_info::{ClusterInfo, Node},
+        contact_info::ContactInfo,
+    },
     solana_ledger::{
         blockstore::{Blockstore, PurgeType},
         leader_schedule_cache::LeaderScheduleCache,
@@ -30,7 +33,10 @@ use {
     solana_sdk::{
         clock::{Slot, DEFAULT_MS_PER_SLOT, HOLD_TRANSACTIONS_SLOT_OFFSET},
         genesis_config::GenesisConfig,
+        pubkey::Pubkey,
         shred_version::compute_shred_version,
+        signature::Signer,
+        signer::keypair::Keypair,
     },
     solana_streamer::socket::SocketAddrSpace,
     solana_turbine::broadcast_stage::BroadcastStageType,
@@ -207,6 +213,24 @@ impl BankingTraceEvents {
     }
 }
 
+#[derive(Clone)]
+struct DummyClusterInfo {
+    id: Pubkey,
+}
+
+impl LikeClusterInfo for DummyClusterInfo {
+    fn id(&self) -> Pubkey {
+        self.id
+    }
+
+    fn lookup_contact_info<F, Y>(&self, _id: &Pubkey, _map: F) -> Option<Y>
+    where
+        F: FnOnce(&ContactInfo) -> Y,
+    {
+        None
+    }
+}
+
 impl BankingSimulator {
     pub fn new(banking_trace_events: BankingTraceEvents, first_simulated_slot: Slot) -> Self {
         Self {
@@ -318,10 +342,6 @@ impl BankingSimulator {
         let (tpu_vote_sender, tpu_vote_receiver) = retracer.create_channel_tpu_vote();
         let (gossip_vote_sender, gossip_vote_receiver) = retracer.create_channel_gossip_vote();
 
-        let cluster_info = Arc::new(ClusterInfo::new_with_dummy_keypair(
-            Node::new_localhost_with_pubkey(&simulated_leader).info,
-            SocketAddrSpace::Unspecified,
-        ));
         let connection_cache = Arc::new(ConnectionCache::new("connection_kache!"));
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
@@ -330,6 +350,16 @@ impl BankingSimulator {
             Some(&bank_forks.read().unwrap().root_bank().hard_forks()),
         );
         let (sender, _receiver) = tokio::sync::mpsc::channel(1);
+
+        // Create a completely-dummy ClusterInfo for the broadcast stage.
+        // We only need it to write shreds into the blockstore and it seems given ClusterInfo is
+        // irrevant for the neccesary minimum work for this simulation.
+        let random_keypair = Arc::new(Keypair::new());
+        let cluster_info = Arc::new(ClusterInfo::new(
+            Node::new_localhost_with_pubkey(&random_keypair.pubkey()).info,
+            random_keypair,
+            SocketAddrSpace::Unspecified,
+        ));
         let broadcast_stage = BroadcastStageType::Standard.new_broadcast_stage(
             vec![UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()],
             cluster_info.clone(),
@@ -343,6 +373,10 @@ impl BankingSimulator {
         );
 
         info!("Start banking stage!...");
+        // Create a partially-dummy ClusterInfo for the banking stage.
+        let cluster_info = DummyClusterInfo {
+            id: simulated_leader,
+        };
         let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
             block_production_method.clone(),

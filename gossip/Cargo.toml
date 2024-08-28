@@ -66,7 +66,6 @@ test-case = { workspace = true }
 rustc_version = { workspace = true, optional = true }
 
 [features]
-dev-context-only-utils = []
 frozen-abi = [
     "dep:rustc_version",
     "dep:solana-frozen-abi",
