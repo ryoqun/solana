@@ -287,25 +287,21 @@ impl BankingSimulator {
         );
         let warmup_duration = Duration::from_secs(12);
 
-        let (banking_retracer, retracer_thread) = BankingTracer::new(Some((
+        let (retracer, retracer_thread) = BankingTracer::new(Some((
             &blockstore.banking_retracer_path(),
             exit.clone(),
             BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT,
         )))
         .unwrap();
-        if banking_retracer.is_enabled() {
-            info!(
-                "Enabled banking retracer (dir_byte_limit: {})",
-                BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT,
-            );
-        } else {
-            info!("Disabled banking retracer");
-        }
+        assert!(retracer.is_enabled());
+        info!(
+            "Enabled banking retracer (dir_byte_limit: {})",
+            BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT,
+        );
 
-        let (non_vote_sender, non_vote_receiver) = banking_retracer.create_channel_non_vote();
-        let (tpu_vote_sender, tpu_vote_receiver) = banking_retracer.create_channel_tpu_vote();
-        let (gossip_vote_sender, gossip_vote_receiver) =
-            banking_retracer.create_channel_gossip_vote();
+        let (non_vote_sender, non_vote_receiver) = retracer.create_channel_non_vote();
+        let (tpu_vote_sender, tpu_vote_receiver) = retracer.create_channel_tpu_vote();
+        let (gossip_vote_sender, gossip_vote_receiver) = retracer.create_channel_gossip_vote();
 
         let cluster_info = Arc::new(ClusterInfo::new_with_dummy_keypair(
             Node::new_localhost_with_pubkey(&simulated_leader).info,
@@ -567,7 +563,7 @@ impl BankingSimulator {
                 );
                 // make sure parent is frozen for finalized hashes via the above
                 // new()-ing of its child bank
-                banking_retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
+                retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
                 if *bank.collector_id() == simulated_leader {
                     info!(
                         "bank cost: slot: {} {:?} (frozen)",
@@ -606,7 +602,7 @@ impl BankingSimulator {
         exit.store(true, Ordering::Relaxed);
 
         // The order is important. consuming sender_thread by joining will terminate banking_stage,
-        // in turn banking_retracer thread will termianl
+        // in turn retracer thread will termianl
         sender_thread.join().unwrap();
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
