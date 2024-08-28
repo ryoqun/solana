@@ -213,14 +213,15 @@ impl BankingTraceEvents {
     }
 }
 
-#[derive(Clone)]
 struct DummyClusterInfo {
-    id: Pubkey,
+    // Artifically wrap Pubkey with RwLock to induce lock contention if any to minic the real
+    // ClusterInfo
+    id: RwLock<Pubkey>,
 }
 
-impl LikeClusterInfo for DummyClusterInfo {
+impl LikeClusterInfo for Arc<DummyClusterInfo> {
     fn id(&self) -> Pubkey {
-        self.id
+        *self.id.read().unwrap()
     }
 
     fn lookup_contact_info<F, Y>(&self, _id: &Pubkey, _map: F) -> Option<Y>
@@ -374,9 +375,9 @@ impl BankingSimulator {
 
         info!("Start banking stage!...");
         // Create a partially-dummy ClusterInfo for the banking stage.
-        let cluster_info = DummyClusterInfo {
-            id: simulated_leader,
-        };
+        let cluster_info = Arc::new(DummyClusterInfo {
+            id: simulated_leader.into(),
+        });
         let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
         let banking_stage = BankingStage::new_num_threads(
             block_production_method.clone(),
