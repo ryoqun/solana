@@ -343,7 +343,7 @@ impl BankingSimulator {
         let (tpu_vote_sender, tpu_vote_receiver) = retracer.create_channel_tpu_vote();
         let (gossip_vote_sender, gossip_vote_receiver) = retracer.create_channel_gossip_vote();
 
-        let connection_cache = Arc::new(ConnectionCache::new("connection_kache!"));
+        let connection_cache = Arc::new(ConnectionCache::new("connection_cache_sim"));
         let (replay_vote_sender, _replay_vote_receiver) = unbounded();
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
         let shred_version = compute_shred_version(
