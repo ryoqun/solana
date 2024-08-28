@@ -143,9 +143,9 @@ impl BankingTraceEvents {
         Ok(())
     }
 
-    pub fn load(event_file_paths: Vec<PathBuf>) -> Result<Self, SimulateError> {
+    pub fn load(event_file_paths: &[PathBuf]) -> Result<Self, SimulateError> {
         let mut events = vec![];
-        for event_file_path in &event_file_paths {
+        for event_file_path in event_file_paths {
             let old_len = events.len();
             let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(

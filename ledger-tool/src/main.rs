@@ -544,7 +544,7 @@ fn load_banking_trace_events_or_exit(ledger_path: &Path) -> BankingTraceEvents {
     let file_paths = read_banking_trace_event_file_paths_or_exit(banking_trace_path(ledger_path));
 
     info!("Using: banking trace event files: {file_paths:?}");
-    match BankingTraceEvents::load(file_paths) {
+    match BankingTraceEvents::load(&file_paths) {
         Ok(banking_trace_events) => banking_trace_events,
         Err(error) => {
             eprintln!("Failed to load banking trace events: {error:?}");
