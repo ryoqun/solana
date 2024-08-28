@@ -10,6 +10,7 @@ use {
     },
     bincode::deserialize_from,
     crossbeam_channel::unbounded,
+    itertools::Itertools,
     log::*,
     solana_client::connection_cache::ConnectionCache,
     solana_gossip::cluster_info::{ClusterInfo, Node},
@@ -379,8 +380,8 @@ impl BankingSimulator {
                 let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
 
                 info!("start sending!...");
+                let total_batch_count = self.banking_trace_events.packet_batches_by_time.len();
                 let timed_batches_to_send = self.banking_trace_events.packet_batches_by_time.split_off(&base_event_time);
-                let event_count = timed_batches_to_send.len();
                 let batch_and_tx_counts = timed_batches_to_send.values().map(|(_label, batches_with_stats)| {
                     let batches = &batches_with_stats.0;
                     (
@@ -392,12 +393,12 @@ impl BankingSimulator {
                 // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
                 let mut timed_batches_to_send = timed_batches_to_send
                     .into_iter()
-                    .zip(batch_and_tx_counts.into_iter())
+                    .zip_eq(batch_and_tx_counts.into_iter())
                     .collect::<Vec<_>>();
                 info!(
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
-                    event_count,
-                    self.banking_trace_events.packet_batches_by_time.len(),
+                    timed_batches_to_send.len(),
+                    total_batch_count,
                     self.first_simulated_slot,
                     {
                         let raw_base_event_time: chrono::DateTime<chrono::Utc> = raw_base_event_time.into();
