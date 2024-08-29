@@ -375,13 +375,12 @@ impl<'a> SenderLoopLogger<'a> {
             label, batch_count, tx_count
         );
 
+        use ChannelLabel::*;
         let (total_batch_count, total_tx_count) = match label {
-            ChannelLabel::NonVote => (&mut self.non_vote_count, &mut self.non_vote_tx_count),
-            ChannelLabel::TpuVote => (&mut self.tpu_vote_count, &mut self.tpu_vote_tx_count),
-            ChannelLabel::GossipVote => {
-                (&mut self.gossip_vote_count, &mut self.gossip_vote_tx_count)
-            }
-            ChannelLabel::Dummy => unreachable!(),
+            NonVote => (&mut self.non_vote_count, &mut self.non_vote_tx_count),
+            TpuVote => (&mut self.tpu_vote_count, &mut self.tpu_vote_tx_count),
+            GossipVote => (&mut self.gossip_vote_count, &mut self.gossip_vote_tx_count),
+            Dummy => unreachable!(),
         };
         *total_batch_count += batch_count;
         *total_tx_count += tx_count;
