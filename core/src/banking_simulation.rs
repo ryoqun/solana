@@ -365,7 +365,7 @@ impl<'a> SenderLoopLogger<'a> {
 
     fn on_sending_batches(
         &mut self,
-        &simulation_duration_since_base: &Duration,
+        &simulation_duration: &Duration,
         label: ChannelLabel,
         batch_count: usize,
         tx_count: usize,
@@ -386,7 +386,7 @@ impl<'a> SenderLoopLogger<'a> {
         *total_batch_count += batch_count;
         *total_tx_count += tx_count;
 
-        let log_interval = simulation_duration_since_base - self.last_log_duration;
+        let log_interval = simulation_duration - self.last_log_duration;
         if log_interval > Duration::from_millis(100) {
             let current_tx_count =
                 self.non_vote_tx_count + self.tpu_vote_tx_count + self.gossip_vote_tx_count;
@@ -409,7 +409,7 @@ impl<'a> SenderLoopLogger<'a> {
                 self.tpu_vote_sender.len(),
                 self.gossip_vote_sender.len(),
             );
-            self.last_log_duration = simulation_duration_since_base;
+            self.last_log_duration = simulation_duration;
             self.last_tx_count = current_tx_count;
             (
                 self.last_non_vote_count,
@@ -671,10 +671,13 @@ impl BankingSimulator {
             // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
             let mut timed_batches_to_send = timed_batches_to_send
                 .into_iter()
+                .map(|(event_time, batches)|
+                    (event_time.duration_since(base_event_time).unwrap(), batches)
+                )
                 .zip_eq(batch_and_tx_counts.into_iter())
                 .collect::<Vec<_>>();
             info!(
-                "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
+                "simulating events: {} (out of {}), starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                 timed_batches_to_send.len(),
                 total_batch_count,
                 first_simulated_slot,
@@ -682,21 +685,18 @@ impl BankingSimulator {
                 parent_slot,
                 WARMUP_DURATION,
             );
-            let mut simulation_duration_since_base = Duration::default();
+            let mut simulation_duration = Duration::default();
             let mut logger = SenderLoopLogger::new(
                 &non_vote_sender,
                 &tpu_vote_sender,
                 &gossip_vote_sender,
             );
-            for ((event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
+            for ((required_duration, (label, batches_with_stats)), (batch_count, tx_count)) in
                 timed_batches_to_send.drain(..) {
-                let required_duration_since_base =
-                    event_time.duration_since(base_event_time).unwrap();
-
                 // Busy loop for most accurate sending timings
-                while simulation_duration_since_base < required_duration_since_base {
+                while simulation_duration < required_duration {
                     let current_simulation_time = SystemTime::now();
-                    simulation_duration_since_base = current_simulation_time
+                    simulation_duration = current_simulation_time
                         .duration_since(base_simulation_time)
                         .unwrap();
                 }
@@ -709,7 +709,7 @@ impl BankingSimulator {
                 };
                 sender.send(batches_with_stats).unwrap();
 
-                logger.on_sending_batches(&simulation_duration_since_base, label, batch_count, tx_count);
+                logger.on_sending_batches(&simulation_duration, label, batch_count, tx_count);
                 if exit.load(Ordering::Relaxed) {
                     break;
                 }
