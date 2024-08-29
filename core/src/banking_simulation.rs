@@ -656,70 +656,68 @@ impl BankingSimulator {
         let base_event_time = raw_base_event_time - WARMUP_DURATION;
         let base_simulation_time = SystemTime::now();
 
-        let handle = thread::Builder::new().name("solSimSender".into()).spawn({
-            move || {
-                info!("start sending!...");
-                let total_batch_count = packet_batches_by_time.len();
-                let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
-                let batch_and_tx_counts = timed_batches_to_send.values().map(|(_label, batches_with_stats)| {
-                    let batches = &batches_with_stats.0;
-                    (
-                        batches.len(),
-                        batches.iter().map(|batch| batch.len()).sum::<usize>(),
-                    )
-                }).collect::<Vec<_>>();
-                // Convert to a large plain old Vec and drain on it, finally dropping it outside
-                // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
-                let mut timed_batches_to_send = timed_batches_to_send
-                    .into_iter()
-                    .zip_eq(batch_and_tx_counts.into_iter())
-                    .collect::<Vec<_>>();
-                info!(
-                    "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
-                    timed_batches_to_send.len(),
-                    total_batch_count,
-                    first_simulated_slot,
-                    SenderLoopLogger::format_as_timestamp(raw_base_event_time),
-                    parent_slot,
-                    WARMUP_DURATION,
-                );
-                let mut simulation_duration_since_base = Duration::default();
-                let mut logger = SenderLoopLogger::new(
-                    &non_vote_sender,
-                    &tpu_vote_sender,
-                    &gossip_vote_sender,
-                );
-                for ((event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
-                    timed_batches_to_send.drain(..) {
-                    let required_duration_since_base =
-                        event_time.duration_since(base_event_time).unwrap();
+        let handle = thread::Builder::new().name("solSimSender".into()).spawn(move || {
+            info!("start sending!...");
+            let total_batch_count = packet_batches_by_time.len();
+            let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
+            let batch_and_tx_counts = timed_batches_to_send.values().map(|(_label, batches_with_stats)| {
+                let batches = &batches_with_stats.0;
+                (
+                    batches.len(),
+                    batches.iter().map(|batch| batch.len()).sum::<usize>(),
+                )
+            }).collect::<Vec<_>>();
+            // Convert to a large plain old Vec and drain on it, finally dropping it outside
+            // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
+            let mut timed_batches_to_send = timed_batches_to_send
+                .into_iter()
+                .zip_eq(batch_and_tx_counts.into_iter())
+                .collect::<Vec<_>>();
+            info!(
+                "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
+                timed_batches_to_send.len(),
+                total_batch_count,
+                first_simulated_slot,
+                SenderLoopLogger::format_as_timestamp(raw_base_event_time),
+                parent_slot,
+                WARMUP_DURATION,
+            );
+            let mut simulation_duration_since_base = Duration::default();
+            let mut logger = SenderLoopLogger::new(
+                &non_vote_sender,
+                &tpu_vote_sender,
+                &gossip_vote_sender,
+            );
+            for ((event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
+                timed_batches_to_send.drain(..) {
+                let required_duration_since_base =
+                    event_time.duration_since(base_event_time).unwrap();
 
-                    // Busy loop for most accurate sending timings
-                    while simulation_duration_since_base < required_duration_since_base {
-                        let current_simulation_time = SystemTime::now();
-                        simulation_duration_since_base = current_simulation_time
-                            .duration_since(base_simulation_time)
-                            .unwrap();
-                    }
-
-                    let sender = match label {
-                        ChannelLabel::NonVote => &non_vote_sender,
-                        ChannelLabel::TpuVote => &tpu_vote_sender,
-                        ChannelLabel::GossipVote => &gossip_vote_sender,
-                        ChannelLabel::Dummy => unreachable!(),
-                    };
-                    sender.send(batches_with_stats).unwrap();
-
-                    logger.on_sending_batches(&simulation_duration_since_base, label, batch_count, tx_count);
-                    if exit.load(Ordering::Relaxed) {
-                        break;
-                    }
+                // Busy loop for most accurate sending timings
+                while simulation_duration_since_base < required_duration_since_base {
+                    let current_simulation_time = SystemTime::now();
+                    simulation_duration_since_base = current_simulation_time
+                        .duration_since(base_simulation_time)
+                        .unwrap();
                 }
-                logger.on_terminating();
-                drop(timed_batches_to_send);
-                // hold these senders in join_handle to control banking stage termination!
-                (non_vote_sender, tpu_vote_sender, gossip_vote_sender)
+
+                let sender = match label {
+                    ChannelLabel::NonVote => &non_vote_sender,
+                    ChannelLabel::TpuVote => &tpu_vote_sender,
+                    ChannelLabel::GossipVote => &gossip_vote_sender,
+                    ChannelLabel::Dummy => unreachable!(),
+                };
+                sender.send(batches_with_stats).unwrap();
+
+                logger.on_sending_batches(&simulation_duration_since_base, label, batch_count, tx_count);
+                if exit.load(Ordering::Relaxed) {
+                    break;
+                }
             }
+            logger.on_terminating();
+            drop(timed_batches_to_send);
+            // hold these senders in join_handle to control banking stage termination!
+            (non_vote_sender, tpu_vote_sender, gossip_vote_sender)
         })?;
         Ok((handle, base_event_time, base_simulation_time))
     }
