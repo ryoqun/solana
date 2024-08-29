@@ -399,11 +399,11 @@ impl<'a> SenderLoopLogger<'a> {
             let gossip_vote_tps =
                 (self.gossip_vote_tx_count - self.last_gossip_vote_tx_count) as f64 / duration;
             info!(
-                "senders(non-,tpu-,gossip-vote): tps: {} (={}+{}+{}) over {:?} not-recved: ({}+{}+{})",
-                tps as u64,
-                non_vote_tps as u64,
-                tpu_vote_tps as u64,
-                gossip_vote_tps as u64,
+                "senders(non-,tpu-,gossip-vote): tps: {:.0} (={:.0}+{:.0}+{:.0}) over {:?} not-recved: ({}+{}+{})",
+                tps,
+                non_vote_tps,
+                tpu_vote_tps,
+                gossip_vote_tps,
                 log_interval,
                 self.non_vote_sender.len(),
                 self.tpu_vote_sender.len(),
