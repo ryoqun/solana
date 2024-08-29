@@ -824,8 +824,8 @@ impl BankingSimulator {
         sleep(Duration::from_millis(100));
         exit.store(true, Ordering::Relaxed);
 
-        // The order is important. consuming sender_thread by joining will terminate banking_stage,
-        // in turn retracer thread will termianl
+        // The order is important. consuming sender_thread by joining will drop some channels. That
+        // triggers termination of banking_stage, in turn retracer thread be terminated.
         sender_thread.join().unwrap();
         banking_stage.join().unwrap();
         poh_service.join().unwrap();
