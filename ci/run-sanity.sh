@@ -17,8 +17,8 @@ fi
 
 rm -rf config/run/init-completed config/ledger config/snapshot-ledger
 
-SOLANA_RUN_SH_VALIDATOR_ARGS="--full-snapshot-interval-slots 200" \
-  SOLANA_VALIDATOR_EXIT_TIMEOUT=30 \
+SOLANA_RUN_SH_VALIDATOR_ARGS="${SOLANA_RUN_SH_VALIDATOR_ARGS} --full-snapshot-interval-slots 200" \
+  SOLANA_VALIDATOR_EXIT_TIMEOUT="${SOLANA_VALIDATOR_EXIT_TIMEOUT:-30}" \
   timeout 120 ./scripts/run.sh &
 
 pid=$!
