@@ -4,12 +4,12 @@ use {
         banking_stage::{BankingStage, LikeClusterInfo},
         banking_trace::{
             BankingPacketBatch, BankingTracer, ChannelLabel, TimedTracedEvent, TracedEvent,
-            BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT, BASENAME,
+            TracedSender, TracerThread, BANKING_TRACE_DIR_DEFAULT_BYTE_LIMIT, BASENAME,
         },
         validator::BlockProductionMethod,
     },
     bincode::deserialize_from,
-    crossbeam_channel::unbounded,
+    crossbeam_channel::{unbounded, Sender},
     itertools::Itertools,
     log::*,
     solana_client::connection_cache::ConnectionCache,
@@ -28,6 +28,7 @@ use {
     solana_runtime::{
         bank::{Bank, HashOverrides},
         bank_forks::BankForks,
+        installed_scheduler_pool::BankWithScheduler,
         prioritization_fee_cache::PrioritizationFeeCache,
     },
     solana_sdk::{
@@ -39,9 +40,10 @@ use {
         signer::keypair::Keypair,
     },
     solana_streamer::socket::SocketAddrSpace,
-    solana_turbine::broadcast_stage::BroadcastStageType,
+    solana_turbine::broadcast_stage::{BroadcastStage, BroadcastStageType},
     std::{
         collections::BTreeMap,
+        fmt::Display,
         fs::File,
         io::{self, BufRead, BufReader},
         net::{Ipv4Addr, UdpSocket},
@@ -50,7 +52,7 @@ use {
             atomic::{AtomicBool, Ordering},
             Arc, RwLock,
         },
-        thread::{self, sleep},
+        thread::{self, sleep, JoinHandle},
         time::{Duration, SystemTime},
     },
     thiserror::Error,
@@ -128,10 +130,16 @@ pub enum SimulateError {
 const WARMUP_DURATION: Duration =
     Duration::from_millis(HOLD_TRANSACTIONS_SLOT_OFFSET * DEFAULT_MS_PER_SLOT + 5000);
 
+/// BTreeMap is intentional because events could be unordered slightly due to tracing jitter.
+type PacketBatchesByTime = BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>;
+
+type FreezeTimeBySlot = BTreeMap<Slot, SystemTime>;
+
+type EventSenderThread = JoinHandle<(TracedSender, TracedSender, TracedSender)>;
+
 pub struct BankingTraceEvents {
-    /// BTreeMap is intentional because events could be unordered slightly due to tracing jitter.
-    packet_batches_by_time: BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>,
-    freeze_time_by_slot: BTreeMap<Slot, SystemTime>,
+    packet_batches_by_time: PacketBatchesByTime,
+    freeze_time_by_slot: FreezeTimeBySlot,
     hash_overrides: HashOverrides,
 }
 
@@ -232,6 +240,207 @@ impl LikeClusterInfo for Arc<DummyClusterInfo> {
     }
 }
 
+struct SimulatorLoopLogger {
+    simulated_leader: Pubkey,
+    freeze_time_by_slot: FreezeTimeBySlot,
+    base_event_time: SystemTime,
+    base_simulation_time: SystemTime,
+}
+
+impl SimulatorLoopLogger {
+    fn new(
+        simulated_leader: Pubkey,
+        base_event_time: SystemTime,
+        base_simulation_time: SystemTime,
+        freeze_time_by_slot: FreezeTimeBySlot,
+    ) -> Self {
+        Self {
+            simulated_leader,
+            base_event_time,
+            base_simulation_time,
+            freeze_time_by_slot,
+        }
+    }
+
+    fn bank_costs(bank: &Bank) -> (u64, u64) {
+        bank.read_cost_tracker()
+            .map(|t| (t.block_cost(), t.vote_cost()))
+            .unwrap()
+    }
+
+    fn log_frozen_bank_cost(&self, bank: &Bank) {
+        info!(
+            "bank cost: slot: {} {:?} (frozen)",
+            bank.slot(),
+            Self::bank_costs(bank),
+        );
+    }
+
+    fn log_ongoing_bank_cost(&self, bank: &Bank) {
+        debug!(
+            "bank cost: slot: {} {:?} (ongoing)",
+            bank.slot(),
+            Self::bank_costs(bank),
+        );
+    }
+
+    fn log_jitter(&self, bank: &Bank) {
+        let old_slot = bank.slot();
+        if let Some(event_time) = self.freeze_time_by_slot.get(&old_slot) {
+            if log_enabled!(log::Level::Info) {
+                let current_simulation_time = SystemTime::now();
+                let elapsed_simulation_time = current_simulation_time
+                    .duration_since(self.base_simulation_time)
+                    .unwrap();
+                let elapsed_event_time = event_time.duration_since(self.base_event_time).unwrap();
+                info!(
+                    "jitter(parent_slot: {}): {}{:?} (sim: {:?} event: {:?})",
+                    old_slot,
+                    if elapsed_simulation_time > elapsed_event_time {
+                        "+"
+                    } else {
+                        "-"
+                    },
+                    if elapsed_simulation_time > elapsed_event_time {
+                        elapsed_simulation_time - elapsed_event_time
+                    } else {
+                        elapsed_event_time - elapsed_simulation_time
+                    },
+                    elapsed_simulation_time,
+                    elapsed_event_time,
+                );
+            }
+        }
+    }
+
+    fn on_new_leader(&self, bank: &Bank, new_slot: Slot, new_leader: Pubkey) {
+        self.log_frozen_bank_cost(bank);
+        info!(
+            "{} isn't leader anymore at slot {}; new leader: {}",
+            self.simulated_leader, new_slot, new_leader
+        );
+    }
+}
+
+struct SenderLoopLogger<'a> {
+    non_vote_sender: &'a TracedSender,
+    tpu_vote_sender: &'a TracedSender,
+    gossip_vote_sender: &'a TracedSender,
+    last_log_duration: Duration,
+    last_tx_count: usize,
+    last_non_vote_count: usize,
+    last_tpu_vote_tx_count: usize,
+    last_gossip_vote_tx_count: usize,
+    non_vote_count: usize,
+    non_vote_tx_count: usize,
+    tpu_vote_count: usize,
+    tpu_vote_tx_count: usize,
+    gossip_vote_count: usize,
+    gossip_vote_tx_count: usize,
+}
+
+impl<'a> SenderLoopLogger<'a> {
+    fn new(
+        non_vote_sender: &'a TracedSender,
+        tpu_vote_sender: &'a TracedSender,
+        gossip_vote_sender: &'a TracedSender,
+    ) -> Self {
+        Self {
+            non_vote_sender,
+            tpu_vote_sender,
+            gossip_vote_sender,
+            last_log_duration: Duration::default(),
+            last_tx_count: 0,
+            last_non_vote_count: 0,
+            last_tpu_vote_tx_count: 0,
+            last_gossip_vote_tx_count: 0,
+            non_vote_count: 0,
+            non_vote_tx_count: 0,
+            tpu_vote_count: 0,
+            tpu_vote_tx_count: 0,
+            gossip_vote_count: 0,
+            gossip_vote_tx_count: 0,
+        }
+    }
+
+    fn on_sending_batches(
+        &mut self,
+        &simulation_duration_since_base: &Duration,
+        label: ChannelLabel,
+        batch_count: usize,
+        tx_count: usize,
+    ) {
+        debug!(
+            "sent {:?} {} batches ({} txes)",
+            label, batch_count, tx_count
+        );
+
+        let (total_batch_count, total_tx_count) = match label {
+            ChannelLabel::NonVote => (&mut self.non_vote_count, &mut self.non_vote_tx_count),
+            ChannelLabel::TpuVote => (&mut self.tpu_vote_count, &mut self.tpu_vote_tx_count),
+            ChannelLabel::GossipVote => {
+                (&mut self.gossip_vote_count, &mut self.gossip_vote_tx_count)
+            }
+            ChannelLabel::Dummy => unreachable!(),
+        };
+        *total_batch_count += batch_count;
+        *total_tx_count += tx_count;
+
+        let log_interval = simulation_duration_since_base - self.last_log_duration;
+        if log_interval > Duration::from_millis(100) {
+            let current_tx_count =
+                self.non_vote_tx_count + self.tpu_vote_tx_count + self.gossip_vote_tx_count;
+            let duration = log_interval.as_secs_f64();
+            let tps = (current_tx_count - self.last_tx_count) as f64 / duration;
+            let non_vote_tps =
+                (self.non_vote_tx_count - self.last_non_vote_count) as f64 / duration;
+            let tpu_vote_tps =
+                (self.tpu_vote_tx_count - self.last_tpu_vote_tx_count) as f64 / duration;
+            let gossip_vote_tps =
+                (self.gossip_vote_tx_count - self.last_gossip_vote_tx_count) as f64 / duration;
+            info!(
+                "senders(non-,tpu-,gossip-vote): tps: {} (={}+{}+{}) over {:?} not-recved: ({}+{}+{})",
+                tps as u64,
+                non_vote_tps as u64,
+                tpu_vote_tps as u64,
+                gossip_vote_tps as u64,
+                log_interval,
+                self.non_vote_sender.len(),
+                self.tpu_vote_sender.len(),
+                self.gossip_vote_sender.len(),
+            );
+            self.last_log_duration = simulation_duration_since_base;
+            self.last_tx_count = current_tx_count;
+            (
+                self.last_non_vote_count,
+                self.last_tpu_vote_tx_count,
+                self.last_gossip_vote_tx_count,
+            ) = (
+                self.non_vote_tx_count,
+                self.tpu_vote_tx_count,
+                self.gossip_vote_count,
+            );
+        }
+    }
+
+    fn on_terminating(self) {
+        info!(
+            "terminating to send...: non_vote: {} ({}), tpu_vote: {} ({}), gossip_vote: {} ({})",
+            self.non_vote_count,
+            self.non_vote_tx_count,
+            self.tpu_vote_count,
+            self.tpu_vote_tx_count,
+            self.gossip_vote_count,
+            self.gossip_vote_tx_count,
+        );
+    }
+
+    fn format_as_timestamp(time: SystemTime) -> impl Display {
+        let time: chrono::DateTime<chrono::Utc> = time.into();
+        time.format("%Y-%m-%d %H:%M:%S.%f")
+    }
+}
+
 impl BankingSimulator {
     pub fn new(banking_trace_events: BankingTraceEvents, first_simulated_slot: Slot) -> Self {
         Self {
@@ -249,42 +458,58 @@ impl BankingSimulator {
             .copied()
     }
 
-    pub fn start(
-        mut self,
+    #[allow(clippy::type_complexity)]
+    fn prepare_simulation(
+        parent_slot: Slot,
+        first_simulated_slot: Slot,
         genesis_config: GenesisConfig,
-        bank_forks: Arc<RwLock<BankForks>>,
-        blockstore: Arc<Blockstore>,
+        bank_forks: &Arc<RwLock<BankForks>>,
+        blockstore: &Arc<Blockstore>,
         block_production_method: BlockProductionMethod,
-    ) -> Result<(), SimulateError> {
-        let mut bank = bank_forks
+    ) -> (
+        Pubkey,
+        TracedSender,
+        TracedSender,
+        TracedSender,
+        BankWithScheduler,
+        PohService,
+        Arc<RwLock<PohRecorder>>,
+        BankingStage,
+        BroadcastStage,
+        Arc<LeaderScheduleCache>,
+        Sender<Slot>,
+        Arc<BankingTracer>,
+        TracerThread,
+        Arc<AtomicBool>,
+    ) {
+        let bank = bank_forks
             .read()
             .unwrap()
             .working_bank_with_scheduler()
             .clone_with_scheduler();
 
         let leader_schedule_cache = Arc::new(LeaderScheduleCache::new_from_bank(&bank));
-        let parent_slot = bank.slot();
-        assert_eq!(Some(parent_slot), self.parent_slot());
+        assert_eq!(parent_slot, bank.slot());
 
         let simulated_leader = leader_schedule_cache
-            .slot_leader_at(self.first_simulated_slot, None)
+            .slot_leader_at(first_simulated_slot, None)
             .unwrap();
         info!(
             "Simulated leader and slot: {}, {}",
-            simulated_leader, self.first_simulated_slot
+            simulated_leader, first_simulated_slot
         );
 
         let exit = Arc::new(AtomicBool::default());
 
         if let Some(end_slot) = blockstore
-            .slot_meta_iterator(self.first_simulated_slot)
+            .slot_meta_iterator(first_simulated_slot)
             .unwrap()
             .map(|(s, _)| s)
             .last()
         {
-            info!("purging slots {}, {}", self.first_simulated_slot, end_slot);
-            blockstore.purge_from_next_slots(self.first_simulated_slot, end_slot);
-            blockstore.purge_slots(self.first_simulated_slot, end_slot, PurgeType::Exact);
+            info!("purging slots {}, {}", first_simulated_slot, end_slot);
+            blockstore.purge_from_next_slots(first_simulated_slot, end_slot);
+            blockstore.purge_slots(first_simulated_slot, end_slot, PurgeType::Exact);
             info!("done: purging");
         } else {
             info!("skipping purging...");
@@ -396,27 +621,46 @@ impl BankingSimulator {
             false,
         );
 
-        let (&slot_before_next_leader_slot, &raw_base_event_time) = self
-            .banking_trace_events
-            .freeze_time_by_slot
+        (
+            simulated_leader,
+            non_vote_sender,
+            tpu_vote_sender,
+            gossip_vote_sender,
+            bank,
+            poh_service,
+            poh_recorder,
+            banking_stage,
+            broadcast_stage,
+            leader_schedule_cache,
+            retransmit_slots_sender,
+            retracer,
+            retracer_thread,
+            exit,
+        )
+    }
+
+    fn start_event_sender_thread(
+        parent_slot: Slot,
+        first_simulated_slot: Slot,
+        freeze_time_by_slot: &FreezeTimeBySlot,
+        mut packet_batches_by_time: PacketBatchesByTime,
+        non_vote_sender: TracedSender,
+        tpu_vote_sender: TracedSender,
+        gossip_vote_sender: TracedSender,
+        exit: Arc<AtomicBool>,
+    ) -> Result<(EventSenderThread, SystemTime, SystemTime), SimulateError> {
+        let (&_slot, &raw_base_event_time) = freeze_time_by_slot
             .range(parent_slot..)
             .next()
             .expect("timed hashes");
-
         let base_event_time = raw_base_event_time - WARMUP_DURATION;
         let base_simulation_time = SystemTime::now();
 
-        let sender_thread = thread::Builder::new().name("solSimSender".into()).spawn({
-            let exit = exit.clone();
-
+        let handle = thread::Builder::new().name("solSimSender".into()).spawn({
             move || {
-                let (mut non_vote_count, mut non_vote_tx_count) = (0, 0);
-                let (mut tpu_vote_count, mut tpu_vote_tx_count) = (0, 0);
-                let (mut gossip_vote_count, mut gossip_vote_tx_count) = (0, 0);
-
                 info!("start sending!...");
-                let total_batch_count = self.banking_trace_events.packet_batches_by_time.len();
-                let timed_batches_to_send = self.banking_trace_events.packet_batches_by_time.split_off(&base_event_time);
+                let total_batch_count = packet_batches_by_time.len();
+                let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
                 let batch_and_tx_counts = timed_batches_to_send.values().map(|(_label, batches_with_stats)| {
                     let batches = &batches_with_stats.0;
                     (
@@ -434,22 +678,17 @@ impl BankingSimulator {
                     "simulating banking trace events: {} out of {}, starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
                     timed_batches_to_send.len(),
                     total_batch_count,
-                    self.first_simulated_slot,
-                    {
-                        let raw_base_event_time: chrono::DateTime<chrono::Utc> = raw_base_event_time.into();
-                        raw_base_event_time.format("%Y-%m-%d %H:%M:%S.%f")
-                    },
-                    slot_before_next_leader_slot,
+                    first_simulated_slot,
+                    SenderLoopLogger::format_as_timestamp(raw_base_event_time),
+                    parent_slot,
                     WARMUP_DURATION,
                 );
                 let mut simulation_duration_since_base = Duration::default();
-                let (
-                    mut last_log_duration,
-                    mut last_tx_count,
-                    mut last_non_vote_count,
-                    mut last_tpu_vote_tx_count,
-                    mut last_gossip_vote_tx_count
-                ) = (Duration::default(), 0, 0, 0, 0);
+                let mut logger = SenderLoopLogger::new(
+                    &non_vote_sender,
+                    &tpu_vote_sender,
+                    &gossip_vote_sender,
+                );
                 for ((event_time, (label, batches_with_stats)), (batch_count, tx_count)) in
                     timed_batches_to_send.drain(..) {
                     let required_duration_since_base =
@@ -471,66 +710,43 @@ impl BankingSimulator {
                     };
                     sender.send(batches_with_stats).unwrap();
 
-                    debug!(
-                        "sent {:?} {} batches ({} txes)",
-                        label, batch_count, tx_count
-                    );
-                    let (total_batch_count, total_tx_count) = match label {
-                        ChannelLabel::NonVote => (&mut non_vote_count, &mut non_vote_tx_count),
-                        ChannelLabel::TpuVote => (&mut tpu_vote_count, &mut tpu_vote_tx_count),
-                        ChannelLabel::GossipVote => (&mut gossip_vote_count, &mut gossip_vote_tx_count),
-                        ChannelLabel::Dummy => unreachable!(),
-                    };
-                    *total_batch_count += batch_count;
-                    *total_tx_count += tx_count;
-
-                    let log_interval = simulation_duration_since_base - last_log_duration;
-                    if log_interval > Duration::from_millis(100) {
-                        let current_tx_count = non_vote_tx_count + tpu_vote_tx_count + gossip_vote_tx_count;
-                        let duration =log_interval.as_secs_f64();
-                        let tps = (current_tx_count - last_tx_count) as f64 / duration;
-                        let non_vote_tps = (non_vote_tx_count - last_non_vote_count) as f64 / duration;
-                        let tpu_vote_tps = (tpu_vote_tx_count - last_tpu_vote_tx_count) as f64 / duration;
-                        let gossip_vote_tps = (gossip_vote_tx_count - last_gossip_vote_tx_count) as f64 / duration;
-                        info!(
-                            "senders(non-,tpu-,gossip-vote): tps: {} (={}+{}+{}) over {:?} not-recved: ({}+{}+{})",
-                            tps as u64,
-                            non_vote_tps as u64,
-                            tpu_vote_tps as u64,
-                            gossip_vote_tps as u64,
-                            log_interval,
-                            non_vote_sender.len(),
-                            tpu_vote_sender.len(),
-                            gossip_vote_sender.len(),
-                        );
-                        last_log_duration = simulation_duration_since_base;
-                        last_tx_count = current_tx_count;
-                        (last_non_vote_count, last_tpu_vote_tx_count, last_gossip_vote_tx_count) = (
-                            non_vote_tx_count, tpu_vote_tx_count, gossip_vote_count
-                        );
-                    }
-
+                    logger.on_sending_batches(&simulation_duration_since_base, label, batch_count, tx_count);
                     if exit.load(Ordering::Relaxed) {
                         break;
                     }
                 }
-                info!(
-                    "terminating to send...: non_vote: {} ({}), tpu_vote: {} ({}), gossip_vote: {} ({})",
-                    non_vote_count,
-                    non_vote_tx_count,
-                    tpu_vote_count,
-                    tpu_vote_tx_count,
-                    gossip_vote_count,
-                    gossip_vote_tx_count
-                );
+                logger.on_terminating();
                 drop(timed_batches_to_send);
                 // hold these senders in join_handle to control banking stage termination!
                 (non_vote_sender, tpu_vote_sender, gossip_vote_sender)
             }
         })?;
+        Ok((handle, base_event_time, base_simulation_time))
+    }
 
-        sleep(WARMUP_DURATION);
-        info!("warmup done!");
+    #[allow(clippy::too_many_arguments)]
+    fn enter_simulation_loop(
+        parent_slot: Slot,
+        first_simulated_slot: Slot,
+        freeze_time_by_slot: FreezeTimeBySlot,
+        base_event_time: SystemTime,
+        base_simulation_time: SystemTime,
+        sender_thread: &EventSenderThread,
+        mut bank: BankWithScheduler,
+        poh_recorder: Arc<RwLock<PohRecorder>>,
+        simulated_leader: Pubkey,
+        bank_forks: &RwLock<BankForks>,
+        blockstore: &Blockstore,
+        leader_schedule_cache: &LeaderScheduleCache,
+        retransmit_slots_sender: &Sender<Slot>,
+        retracer: &BankingTracer,
+    ) {
+        let logger = SimulatorLoopLogger::new(
+            simulated_leader,
+            base_event_time,
+            base_simulation_time,
+            freeze_time_by_slot,
+        );
 
         loop {
             if poh_recorder.read().unwrap().bank().is_none() {
@@ -538,7 +754,7 @@ impl BankingSimulator {
                     &simulated_leader,
                     bank.slot(),
                     &bank,
-                    Some(&blockstore),
+                    Some(blockstore),
                     GRACE_TICKS_FACTOR * MAX_GRACE_SLOTS,
                 );
                 debug!("{next_leader_slot:?}");
@@ -548,39 +764,11 @@ impl BankingSimulator {
                     .reset(bank.clone_without_scheduler(), next_leader_slot);
                 info!("Bank::new_from_parent()!");
 
-                let old_slot = bank.slot();
-                if let Some(event_time) =
-                    self.banking_trace_events.freeze_time_by_slot.get(&old_slot)
-                {
-                    if log_enabled!(log::Level::Info) {
-                        let current_simulation_time = SystemTime::now();
-                        let elapsed_simulation_time = current_simulation_time
-                            .duration_since(base_simulation_time)
-                            .unwrap();
-                        let elapsed_event_time =
-                            event_time.duration_since(base_event_time).unwrap();
-                        info!(
-                            "jitter(parent_slot: {}): {}{:?} (sim: {:?} event: {:?})",
-                            old_slot,
-                            if elapsed_simulation_time > elapsed_event_time {
-                                "+"
-                            } else {
-                                "-"
-                            },
-                            if elapsed_simulation_time > elapsed_event_time {
-                                elapsed_simulation_time - elapsed_event_time
-                            } else {
-                                elapsed_event_time - elapsed_simulation_time
-                            },
-                            elapsed_simulation_time,
-                            elapsed_event_time,
-                        );
-                    }
-                }
+                logger.log_jitter(&bank);
                 bank.freeze();
                 let new_slot = if bank.slot() == parent_slot {
                     info!("initial leader block!");
-                    self.first_simulated_slot
+                    first_simulated_slot
                 } else {
                     info!("next leader block!");
                     bank.slot() + 1
@@ -589,18 +777,8 @@ impl BankingSimulator {
                 let new_leader = leader_schedule_cache
                     .slot_leader_at(new_slot, None)
                     .unwrap();
-                if simulated_leader != new_leader {
-                    info!(
-                        "bank cost: slot: {} {:?} (frozen)",
-                        bank.slot(),
-                        bank.read_cost_tracker()
-                            .map(|t| (t.block_cost(), t.vote_cost()))
-                            .unwrap()
-                    );
-                    info!(
-                        "{} isn't leader anymore at slot {}; new leader: {}",
-                        simulated_leader, new_slot, new_leader
-                    );
+                if new_leader != simulated_leader {
+                    logger.on_new_leader(&bank, new_slot, new_leader);
                     break;
                 } else if sender_thread.is_finished() {
                     warn!("sender thread existed maybe due to completion of sending traced events");
@@ -615,13 +793,7 @@ impl BankingSimulator {
                 // new()-ing of its child bank
                 retracer.hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
                 if *bank.collector_id() == simulated_leader {
-                    info!(
-                        "bank cost: slot: {} {:?} (frozen)",
-                        bank.slot(),
-                        bank.read_cost_tracker()
-                            .map(|t| (t.block_cost(), t.vote_cost()))
-                            .unwrap()
-                    );
+                    logger.log_frozen_bank_cost(&bank);
                 }
                 retransmit_slots_sender.send(bank.slot()).unwrap();
                 bank_forks.write().unwrap().insert(new_bank);
@@ -635,18 +807,22 @@ impl BankingSimulator {
                     .unwrap()
                     .set_bank(bank.clone_with_scheduler(), false);
             } else {
-                debug!(
-                    "bank cost: slot: {} {:?} (ongoing)",
-                    bank.slot(),
-                    bank.read_cost_tracker()
-                        .map(|t| (t.block_cost(), t.vote_cost()))
-                        .unwrap()
-                );
+                logger.log_ongoing_bank_cost(&bank);
             }
 
             sleep(Duration::from_millis(10));
         }
+    }
 
+    fn finish_simulation(
+        sender_thread: EventSenderThread,
+        poh_service: PohService,
+        banking_stage: BankingStage,
+        broadcast_stage: BroadcastStage,
+        retransmit_slots_sender: Sender<Slot>,
+        retracer_thread: TracerThread,
+        exit: Arc<AtomicBool>,
+    ) {
         info!("Sleeping a bit before signaling exit");
         sleep(Duration::from_millis(100));
         exit.store(true, Ordering::Relaxed);
@@ -661,9 +837,84 @@ impl BankingSimulator {
         }
 
         info!("Joining broadcast stage...");
-        drop(poh_recorder);
         drop(retransmit_slots_sender);
         broadcast_stage.join().unwrap();
+    }
+
+    pub fn start(
+        self,
+        genesis_config: GenesisConfig,
+        bank_forks: Arc<RwLock<BankForks>>,
+        blockstore: Arc<Blockstore>,
+        block_production_method: BlockProductionMethod,
+    ) -> Result<(), SimulateError> {
+        let parent_slot = self.parent_slot().unwrap();
+
+        let (
+            simulated_leader,
+            non_vote_sender,
+            tpu_vote_sender,
+            gossip_vote_sender,
+            bank,
+            poh_service,
+            poh_recorder,
+            banking_stage,
+            broadcast_stage,
+            leader_schedule_cache,
+            retransmit_slots_sender,
+            retracer,
+            retracer_thread,
+            exit,
+        ) = Self::prepare_simulation(
+            parent_slot,
+            self.first_simulated_slot,
+            genesis_config,
+            &bank_forks,
+            &blockstore,
+            block_production_method,
+        );
+
+        let (sender_thread, base_event_time, base_simulation_time) =
+            Self::start_event_sender_thread(
+                parent_slot,
+                self.first_simulated_slot,
+                &self.banking_trace_events.freeze_time_by_slot,
+                self.banking_trace_events.packet_batches_by_time,
+                non_vote_sender,
+                tpu_vote_sender,
+                gossip_vote_sender,
+                exit.clone(),
+            )?;
+
+        sleep(WARMUP_DURATION);
+        info!("warmup done!");
+
+        Self::enter_simulation_loop(
+            parent_slot,
+            self.first_simulated_slot,
+            self.banking_trace_events.freeze_time_by_slot,
+            base_event_time,
+            base_simulation_time,
+            &sender_thread,
+            bank,
+            poh_recorder,
+            simulated_leader,
+            &bank_forks,
+            &blockstore,
+            &leader_schedule_cache,
+            &retransmit_slots_sender,
+            &retracer,
+        );
+
+        Self::finish_simulation(
+            sender_thread,
+            poh_service,
+            banking_stage,
+            broadcast_stage,
+            retransmit_slots_sender,
+            retracer_thread,
+            exit,
+        );
 
         Ok(())
     }
