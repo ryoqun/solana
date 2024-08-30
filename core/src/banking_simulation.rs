@@ -137,6 +137,7 @@ type FreezeTimeBySlot = BTreeMap<Slot, SystemTime>;
 
 type EventSenderThread = JoinHandle<(TracedSender, TracedSender, TracedSender)>;
 
+#[derive(Default)]
 pub struct BankingTraceEvents {
     packet_batches_by_time: PacketBatchesByTime,
     freeze_time_by_slot: FreezeTimeBySlot,
@@ -145,13 +146,13 @@ pub struct BankingTraceEvents {
 
 impl BankingTraceEvents {
     fn read_event_file(
-        events: &mut Vec<TimedTracedEvent>,
         event_file_path: &PathBuf,
+        mut callback: impl FnMut(TimedTracedEvent),
     ) -> Result<(), SimulateError> {
         let mut reader = BufReader::new(File::open(event_file_path)?);
 
         loop {
-            events.push(deserialize_from(&mut reader)?);
+            callback(deserialize_from(&mut reader)?);
 
             if reader.fill_buf()?.is_empty() {
                 // EOF is reached at a correct deserialization boundary.
@@ -164,56 +165,54 @@ impl BankingTraceEvents {
     }
 
     pub fn load(event_file_paths: &[PathBuf]) -> Result<Self, SimulateError> {
-        let mut events = vec![];
+        let mut event_count = 0;
+        let mut events = Self::default();
         for event_file_path in event_file_paths {
-            let old_len = events.len();
-            let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
-                error!(
+            let old_event_count = event_count;
+            // Silence errors here as this can happen under normal operation...
+            let _ = Self::read_event_file(
+                    event_file_path,
+                    |event| { event_count += 1; events.load_event(event); }
+                )
+                .inspect_err(|error| warn!(
                     "Reading {event_file_path:?} failed after {} events: {:?} due to file corruption or unclean validator shutdown",
-                    events.len() - old_len,
+                    event_count - old_event_count,
                     error
-                );
-            });
+                ));
             info!(
                 "Read {} events from {:?}",
-                events.len() - old_len,
+                event_count - old_event_count,
                 event_file_path
             );
         }
 
-        let mut packet_batches_by_time = BTreeMap::new();
-        let mut freeze_time_by_slot = BTreeMap::new();
-        let mut hash_overrides = HashOverrides::default();
-        for TimedTracedEvent(event_time, event) in events {
-            match event {
-                TracedEvent::PacketBatch(label, batch) => {
-                    // Deserialized PacketBatches will mostly be ordered by event_time, but this
-                    // isn't guaranteed when traced, because time are measured by multiple _sender_
-                    // threads without synchronization among them to avoid overhead.
-                    //
-                    // Also, there's a possibility of system clock change. In this case,
-                    // the simulation is meaningless, though...
-                    //
-                    // Somewhat naively assume that event_times (nanosecond resolution) won't
-                    // collide.
-                    let is_new = packet_batches_by_time
-                        .insert(event_time, (label, batch))
-                        .is_none();
-                    assert!(is_new);
-                }
-                TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
-                    let is_new = freeze_time_by_slot.insert(slot, event_time).is_none();
-                    hash_overrides.add_override(slot, blockhash, bank_hash);
-                    assert!(is_new);
-                }
+        Ok(events)
+    }
+
+    fn load_event(&mut self, TimedTracedEvent(event_time, event): TimedTracedEvent) {
+        match event {
+            TracedEvent::PacketBatch(label, batch) => {
+                // Deserialized PacketBatches will mostly be ordered by event_time, but this
+                // isn't guaranteed when traced, because time are measured by multiple _sender_
+                // threads without synchronization among them to avoid overhead.
+                //
+                // Also, there's a possibility of system clock change. In this case,
+                // the simulation is meaningless, though...
+                //
+                // Somewhat naively assume that event_times (nanosecond resolution) won't
+                // collide.
+                let is_new = self
+                    .packet_batches_by_time
+                    .insert(event_time, (label, batch))
+                    .is_none();
+                assert!(is_new);
+            }
+            TracedEvent::BlockAndBankHash(slot, blockhash, bank_hash) => {
+                let is_new = self.freeze_time_by_slot.insert(slot, event_time).is_none();
+                self.hash_overrides.add_override(slot, blockhash, bank_hash);
+                assert!(is_new);
             }
         }
-
-        Ok(Self {
-            packet_batches_by_time,
-            freeze_time_by_slot,
-            hash_overrides,
-        })
     }
 
     pub fn hash_overrides(&self) -> &HashOverrides {
