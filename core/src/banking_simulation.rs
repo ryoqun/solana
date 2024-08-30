@@ -175,14 +175,13 @@ impl BankingTraceEvents {
                     |event| { event_count += 1; events.load_event(event); }
                 )
                 .inspect_err(|error| warn!(
-                    "Reading {event_file_path:?} failed after {} events: {:?} due to file corruption or unclean validator shutdown",
-                    event_count - old_event_count,
-                    error
+                    "Reading {:?} failed after {} events: {:?} due to file corruption or unclean validator shutdown",
+                    event_file_path, event_count - old_event_count, error,
                 ));
             info!(
                 "Read {} events from {:?}",
                 event_count - old_event_count,
-                event_file_path
+                event_file_path,
             );
         }
 
@@ -387,14 +386,8 @@ impl<'a> SenderLoopLogger<'a> {
                 (self.gossip_vote_tx_count - self.last_gossip_vote_tx_count) as f64 / duration;
             info!(
                 "senders(non-,tpu-,gossip-vote): tps: {:.0} (={:.0}+{:.0}+{:.0}) over {:?} not-recved: ({}+{}+{})",
-                tps,
-                non_vote_tps,
-                tpu_vote_tps,
-                gossip_vote_tps,
-                log_interval,
-                self.non_vote_sender.len(),
-                self.tpu_vote_sender.len(),
-                self.gossip_vote_sender.len(),
+                tps, non_vote_tps, tpu_vote_tps, gossip_vote_tps, log_interval,
+                self.non_vote_sender.len(), self.tpu_vote_sender.len(), self.gossip_vote_sender.len(),
             );
             self.last_log_duration = simulation_duration;
             self.last_tx_count = current_tx_count;
@@ -483,7 +476,7 @@ impl BankingSimulator {
             .unwrap();
         info!(
             "Simulated leader and slot: {}, {}",
-            simulated_leader, first_simulated_slot
+            simulated_leader, first_simulated_slot,
         );
 
         let exit = Arc::new(AtomicBool::default());
@@ -665,12 +658,9 @@ impl BankingSimulator {
                 .collect::<Vec<_>>();
             info!(
                 "simulating events: {} (out of {}), starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
-                timed_batches_to_send.len(),
-                total_batch_count,
-                first_simulated_slot,
+                timed_batches_to_send.len(), total_batch_count, first_simulated_slot,
                 SenderLoopLogger::format_as_timestamp(raw_base_event_time),
-                parent_slot,
-                WARMUP_DURATION,
+                parent_slot, WARMUP_DURATION,
             );
             let mut simulation_duration = Duration::default();
             let mut logger = SenderLoopLogger::new(
