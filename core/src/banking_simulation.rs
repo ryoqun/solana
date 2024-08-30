@@ -319,7 +319,6 @@ struct SenderLoop {
     gossip_vote_sender: TracedSender,
     exit: Arc<AtomicBool>,
     raw_base_event_time: SystemTime,
-    base_simulation_time: SystemTime,
     total_batch_count: usize,
     timed_batches_to_send: TimedBatchesToSend,
 }
@@ -334,14 +333,17 @@ impl SenderLoop {
         );
     }
 
-    fn spawn(self) -> Result<EventSenderThread, SimulateError> {
+    fn spawn(self, base_simulation_time: SystemTime) -> Result<EventSenderThread, SimulateError> {
         let handle = thread::Builder::new()
             .name("solSimSender".into())
-            .spawn(move || self.start())?;
+            .spawn(move || self.start(base_simulation_time))?;
         Ok(handle)
     }
 
-    fn start(mut self) -> (TracedSender, TracedSender, TracedSender) {
+    fn start(
+        mut self,
+        base_simulation_time: SystemTime,
+    ) -> (TracedSender, TracedSender, TracedSender) {
         let mut logger = SenderLoopLogger::new(
             &self.non_vote_sender,
             &self.tpu_vote_sender,
@@ -355,7 +357,7 @@ impl SenderLoop {
             while simulation_duration < required_duration {
                 let current_simulation_time = SystemTime::now();
                 simulation_duration = current_simulation_time
-                    .duration_since(self.base_simulation_time)
+                    .duration_since(base_simulation_time)
                     .unwrap();
             }
 
@@ -389,7 +391,6 @@ struct SimulatorLoop {
     first_simulated_slot: Slot,
     freeze_time_by_slot: FreezeTimeBySlot,
     base_event_time: SystemTime,
-    base_simulation_time: SystemTime,
     poh_recorder: Arc<RwLock<PohRecorder>>,
     simulated_leader: Pubkey,
     bank_forks: Arc<RwLock<BankForks>>,
@@ -400,17 +401,25 @@ struct SimulatorLoop {
 }
 
 impl SimulatorLoop {
-    fn enter(self, sender_thread: EventSenderThread) -> (EventSenderThread, Sender<Slot>) {
+    fn enter(
+        self,
+        base_simulation_time: SystemTime,
+        sender_thread: EventSenderThread,
+    ) -> (EventSenderThread, Sender<Slot>) {
         sleep(WARMUP_DURATION);
         info!("warmup done!");
-        self.start(sender_thread)
+        self.start(base_simulation_time, sender_thread)
     }
 
-    fn start(self, sender_thread: EventSenderThread) -> (EventSenderThread, Sender<Slot>) {
+    fn start(
+        self,
+        base_simulation_time: SystemTime,
+        sender_thread: EventSenderThread,
+    ) -> (EventSenderThread, Sender<Slot>) {
         let logger = SimulatorLoopLogger {
             simulated_leader: self.simulated_leader,
             base_event_time: self.base_event_time,
-            base_simulation_time: self.base_simulation_time,
+            base_simulation_time,
             freeze_time_by_slot: self.freeze_time_by_slot,
         };
         let mut bank = self.bank;
@@ -801,7 +810,6 @@ impl BankingSimulator {
             .next()
             .expect("timed hashes");
         let base_event_time = raw_base_event_time - WARMUP_DURATION;
-        let base_simulation_time = SystemTime::now();
 
         let total_batch_count = packet_batches_by_time.len();
         let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
@@ -833,7 +841,6 @@ impl BankingSimulator {
             gossip_vote_sender,
             exit: exit.clone(),
             raw_base_event_time,
-            base_simulation_time,
             total_batch_count,
             timed_batches_to_send,
         };
@@ -844,7 +851,6 @@ impl BankingSimulator {
             first_simulated_slot: self.first_simulated_slot,
             freeze_time_by_slot,
             base_event_time,
-            base_simulation_time,
             poh_recorder,
             simulated_leader,
             bank_forks,
@@ -880,10 +886,12 @@ impl BankingSimulator {
         );
 
         sender_loop.log_starting();
+        let base_simulation_time = SystemTime::now();
         // Spawning and entering these two loops must be done at the same time as they're timed.
         // So, all the mundane setup must be done in advance.
-        let sender_thread = sender_loop.spawn()?;
-        let (sender_thread, retransmit_slots_sender) = simulator_loop.enter(sender_thread);
+        let sender_thread = sender_loop.spawn(base_simulation_time)?;
+        let (sender_thread, retransmit_slots_sender) =
+            simulator_loop.enter(base_simulation_time, sender_thread);
 
         simulator_threads.finish(sender_thread, retransmit_slots_sender);
 
