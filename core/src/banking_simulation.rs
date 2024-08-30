@@ -314,14 +314,14 @@ struct SenderLoopLogger<'a> {
     gossip_vote_sender: &'a TracedSender,
     last_log_duration: Duration,
     last_tx_count: usize,
-    last_non_vote_count: usize,
+    last_non_vote_batch_count: usize,
     last_tpu_vote_tx_count: usize,
     last_gossip_vote_tx_count: usize,
-    non_vote_count: usize,
+    non_vote_batch_count: usize,
     non_vote_tx_count: usize,
-    tpu_vote_count: usize,
+    tpu_vote_batch_count: usize,
     tpu_vote_tx_count: usize,
-    gossip_vote_count: usize,
+    gossip_vote_batch_count: usize,
     gossip_vote_tx_count: usize,
 }
 
@@ -337,14 +337,14 @@ impl<'a> SenderLoopLogger<'a> {
             gossip_vote_sender,
             last_log_duration: Duration::default(),
             last_tx_count: 0,
-            last_non_vote_count: 0,
+            last_non_vote_batch_count: 0,
             last_tpu_vote_tx_count: 0,
             last_gossip_vote_tx_count: 0,
-            non_vote_count: 0,
+            non_vote_batch_count: 0,
             non_vote_tx_count: 0,
-            tpu_vote_count: 0,
+            tpu_vote_batch_count: 0,
             tpu_vote_tx_count: 0,
-            gossip_vote_count: 0,
+            gossip_vote_batch_count: 0,
             gossip_vote_tx_count: 0,
         }
     }
@@ -363,9 +363,12 @@ impl<'a> SenderLoopLogger<'a> {
 
         use ChannelLabel::*;
         let (total_batch_count, total_tx_count) = match label {
-            NonVote => (&mut self.non_vote_count, &mut self.non_vote_tx_count),
-            TpuVote => (&mut self.tpu_vote_count, &mut self.tpu_vote_tx_count),
-            GossipVote => (&mut self.gossip_vote_count, &mut self.gossip_vote_tx_count),
+            NonVote => (&mut self.non_vote_batch_count, &mut self.non_vote_tx_count),
+            TpuVote => (&mut self.tpu_vote_batch_count, &mut self.tpu_vote_tx_count),
+            GossipVote => (
+                &mut self.gossip_vote_batch_count,
+                &mut self.gossip_vote_tx_count,
+            ),
             Dummy => unreachable!(),
         };
         *total_batch_count += batch_count;
@@ -378,7 +381,7 @@ impl<'a> SenderLoopLogger<'a> {
             let duration = log_interval.as_secs_f64();
             let tps = (current_tx_count - self.last_tx_count) as f64 / duration;
             let non_vote_tps =
-                (self.non_vote_tx_count - self.last_non_vote_count) as f64 / duration;
+                (self.non_vote_tx_count - self.last_non_vote_batch_count) as f64 / duration;
             let tpu_vote_tps =
                 (self.tpu_vote_tx_count - self.last_tpu_vote_tx_count) as f64 / duration;
             let gossip_vote_tps =
@@ -397,13 +400,13 @@ impl<'a> SenderLoopLogger<'a> {
             self.last_log_duration = simulation_duration;
             self.last_tx_count = current_tx_count;
             (
-                self.last_non_vote_count,
+                self.last_non_vote_batch_count,
                 self.last_tpu_vote_tx_count,
                 self.last_gossip_vote_tx_count,
             ) = (
                 self.non_vote_tx_count,
                 self.tpu_vote_tx_count,
-                self.gossip_vote_count,
+                self.gossip_vote_batch_count,
             );
         }
     }
@@ -411,11 +414,11 @@ impl<'a> SenderLoopLogger<'a> {
     fn on_terminating(self) {
         info!(
             "terminating to send...: non_vote: {} ({}), tpu_vote: {} ({}), gossip_vote: {} ({})",
-            self.non_vote_count,
+            self.non_vote_batch_count,
             self.non_vote_tx_count,
-            self.tpu_vote_count,
+            self.tpu_vote_batch_count,
             self.tpu_vote_tx_count,
-            self.gossip_vote_count,
+            self.gossip_vote_batch_count,
             self.gossip_vote_tx_count,
         );
     }
