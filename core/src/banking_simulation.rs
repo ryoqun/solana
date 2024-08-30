@@ -135,6 +135,11 @@ type PacketBatchesByTime = BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatc
 
 type FreezeTimeBySlot = BTreeMap<Slot, SystemTime>;
 
+type TimedBatchesToSend = Vec<(
+    (Duration, (ChannelLabel, BankingPacketBatch)),
+    (usize, usize),
+)>;
+
 type EventSenderThread = JoinHandle<(TracedSender, TracedSender, TracedSender)>;
 
 #[derive(Default)]
@@ -309,17 +314,26 @@ impl SimulatorLoopLogger {
 struct SenderLoop {
     parent_slot: Slot,
     first_simulated_slot: Slot,
-    packet_batches_by_time: PacketBatchesByTime,
     non_vote_sender: TracedSender,
     tpu_vote_sender: TracedSender,
     gossip_vote_sender: TracedSender,
     exit: Arc<AtomicBool>,
     raw_base_event_time: SystemTime,
-    base_event_time: SystemTime,
     base_simulation_time: SystemTime,
+    total_batch_count: usize,
+    timed_batches_to_send: TimedBatchesToSend,
 }
 
 impl SenderLoop {
+    fn log_starting(&self) {
+        info!(
+            "simulating events: {} (out of {}), starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
+            self.timed_batches_to_send.len(), self.total_batch_count, self.first_simulated_slot,
+            SenderLoopLogger::format_as_timestamp(self.raw_base_event_time),
+            self.parent_slot, WARMUP_DURATION,
+        );
+    }
+
     fn spawn(self) -> Result<EventSenderThread, SimulateError> {
         let handle = thread::Builder::new()
             .name("solSimSender".into())
@@ -328,45 +342,14 @@ impl SenderLoop {
     }
 
     fn start(mut self) -> (TracedSender, TracedSender, TracedSender) {
-        info!("start sending!...");
-        let total_batch_count = self.packet_batches_by_time.len();
-        let timed_batches_to_send = self.packet_batches_by_time.split_off(&self.base_event_time);
-        let batch_and_tx_counts = timed_batches_to_send
-            .values()
-            .map(|(_label, batches_with_stats)| {
-                let batches = &batches_with_stats.0;
-                (
-                    batches.len(),
-                    batches.iter().map(|batch| batch.len()).sum::<usize>(),
-                )
-            })
-            .collect::<Vec<_>>();
-        // Convert to a large plain old Vec and drain on it, finally dropping it outside
-        // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
-        let mut timed_batches_to_send = timed_batches_to_send
-            .into_iter()
-            .map(|(event_time, batches)| {
-                (
-                    event_time.duration_since(self.base_event_time).unwrap(),
-                    batches,
-                )
-            })
-            .zip_eq(batch_and_tx_counts)
-            .collect::<Vec<_>>();
-        info!(
-            "simulating events: {} (out of {}), starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
-            timed_batches_to_send.len(), total_batch_count, self.first_simulated_slot,
-            SenderLoopLogger::format_as_timestamp(self.raw_base_event_time),
-            self.parent_slot, WARMUP_DURATION,
-        );
-        let mut simulation_duration = Duration::default();
         let mut logger = SenderLoopLogger::new(
             &self.non_vote_sender,
             &self.tpu_vote_sender,
             &self.gossip_vote_sender,
         );
+        let mut simulation_duration = Duration::default();
         for ((required_duration, (label, batches_with_stats)), (batch_count, tx_count)) in
-            timed_batches_to_send.drain(..)
+            self.timed_batches_to_send.drain(..)
         {
             // Busy loop for most accurate sending timings
             while simulation_duration < required_duration {
@@ -390,7 +373,7 @@ impl SenderLoop {
             }
         }
         logger.on_terminating();
-        drop(timed_batches_to_send);
+        drop(self.timed_batches_to_send);
         // hold these senders in join_handle to control banking stage termination!
         (
             self.non_vote_sender,
@@ -431,7 +414,6 @@ impl SimulatorLoop {
             freeze_time_by_slot: self.freeze_time_by_slot,
         };
         let mut bank = self.bank;
-
         loop {
             if self.poh_recorder.read().unwrap().bank().is_none() {
                 let next_leader_slot = self.leader_schedule_cache.next_leader_slot(
@@ -673,7 +655,7 @@ impl BankingSimulator {
         block_production_method: BlockProductionMethod,
     ) -> (SenderLoop, SimulatorLoop, SimulatorThreads) {
         let parent_slot = self.parent_slot().unwrap();
-        let packet_batches_by_time = self.banking_trace_events.packet_batches_by_time;
+        let mut packet_batches_by_time = self.banking_trace_events.packet_batches_by_time;
         let freeze_time_by_slot = self.banking_trace_events.freeze_time_by_slot;
         let bank = bank_forks
             .read()
@@ -821,17 +803,39 @@ impl BankingSimulator {
         let base_event_time = raw_base_event_time - WARMUP_DURATION;
         let base_simulation_time = SystemTime::now();
 
+        let total_batch_count = packet_batches_by_time.len();
+        let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
+        let batch_and_tx_counts = timed_batches_to_send
+            .values()
+            .map(|(_label, batches_with_stats)| {
+                let batches = &batches_with_stats.0;
+                (
+                    batches.len(),
+                    batches.iter().map(|batch| batch.len()).sum::<usize>(),
+                )
+            })
+            .collect::<Vec<_>>();
+        // Convert to a large plain old Vec and drain on it, finally dropping it outside
+        // the simulation loop to avoid jitter due to interleaved deallocs of BTreeMap.
+        let timed_batches_to_send = timed_batches_to_send
+            .into_iter()
+            .map(|(event_time, batches)| {
+                (event_time.duration_since(base_event_time).unwrap(), batches)
+            })
+            .zip_eq(batch_and_tx_counts)
+            .collect::<Vec<_>>();
+
         let sender_loop = SenderLoop {
             parent_slot,
             first_simulated_slot: self.first_simulated_slot,
-            packet_batches_by_time,
             non_vote_sender,
             tpu_vote_sender,
             gossip_vote_sender,
             exit: exit.clone(),
             raw_base_event_time,
-            base_event_time,
             base_simulation_time,
+            total_batch_count,
+            timed_batches_to_send,
         };
 
         let simulator_loop = SimulatorLoop {
@@ -875,6 +879,9 @@ impl BankingSimulator {
             block_production_method,
         );
 
+        sender_loop.log_starting();
+        // Spawning and entering these two loops must be done at the same time as they're timed.
+        // So, all the mundane setup must be done in advance.
         let sender_thread = sender_loop.spawn()?;
         let (sender_thread, retransmit_slots_sender) = simulator_loop.enter(sender_thread);
 
