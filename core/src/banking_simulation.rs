@@ -189,7 +189,7 @@ impl BankingTraceEvents {
                 TracedEvent::PacketBatch(label, batch) => {
                     // Deserialized PacketBatches will mostly be ordered by event_time, but this
                     // isn't guaranteed when traced, because time are measured by multiple _sender_
-                    // threads withtout synchnotization among them to avoid overhead.
+                    // threads withtout synchronization among them to avoid overhead.
                     //
                     // Also, there's a possiblity of system clock change. In this case,
                     // the simulation is meaningless, though...
@@ -222,7 +222,7 @@ impl BankingTraceEvents {
 }
 
 struct DummyClusterInfo {
-    // Artifically wrap Pubkey with RwLock to induce lock contention if any to minic the real
+    // Artifically wrap Pubkey with RwLock to induce lock contention if any to mimic the real
     // ClusterInfo
     id: RwLock<Pubkey>,
 }
