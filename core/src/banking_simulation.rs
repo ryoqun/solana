@@ -248,20 +248,6 @@ struct SimulatorLoopLogger {
 }
 
 impl SimulatorLoopLogger {
-    fn new(
-        simulated_leader: Pubkey,
-        base_event_time: SystemTime,
-        base_simulation_time: SystemTime,
-        freeze_time_by_slot: FreezeTimeBySlot,
-    ) -> Self {
-        Self {
-            simulated_leader,
-            base_event_time,
-            base_simulation_time,
-            freeze_time_by_slot,
-        }
-    }
-
     fn bank_costs(bank: &Bank) -> (u64, u64) {
         bank.read_cost_tracker()
             .map(|t| (t.block_cost(), t.vote_cost()))
@@ -738,12 +724,12 @@ impl BankingSimulator {
         retransmit_slots_sender: &Sender<Slot>,
         retracer: &BankingTracer,
     ) {
-        let logger = SimulatorLoopLogger::new(
+        let logger = SimulatorLoopLogger {
             simulated_leader,
             base_event_time,
             base_simulation_time,
             freeze_time_by_slot,
-        );
+        };
 
         loop {
             if poh_recorder.read().unwrap().bank().is_none() {
