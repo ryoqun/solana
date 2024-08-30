@@ -169,7 +169,7 @@ impl BankingTraceEvents {
             let old_len = events.len();
             let _ = Self::read_event_file(&mut events, event_file_path).inspect_err(|error| {
                 error!(
-                    "Reading {event_file_path:?} failed after {} events: {:?} due to file corruption or unclearn validator shutdown",
+                    "Reading {event_file_path:?} failed after {} events: {:?} due to file corruption or unclean validator shutdown",
                     events.len() - old_len,
                     error
                 );
@@ -189,9 +189,9 @@ impl BankingTraceEvents {
                 TracedEvent::PacketBatch(label, batch) => {
                     // Deserialized PacketBatches will mostly be ordered by event_time, but this
                     // isn't guaranteed when traced, because time are measured by multiple _sender_
-                    // threads withtout synchronization among them to avoid overhead.
+                    // threads without synchronization among them to avoid overhead.
                     //
-                    // Also, there's a possiblity of system clock change. In this case,
+                    // Also, there's a possibility of system clock change. In this case,
                     // the simulation is meaningless, though...
                     //
                     // Somewhat naively assume that event_times (nanosecond resolution) won't
@@ -222,7 +222,7 @@ impl BankingTraceEvents {
 }
 
 struct DummyClusterInfo {
-    // Artifically wrap Pubkey with RwLock to induce lock contention if any to mimic the real
+    // Artificially wrap Pubkey with RwLock to induce lock contention if any to mimic the real
     // ClusterInfo
     id: RwLock<Pubkey>,
 }
@@ -564,7 +564,7 @@ impl BankingSimulator {
 
         // Create a completely-dummy ClusterInfo for the broadcast stage.
         // We only need it to write shreds into the blockstore and it seems given ClusterInfo is
-        // irrevant for the neccesary minimum work for this simulation.
+        // irrelevant for the neccesary minimum work for this simulation.
         let random_keypair = Arc::new(Keypair::new());
         let cluster_info = Arc::new(ClusterInfo::new(
             Node::new_localhost_with_pubkey(&random_keypair.pubkey()).info,
