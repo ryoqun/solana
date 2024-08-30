@@ -619,7 +619,7 @@ impl BankingSimulator {
         )
     }
 
-    fn start_event_sender_thread(
+    fn spawn_sender_loop(
         parent_slot: Slot,
         first_simulated_slot: Slot,
         freeze_time_by_slot: &FreezeTimeBySlot,
@@ -700,7 +700,7 @@ impl BankingSimulator {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn enter_simulation_loop(
+    fn enter_simulator_loop(
         parent_slot: Slot,
         first_simulated_slot: Slot,
         freeze_time_by_slot: FreezeTimeBySlot,
@@ -849,22 +849,21 @@ impl BankingSimulator {
             block_production_method,
         );
 
-        let (sender_thread, base_event_time, base_simulation_time) =
-            Self::start_event_sender_thread(
-                parent_slot,
-                self.first_simulated_slot,
-                &self.banking_trace_events.freeze_time_by_slot,
-                self.banking_trace_events.packet_batches_by_time,
-                non_vote_sender,
-                tpu_vote_sender,
-                gossip_vote_sender,
-                exit.clone(),
-            )?;
+        let (sender_thread, base_event_time, base_simulation_time) = Self::spawn_sender_loop(
+            parent_slot,
+            self.first_simulated_slot,
+            &self.banking_trace_events.freeze_time_by_slot,
+            self.banking_trace_events.packet_batches_by_time,
+            non_vote_sender,
+            tpu_vote_sender,
+            gossip_vote_sender,
+            exit.clone(),
+        )?;
 
         sleep(WARMUP_DURATION);
         info!("warmup done!");
 
-        Self::enter_simulation_loop(
+        Self::enter_simulator_loop(
             parent_slot,
             self.first_simulated_slot,
             self.banking_trace_events.freeze_time_by_slot,
