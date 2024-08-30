@@ -123,7 +123,7 @@ pub enum SimulateError {
     IoError(#[from] io::Error),
 
     #[error("Deserialization Error: {0}")]
-    SerializeError(#[from] bincode::Error),
+    DeserializeError(#[from] bincode::Error),
 }
 
 // Defined to be enough to cover the holding phase prior to leader slots with some idling (+5 secs)
