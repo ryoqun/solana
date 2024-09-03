@@ -448,7 +448,6 @@ impl SimulatorLoop {
                     info!("next leader block!");
                     bank.slot() + 1
                 };
-                info!("new leader bank slot: {new_slot}");
                 let new_leader = self
                     .leader_schedule_cache
                     .slot_leader_at(new_slot, None)
@@ -459,6 +458,8 @@ impl SimulatorLoop {
                 } else if sender_thread.is_finished() {
                     warn!("sender thread existed maybe due to completion of sending traced events");
                     break;
+                } else {
+                    info!("new leader bank slot: {new_slot}");
                 }
                 let new_bank = Bank::new_from_parent(
                     bank.clone_without_scheduler(),
