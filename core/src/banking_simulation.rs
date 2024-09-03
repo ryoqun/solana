@@ -771,6 +771,8 @@ impl BankingSimulator {
             random_keypair,
             SocketAddrSpace::Unspecified,
         ));
+        // Broadcast stage is needed to save the simulated blocks for post-run analysis by
+        // inserting produced shreds into the blockstore.
         let broadcast_stage = BroadcastStageType::Standard.new_broadcast_stage(
             vec![UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()],
             cluster_info.clone(),
