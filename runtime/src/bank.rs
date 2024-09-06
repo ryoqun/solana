@@ -56,7 +56,7 @@ use {
         },
         stakes::{InvalidCacheEntryReason, Stakes, StakesCache, StakesEnum},
         status_cache::{SlotDelta, StatusCache},
-        transaction_batch::{OwnedOrBorrowed, TransactionBatch},
+        transaction_batch::TransactionBatch,
     },
     byteorder::{ByteOrder, LittleEndian},
     dashmap::{DashMap, DashSet},
@@ -170,7 +170,7 @@ use {
             TransactionProcessingConfig, TransactionProcessingEnvironment,
         },
     },
-    solana_svm_transaction::svm_message::SVMMessage,
+    solana_svm_transaction::svm_message::{SVMMessage, SVMMessageSlice},
     solana_timings::{ExecuteTimingType, ExecuteTimings},
     solana_vote::vote_account::{VoteAccount, VoteAccountsHashMap},
     solana_vote_program::vote_state::VoteState,
@@ -3232,7 +3232,7 @@ impl Bank {
     pub fn prepare_entry_batch(
         &self,
         txs: Vec<VersionedTransaction>,
-    ) -> Result<TransactionBatch<SanitizedTransaction>> {
+    ) -> Result<TransactionBatch<'_, impl SVMMessageSlice<Tgt = SanitizedTransaction>>> {
         let sanitized_txs = txs
             .into_iter()
             .map(|tx| {
@@ -3250,24 +3250,20 @@ impl Bank {
             .rc
             .accounts
             .lock_accounts(sanitized_txs.iter(), tx_account_lock_limit);
-        Ok(TransactionBatch::new(
-            lock_results,
-            self,
-            OwnedOrBorrowed::Owned(sanitized_txs),
-        ))
+        Ok(TransactionBatch::new(lock_results, self, sanitized_txs))
     }
 
     /// Prepare a locked transaction batch from a list of sanitized transactions.
     pub fn prepare_sanitized_batch<'a, 'b>(
         &'a self,
         txs: &'b [SanitizedTransaction],
-    ) -> TransactionBatch<'a, 'b, SanitizedTransaction> {
+    ) -> TransactionBatch<'a, impl SVMMessageSlice<Tgt = SanitizedTransaction> + 'b> {
         let tx_account_lock_limit = self.get_transaction_account_lock_limit();
         let lock_results = self
             .rc
             .accounts
             .lock_accounts(txs.iter(), tx_account_lock_limit);
-        TransactionBatch::new(lock_results, self, OwnedOrBorrowed::Borrowed(txs))
+        TransactionBatch::new(lock_results, self, txs)
     }
 
     /// Prepare a locked transaction batch from a list of sanitized transactions, and their cost
@@ -3276,7 +3272,7 @@ impl Bank {
         &'a self,
         transactions: &'b [SanitizedTransaction],
         transaction_results: impl Iterator<Item = Result<()>>,
-    ) -> TransactionBatch<'a, 'b, SanitizedTransaction> {
+    ) -> TransactionBatch<'a, impl SVMMessageSlice + 'b> {
         // this lock_results could be: Ok, AccountInUse, WouldExceedBlockMaxLimit or WouldExceedAccountMaxLimit
         let tx_account_lock_limit = self.get_transaction_account_lock_limit();
         let lock_results = self.rc.accounts.lock_accounts_with_results(
@@ -3284,22 +3280,19 @@ impl Bank {
             transaction_results,
             tx_account_lock_limit,
         );
-        TransactionBatch::new(lock_results, self, OwnedOrBorrowed::Borrowed(transactions))
+        TransactionBatch::new(lock_results, self, transactions)
     }
 
     /// Prepare a transaction batch from a single transaction without locking accounts
     pub fn prepare_unlocked_batch_from_single_tx<'a>(
         &'a self,
         transaction: &'a SanitizedTransaction,
-    ) -> TransactionBatch<'_, '_, SanitizedTransaction> {
+    ) -> TransactionBatch<'_, impl SVMMessageSlice<Tgt = SanitizedTransaction> + 'a> {
         let tx_account_lock_limit = self.get_transaction_account_lock_limit();
         let lock_result =
             validate_account_locks(transaction.message().account_keys(), tx_account_lock_limit);
-        let mut batch = TransactionBatch::new(
-            vec![lock_result],
-            self,
-            OwnedOrBorrowed::Borrowed(slice::from_ref(transaction)),
-        );
+        let mut batch =
+            TransactionBatch::new(vec![lock_result], self, slice::from_ref(transaction));
         batch.set_needs_unlock(false);
         batch
     }
@@ -3451,7 +3444,7 @@ impl Bank {
 
     pub fn collect_balances(
         &self,
-        batch: &TransactionBatch<SanitizedTransaction>,
+        batch: &TransactionBatch<impl SVMMessageSlice<Tgt = SanitizedTransaction>>,
     ) -> TransactionBalances {
         let mut balances: TransactionBalances = vec![];
         for transaction in batch.sanitized_transactions() {
@@ -3466,7 +3459,7 @@ impl Bank {
 
     pub fn load_and_execute_transactions(
         &self,
-        batch: &TransactionBatch<SanitizedTransaction>,
+        batch: &TransactionBatch<impl SVMMessageSlice<Tgt = SanitizedTransaction>>,
         max_age: usize,
         timings: &mut ExecuteTimings,
         error_counters: &mut TransactionErrorMetrics,
@@ -4596,7 +4589,7 @@ impl Bank {
     #[must_use]
     pub fn load_execute_and_commit_transactions(
         &self,
-        batch: &TransactionBatch<SanitizedTransaction>,
+        batch: &TransactionBatch<impl SVMMessageSlice<Tgt = SanitizedTransaction>>,
         max_age: usize,
         collect_balances: bool,
         recording_config: ExecutionRecordingConfig,
@@ -4708,7 +4701,7 @@ impl Bank {
     #[must_use]
     fn process_transaction_batch(
         &self,
-        batch: &TransactionBatch<SanitizedTransaction>,
+        batch: &TransactionBatch<impl SVMMessageSlice<Tgt = SanitizedTransaction>>,
     ) -> Vec<Result<()>> {
         self.load_execute_and_commit_transactions(
             batch,
@@ -6697,7 +6690,7 @@ impl Bank {
     pub fn prepare_batch_for_tests(
         &self,
         txs: Vec<Transaction>,
-    ) -> TransactionBatch<SanitizedTransaction> {
+    ) -> TransactionBatch<impl SVMMessageSlice<Tgt = SanitizedTransaction>> {
         let transaction_account_lock_limit = self.get_transaction_account_lock_limit();
         let sanitized_txs = txs
             .into_iter()
@@ -6707,7 +6700,7 @@ impl Bank {
             .rc
             .accounts
             .lock_accounts(sanitized_txs.iter(), transaction_account_lock_limit);
-        TransactionBatch::new(lock_results, self, OwnedOrBorrowed::Owned(sanitized_txs))
+        TransactionBatch::new(lock_results, self, sanitized_txs)
     }
 
     /// Set the initial accounts data size

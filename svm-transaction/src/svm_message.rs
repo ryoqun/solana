@@ -3,7 +3,10 @@ use {
         instruction::SVMInstruction, message_address_table_lookup::SVMMessageAddressTableLookup,
     },
     core::fmt::Debug,
-    solana_sdk::{hash::Hash, message::AccountKeys, pubkey::Pubkey},
+    solana_sdk::{
+        hash::Hash, message::AccountKeys, pubkey::Pubkey, transaction::SanitizedTransaction,
+    },
+    std::borrow::Borrow,
 };
 
 mod sanitized_message;
@@ -65,4 +68,16 @@ pub trait SVMMessage: Debug {
 
     /// Get message address table lookups used in the message
     fn message_address_table_lookups(&self) -> impl Iterator<Item = SVMMessageAddressTableLookup>;
+}
+
+pub trait SVMMessageSlice: Borrow<[Self::Tgt]> {
+    type Tgt: SVMMessage;
+}
+
+impl SVMMessageSlice for Vec<SanitizedTransaction> {
+    type Tgt = SanitizedTransaction;
+}
+
+impl<'a> SVMMessageSlice for &'a [SanitizedTransaction] {
+    type Tgt = SanitizedTransaction;
 }

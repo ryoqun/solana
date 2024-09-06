@@ -1,39 +1,19 @@
 use {
     crate::bank::Bank, solana_sdk::transaction::Result,
-    solana_svm_transaction::svm_message::SVMMessage,
+    solana_svm_transaction::svm_message::SVMMessageSlice,
 };
 
-pub enum OwnedOrBorrowed<'a, T> {
-    Owned(Vec<T>),
-    Borrowed(&'a [T]),
-}
-
-impl<T> core::ops::Deref for OwnedOrBorrowed<'_, T> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            OwnedOrBorrowed::Owned(v) => v,
-            OwnedOrBorrowed::Borrowed(v) => v,
-        }
-    }
-}
-
 // Represents the results of trying to lock a set of accounts
-pub struct TransactionBatch<'a, 'b, Tx: SVMMessage> {
+pub struct TransactionBatch<'a, Txs: SVMMessageSlice> {
     lock_results: Vec<Result<()>>,
     bank: &'a Bank,
-    sanitized_txs: OwnedOrBorrowed<'b, Tx>,
+    sanitized_txs: Txs,
     needs_unlock: bool,
 }
 
-impl<'a, 'b, Tx: SVMMessage> TransactionBatch<'a, 'b, Tx> {
-    pub fn new(
-        lock_results: Vec<Result<()>>,
-        bank: &'a Bank,
-        sanitized_txs: OwnedOrBorrowed<'b, Tx>,
-    ) -> Self {
-        assert_eq!(lock_results.len(), sanitized_txs.len());
+impl<'a, Txs: SVMMessageSlice> TransactionBatch<'a, Txs> {
+    pub fn new(lock_results: Vec<Result<()>>, bank: &'a Bank, sanitized_txs: Txs) -> Self {
+        assert_eq!(lock_results.len(), sanitized_txs.borrow().len());
         Self {
             lock_results,
             bank,
@@ -46,8 +26,8 @@ impl<'a, 'b, Tx: SVMMessage> TransactionBatch<'a, 'b, Tx> {
         &self.lock_results
     }
 
-    pub fn sanitized_transactions(&self) -> &[Tx] {
-        &self.sanitized_txs
+    pub fn sanitized_transactions(&self) -> &[Txs::Tgt] {
+        self.sanitized_txs.borrow()
     }
 
     pub fn bank(&self) -> &Bank {
@@ -83,7 +63,12 @@ impl<'a, 'b, Tx: SVMMessage> TransactionBatch<'a, 'b, Tx> {
                 assert!(!(result.is_ok() && self.lock_results[*index].is_err()))
             })
             .filter(|(index, result)| result.is_err() && self.lock_results[*index].is_ok())
-            .map(|(index, _)| (&self.sanitized_txs[index], &self.lock_results[index]));
+            .map(|(index, _)| {
+                (
+                    &self.sanitized_txs.borrow()[index],
+                    &self.lock_results[index],
+                )
+            });
 
         // Unlock the accounts for all transactions which will be updated to an
         // lock error below.
@@ -97,7 +82,7 @@ impl<'a, 'b, Tx: SVMMessage> TransactionBatch<'a, 'b, Tx> {
 }
 
 // Unlock all locked accounts in destructor.
-impl<'a, 'b, Tx: SVMMessage> Drop for TransactionBatch<'a, 'b, Tx> {
+impl<'a, Txs: SVMMessageSlice> Drop for TransactionBatch<'a, Txs> {
     fn drop(&mut self) {
         if self.needs_unlock() {
             self.set_needs_unlock(false);
