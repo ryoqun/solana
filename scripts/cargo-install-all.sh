@@ -163,7 +163,8 @@ mkdir -p "$installDir/bin"
 (
   set -x
   # Make sure dcou is really disabled by peeking the (unstable) build plan
-  # output after making rustc the nightly mode with RUSTC_BOOTSTRAP=1
+  # output after turning rustc into the nightly mode with RUSTC_BOOTSTRAP=1.
+  # In this way, additional requirement of nightly rustc toolchian is avoided.
   # shellcheck disable=SC2086 # Don't want to double quote $maybeRustVersion
   if (RUSTC_BOOTSTRAP=1 \
       "$cargo" $maybeRustVersion build \
