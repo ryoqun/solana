@@ -554,10 +554,6 @@ fn load_banking_trace_events_or_exit(ledger_path: &Path) -> BankingTraceEvents {
 }
 
 fn read_banking_trace_event_file_paths_or_exit(banking_trace_path: PathBuf) -> Vec<PathBuf> {
-    if !banking_trace_path.exists() {
-        eprintln!("Error: ledger doesn't have the banking trace dir: {banking_trace_path:?}");
-        exit(1);
-    }
     info!("Using: banking trace events dir: {banking_trace_path:?}");
 
     let entries = match read_dir(&banking_trace_path) {
