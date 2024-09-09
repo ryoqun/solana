@@ -156,14 +156,10 @@ impl BankingTraceEvents {
     ) -> Result<(), SimulateError> {
         let mut reader = BufReader::new(File::open(event_file_path)?);
 
-        loop {
+        // EOF is reached at a correct deserialization boundary or just the file is just empty.
+        // We want to look-ahead the buf, so NOT calling reader.consume(..) is correct.
+        while !reader.fill_buf()?.is_empty() {
             callback(deserialize_from(&mut reader)?);
-
-            if reader.fill_buf()?.is_empty() {
-                // EOF is reached at a correct deserialization boundary.
-                // We're looking-ahead the buf, so NOT calling reader.consume(..) is correct.
-                break;
-            }
         }
 
         Ok(())
@@ -174,20 +170,33 @@ impl BankingTraceEvents {
         let mut events = Self::default();
         for event_file_path in event_file_paths {
             let old_event_count = event_count;
-            // Silence errors here as this can happen under normal operation...
-            let _ = Self::read_event_file(
-                    event_file_path,
-                    |event| { event_count += 1; events.load_event(event); }
-                )
-                .inspect_err(|error| warn!(
-                    "Reading {:?} failed after {} events: {:?} due to file corruption or unclean validator shutdown",
-                    event_file_path, event_count - old_event_count, error,
-                ));
+            let read_result = Self::read_event_file(event_file_path, |event| {
+                event_count += 1;
+                events.load_event(event);
+            });
             info!(
                 "Read {} events from {:?}",
                 event_count - old_event_count,
                 event_file_path,
             );
+
+            if matches!(
+                read_result,
+                Err(SimulateError::DeserializeError(ref deser_err))
+                    if matches!(
+                        &**deser_err,
+                        bincode::ErrorKind::Io(io_err)
+                            if io_err.kind() == std::io::ErrorKind::UnexpectedEof
+                    )
+            ) {
+                // Silence errors here as this can happen under normal operation...
+                warn!(
+                    "Reading {:?} failed {:?} due to file corruption or unclean validator shutdown",
+                    event_file_path, read_result,
+                );
+            } else {
+                read_result?
+            }
         }
 
         Ok(events)
