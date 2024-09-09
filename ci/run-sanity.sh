@@ -39,6 +39,9 @@ while [[ ! -f config/run/init-completed ]]; do
   fi
 done
 
+# Needs bunch of slots for simulate-block-production.
+# Better yet, run ~20 secs to run longer than its warm-up.
+# As a bonus, this works as a sanity test of general slot-rooting behavior.
 snapshot_slot=50
 latest_slot=0
 
