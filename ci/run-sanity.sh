@@ -21,9 +21,10 @@ rm -rf config/run/init-completed config/ledger config/snapshot-ledger
 # process::exit() by extending the timeout...
 # Also the banking_tracer thread needs some extra time to flush due to
 # unsynchronized and buffered IO.
+validator_timeout="${SOLANA_VALIDATOR_EXIT_TIMEOUT:-120}"
 SOLANA_RUN_SH_VALIDATOR_ARGS="${SOLANA_RUN_SH_VALIDATOR_ARGS} --full-snapshot-interval-slots 200" \
-  SOLANA_VALIDATOR_EXIT_TIMEOUT="${SOLANA_VALIDATOR_EXIT_TIMEOUT:-3600}" \
-  timeout 120 ./scripts/run.sh &
+  SOLANA_VALIDATOR_EXIT_TIMEOUT="$validator_timeout" \
+  timeout "$validator_timeout" ./scripts/run.sh &
 
 pid=$!
 
