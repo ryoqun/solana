@@ -916,7 +916,7 @@ pub fn process_blockstore_from_root(
             bank.set_hash_overrides(hash_overrides.clone());
         }
         if opts.no_block_cost_limits {
-            info!("setting block cost limits to MAX");
+            warn!("setting block cost limits to MAX");
             bank.write_cost_tracker()
                 .unwrap()
                 .set_limits(u64::MAX, u64::MAX, u64::MAX);
