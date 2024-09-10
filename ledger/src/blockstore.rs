@@ -3519,7 +3519,7 @@ impl Blockstore {
                 Some(out)
             }) {
             let keys = (start..=end).map(|index| (slot, u64::from(index)));
-            let range_shreds: std::result::Result<Vec<Shred>, _> = self
+            let range_shreds:  = self
                 .data_shred_cf
                 .multi_get_bytes(keys)
                 .into_iter()
@@ -3530,8 +3530,7 @@ impl Blockstore {
                     )))
                 })
                 })
-                .collect();
-            let range_shreds = range_shreds?;
+                .collect::<std::result::Result<Vec<Shred>, _>>()?;
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
             let a: Vec<Entry> = Shredder::deshred(&range_shreds)
