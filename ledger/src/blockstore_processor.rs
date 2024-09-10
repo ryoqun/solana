@@ -1426,7 +1426,7 @@ pub fn confirm_slot(
             slot,
             progress.num_shreds,
             |slot_entries_load_result| {
-                Ok())
+                Ok(())
             }
         )
     } else {
