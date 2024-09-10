@@ -1450,6 +1450,8 @@ pub fn confirm_slot(
                 },
             )
             .inspect_err(|_err| {
+                // When confirm_slot_entries() returns err, load_elapsed is already stoppped and
+                // shouldn't be accounted for fetch_fail_elapsed.
                 if load_elapsed.ensure_stop() {
                     timing.fetch_fail_elapsed += load_elapsed.as_us();
                 }
