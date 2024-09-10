@@ -3518,10 +3518,7 @@ impl Blockstore {
             allow_dead_slots,
             |load_result| {
                 load_elapsed.stop();
-                callback(
-                    load_result,
-                    &mut load_elapsed,
-                )?;
+                callback(load_result, &mut load_elapsed)?;
                 load_elapsed = Measure::start("load_elapsed");
             },
         )
