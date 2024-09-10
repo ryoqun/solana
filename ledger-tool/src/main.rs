@@ -1234,7 +1234,7 @@ fn main() {
                         .long("enable-hash-overrides")
                         .takes_value(false)
                         .help(
-                            "Enable to override blockhashes and bank hashes from banking trace \
+                            "Enable override of blockhashes and bank hashes from banking trace \
                              event files to correctly verify blocks produced by \
                              the simulate-block-production subcommand",
                         ),
