@@ -1421,34 +1421,37 @@ pub fn confirm_slot(
 ) -> result::Result<(), BlockstoreProcessorError> {
     let slot = bank.slot();
 
-    let slot_entries_load_result = {
-        let mut load_elapsed = Measure::start("load_elapsed");
-        let load_result = blockstore
-            .get_slot_entries_with_shred_info(slot, progress.num_shreds, allow_dead_slots)
-            .map_err(BlockstoreProcessorError::FailedToLoadEntries);
-        load_elapsed.stop();
-        if load_result.is_err() {
-            timing.fetch_fail_elapsed += load_elapsed.as_us();
-        } else {
-            timing.fetch_elapsed += load_elapsed.as_us();
-        }
-        load_result
-    }?;
+    if bank.has_installed_scheduler() {
+    } else {
+        let slot_entries_load_result = {
+            let mut load_elapsed = Measure::start("load_elapsed");
+            let load_result = blockstore
+                .get_slot_entries_with_shred_info(slot, progress.num_shreds, allow_dead_slots)
+                .map_err(BlockstoreProcessorError::FailedToLoadEntries);
+            load_elapsed.stop();
+            if load_result.is_err() {
+                timing.fetch_fail_elapsed += load_elapsed.as_us();
+            } else {
+                timing.fetch_elapsed += load_elapsed.as_us();
+            }
+            load_result
+        }?;
 
-    confirm_slot_entries(
-        bank,
-        replay_tx_thread_pool,
-        slot_entries_load_result,
-        timing,
-        progress,
-        skip_verification,
-        transaction_status_sender,
-        entry_notification_sender,
-        replay_vote_sender,
-        recyclers,
-        log_messages_bytes_limit,
-        prioritization_fee_cache,
-    )
+        confirm_slot_entries(
+            bank,
+            replay_tx_thread_pool,
+            slot_entries_load_result,
+            timing,
+            progress,
+            skip_verification,
+            transaction_status_sender,
+            entry_notification_sender,
+            replay_vote_sender,
+            recyclers,
+            log_messages_bytes_limit,
+            prioritization_fee_cache,
+        )
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
