@@ -3514,7 +3514,7 @@ impl Blockstore {
             []
         };
 
-        let iter = slot_meta.completed_data_indexes
+        let iter = completed_data_indexes
             .range(start_index..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
