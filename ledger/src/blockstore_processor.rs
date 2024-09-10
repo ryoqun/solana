@@ -1426,7 +1426,20 @@ pub fn confirm_slot(
             slot,
             progress.num_shreds,
             |slot_entries_load_result| {
-                Ok(())
+                confirm_slot_entries(
+                    bank,
+                    replay_tx_thread_pool,
+                    slot_entries_load_result,
+                    timing,
+                    progress,
+                    skip_verification,
+                    transaction_status_sender,
+                    entry_notification_sender,
+                    replay_vote_sender,
+                    recyclers,
+                    log_messages_bytes_limit,
+                    prioritization_fee_cache,
+                )
             }
         )
     } else {
