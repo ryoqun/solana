@@ -3518,7 +3518,7 @@ impl Blockstore {
             start_index,
             allow_dead_slots,
             |load_result, load_elapsed| {
-                callback(load_result, load_elapsed),
+                callback(load_result, load_elapsed)
             }
         )
         .map_err(|e| {
