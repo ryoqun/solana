@@ -3505,13 +3505,14 @@ impl Blockstore {
         &self,
         slot: Slot,
         start_index: u64,
-        mut callback: impl FnMut(
+        callback: impl FnMut(
             &mut Measure,
             (Vec<Entry>, u64, bool),
         ) -> std::result::Result<(), BlockstoreProcessorError>,
-    ) -> std::result::Result<(), BlockstoreProcessorError> {
+    ) -> std::result::Result<(), (BlockstoreProcessorError, Measure)> {
         let mut load_elapsed = Measure::start("load_elapsed");
         self.do_get_chunked_slot_entries_in_block(&mut load_elapsed, slot, start_index, callback)
+            .map_err(|e| (e, load_elapsed))
     }
 
     pub fn do_get_chunked_slot_entries_in_block(
