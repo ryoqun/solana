@@ -3539,7 +3539,7 @@ impl Blockstore {
                 .collect::<std::result::Result<Vec<Shred>, _>>()?;
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
-            let a: Vec<Entry> = Shredder::deshred(&range_shreds)
+            let entries = Shredder::deshred(&range_shreds)
                 .map_err(|e| {
                     BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
                         format!("could not reconstruct entries buffer from shreds: {e:?}"),
@@ -3552,7 +3552,7 @@ impl Blockstore {
                         )))
                     })
                 })?;
-            callback((a, (end - start) as u64, last_shred.last_in_slot()))?;
+            callback((entries, (end - start) as u64, last_shred.last_in_slot()))?;
         }
         Ok(())
     }
