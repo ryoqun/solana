@@ -3520,6 +3520,7 @@ impl Blockstore {
                 load_elapsed.stop();
                 callback(load_result, &mut load_elapsed)?;
                 load_elapsed = Measure::start("load_elapsed");
+                Ok(())
             },
         )
         .map_err(|e| {
