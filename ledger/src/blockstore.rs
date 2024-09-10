@@ -3509,7 +3509,7 @@ impl Blockstore {
         let slot_meta = self.meta_cf.get(*slot)?;
         let Some(slot_meta) = slot_meta else {
             return [].into_iter();
-        }
+        };
 
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
         slot_meta.completed_data_indexes
