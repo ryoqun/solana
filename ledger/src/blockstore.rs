@@ -3513,7 +3513,7 @@ impl Blockstore {
             let SlotMeta{completed_data_indexes, consumed, ..} = slot_meta;
             panic!();
         } else {
-            (BTreeSet::new(), 0)
+            BTreeSet::new()
         };
 
         let iter = completed_data_indexes
