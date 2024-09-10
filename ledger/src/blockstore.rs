@@ -3511,7 +3511,7 @@ impl Blockstore {
             assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
             slot_meta.completed_data_indexes
         } else {
-            []
+            BTreeSet::new()
         };
 
         let iter = completed_data_indexes
