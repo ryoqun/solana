@@ -3544,7 +3544,7 @@ impl Blockstore {
                     })
                 })
                 .unwrap();
-            (a, end as u64 - start, last_shred.last_in_slot())
+            (a, (end - start) as u64, last_shred.last_in_slot())
         });
         iter.for_each(callback);
         Ok(slot_meta.is_full())
