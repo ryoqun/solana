@@ -66,9 +66,13 @@ $solana_ledger_tool verify --abort-on-invalid-block \
   --ledger config/snapshot-ledger --block-verification-method unified-scheduler
 
 first_simulated_slot=$((latest_slot / 2))
+purge_slot=$((first_simulated_slot + latest_slot / 4))
 echo "First simulated slot: ${first_simulated_slot}"
 touch config/ledger/simulate_block_production_allowed
+# Purge some slots so that later verify fails if sim is broken
+$solana_ledger_tool purge --ledger config/ledger "$purge_slot"
 $solana_ledger_tool simulate-block-production --ledger config/ledger \
   --first-simulated-slot $first_simulated_slot
+# Slots should be available and correctly replayable upto snapshot_slot at least.
 $solana_ledger_tool verify --abort-on-invalid-block \
-  --ledger config/ledger --enable-hash-overrides
+  --ledger config/ledger --enable-hash-overrides --halt-at-slot "$snapshot_slot"
