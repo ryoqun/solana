@@ -3511,14 +3511,13 @@ impl Blockstore {
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
 
         let start_index = start_index as u32;
-        let iter = slot_meta.completed_data_indexes
+        for (start, end) in slot_meta.completed_data_indexes
             .range(start_index..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
                 *begin = index + 1;
                 Some(out)
-            })
-            .map(|(start, end)| {
+            }) {
             let keys = (start..=end).map(|index| (slot, u64::from(index)));
             let range_shreds: Vec<Shred> = self
                 .data_shred_cf
@@ -3544,10 +3543,7 @@ impl Blockstore {
                     })
                 })
                 .unwrap();
-            (a, (end - start) as u64, last_shred.last_in_slot())
-        });
-        for i in iter {
-            callback(i)?;
+            callback(a, (end - start) as u64, last_shred.last_in_slot())?;
         }
         Ok(())
     }
