@@ -3506,7 +3506,7 @@ impl Blockstore {
         slot: Slot,
         start_index: u64,
         mut callback: impl FnMut(
-            Measure,
+            &mut Measure,
             (Vec<Entry>, u64, bool),
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), BlockstoreProcessorError> {
