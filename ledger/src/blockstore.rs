@@ -3518,7 +3518,8 @@ impl Blockstore {
             start_index,
             allow_dead_slots,
             |load_result, load_elapsed| {
-                callback(load_result, load_elapsed)
+                load_elapsed.stop();
+                callback(load_result, std::mem::replace(load_elapsed, Measure::start("load_elapsed")))
             }
         )
         .map_err(|e| {
@@ -3529,13 +3530,11 @@ impl Blockstore {
 
     pub fn do_get_chunked_slot_entries_in_block(
         &self,
-        load_elapsed: &mut Measure,
         slot: Slot,
         start_index: u64,
         allow_dead_slots: bool,
         mut callback: impl FnMut(
             (Vec<Entry>, u64, bool),
-            Measure,
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), BlockstoreProcessorError> {
         if self.is_dead(slot) && !allow_dead_slots {
@@ -3584,10 +3583,8 @@ impl Blockstore {
                         )))
                     })
                 })?;
-            load_elapsed.stop();
             callback(
                 (entries, (end - start) as u64, last_shred.last_in_slot()),
-                std::mem::replace(load_elapsed, Measure::start("load_elapsed")),
             )?;
         }
         Ok(())
