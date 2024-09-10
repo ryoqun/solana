@@ -1422,12 +1422,14 @@ pub fn confirm_slot(
     let slot = bank.slot();
 
     if bank.has_installed_scheduler() {
+        let mut load_elapsed = Measure::start("load_elapsed");
         blockstore
             .get_chunked_slot_entries_in_block(
                 slot,
                 progress.num_shreds,
                 allow_dead_slots,
                 |slot_entries_load_result, load_elapsed| {
+                    load_elapsed.stop();
                     timing.fetch_elapsed += load_elapsed.as_us();
                     confirm_slot_entries(
                         bank,
@@ -1442,10 +1444,12 @@ pub fn confirm_slot(
                         recyclers,
                         log_messages_bytes_limit,
                         prioritization_fee_cache,
-                    )
+                    )?;
+                    load_elapsed = Measure::start("load_elapsed");
+                    Ok(())
                 },
             )
-            .map_err(|(err, load_elapsed)| {
+            .map_err(|err| {
                 timing.fetch_fail_elapsed += load_elapsed.as_us();
                 err
             })
