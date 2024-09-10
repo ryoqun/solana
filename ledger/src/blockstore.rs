@@ -3505,13 +3505,14 @@ impl Blockstore {
         &self,
         slot: Slot,
         start_index: u64,
+        allow_dead_slots: bool,
         callback: impl FnMut(
             &mut Measure,
             (Vec<Entry>, u64, bool),
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), (BlockstoreProcessorError, Measure)> {
         let mut load_elapsed = Measure::start("load_elapsed");
-        self.do_get_chunked_slot_entries_in_block(&mut load_elapsed, slot, start_index, callback)
+        self.do_get_chunked_slot_entries_in_block(&mut load_elapsed, slot, start_index, allow_dead_slots, callback)
             .map_err(|e| {
                 load_elapsed.stop();
                 (e, load_elapsed)
@@ -3523,11 +3524,15 @@ impl Blockstore {
         load_elapsed: &mut Measure,
         slot: Slot,
         start_index: u64,
+        allow_dead_slots: bool,
         mut callback: impl FnMut(
             &mut Measure,
             (Vec<Entry>, u64, bool),
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), BlockstoreProcessorError> {
+        if self.is_dead(slot) && !allow_dead_slots {
+            return Err(BlockstoreError::DeadSlot);
+        }
         let slot_meta = self.meta_cf.get(slot)?.unwrap();
         assert!(!slot_meta
             .completed_data_indexes
