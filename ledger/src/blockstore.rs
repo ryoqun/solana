@@ -3524,7 +3524,11 @@ impl Blockstore {
                 .multi_get_bytes(keys)
                 .into_iter()
                 .map(|shred_bytes| {
-                    Shred::new_from_serialized_shred(shred_bytes.unwrap().unwrap())
+                    Shred::new_from_serialized_shred(shred_bytes.unwrap().unwrap()).map_err(|err| {
+                    BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
+                        format!("Could not reconstruct shred from shred payload: {err:?}"),
+                    )))
+                })
                 })
                 .collect();
             let range_shreds = range_shreds?;
