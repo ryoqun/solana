@@ -3512,7 +3512,10 @@ impl Blockstore {
     ) -> std::result::Result<(), (BlockstoreProcessorError, Measure)> {
         let mut load_elapsed = Measure::start("load_elapsed");
         self.do_get_chunked_slot_entries_in_block(&mut load_elapsed, slot, start_index, callback)
-            .map_err(|e| (e, load_elapsed))
+            .map_err(|e| {
+                load_elapsed.stop();
+                (e, load_elapsed)
+            })
     }
 
     pub fn do_get_chunked_slot_entries_in_block(
