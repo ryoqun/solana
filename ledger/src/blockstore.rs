@@ -3507,17 +3507,13 @@ impl Blockstore {
         start_index: u32,
     ) -> Result<impl Iterator<Item = (Vec<Entry>, u32)> + 'a> {
         let slot_meta = self.meta_cf.get(*slot)?;
-        let consumed = 0;
-        let completed_data_indexes = if let Some(slot_meta) = slot_meta {
+        let Some(slot_meta) = slot_meta else {
             assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
-            let SlotMeta{completed_data_indexes, consumed, ..} = slot_meta;
-            panic!();
-        } else {
-            BTreeSet::new()
+            return Ok([].into_iter());
         };
 
-        let iter = completed_data_indexes
-            .range(start_index..consumed as u32)
+        let iter = slot_meta.completed_data_indexes
+            .range(start_index..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
                 *begin = index + 1;
