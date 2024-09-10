@@ -3527,6 +3527,7 @@ impl Blockstore {
                     Shred::new_from_serialized_shred(shred_bytes.unwrap().unwrap())
                 })
                 .collect();
+            let range_shreds = range_shreds?;
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
             let a: Vec<Entry> = Shredder::deshred(&range_shreds)
