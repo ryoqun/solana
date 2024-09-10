@@ -3509,7 +3509,8 @@ impl Blockstore {
         let slot_meta = self.meta_cf.get(*slot)?;
         let (completed_data_indexes, consumed) = if let Some(slot_meta) = slot_meta {
             assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
-            (slot_meta.completed_data_indexes, slot_meta.consumed)
+            let SlotMeta{completed_data_indexes, consumed, ..} = slot_meta;
+            panic!();
         } else {
             (BTreeSet::new(), 0)
         };
