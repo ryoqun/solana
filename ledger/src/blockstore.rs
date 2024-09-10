@@ -3505,7 +3505,7 @@ impl Blockstore {
         &self,
         slot: Slot,
         start_index: u64,
-        callback: impl Fn((Vec<Entry>, u64)),
+        callback: impl Fn((Vec<Entry>, u64, bool)),
     ) -> Result<bool> {
         let slot_meta = self.meta_cf.get(slot)?.unwrap();
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
