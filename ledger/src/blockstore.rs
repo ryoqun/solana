@@ -3543,7 +3543,7 @@ impl Blockstore {
                     })
                 })
                 .unwrap();
-            callback(a, (end - start) as u64, last_shred.last_in_slot())?;
+            callback((a, (end - start) as u64, last_shred.last_in_slot()))?;
         }
         Ok(())
     }
