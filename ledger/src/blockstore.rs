@@ -3547,7 +3547,7 @@ impl Blockstore {
                     })
                 })
                 .unwrap();
-            (a, end)
+            (a, end as u64)
         });
         iter.for_each(callback);
         Ok(())
