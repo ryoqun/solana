@@ -3536,7 +3536,7 @@ impl Blockstore {
                         )))
                     })
                 })
-                .collect::<std::result::Result<_, _>>()?;
+                .collect::<std::result::Result<Vec<_>, _>>()?;
             let last_shred = range_shreds.last().unwrap();
             assert!(last_shred.data_complete() || last_shred.last_in_slot());
             let entries = Shredder::deshred(&range_shreds)
