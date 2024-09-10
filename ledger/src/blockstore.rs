@@ -3568,7 +3568,7 @@ impl Blockstore {
                     })
                 })?;
             load_elapsed.stop();
-            callback(load_elapsed, (entries, (end - start) as u64, last_shred.last_in_slot()))?;
+            callback(*load_elapsed, (entries, (end - start) as u64, last_shred.last_in_slot()))?;
             *load_elapsed = Measure::start("load_elapsed");
         }
         Ok(())
