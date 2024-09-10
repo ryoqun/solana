@@ -3501,7 +3501,7 @@ impl Blockstore {
         Ok((entries, num_shreds, slot_meta.is_full()))
     }
 
-    pub fn get_slot_chunked_entries_in_block(
+    pub fn get_chunked_slot_entries_in_block(
         &self,
         slot: Slot,
         start_index: u64,
