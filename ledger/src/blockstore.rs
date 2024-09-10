@@ -3518,8 +3518,11 @@ impl Blockstore {
             allow_dead_slots,
             |load_result| {
                 load_elapsed.stop();
-                callback(load_result, std::mem::replace(&mut load_elapsed, Measure::start("load_elapsed")))
-            }
+                callback(
+                    load_result,
+                    std::mem::replace(&mut load_elapsed, Measure::start("load_elapsed")),
+                )
+            },
         )
         .map_err(|e| {
             load_elapsed.stop();
@@ -3582,9 +3585,7 @@ impl Blockstore {
                         )))
                     })
                 })?;
-            callback(
-                (entries, (end - start) as u64, last_shred.last_in_slot()),
-            )?;
+            callback((entries, (end - start) as u64, last_shred.last_in_slot()))?;
         }
         Ok(())
     }
