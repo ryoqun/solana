@@ -3501,10 +3501,11 @@ impl Blockstore {
         Ok((entries, num_shreds, slot_meta.is_full()))
     }
 
-    pub fn get_slot_chunked_entries_in_block<'a>(
-        &'a self,
-        slot: &'a Slot,
+    pub fn get_slot_chunked_entries_in_block(
+        &self,
+        slot: Slot,
         start_index: u32,
+        F: Fn((Vec<Entry> u32)),
     ) -> Result</*impl Iterator<Item = (Vec<Entry>, u32)> + 'a*/()> {
         let slot_meta = self.meta_cf.get(*slot)?;
         let Some(slot_meta) = slot_meta else {
