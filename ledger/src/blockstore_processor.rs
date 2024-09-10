@@ -1422,7 +1422,13 @@ pub fn confirm_slot(
     let slot = bank.slot();
 
     if bank.has_installed_scheduler() {
-        panic!();
+        blockstore.get_chunked_slot_entries_in_block(
+            slot,
+            progress.num_shreds,
+            |slot_entries_load_result| {
+                Ok())
+            }
+        )
     } else {
         let slot_entries_load_result = {
             let mut load_elapsed = Measure::start("load_elapsed");
