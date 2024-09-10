@@ -3508,9 +3508,9 @@ impl Blockstore {
     ) -> Result</*impl Iterator<Item = (Vec<Entry>, u32)> + 'a*/()> {
         let slot_meta = self.meta_cf.get(*slot)?;
         let Some(slot_meta) = slot_meta else {
-            assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
             return Ok(());
         };
+        assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
 
         let iter = slot_meta.completed_data_indexes
             .range(start_index..slot_meta.consumed as u32)
