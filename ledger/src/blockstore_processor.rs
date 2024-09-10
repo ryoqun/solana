@@ -1442,7 +1442,10 @@ pub fn confirm_slot(
                     prioritization_fee_cache,
                 )
             },
-        )
+        ).map_err(|(err, failed_load_elapsed)| {
+            timing.fetch_fail_elapsed += load_elapsed.as_us();
+            err
+        }
     } else {
         let slot_entries_load_result = {
             let mut load_elapsed = Measure::start("load_elapsed");
