@@ -1425,6 +1425,7 @@ pub fn confirm_slot(
         blockstore.get_chunked_slot_entries_in_block(
             slot,
             progress.num_shreds,
+            allow_dead_slots,
             |load_elapsed, slot_entries_load_result| {
                 timing.fetch_elapsed += load_elapsed.as_us();
                 confirm_slot_entries(
