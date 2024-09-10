@@ -3516,7 +3516,7 @@ impl Blockstore {
             slot,
             start_index,
             allow_dead_slots,
-            |load_result, load_elapsed| {
+            |load_result| {
                 load_elapsed.stop();
                 callback(load_result, std::mem::replace(load_elapsed, Measure::start("load_elapsed")))
             }
