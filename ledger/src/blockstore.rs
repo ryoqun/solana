@@ -3514,7 +3514,7 @@ impl Blockstore {
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
 
         let iter = slot_meta.completed_data_indexes
-            .range(start_index..slot_meta.consumed as u32)
+            .range(start_index as u32..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
                 *begin = index + 1;
