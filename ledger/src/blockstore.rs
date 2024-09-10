@@ -3546,7 +3546,9 @@ impl Blockstore {
                 .unwrap();
             (a, (end - start) as u64, last_shred.last_in_slot())
         });
-        iter.for_each(callback)?;
+        for i in iter {
+            callback(i)?;
+        }
         Ok(())
     }
 
