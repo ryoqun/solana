@@ -3519,7 +3519,7 @@ impl Blockstore {
                 Some(out)
             }) {
             let keys = (start..=end).map(|index| (slot, u64::from(index)));
-            let range_shreds: Vec<Shred> = self
+            let range_shreds: Result<Vec<Shred>, _> = self
                 .data_shred_cf
                 .multi_get_bytes(keys)
                 .into_iter()
