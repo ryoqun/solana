@@ -3508,7 +3508,7 @@ impl Blockstore {
         allow_dead_slots: bool,
         callback: impl FnMut(
             (Vec<Entry>, u64, bool),
-            &mut Measure,
+            Measure,
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), (BlockstoreProcessorError, Measure)> {
         let mut load_elapsed = Measure::start("load_elapsed");
@@ -3533,7 +3533,7 @@ impl Blockstore {
         allow_dead_slots: bool,
         mut callback: impl FnMut(
             (Vec<Entry>, u64, bool),
-            &mut Measure,
+            Measure,
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), BlockstoreProcessorError> {
         if self.is_dead(slot) && !allow_dead_slots {
@@ -3585,9 +3585,8 @@ impl Blockstore {
             load_elapsed.stop();
             callback(
                 (entries, (end - start) as u64, last_shred.last_in_slot()),
-                load_elapsed,
+                std::mem::replace(load_elapsed, Measure::start("load_elapsed")),
             )?;
-            *load_elapsed = Measure::start("load_elapsed");
         }
         Ok(())
     }
@@ -3789,10 +3788,6 @@ impl Blockstore {
             })
             .flatten_ok()
             .collect()
-    }
-
-    pub fn get_slot_meta(&self, slot: Slot) -> SlotMeta {
-        self.meta_cf.get(slot).unwrap().unwrap()
     }
 
     pub fn get_entries_in_data_block(
