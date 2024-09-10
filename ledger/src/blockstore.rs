@@ -3506,7 +3506,7 @@ impl Blockstore {
         slot: Slot,
         start_index: u64,
         callback: impl Fn((Vec<Entry>, u64)),
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let slot_meta = self.meta_cf.get(slot)?;
         let Some(slot_meta) = slot_meta else {
             return Ok(());
@@ -3550,7 +3550,7 @@ impl Blockstore {
             (a, end as u64)
         });
         iter.for_each(callback);
-        Ok(())
+        Ok(slot_meta.is_full())
     }
 
     /// Gets accounts used in transactions in the slot range [starting_slot, ending_slot].
