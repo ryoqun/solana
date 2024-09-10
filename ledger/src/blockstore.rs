@@ -3531,7 +3531,7 @@ impl Blockstore {
         ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), BlockstoreProcessorError> {
         if self.is_dead(slot) && !allow_dead_slots {
-            return Err(BlockstoreError::DeadSlot);
+            Err(BlockstoreError::DeadSlot)?;
         }
         let slot_meta = self.meta_cf.get(slot)?.unwrap();
         assert!(!slot_meta
