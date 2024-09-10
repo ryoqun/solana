@@ -3505,19 +3505,25 @@ impl Blockstore {
         &self,
         slot: Slot,
         start_index: u64,
-        mut callback: impl FnMut((Vec<Entry>, u64, bool)) -> std::result::Result<(), BlockstoreProcessorError>,
+        mut callback: impl FnMut(
+            (Vec<Entry>, u64, bool),
+        ) -> std::result::Result<(), BlockstoreProcessorError>,
     ) -> std::result::Result<(), BlockstoreProcessorError> {
         let slot_meta = self.meta_cf.get(slot)?.unwrap();
-        assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
+        assert!(!slot_meta
+            .completed_data_indexes
+            .contains(&(slot_meta.consumed as u32)));
 
         let start_index = start_index as u32;
-        for (start, end) in slot_meta.completed_data_indexes
+        for (start, end) in slot_meta
+            .completed_data_indexes
             .range(start_index..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
                 *begin = index + 1;
                 Some(out)
-            }) {
+            })
+        {
             let keys = (start..=end).map(|index| (slot, u64::from(index)));
             let range_shreds = self
                 .data_shred_cf
@@ -3525,10 +3531,10 @@ impl Blockstore {
                 .into_iter()
                 .map(|shred_bytes| {
                     Shred::new_from_serialized_shred(shred_bytes?.unwrap()).map_err(|err| {
-                    BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
-                        format!("Could not reconstruct shred from shred payload: {err:?}"),
-                    )))
-                })
+                        BlockstoreError::InvalidShredData(Box::new(bincode::ErrorKind::Custom(
+                            format!("Could not reconstruct shred from shred payload: {err:?}"),
+                        )))
+                    })
                 })
                 .collect::<std::result::Result<Vec<Shred>, _>>()?;
             let last_shred = range_shreds.last().unwrap();
