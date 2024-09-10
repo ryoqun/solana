@@ -1444,7 +1444,7 @@ pub fn confirm_slot(
                         recyclers,
                         log_messages_bytes_limit,
                         prioritization_fee_cache,
-                    )?
+                    )?;
                     load_elapsed = Measure::start("load_elapsed");
                     Ok(())
                 },
