@@ -1443,7 +1443,7 @@ pub fn confirm_slot(
                 )
             },
         ).map_err(|(err, failed_load_elapsed)| {
-            timing.fetch_fail_elapsed += load_elapsed.as_us();
+            timing.fetch_fail_elapsed += failed_load_elapsed.as_us();
             err
         })
     } else {
