@@ -3504,8 +3504,8 @@ impl Blockstore {
     pub fn get_slot_chunked_entries_in_block(
         &self,
         slot: Slot,
-        start_index: u32,
-        callback: impl Fn((Vec<Entry>, u32)),
+        start_index: u64,
+        callback: impl Fn((Vec<Entry>, u64)),
     ) -> Result<()> {
         let slot_meta = self.meta_cf.get(slot)?;
         let Some(slot_meta) = slot_meta else {
