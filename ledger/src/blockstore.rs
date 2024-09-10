@@ -3512,7 +3512,7 @@ impl Blockstore {
         };
 
         assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
-        slot_meta.completed_data_indexes
+        let iter = slot_meta.completed_data_indexes
             .range(start_index..slot_meta.consumed as u32)
             .scan(start_index, |begin, index| {
                 let out = (*begin, *index);
@@ -3546,7 +3546,8 @@ impl Blockstore {
                 })
                 .unwrap();
             (a, end)
-        })
+        });
+        Ok(iter)
     }
 
     /// Gets accounts used in transactions in the slot range [starting_slot, ending_slot].
