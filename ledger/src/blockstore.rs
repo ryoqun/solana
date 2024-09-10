@@ -3541,8 +3541,7 @@ impl Blockstore {
                             format!("could not reconstruct entries: {e:?}"),
                         )))
                     })
-                })
-                .unwrap();
+                })?;
             callback((a, (end - start) as u64, last_shred.last_in_slot()))?;
         }
         Ok(())
