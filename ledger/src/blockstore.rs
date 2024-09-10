@@ -3505,7 +3505,7 @@ impl Blockstore {
         &self,
         slot: Slot,
         start_index: u32,
-        F: Fn((Vec<Entry> u32)),
+        F: Fn((Vec<Entry>, u32)),
     ) -> Result</*impl Iterator<Item = (Vec<Entry>, u32)> + 'a*/()> {
         let slot_meta = self.meta_cf.get(*slot)?;
         let Some(slot_meta) = slot_meta else {
