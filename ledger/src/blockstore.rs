@@ -3505,7 +3505,7 @@ impl Blockstore {
         &'a self,
         slot: &'a Slot,
         start_index: u32,
-    ) -> Result<impl Iterator<Item = (Vec<Entry>, u32)> + 'a> {
+    ) -> Result</*impl Iterator<Item = (Vec<Entry>, u32)> + 'a*/()> {
         let slot_meta = self.meta_cf.get(*slot)?;
         let Some(slot_meta) = slot_meta else {
             assert!(!slot_meta.completed_data_indexes.contains(&(slot_meta.consumed as u32)));
@@ -3547,7 +3547,7 @@ impl Blockstore {
                 .unwrap();
             (a, end)
         });
-        Ok(iter)
+        Ok(())
     }
 
     /// Gets accounts used in transactions in the slot range [starting_slot, ending_slot].
