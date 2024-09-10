@@ -3507,7 +3507,7 @@ impl Blockstore {
         start_index: u32,
         F: impl Fn((Vec<Entry>, u32)),
     ) -> Result</*impl Iterator<Item = (Vec<Entry>, u32)> + 'a*/()> {
-        let slot_meta = self.meta_cf.get(*slot)?;
+        let slot_meta = self.meta_cf.get(slot)?;
         let Some(slot_meta) = slot_meta else {
             return Ok(());
         };
@@ -3521,7 +3521,7 @@ impl Blockstore {
                 Some(out)
             })
             .map(|(start, end)| {
-            let keys = (start..=end).map(|index| (*slot, u64::from(index)));
+            let keys = (start..=end).map(|index| (slot, u64::from(index)));
             let range_shreds: Vec<Shred> = self
                 .data_shred_cf
                 .multi_get_bytes(keys)
