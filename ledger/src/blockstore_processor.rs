@@ -1449,11 +1449,10 @@ pub fn confirm_slot(
                     Ok(())
                 },
             )
-            .map_err(|err| {
+            .inspect_err(|_err| {
                 if load_elapsed.ensure_stop() {
                     timing.fetch_fail_elapsed += load_elapsed.as_us();
                 }
-                err
             })
     } else {
         let slot_entries_load_result = {
