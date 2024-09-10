@@ -1422,6 +1422,7 @@ pub fn confirm_slot(
     let slot = bank.slot();
 
     if bank.has_installed_scheduler() {
+        panic!();
     } else {
         let slot_entries_load_result = {
             let mut load_elapsed = Measure::start("load_elapsed");
