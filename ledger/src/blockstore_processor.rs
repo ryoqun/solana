@@ -1422,31 +1422,33 @@ pub fn confirm_slot(
     let slot = bank.slot();
 
     if bank.has_installed_scheduler() {
-        blockstore.get_chunked_slot_entries_in_block(
-            slot,
-            progress.num_shreds,
-            allow_dead_slots,
-            |load_elapsed, slot_entries_load_result| {
-                timing.fetch_elapsed += load_elapsed.as_us();
-                confirm_slot_entries(
-                    bank,
-                    replay_tx_thread_pool,
-                    slot_entries_load_result,
-                    timing,
-                    progress,
-                    skip_verification,
-                    transaction_status_sender,
-                    entry_notification_sender,
-                    replay_vote_sender,
-                    recyclers,
-                    log_messages_bytes_limit,
-                    prioritization_fee_cache,
-                )
-            },
-        ).map_err(|(err, failed_load_elapsed)| {
-            timing.fetch_fail_elapsed += failed_load_elapsed.as_us();
-            err
-        })
+        blockstore
+            .get_chunked_slot_entries_in_block(
+                slot,
+                progress.num_shreds,
+                allow_dead_slots,
+                |load_elapsed, slot_entries_load_result| {
+                    timing.fetch_elapsed += load_elapsed.as_us();
+                    confirm_slot_entries(
+                        bank,
+                        replay_tx_thread_pool,
+                        slot_entries_load_result,
+                        timing,
+                        progress,
+                        skip_verification,
+                        transaction_status_sender,
+                        entry_notification_sender,
+                        replay_vote_sender,
+                        recyclers,
+                        log_messages_bytes_limit,
+                        prioritization_fee_cache,
+                    )
+                },
+            )
+            .map_err(|(err, failed_load_elapsed)| {
+                timing.fetch_fail_elapsed += failed_load_elapsed.as_us();
+                err
+            })
     } else {
         let slot_entries_load_result = {
             let mut load_elapsed = Measure::start("load_elapsed");
