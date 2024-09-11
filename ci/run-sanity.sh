@@ -68,7 +68,6 @@ $solana_ledger_tool verify --abort-on-invalid-block \
 first_simulated_slot=$((latest_slot / 2))
 purge_slot=$((first_simulated_slot + latest_slot / 4))
 echo "First simulated slot: ${first_simulated_slot}"
-touch config/ledger/simulate_block_production_allowed
 # Purge some slots so that later verify fails if sim is broken
 $solana_ledger_tool purge --ledger config/ledger "$purge_slot"
 $solana_ledger_tool simulate-block-production --ledger config/ledger \
