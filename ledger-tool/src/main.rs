@@ -38,10 +38,7 @@ use {
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
     solana_feature_set::{self as feature_set, FeatureSet},
     solana_ledger::{
-        blockstore::{
-            banking_trace_path, create_new_ledger, simulate_block_production_marker_path,
-            Blockstore,
-        },
+        blockstore::{banking_trace_path, create_new_ledger, Blockstore},
         blockstore_options::{AccessType, LedgerColumnOptions},
         blockstore_processor::{
             ProcessSlotCallback, TransactionStatusMessage, TransactionStatusSender,
@@ -2479,17 +2476,6 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
-                    let marker_file = simulate_block_production_marker_path(&ledger_path);
-                    if !marker_file.exists() {
-                        eprintln!(
-                            "simulate-block-production is for development purposes only. \
-                             It's thus a pretty destructive operation on \
-                             the ledger ({ledger_path:?}). \
-                             Create an empty file at {marker_file:?} if this is intentional."
-                        );
-                        exit(1);
-                    }
-
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path);
