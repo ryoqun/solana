@@ -675,9 +675,6 @@ mod chained_channel {
     }
 
     impl<P, C: Clone> ChainedChannelReceiver<P, C> {
-        type PS = P;
-        type CS = C;
-
         fn new(
             receiver: Receiver<ChainedChannel<P, C>>,
             aux_receiver: Receiver<P>,
