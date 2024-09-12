@@ -14,7 +14,6 @@ use {
         input_parsers::pubkeys_of,
         input_validators::{is_parsable, is_pow2},
     },
-    solana_core::banking_trace::BankingSimulator,
     solana_ledger::{
         blockstore_processor::ProcessOptions,
         use_snapshot_archives_at_startup::{self, UseSnapshotArchivesAtStartup},
