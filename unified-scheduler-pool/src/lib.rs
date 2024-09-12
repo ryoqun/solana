@@ -882,7 +882,6 @@ impl LogInterval {
     }
 }
 
-use static_assertions::const_assert_eq;
 struct HandlerPanicked;
 type HandlerResult = std::result::Result<Box<ExecutedTask>, HandlerPanicked>;
 const_assert_eq!(mem::size_of::<HandlerResult>(), 8);
