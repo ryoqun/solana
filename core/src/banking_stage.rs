@@ -775,7 +775,7 @@ impl BankingStage {
                                                 };
 
                                                 let (priority, _cost) =
-                                                SchedulerController::calculate_priority_and_cost(
+                                                SchedulerController::<std::sync::Arc<solana_gossip::cluster_info::ClusterInfo>>::calculate_priority_and_cost(
                                                     &tx,
                                                     &fb.into(),
                                                     &bank,
