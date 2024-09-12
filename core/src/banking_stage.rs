@@ -672,7 +672,7 @@ impl BankingStage {
 
     #[allow(clippy::too_many_arguments)]
     pub fn new_unified_scheduler(
-        cluster_info: &Arc<ClusterInfo>,
+        cluster_info: &impl LikeClusterInfo,
         poh_recorder: &Arc<RwLock<PohRecorder>>,
         non_vote_receiver: BankingPacketReceiver,
         tpu_vote_receiver: BankingPacketReceiver,
