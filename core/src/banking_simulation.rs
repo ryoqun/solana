@@ -483,7 +483,7 @@ impl SimulatorLoop {
                     logger.log_frozen_bank_cost(&bank);
                 }
                 self.retransmit_slots_sender.send(bank.slot()).unwrap();
-                self.bank_forks.write().unwrap().insert(new_bank);
+                self.bank_forks.write().unwrap().insert(solana_sdk::scheduling::SchedulingMode::BlockProduction, new_bank);
                 bank = self
                     .bank_forks
                     .read()
@@ -726,6 +726,7 @@ impl BankingSimulator {
             exit.clone(),
         );
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
+        solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
         let poh_service = PohService::new(
             poh_recorder.clone(),
             &genesis_config.poh_config,
