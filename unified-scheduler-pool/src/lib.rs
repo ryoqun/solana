@@ -641,11 +641,8 @@ mod chained_channel {
             context: C,
             count: usize,
         ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
-            //info!("a1");
             let (chained_sender, chained_receiver) = crossbeam_channel::unbounded();
-            //info!("a2");
             let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::unbounded();
-            //info!("a3");
             for _ in 0..count {
                 self.sender.send(ChainedChannel::chain_to_new_channel(
                     context.clone(),
@@ -724,11 +721,8 @@ mod chained_channel {
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
         //const { assert!(mem::size_of::<ChainedChannel<P, C>>() == 16); }
-        //info!("a4");
         let (sender, receiver) = crossbeam_channel::unbounded();
-        //info!("a5");
         let (aux_sender, aux_receiver) = crossbeam_channel::unbounded();
-        //info!("a6");
         (
             ChainedChannelSender::new(sender, aux_sender),
             ChainedChannelReceiver::new(receiver, aux_receiver, initial_context),
@@ -888,11 +882,8 @@ const_assert_eq!(mem::size_of::<HandlerResult>(), 8);
 
 impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     fn new(pool: Arc<SchedulerPool<S, TH>>) -> Self {
-        //info!("a7");
         let (new_task_sender, new_task_receiver) = crossbeam_channel::unbounded();
-        //info!("a8");
         let (session_result_sender, session_result_receiver) = crossbeam_channel::unbounded();
-        //info!("a9");
         let handler_count = pool.handler_count;
 
         Self {
@@ -1075,13 +1066,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // because it is more likely that a blocked task will have more blocked tasks behind it,
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
         // as fast as possible.
-        //info!("a10");
         let (finished_blocked_task_sender, finished_blocked_task_receiver) =
             crossbeam_channel::unbounded::<HandlerResult>();
-        //info!("a11");
         let (finished_idle_task_sender, finished_idle_task_receiver) =
             crossbeam_channel::unbounded::<HandlerResult>();
-        //info!("a12");
 
         assert_matches!(self.session_result_with_timings, None);
 
