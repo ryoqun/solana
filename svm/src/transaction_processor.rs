@@ -62,6 +62,7 @@ use {
         rc::Rc,
     },
 };
+use solana_metrics::datapoint_info_at;
 
 /// A list of log messages emitted during a transaction
 pub type TransactionLogMessages = Vec<String>;
