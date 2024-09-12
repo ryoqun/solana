@@ -723,7 +723,7 @@ mod chained_channel {
     pub(super) fn unbounded<P, C: Clone>(
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
-        mem::size_of::<ChainedChannel<S, C>>();
+        const { mem::size_of::<ChainedChannel<S, C>>() };
         let (sender, receiver) = crossbeam_channel::unbounded();
         let (aux_sender, aux_receiver) = crossbeam_channel::unbounded();
         (
