@@ -31,14 +31,14 @@ use {
     },
     solana_cli_output::OutputFormat,
     solana_core::{
-        banking_trace::BankingSimulator,
+        banking_simulation::{BankingSimulator, BankingTraceEvents},
         system_monitor_service::{SystemMonitorService, SystemMonitorStatsReportConfig},
         validator::{BlockProductionMethod, BlockVerificationMethod},
     },
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
     solana_feature_set::{self as feature_set, FeatureSet},
     solana_ledger::{
-        blockstore::{banking_trace_path, create_new_ledger, simulate_block_production_marker_path, Blockstore},
+        blockstore::{banking_trace_path, create_new_ledger, Blockstore},
         blockstore_options::{AccessType, LedgerColumnOptions},
         blockstore_processor::{
             ProcessSlotCallback, TransactionStatusMessage, TransactionStatusSender,
@@ -84,7 +84,7 @@ use {
     },
     std::{
         collections::{HashMap, HashSet},
-        ffi::OsStr,
+        ffi::{OsStr, OsString},
         fs::{read_dir, File},
         io::{self, Write},
         mem::swap,
@@ -540,12 +540,10 @@ fn assert_capitalization(bank: &Bank) {
 }
 
 fn load_banking_trace_events_or_exit(ledger_path: &Path) -> BankingTraceEvents {
-    let file_paths = read_banking_trace_event_file_paths_or_exit(
-        banking_trace_path(&ledger_path),
-    );
+    let file_paths = read_banking_trace_event_file_paths_or_exit(banking_trace_path(ledger_path));
 
     info!("Using: banking trace event files: {file_paths:?}");
-    match BankingTraceEvents::load(file_paths) {
+    match BankingTraceEvents::load(&file_paths) {
         Ok(banking_trace_events) => banking_trace_events,
         Err(error) => {
             eprintln!("Failed to load banking trace events: {error:?}");
@@ -554,13 +552,7 @@ fn load_banking_trace_events_or_exit(ledger_path: &Path) -> BankingTraceEvents {
     }
 }
 
-fn read_banking_trace_event_file_paths_or_exit(
-    banking_trace_path: PathBuf,
-) -> Vec<PathBuf> {
-    if !banking_trace_path.exists() {
-        eprintln!("Error: ledger doesn't have the banking trace dir: {banking_trace_path:?}");
-        exit(1);
-    }
+fn read_banking_trace_event_file_paths_or_exit(banking_trace_path: PathBuf) -> Vec<PathBuf> {
     info!("Using: banking trace events dir: {banking_trace_path:?}");
 
     let entries = match read_dir(&banking_trace_path) {
@@ -1234,14 +1226,14 @@ fn main() {
                     Arg::with_name("no_block_cost_limits")
                         .long("no-block-cost-limits")
                         .takes_value(false)
-                        .help("Sets block cost limits to the max"),
+                        .help("Disable block cost limits effectively by setting them to the max"),
                 )
                 .arg(
                     Arg::with_name("enable_hash_overrides")
                         .long("enable-hash-overrides")
                         .takes_value(false)
                         .help(
-                            "Enable to override blockhashes and bank hashes from banking trace \
+                            "Enable override of blockhashes and bank hashes from banking trace \
                              event files to correctly verify blocks produced by \
                              the simulate-block-production subcommand",
                         ),
@@ -1514,7 +1506,7 @@ fn main() {
                     Arg::with_name("no_block_cost_limits")
                         .long("no-block-cost-limits")
                         .takes_value(false)
-                        .help("Sets block cost limits to the max"),
+                        .help("Disable block cost limits effectively by setting them to the max"),
                 ),
         )
         .subcommand(
@@ -1793,7 +1785,8 @@ fn main() {
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
                     if arg_matches.is_present("enable_hash_overrides") {
                         let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path);
-                        process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
+                        process_options.hash_overrides =
+                            Some(banking_trace_events.hash_overrides().clone());
                     }
 
                     let (slot_callback, slot_recorder_config) = setup_slot_recording(arg_matches);
@@ -2485,21 +2478,11 @@ fn main() {
                     }
                 }
                 ("simulate-block-production", Some(arg_matches)) => {
-                    let marker_file = simulate_block_production_marker_path(&ledger_path);
-                    if !marker_file.exists() {
-                        eprintln!(
-                            "simulate-block-production is for development purposes only. \
-                             It's thus a pretty destructive operation on \
-                             the ledger ({ledger_path:?}). \
-                             Create an empty file at {marker_file:?} if this is intentional."
-                        );
-                        exit(1);
-                    }
-
                     let mut process_options = parse_process_options(&ledger_path, arg_matches);
 
                     let banking_trace_events = load_banking_trace_events_or_exit(&ledger_path);
-                    process_options.hash_overrides = Some(banking_trace_events.hash_overrides().clone());
+                    process_options.hash_overrides =
+                        Some(banking_trace_events.hash_overrides().clone());
 
                     let slot = value_t!(arg_matches, "first_simulated_slot", Slot).unwrap();
                     let simulator = BankingSimulator::new(banking_trace_events, slot);
