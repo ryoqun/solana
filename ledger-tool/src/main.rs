@@ -98,8 +98,6 @@ use {
         thread::JoinHandle,
     },
 };
-use solana_core::banking_trace::BankingTraceEvents;
-use std::ffi::OsString;
 
 mod args;
 mod bigtable;
