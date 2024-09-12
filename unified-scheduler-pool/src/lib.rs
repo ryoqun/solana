@@ -1245,6 +1245,28 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // into busy looping to seek lowest latency eventually. However, not now,
                         // to measure _actual_ cpu usage easily with the select approach.
                         let mut step_type = select! {
+                            recv(finished_blocked_task_receiver) -> executed_task => {
+                                let Some(executed_task) = Self::accumulate_result_with_timings(
+                                    &context,
+                                    &mut result_with_timings,
+                                    executed_task.expect("alive handler"),
+                                    &mut ignored_error_count,
+                                ) else {
+                                    break 'nonaborted_main_loop;
+                                };
+                                state_machine.deschedule_task(&executed_task.task);
+                                std::mem::forget(executed_task);
+                                "desc_b_task"
+                            },
+                            recv(dummy_unblocked_task_receiver) -> dummy => {
+                                assert_matches!(dummy, Err(RecvError));
+
+                                let task = state_machine
+                                    .schedule_next_unblocked_task()
+                                    .expect("unblocked task");
+                                runnable_task_sender.send_payload(task).unwrap();
+                                "sc_b_task"
+                            },
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
 
@@ -1271,28 +1293,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         break 'nonaborted_main_loop;
                                     }
                                 }
-                            },
-                            recv(dummy_unblocked_task_receiver) -> dummy => {
-                                assert_matches!(dummy, Err(RecvError));
-
-                                let task = state_machine
-                                    .schedule_next_unblocked_task()
-                                    .expect("unblocked task");
-                                runnable_task_sender.send_payload(task).unwrap();
-                                "sc_b_task"
-                            },
-                            recv(finished_blocked_task_receiver) -> executed_task => {
-                                let Some(executed_task) = Self::accumulate_result_with_timings(
-                                    &context,
-                                    &mut result_with_timings,
-                                    executed_task.expect("alive handler"),
-                                    &mut ignored_error_count,
-                                ) else {
-                                    break 'nonaborted_main_loop;
-                                };
-                                state_machine.deschedule_task(&executed_task.task);
-                                std::mem::forget(executed_task);
-                                "desc_b_task"
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
                                 let Some(executed_task) = Self::accumulate_result_with_timings(
