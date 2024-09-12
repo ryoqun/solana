@@ -174,7 +174,7 @@ pub fn record_transaction_timings(
             .name("solTxTimings".into())
             .spawn(move || loop {
                 while let Ok(transaction_timings) = receiver.try_recv() {
-                    solana_measure::datapoint::datapoint_info_at!(
+                    datapoint_info_at!(
                         transaction_timings.finish_time.unwrap(),
                         "transaction_timings",
                         ("slot", transaction_timings.slot, i64),
