@@ -39,6 +39,7 @@ use {
     },
     solana_timings::ExecuteTimings,
     solana_unified_scheduler_logic::{Index, SchedulingStateMachine, Task, UsageQueue},
+    static_assertions::const_assert_eq,
     std::{
         fmt::Debug,
         marker::PhantomData,
@@ -1347,11 +1348,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                     // Prepare for the new session.
                     match new_task_receiver.recv() {
-                        Ok(NewTaskPayload::OpenSubchannel(sc)) => {
-                            let (
-                                new_context,
-                                new_result_with_timings,
-                            ) = *sc;
+                        Ok(NewTaskPayload::OpenSubchannel(context_and_result_with_timings)) => {
+                            let (new_context, new_result_with_timings) =
+                                *context_and_result_with_timings;
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads

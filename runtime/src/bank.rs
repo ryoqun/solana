@@ -35,6 +35,7 @@
 //! already been signed and verified.
 use {
     crate::{
+        account_saver::collect_accounts_to_store,
         bank::{
             builtins::{BuiltinPrototype, BUILTINS, STATELESS_BUILTINS},
             metrics::*,
@@ -43,6 +44,7 @@ use {
         bank_forks::BankForks,
         epoch_stakes::{split_epoch_stakes, EpochStakes, NodeVoteAccounts, VersionedEpochStakes},
         installed_scheduler_pool::{BankWithScheduler, InstalledSchedulerRwLock},
+        rent_collector::RentCollectorWithMetrics,
         runtime_config::RuntimeConfig,
         serde_snapshot::BankIncrementalSnapshotPersistence,
         snapshot_hash::SnapshotHash,
@@ -85,10 +87,15 @@ use {
         stake_rewards::StakeReward,
         storable_accounts::StorableAccounts,
     },
-    solana_bpf_loader_program::syscalls::create_program_runtime_environment_v1,
+    solana_bpf_loader_program::syscalls::{
+        create_program_runtime_environment_v1, create_program_runtime_environment_v2,
+    },
     solana_compute_budget::compute_budget::ComputeBudget,
     solana_cost_model::cost_tracker::CostTracker,
-    solana_loader_v4_program::create_program_runtime_environment_v2,
+    solana_feature_set::{
+        self as feature_set, remove_rounding_in_fee_calculation, reward_full_priority_fee,
+        FeatureSet,
+    },
     solana_measure::{measure::Measure, measure_time, measure_us},
     solana_program_runtime::{
         invoke_context::BuiltinFunctionWithContext, loaded_programs::ProgramCacheEntry,
@@ -110,9 +117,6 @@ use {
         epoch_info::EpochInfo,
         epoch_schedule::EpochSchedule,
         feature,
-        feature_set::{
-            self, remove_rounding_in_fee_calculation, reward_full_priority_fee, FeatureSet,
-        },
         fee::{FeeBudgetLimits, FeeDetails, FeeStructure},
         fee_calculator::FeeRateGovernor,
         genesis_config::{ClusterType, GenesisConfig},
@@ -124,7 +128,6 @@ use {
         message::{AccountKeys, SanitizedMessage},
         native_loader,
         native_token::LAMPORTS_PER_SOL,
-        nonce::state::DurableNonce,
         packet::PACKET_DATA_SIZE,
         precompiles::get_precompiles,
         pubkey::Pubkey,
@@ -152,7 +155,6 @@ use {
     solana_svm::{
         account_loader::{collect_rent_from_account, LoadedTransaction},
         account_overrides::AccountOverrides,
-        account_saver::collect_accounts_to_store,
         transaction_commit_result::{CommittedTransaction, TransactionCommitResult},
         transaction_error_metrics::TransactionErrorMetrics,
         transaction_execution_result::{
@@ -245,7 +247,7 @@ struct RentMetrics {
 pub type BankStatusCache = StatusCache<Result<()>>;
 #[cfg_attr(
     feature = "frozen-abi",
-    frozen_abi(digest = "9Pf3NTGr1AEzB4nKaVBY24uNwoQR4aJi8vc96W6kGvNk")
+    frozen_abi(digest = "EQwW6Ym6ECKaAREnAgkhXYisBQovuraBKSALdJ8koZzq")
 )]
 pub type BankSlotDelta = SlotDelta<Result<()>>;
 
@@ -1025,6 +1027,7 @@ impl Bank {
         #[allow(unused)] collector_id_for_tests: Option<Pubkey>,
         exit: Arc<AtomicBool>,
         #[allow(unused)] genesis_hash: Option<Hash>,
+        #[allow(unused)] feature_set: Option<FeatureSet>,
     ) -> Self {
         let accounts_db = AccountsDb::new_with_config(
             paths,
@@ -1042,6 +1045,11 @@ impl Bank {
         bank.transaction_account_lock_limit = runtime_config.transaction_account_lock_limit;
         bank.transaction_debug_keys = debug_keys;
         bank.cluster_type = Some(genesis_config.cluster_type);
+
+        #[cfg(feature = "dev-context-only-utils")]
+        {
+            bank.feature_set = Arc::new(feature_set.unwrap_or_default());
+        }
 
         #[cfg(not(feature = "dev-context-only-utils"))]
         bank.process_genesis_config(genesis_config);
@@ -3050,8 +3058,11 @@ impl Bank {
             blockhash_queue.get_lamports_per_signature(message.recent_blockhash())
         }
         .or_else(|| {
-            self.load_message_nonce_account(message)
-                .map(|(_nonce, nonce_data)| nonce_data.get_lamports_per_signature())
+            self.load_message_nonce_account(message).map(
+                |(_nonce_address, _nonce_account, nonce_data)| {
+                    nonce_data.get_lamports_per_signature()
+                },
+            )
         })?;
         Some(self.get_fee_for_message_with_lamports_per_signature(message, lamports_per_signature))
     }
@@ -3216,7 +3227,6 @@ impl Bank {
             w_blockhash_queue
                 .register_hash(blockhash, self.fee_rate_governor.lamports_per_signature);
         }
-        self.update_recent_blockhashes_locked(&w_blockhash_queue);
     }
 
     /// Tell the bank which Entry IDs exist on the ledger. This function assumes subsequent calls
@@ -3477,9 +3487,9 @@ impl Bank {
         account_overrides
     }
 
-    pub fn unlock_accounts<'a>(
+    pub fn unlock_accounts<'a, Tx: SVMMessage + 'a>(
         &self,
-        txs_and_results: impl Iterator<Item = (&'a SanitizedTransaction, &'a Result<()>)> + Clone,
+        txs_and_results: impl Iterator<Item = (&'a Tx, &'a Result<()>)> + Clone,
     ) {
         self.rc.accounts.unlock_accounts(txs_and_results)
     }
@@ -3530,6 +3540,8 @@ impl Bank {
         timings.saturating_add_in_place(ExecuteTimingType::CheckUs, check_us);
 
         let (blockhash, lamports_per_signature) = self.last_blockhash_and_lamports_per_signature();
+        let rent_collector_with_metrics =
+            RentCollectorWithMetrics::new(self.rent_collector.clone());
         let processing_environment = TransactionProcessingEnvironment {
             blockhash,
             epoch_total_stake: self.epoch_total_stake(self.epoch()),
@@ -3537,7 +3549,7 @@ impl Bank {
             feature_set: Arc::clone(&self.feature_set),
             fee_structure: Some(&self.fee_structure),
             lamports_per_signature,
-            rent_collector: Some(&self.rent_collector),
+            rent_collector: Some(&rent_collector_with_metrics),
         };
 
         let sanitized_output = self
@@ -3811,9 +3823,7 @@ impl Bank {
     pub fn commit_transactions(
         &self,
         sanitized_txs: &[SanitizedTransaction],
-        mut processing_results: Vec<TransactionProcessingResult>,
-        last_blockhash: Hash,
-        lamports_per_signature: u64,
+        processing_results: Vec<TransactionProcessingResult>,
         processed_counts: &ProcessedTransactionCounts,
         timings: &mut ExecuteTimings,
     ) -> Vec<TransactionCommitResult> {
@@ -3849,16 +3859,24 @@ impl Bank {
         }
 
         let ((), store_accounts_us) = measure_us!({
-            let durable_nonce = DurableNonce::from_blockhash(&last_blockhash);
+            // If geyser is present, we must collect `SanitizedTransaction`
+            // references in order to comply with that interface - until it
+            // is changed.
+            let maybe_transaction_refs = self
+                .accounts()
+                .accounts_db
+                .has_accounts_update_notifier()
+                .then(|| sanitized_txs.iter().collect::<Vec<_>>());
+
             let (accounts_to_store, transactions) = collect_accounts_to_store(
                 sanitized_txs,
-                &mut processing_results,
-                &durable_nonce,
-                lamports_per_signature,
+                &maybe_transaction_refs,
+                &processing_results,
             );
-            self.rc
-                .accounts
-                .store_cached((self.slot(), accounts_to_store.as_slice()), &transactions);
+            self.rc.accounts.store_cached(
+                (self.slot(), accounts_to_store.as_slice()),
+                transactions.as_deref(),
+            );
         });
 
         self.collect_rent(&processing_results);
@@ -4682,13 +4700,9 @@ impl Bank {
             }
         }
 
-        let (last_blockhash, lamports_per_signature) =
-            self.last_blockhash_and_lamports_per_signature();
         let commit_results = self.commit_transactions(
             batch.sanitized_transactions(),
             processing_results,
-            last_blockhash,
-            lamports_per_signature,
             &processed_counts,
             timings,
         );
@@ -5602,9 +5616,13 @@ impl Bank {
             )
         }?;
 
-        if verification_mode == TransactionVerificationMode::HashAndVerifyPrecompiles
-            || verification_mode == TransactionVerificationMode::FullVerification
-        {
+        let move_precompile_verification_to_svm = self
+            .feature_set
+            .is_active(&feature_set::move_precompile_verification_to_svm::id());
+        if !move_precompile_verification_to_svm && {
+            verification_mode == TransactionVerificationMode::HashAndVerifyPrecompiles
+                || verification_mode == TransactionVerificationMode::FullVerification
+        } {
             sanitized_tx.verify_precompiles(&self.feature_set)?;
         }
 
@@ -5985,10 +6003,6 @@ impl Bank {
             });
     }
 
-    pub fn staked_nodes(&self) -> Arc<HashMap<Pubkey, u64>> {
-        self.stakes_cache.stakes().staked_nodes()
-    }
-
     /// current vote accounts for this bank along with the stake
     ///   attributed to each account
     pub fn vote_accounts(&self) -> Arc<VoteAccountsHashMap> {
@@ -6003,6 +6017,15 @@ impl Bank {
         Some(vote_account.clone())
     }
 
+    /// Get the EpochStakes for the current Bank::epoch
+    pub fn current_epoch_stakes(&self) -> &EpochStakes {
+        // The stakes for a given epoch (E) in self.epoch_stakes are keyed by leader schedule epoch
+        // (E + 1) so the stakes for the current epoch are stored at self.epoch_stakes[E + 1]
+        self.epoch_stakes
+            .get(&self.epoch.saturating_add(1))
+            .expect("Current epoch stakes must exist")
+    }
+
     /// Get the EpochStakes for a given epoch
     pub fn epoch_stakes(&self, epoch: Epoch) -> Option<&EpochStakes> {
         self.epoch_stakes.get(&epoch)
@@ -6010,6 +6033,11 @@ impl Bank {
 
     pub fn epoch_stakes_map(&self) -> &HashMap<Epoch, EpochStakes> {
         &self.epoch_stakes
+    }
+
+    /// Get the staked nodes map for the current Bank::epoch
+    pub fn current_epoch_staked_nodes(&self) -> Arc<HashMap<Pubkey, u64>> {
+        self.current_epoch_stakes().stakes().staked_nodes()
     }
 
     pub fn epoch_staked_nodes(&self, epoch: Epoch) -> Option<Arc<HashMap<Pubkey, u64>>> {
@@ -6725,6 +6753,7 @@ impl Bank {
             Some(Pubkey::new_unique()),
             Arc::default(),
             None,
+            None,
         )
     }
 
@@ -6748,6 +6777,7 @@ impl Bank {
             None,
             Some(Pubkey::new_unique()),
             Arc::default(),
+            None,
             None,
         )
     }

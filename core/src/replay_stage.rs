@@ -67,8 +67,6 @@ use {
     },
     solana_sdk::{
         clock::{BankId, Slot, MAX_PROCESSING_AGE, NUM_CONSECUTIVE_LEADER_SLOTS},
-        feature_set,
-        genesis_config::ClusterType,
         hash::Hash,
         pubkey::Pubkey,
         saturating_add_assign,
@@ -130,7 +128,11 @@ enum ForkReplayMode {
 
 enum GenerateVoteTxResult {
     // non voting validator, not eligible for refresh
+    // until authorized keypair is overriden
     NonVoting,
+    // hot spare validator, not eligble for refresh
+    // until set identity is invoked
+    HotSpare,
     // failed generation, eligible for refresh
     Failed,
     Tx(Transaction),
@@ -139,6 +141,10 @@ enum GenerateVoteTxResult {
 impl GenerateVoteTxResult {
     fn is_non_voting(&self) -> bool {
         matches!(self, Self::NonVoting)
+    }
+
+    fn is_hot_spare(&self) -> bool {
+        matches!(self, Self::HotSpare)
     }
 }
 
@@ -198,10 +204,10 @@ impl PartitionInfo {
         heaviest_fork_failures: Vec<HeaviestForkFailures>,
     ) {
         if self.partition_start_time.is_none() && partition_detected {
-            warn!("PARTITION DETECTED waiting to join heaviest fork: {} last vote: {:?}, reset slot: {}",
-                heaviest_slot,
-                last_voted_slot,
-                reset_bank_slot,
+            warn!(
+                "PARTITION DETECTED waiting to join heaviest fork: {} last vote: {:?}, reset \
+                 slot: {}",
+                heaviest_slot, last_voted_slot, reset_bank_slot,
             );
             datapoint_info!(
                 "replay_stage-partition-start",
@@ -573,11 +579,9 @@ impl ReplayStage {
                     Ok(tower) => tower,
                     Err(err) => {
                         error!(
-                            "Unable to load new tower when attempting to change identity from {} to {} on
-                            ReplayStage startup, Exiting: {}",
-                            my_old_pubkey,
-                            my_pubkey,
-                            err
+                            "Unable to load new tower when attempting to change identity from {} \
+                             to {} on ReplayStage startup, Exiting: {}",
+                            my_old_pubkey, my_pubkey, err
                         );
                         // drop(_exit) will set the exit flag, eventually tearing down the entire process
                         return;
@@ -1030,11 +1034,9 @@ impl ReplayStage {
                                 Ok(tower) => tower,
                                 Err(err) => {
                                     error!(
-                                        "Unable to load new tower when attempting to change identity
-                                        from {} to {} on set-identity, Exiting: {}",
-                                        my_old_pubkey,
-                                        my_pubkey,
-                                        err
+                                        "Unable to load new tower when attempting to change \
+                                         identity from {} to {} on set-identity, Exiting: {}",
+                                        my_old_pubkey, my_pubkey, err
                                     );
                                     // drop(_exit) will set the exit flag, eventually tearing down the entire process
                                     return;
@@ -1207,7 +1209,10 @@ impl ReplayStage {
         match tower {
             Ok(tower) => Ok(tower),
             Err(err) if err.is_file_missing() => {
-                warn!("Failed to load tower, file missing for {}: {}. Creating a new tower from bankforks.", node_pubkey, err);
+                warn!(
+                    "Failed to load tower, file missing for {node_pubkey}: {err}. Creating a new \
+                     tower from bankforks."
+                );
                 Ok(Tower::new_from_bankforks(
                     &bank_forks.read().unwrap(),
                     node_pubkey,
@@ -1215,7 +1220,10 @@ impl ReplayStage {
                 ))
             }
             Err(err) if err.is_too_old() => {
-                warn!("Failed to load tower, too old for {}: {}. Creating a new tower from bankforks.", node_pubkey, err);
+                warn!(
+                    "Failed to load tower, too old for {node_pubkey}: {err}. Creating a new tower \
+                     from bankforks."
+                );
                 Ok(Tower::new_from_bankforks(
                     &bank_forks.read().unwrap(),
                     node_pubkey,
@@ -1277,10 +1285,9 @@ impl ReplayStage {
                 ) {
                     if retransmit_info.reached_retransmit_threshold() {
                         info!(
-                            "Retrying retransmit: latest_leader_slot={} slot={} retransmit_info={:?}",
-                            latest_leader_slot,
-                            slot,
-                            &retransmit_info,
+                            "Retrying retransmit: latest_leader_slot={} slot={} \
+                             retransmit_info={:?}",
+                            latest_leader_slot, slot, &retransmit_info,
                         );
                         datapoint_info!(
                             metric_name,
@@ -1311,7 +1318,11 @@ impl ReplayStage {
         // It is possible that bank corresponding to `start_slot` has been
         // dumped, so we need to double check it exists before proceeding
         if !progress.contains(&start_slot) {
-            warn!("Poh start slot {start_slot}, is missing from progress map. This indicates that we are in the middle of a dump and repair. Skipping retransmission of unpropagated leader slots");
+            warn!(
+                "Poh start slot {start_slot}, is missing from progress map. This indicates that \
+                 we are in the middle of a dump and repair. Skipping retransmission of \
+                 unpropagated leader slots"
+            );
             return;
         }
 
@@ -1502,7 +1513,9 @@ impl ReplayStage {
                     }
 
                     // Should not dump slots for which we were the leader
-                    if Some(*my_pubkey) == leader_schedule_cache.slot_leader_at(*duplicate_slot, None) {
+                    if Some(*my_pubkey)
+                        == leader_schedule_cache.slot_leader_at(*duplicate_slot, None)
+                    {
                         if let Some(bank) = bank_forks.read().unwrap().get(*duplicate_slot) {
                             bank_hash_details::write_bank_hash_details_file(&bank)
                                 .map_err(|err| {
@@ -1510,14 +1523,18 @@ impl ReplayStage {
                                 })
                                 .ok();
                         } else {
-                            warn!("Unable to get bank for slot {duplicate_slot} from bank forks \
-                                   while attempting to write bank hash details file");
+                            warn!(
+                                "Unable to get bank for slot {duplicate_slot} from bank forks \
+                                 while attempting to write bank hash details file"
+                            );
                         }
-                        panic!("We are attempting to dump a block that we produced. \
-                            This indicates that we are producing duplicate blocks, \
-                            or that there is a bug in our runtime/replay code which \
-                            causes us to compute different bank hashes than the rest of the cluster. \
-                            We froze slot {duplicate_slot} with hash {frozen_hash:?} while the cluster hash is {correct_hash}");
+                        panic!(
+                            "We are attempting to dump a block that we produced. This indicates \
+                             that we are producing duplicate blocks, or that there is a bug in \
+                             our runtime/replay code which causes us to compute different bank \
+                             hashes than the rest of the cluster. We froze slot {duplicate_slot} \
+                             with hash {frozen_hash:?} while the cluster hash is {correct_hash}"
+                        );
                     }
 
                     let attempt_no = purge_repair_slot_counter
@@ -1525,11 +1542,13 @@ impl ReplayStage {
                         .and_modify(|x| *x += 1)
                         .or_insert(1);
                     if *attempt_no > MAX_REPAIR_RETRY_LOOP_ATTEMPTS {
-                        panic!("We have tried to repair duplicate slot: {duplicate_slot} more than {MAX_REPAIR_RETRY_LOOP_ATTEMPTS} times \
-                            and are unable to freeze a block with bankhash {correct_hash}, \
-                            instead we have a block with bankhash {frozen_hash:?}. \
-                            This is most likely a bug in the runtime. \
-                            At this point manual intervention is needed to make progress. Exiting");
+                        panic!(
+                            "We have tried to repair duplicate slot: {duplicate_slot} more than \
+                             {MAX_REPAIR_RETRY_LOOP_ATTEMPTS} times and are unable to freeze a \
+                             block with bankhash {correct_hash}, instead we have a block with \
+                             bankhash {frozen_hash:?}. This is most likely a bug in the runtime. \
+                             At this point manual intervention is needed to make progress. Exiting"
+                        );
                     }
 
                     Self::purge_unconfirmed_duplicate_slot(
@@ -1590,8 +1609,15 @@ impl ReplayStage {
         } in ancestor_duplicate_slots_receiver.try_iter()
         {
             warn!(
-                "{} ReplayStage notified of duplicate slot from ancestor hashes service but we observed as {}: {:?}",
-                pubkey, if request_type.is_pruned() {"pruned"} else {"dead"}, (epoch_slots_frozen_slot, epoch_slots_frozen_hash),
+                "{} ReplayStage notified of duplicate slot from ancestor hashes service but we \
+                 observed as {}: {:?}",
+                pubkey,
+                if request_type.is_pruned() {
+                    "pruned"
+                } else {
+                    "dead"
+                },
+                (epoch_slots_frozen_slot, epoch_slots_frozen_hash),
             );
             let epoch_slots_frozen_state = EpochSlotsFrozenState::new_from_state(
                 epoch_slots_frozen_slot,
@@ -1719,7 +1745,10 @@ impl ReplayStage {
                 // replay on successful repair of the parent. If this block is also a duplicate, it
                 // will be handled in the next round of repair/replay - so we just clear the dead
                 // flag for now.
-                warn!("not purging descendant {} of slot {} as it is dead. resetting dead flag instead", slot, duplicate_slot);
+                warn!(
+                    "not purging descendant {slot} of slot {duplicate_slot} as it is dead. \
+                     resetting dead flag instead"
+                );
                 // Clear the "dead" flag allowing ReplayStage to start replaying
                 // this slot once the parent is repaired
                 blockstore.remove_dead_slot(slot).unwrap();
@@ -1832,7 +1861,8 @@ impl ReplayStage {
                 {
                     assert_eq!(
                         prev_hash, duplicate_confirmed_hash,
-                        "Additional duplicate confirmed notification for slot {confirmed_slot} with a different hash"
+                        "Additional duplicate confirmed notification for slot {confirmed_slot} \
+                         with a different hash"
                     );
                     // Already processed this signal
                     continue;
@@ -2051,8 +2081,9 @@ impl ReplayStage {
 
         let Some(parent) = bank_forks.read().unwrap().get(parent_slot) else {
             warn!(
-                "Poh recorder parent slot {parent_slot} is missing from bank_forks. This indicates \
-                that we are in the middle of a dump and repair. Unable to start leader");
+                "Poh recorder parent slot {parent_slot} is missing from bank_forks. This \
+                 indicates that we are in the middle of a dump and repair. Unable to start leader"
+            );
             return false;
         };
 
@@ -2099,8 +2130,12 @@ impl ReplayStage {
             );
 
             if !Self::check_propagation_for_start_leader(poh_slot, parent_slot, progress_map) {
-                let latest_unconfirmed_leader_slot = progress_map.get_latest_leader_slot_must_exist(parent_slot)
-                    .expect("In order for propagated check to fail, latest leader must exist in progress map");
+                let latest_unconfirmed_leader_slot = progress_map
+                    .get_latest_leader_slot_must_exist(parent_slot)
+                    .expect(
+                        "In order for propagated check to fail, latest leader must exist in \
+                         progress map",
+                    );
                 if poh_slot != skipped_slots_info.last_skipped_slot {
                     datapoint_info!(
                         "replay_stage-skip_leader_slot",
@@ -2495,7 +2530,7 @@ impl ReplayStage {
                 vote_state.node_pubkey,
                 node_keypair.pubkey()
             );
-            return GenerateVoteTxResult::Failed;
+            return GenerateVoteTxResult::HotSpare;
         }
 
         let Some(authorized_voter_pubkey) = vote_state.get_authorized_voter(bank.epoch()) else {
@@ -2512,8 +2547,10 @@ impl ReplayStage {
             .find(|keypair| keypair.pubkey() == authorized_voter_pubkey)
         {
             None => {
-                warn!("The authorized keypair {} for vote account {} is not available.  Unable to vote",
-                      authorized_voter_pubkey, vote_account_pubkey);
+                warn!(
+                    "The authorized keypair {authorized_voter_pubkey} for vote account \
+                     {vote_account_pubkey} is not available.  Unable to vote"
+                );
                 return GenerateVoteTxResult::NonVoting;
             }
             Some(authorized_voter_keypair) => authorized_voter_keypair,
@@ -2580,7 +2617,8 @@ impl ReplayStage {
         {
             last_vote_refresh_time.last_print_time = Instant::now();
             info!(
-                "Last landed vote for slot {} in bank {} is greater than the current last vote for slot: {} tracked by Tower",
+                "Last landed vote for slot {} in bank {} is greater than the current last vote \
+                 for slot: {} tracked by Tower",
                 my_latest_landed_vote,
                 heaviest_bank_on_same_fork.slot(),
                 last_voted_slot
@@ -2590,9 +2628,9 @@ impl ReplayStage {
         // If we are a non voting validator or have an incorrect setup preventing us from
         // generating vote txs, no need to refresh
         let last_vote_tx_blockhash = match tower.last_vote_tx_blockhash() {
-            // Since the checks in vote generation are deterministic, if we were non voting
+            // Since the checks in vote generation are deterministic, if we were non voting or hot spare
             // on the original vote, the refresh will also fail. No reason to refresh.
-            BlockhashStatus::NonVoting => return,
+            BlockhashStatus::NonVoting | BlockhashStatus::HotSpare => return,
             // In this case we have not voted since restart, it is unclear if we are non voting.
             // Attempt to refresh.
             BlockhashStatus::Uninitialized => None,
@@ -2655,6 +2693,8 @@ impl ReplayStage {
             last_vote_refresh_time.last_refresh_time = Instant::now();
         } else if vote_tx_result.is_non_voting() {
             tower.mark_last_vote_tx_blockhash_non_voting();
+        } else if vote_tx_result.is_hot_spare() {
+            tower.mark_last_vote_tx_blockhash_hot_spare();
         }
     }
 
@@ -3101,8 +3141,8 @@ impl ReplayStage {
                 let replay_progress = bank_progress.replay_progress.clone();
                 let r_replay_progress = replay_progress.read().unwrap();
                 debug!(
-                    "bank {} has completed replay from blockstore, \
-                     contribute to update cost with {:?}",
+                    "bank {} has completed replay from blockstore, contribute to update cost with \
+                     {:?}",
                     bank.slot(),
                     r_replay_stats.batch_execute.totals
                 );
@@ -3548,7 +3588,7 @@ impl ReplayStage {
                 .get_hash(last_voted_slot)
                 .expect("Must exist for us to have frozen descendant"),
             bank.feature_set
-                .is_active(&feature_set::enable_tower_sync_ix::id()),
+                .is_active(&solana_feature_set::enable_tower_sync_ix::id()),
         );
         // Since we are updating our tower we need to update associated caches for previously computed
         // slots as well.
@@ -3787,7 +3827,8 @@ impl ReplayStage {
             if let Some(prev_hash) = duplicate_confirmed_slots.insert(*slot, *frozen_hash) {
                 assert_eq!(
                     prev_hash, *frozen_hash,
-                    "Additional duplicate confirmed notification for slot {slot} with a different hash"
+                    "Additional duplicate confirmed notification for slot {slot} with a different \
+                     hash"
                 );
                 // Already processed this signal
                 continue;
@@ -4041,17 +4082,6 @@ impl ReplayStage {
             rewards_recorder_sender
                 .send(RewardsMessage::Complete(bank.slot()))
                 .unwrap_or_else(|err| warn!("rewards_recorder_sender failed: {:?}", err));
-        }
-    }
-
-    pub fn get_unlock_switch_vote_slot(cluster_type: ClusterType) -> Slot {
-        match cluster_type {
-            ClusterType::Development => 0,
-            ClusterType::Devnet => 0,
-            // Epoch 63
-            ClusterType::Testnet => 21_692_256,
-            // 400_000 slots into epoch 61
-            ClusterType::MainnetBeta => 26_752_000,
         }
     }
 

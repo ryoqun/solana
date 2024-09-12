@@ -36,6 +36,7 @@ use {
         validator::{BlockProductionMethod, BlockVerificationMethod},
     },
     solana_cost_model::{cost_model::CostModel, cost_tracker::CostTracker},
+    solana_feature_set::{self as feature_set, FeatureSet},
     solana_ledger::{
         blockstore::{banking_trace_path, create_new_ledger, simulate_block_production_marker_path, Blockstore},
         blockstore_options::{AccessType, LedgerColumnOptions},
@@ -63,7 +64,6 @@ use {
         account_utils::StateMut,
         clock::{Epoch, Slot},
         feature::{self, Feature},
-        feature_set::{self, FeatureSet},
         genesis_config::ClusterType,
         inflation::Inflation,
         native_token::{lamports_to_sol, sol_to_lamports, Sol},

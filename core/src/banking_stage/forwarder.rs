@@ -12,15 +12,13 @@ use {
     },
     solana_client::connection_cache::ConnectionCache,
     solana_connection_cache::client_connection::ClientConnection as TpuConnection,
+    solana_feature_set::FeatureSet,
     solana_gossip::cluster_info::ClusterInfo,
     solana_measure::measure_us,
     solana_perf::{data_budget::DataBudget, packet::Packet},
     solana_poh::poh_recorder::PohRecorder,
     solana_runtime::bank_forks::BankForks,
-    solana_sdk::{
-        feature_set::FeatureSet, pubkey::Pubkey, transaction::SanitizedTransaction,
-        transport::TransportError,
-    },
+    solana_sdk::{pubkey::Pubkey, transaction::SanitizedTransaction, transport::TransportError},
     solana_streamer::sendmmsg::batch_send,
     std::{
         iter::repeat,
@@ -228,11 +226,13 @@ impl Forwarder {
         usize,
         Option<Pubkey>,
     ) {
-        let (res, num_packets, forward_us, leader_pubkey) =
+        let (res, num_packets, _forward_us, leader_pubkey) =
             self.forward_packets(forward_option, forwardable_packets);
+        if let Err(ref err) = res {
+            warn!("failed to forward packets: {err}");
+        }
 
         if num_packets > 0 {
-            inc_new_counter_info!("banking_stage-forwarded_packets", num_packets);
             if let ForwardOption::ForwardTpuVote = forward_option {
                 banking_stage_stats
                     .forwarded_vote_count
@@ -241,12 +241,6 @@ impl Forwarder {
                 banking_stage_stats
                     .forwarded_transaction_count
                     .fetch_add(num_packets, Ordering::Relaxed);
-            }
-
-            inc_new_counter_info!("banking_stage-forward-us", forward_us as usize, 1000, 1000);
-
-            if res.is_err() {
-                inc_new_counter_info!("banking_stage-forward_packets-failed-batches", 1);
             }
         }
 
