@@ -722,7 +722,7 @@ impl SchedulingStateMachine {
         self.scheduling_mode
     }
 
-    pub fn has_no_active_task(&self) -> bool {
+    pub fn has_no_alive_task(&self) -> bool {
         self.alive_task_count.is_zero()
     }
 
@@ -966,7 +966,7 @@ impl SchedulingStateMachine {
     /// Closure is used here to delegate the responsibility of primary ownership of `UsageQueue`
     /// (and caching/pruning if any) to the caller. `SchedulingStateMachine` guarantees that all of
     /// shared owndership of `UsageQueue`s are released and UsageQueue state is identical to just
-    /// after created, if `has_no_active_task()` is `true`. Also note that this is desired for
+    /// after created, if `has_no_alive_task()` is `true`. Also note that this is desired for
     /// separation of concern.
     pub fn create_task(
         transaction: SanitizedTransaction,
@@ -1040,7 +1040,7 @@ impl SchedulingStateMachine {
     /// as much as possible) and its (possibly cached) associated [`UsageQueue`]s for processing
     /// other slots.
     pub fn reinitialize(&mut self, mode: SchedulingMode) {
-        assert!(self.has_no_active_task());
+        assert!(self.has_no_alive_task());
         assert_eq!(self.buffered_task_queue.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
         // nice trick to ensure all fields are handled here if new one is added.
@@ -1194,7 +1194,7 @@ mod tests {
         };
         assert_eq!(state_machine.alive_task_count(), 0);
         assert_eq!(state_machine.task_total(), 0);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1209,7 +1209,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "assertion failed: self.has_no_active_task()")]
+    #[should_panic(expected = "assertion failed: self.has_no_alive_task()")]
     fn test_scheduling_state_machine_bad_reinitialization() {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
@@ -1245,7 +1245,7 @@ mod tests {
         state_machine.deschedule_task(&task);
         assert_eq!(state_machine.alive_task_count(), 0);
         assert_eq!(state_machine.task_total(), 1);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1297,7 +1297,7 @@ mod tests {
             Some(103)
         );
         state_machine.deschedule_task(&task3);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1346,7 +1346,7 @@ mod tests {
         assert_eq!(state_machine.buffered_task_total(), 2);
 
         state_machine.deschedule_task(&task3);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1385,7 +1385,7 @@ mod tests {
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.alive_task_count(), 0);
         assert_eq!(state_machine.handled_task_total(), 2);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1436,7 +1436,7 @@ mod tests {
             Some(103)
         );
         state_machine.deschedule_task(&task3);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1480,7 +1480,7 @@ mod tests {
         );
         assert_matches!(state_machine.schedule_next_buffered_task(), None);
         state_machine.deschedule_task(&task3);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1512,7 +1512,7 @@ mod tests {
             Some(102)
         );
         state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1571,7 +1571,7 @@ mod tests {
             Some(104)
         );
         state_machine.deschedule_task(&task4);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]
@@ -1618,7 +1618,7 @@ mod tests {
             Some(102)
         );
         state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_no_active_task());
+        assert!(state_machine.has_no_alive_task());
     }
 
     #[test]

@@ -1317,11 +1317,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "desc_i_task"
                             },
                         };
-                        let force_log = if !is_running && !state_machine.has_no_active_task() {
+                        let force_log = if !is_running && !state_machine.has_no_alive_task() {
                             is_running = true;
                             step_type = "running";
                             true
-                        } else if is_running && state_machine.has_no_active_task() {
+                        } else if is_running && state_machine.has_no_alive_task() {
                             is_running = false;
                             if !session_ending {
                                 step_type = "waiting";
@@ -1340,7 +1340,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             log_scheduler!(trace, step_type);
                         }
 
-                        is_finished = session_ending && state_machine.has_no_active_task();
+                        is_finished = session_ending && state_machine.has_no_alive_task();
                     }
 
                     // Finalize the current session after asserting it's explicitly requested so.
