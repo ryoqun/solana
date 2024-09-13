@@ -932,14 +932,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         (result, timings): &mut ResultWithTimings,
         executed_task: HandlerResult,
         ignored_error_count: &mut usize,
-    ) -> Option<Box<ExecutedTask>> {
+    ) -> Option<(Box<ExecutedTask>, bool)> {
         let Ok(executed_task) = executed_task else {
             return None;
         };
         timings.accumulate(&executed_task.result_with_timings.1);
         match context.mode() {
             SchedulingMode::BlockVerification => match executed_task.result_with_timings.0 {
-                Ok(()) => Some(executed_task),
+                Ok(()) => Some((executed_task, false)),
                 Err(error) => {
                     error!("error is detected while accumulating....: {error:?}");
                     *result = Err(error);
@@ -950,21 +950,21 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 if !context.can_commit() {
                     info!("detected max tick height at scheduler thread...");
                     *result = Err(TransactionError::CommitFailed);
-                    return None;
+                    return Some(executed_task, true));
                 }
                 match executed_task.result_with_timings.0 {
-                Ok(()) => Some(executed_task),
+                Ok(()) => Some((executed_task, false)),
                 Err(error @ TransactionError::CommitFailed) => {
                     info!("maybe reached max tick height...: {error:?}");
                     *result = Err(error);
                     // it's okay to abort scheduler as this error gurantees determinstic bank
                     // freezing...
-                    None
+                    Some((executed_task, true))
                 }
                 Err(ref error) => {
                     debug!("error is detected while accumulating....: {error:?}");
                     *ignored_error_count += 1;
-                    Some(executed_task)
+                    Some((executed_task, false))
                 }
             }},
         }
@@ -1257,7 +1257,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // to measure _actual_ cpu usage easily with the select approach.
                         let mut step_type = select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
-                                let Some(executed_task) = Self::accumulate_result_with_timings(
+                                let Some((executed_task, should_pause) = Self::accumulate_result_with_timings(
                                     &context,
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler"),
@@ -1266,6 +1266,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                if should_pause {
+                                    session_pausing = true;
+                                }
                                 std::mem::forget(executed_task);
                                 "desc_b_task"
                             },
@@ -1319,7 +1322,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                             },
                             recv(finished_idle_task_receiver) -> executed_task => {
-                                let Some(executed_task) = Self::accumulate_result_with_timings(
+                                let Some((executed_task, should_pause)) = Self::accumulate_result_with_timings(
                                     &context,
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler"),
@@ -1328,6 +1331,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                if should_pause {
+                                    session_pausing = true;
+                                }
                                 std::mem::forget(executed_task);
                                 "desc_i_task"
                             },
@@ -1380,18 +1386,18 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
                             assert_eq!(state_machine.mode(), new_context.mode());
+                            slot = new_context.bank().slot();
+                            session_started_at = Instant::now();
 
                             match state_machine.mode() {
                                 SchedulingMode::BlockVerification => {
-                                    session_started_at = Instant::now();
                                     state_machine.reinitialize(new_context.mode());
                                     reported_new_task_total = 0;
                                     reported_retired_task_total = 0;
-                                    ignored_error_count = 0;
-                                    slot = new_context.bank().slot();
                                     log_scheduler!(info, "started");
                                 },
                                 SchedulingMode::BlockProduction => {
+                                    ignored_error_count = 0;
                                     log_scheduler!(info, "unpaused");
                                 },
                             }
