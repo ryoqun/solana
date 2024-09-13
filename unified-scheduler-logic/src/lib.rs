@@ -408,6 +408,8 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 #[derive(Clone, Debug)]
 pub struct Task(std::rc::Rc<TaskInner>);
 
+unsafe impl Sync for Task {}
+
 impl Task {
     fn new(task: TaskInner) -> Self {
         Self(std::rc::Rc::new(task))
