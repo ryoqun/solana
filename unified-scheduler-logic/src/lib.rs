@@ -804,6 +804,7 @@ impl SchedulingStateMachine {
     /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
     /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
+        self.running_task_count.decrement_self();
         self.alive_task_count.decrement_self();
         self.handled_task_total.increment_self();
         self.unlock_usage_queues(task);
