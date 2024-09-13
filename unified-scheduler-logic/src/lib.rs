@@ -778,7 +778,7 @@ impl SchedulingStateMachine {
                 self.running_task_count.increment_self();
                 Some(task)
             } else {
-                self.buffered_task_queue.push_back(task);
+                self.buffered_task_queue.insert(task.index, task);
                 None
             }
         })
