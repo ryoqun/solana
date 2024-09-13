@@ -559,14 +559,20 @@ impl ExecutedTask {
 // Note that the above properties can be upheld only when this is used inside MPSC or SPSC channels
 // (i.e. the consumer side needs to be single threaded). For the multiple consumer cases,
 // ChainedChannel can be used instead.
-enum SubchanneledPayload<P1, P2> {
+use enum_ptr::{Aligned, Compact, EnumPtr, Unit};
+
+#[repr(C, usize)]
+#[derive(EnumPtr)]
+pub enum SubchanneledPayload<P1: Aligned, P2: Aligned> {
     Payload(P1),
     OpenSubchannel(P2),
-    CloseSubchannel,
+    CloseSubchannel(Unit),
 }
 
 type NewTaskPayload = SubchanneledPayload<Task, Box<(SchedulingContext, ResultWithTimings)>>;
+type CompactNewTaskPayload = Compact<NewTaskPayload>;
 const_assert_eq!(mem::size_of::<NewTaskPayload>(), 16);
+const_assert_eq!(mem::size_of::<CompactNewTaskPayload>(), 8);
 
 // A tiny generic message type to synchronize multiple threads everytime some contextual data needs
 // to be switched (ie. SchedulingContext), just using a single communication channel.
@@ -592,44 +598,46 @@ const_assert_eq!(mem::size_of::<NewTaskPayload>(), 16);
 mod chained_channel {
     use super::*;
 
-    // hide variants by putting this inside newtype
-    enum ChainedChannelPrivate<P, C> {
+    #[derive(EnumPtr)]
+    #[repr(C, usize)]
+    pub(super) enum ChainedChannel<P: Aligned, C> {
         Payload(P),
-        ContextAndChannels(Box<(C, Receiver<ChainedChannel<P, C>>, Receiver<P>)>),
+        ContextAndChannels(Box<(C, Receiver<Compact<ChainedChannel<P, C>>>, Receiver<P>)>),
     }
 
-    pub(super) struct ChainedChannel<P, C>(ChainedChannelPrivate<P, C>);
-
-    impl<P, C> ChainedChannel<P, C> {
+    impl<P: Aligned, C> ChainedChannel<P, C> {
         fn chain_to_new_channel(
             context: C,
-            receiver: Receiver<Self>,
+            receiver: Receiver<Compact<Self>>,
             aux_receiver: Receiver<P>,
         ) -> Self {
-            Self(ChainedChannelPrivate::ContextAndChannels(Box::new((
-                context,
-                receiver,
-                aux_receiver,
-            ))))
+            ChainedChannel::ContextAndChannels(Box::new((context, receiver, aux_receiver)))
         }
     }
 
-    pub(super) struct ChainedChannelSender<P, C> {
-        sender: Sender<ChainedChannel<P, C>>,
+    pub(super) struct ChainedChannelSender<P: Aligned, C> {
+        sender: Sender<Compact<ChainedChannel<P, C>>>,
         aux_sender: Sender<P>,
     }
 
-    impl<P, C: Clone> ChainedChannelSender<P, C> {
-        fn new(sender: Sender<ChainedChannel<P, C>>, aux_sender: Sender<P>) -> Self {
+    pub(super) trait WithMessageType {
+        type ChannelMessage;
+    }
+
+    impl<P: Aligned, C: Clone> WithMessageType for ChainedChannelSender<P, C> {
+        type ChannelMessage = ChainedChannel<P, C>;
+    }
+
+    impl<P: Aligned, C: Clone> ChainedChannelSender<P, C> {
+        fn new(sender: Sender<Compact<ChainedChannel<P, C>>>, aux_sender: Sender<P>) -> Self {
             Self { sender, aux_sender }
         }
 
         pub(super) fn send_payload(
             &self,
             payload: P,
-        ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
-            self.sender
-                .send(ChainedChannel(ChainedChannelPrivate::Payload(payload)))
+        ) -> std::result::Result<(), SendError<Compact<ChainedChannel<P, C>>>> {
+            self.sender.send(ChainedChannel::Payload(payload).into())
         }
 
         pub(super) fn send_aux_payload(&self, payload: P) -> std::result::Result<(), SendError<P>> {
@@ -640,15 +648,18 @@ mod chained_channel {
             &mut self,
             context: C,
             count: usize,
-        ) -> std::result::Result<(), SendError<ChainedChannel<P, C>>> {
+        ) -> std::result::Result<(), SendError<Compact<ChainedChannel<P, C>>>> {
             let (chained_sender, chained_receiver) = crossbeam_channel::unbounded();
             let (chained_aux_sender, chained_aux_receiver) = crossbeam_channel::unbounded();
             for _ in 0..count {
-                self.sender.send(ChainedChannel::chain_to_new_channel(
-                    context.clone(),
-                    chained_receiver.clone(),
-                    chained_aux_receiver.clone(),
-                ))?
+                self.sender.send(
+                    ChainedChannel::chain_to_new_channel(
+                        context.clone(),
+                        chained_receiver.clone(),
+                        chained_aux_receiver.clone(),
+                    )
+                    .into(),
+                )?
             }
             self.sender = chained_sender;
             self.aux_sender = chained_aux_sender;
@@ -668,15 +679,15 @@ mod chained_channel {
     // see https://github.com/rust-lang/rust/issues/26925
     #[derive(Derivative)]
     #[derivative(Clone(bound = "C: Clone"))]
-    pub(super) struct ChainedChannelReceiver<P, C: Clone> {
-        receiver: Receiver<ChainedChannel<P, C>>,
+    pub(super) struct ChainedChannelReceiver<P: Aligned, C: Clone> {
+        receiver: Receiver<Compact<ChainedChannel<P, C>>>,
         aux_receiver: Receiver<P>,
         context: C,
     }
 
-    impl<P, C: Clone> ChainedChannelReceiver<P, C> {
+    impl<P: Aligned, C: Clone> ChainedChannelReceiver<P, C> {
         fn new(
-            receiver: Receiver<ChainedChannel<P, C>>,
+            receiver: Receiver<Compact<ChainedChannel<P, C>>>,
             aux_receiver: Receiver<P>,
             initial_context: C,
         ) -> Self {
@@ -691,7 +702,7 @@ mod chained_channel {
             &self.context
         }
 
-        pub(super) fn for_select(&self) -> &Receiver<ChainedChannel<P, C>> {
+        pub(super) fn for_select(&self) -> &Receiver<Compact<ChainedChannel<P, C>>> {
             &self.receiver
         }
 
@@ -704,10 +715,11 @@ mod chained_channel {
         }
 
         pub(super) fn after_select(&mut self, message: ChainedChannel<P, C>) -> Option<P> {
-            match message.0 {
-                ChainedChannelPrivate::Payload(payload) => Some(payload),
-                ChainedChannelPrivate::ContextAndChannels(b) => {
+            match message {
+                ChainedChannel::Payload(payload) => Some(payload),
+                ChainedChannel::ContextAndChannels(b) => {
                     let (context, channel, idle_channel) = *b;
+
                     self.context = context;
                     self.receiver = channel;
                     self.aux_receiver = idle_channel;
@@ -717,7 +729,7 @@ mod chained_channel {
         }
     }
 
-    pub(super) fn unbounded<P, C: Clone>(
+    pub(super) fn unbounded<P: Aligned, C: Clone>(
         initial_context: C,
     ) -> (ChainedChannelSender<P, C>, ChainedChannelReceiver<P, C>) {
         let (sender, receiver) = crossbeam_channel::unbounded();
@@ -856,8 +868,8 @@ where
 struct ThreadManager<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_id: SchedulerId,
     pool: Arc<SchedulerPool<S, TH>>,
-    new_task_sender: Sender<NewTaskPayload>,
-    new_task_receiver: Option<Receiver<NewTaskPayload>>,
+    new_task_sender: Sender<CompactNewTaskPayload>,
+    new_task_receiver: Option<Receiver<CompactNewTaskPayload>>,
     session_result_sender: Sender<ResultWithTimings>,
     session_result_receiver: Receiver<ResultWithTimings>,
     session_result_with_timings: Option<ResultWithTimings>,
@@ -1059,8 +1071,18 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         // prioritization further. Consequently, this also contributes to alleviate the known
         // heuristic's caveat for the first task of linearized runs, which is described above.
         let mode = context.mode();
-        let (mut runnable_task_sender, runnable_task_receiver) =
-            chained_channel::unbounded::<Task, SchedulingContext>(context.clone());
+        use crate::chained_channel::{ChainedChannelSender, WithMessageType};
+        type RunnableTaskSender = ChainedChannelSender<Task, SchedulingContext>;
+        let (mut runnable_task_sender, runnable_task_receiver): (RunnableTaskSender, _) =
+            chained_channel::unbounded(context);
+        const_assert_eq!(
+            mem::size_of::<<RunnableTaskSender as WithMessageType>::ChannelMessage>(),
+            16
+        );
+        const_assert_eq!(
+            mem::size_of::<Compact<<RunnableTaskSender as WithMessageType>::ChannelMessage>>(),
+            8
+        );
         // Create two handler-to-scheduler channels to prioritize the finishing of blocked tasks,
         // because it is more likely that a blocked task will have more blocked tasks behind it,
         // which should be scheduled while minimizing the delay to clear buffered linearized runs
@@ -1257,7 +1279,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             recv(new_task_receiver) -> message => {
                                 assert!(!session_ending);
 
-                                match message {
+                                match message.map(|a| a.into()) {
                                     Ok(NewTaskPayload::Payload(task)) => {
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
@@ -1267,7 +1289,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                             "new_b_task"
                                         }
                                     }
-                                    Ok(NewTaskPayload::CloseSubchannel) => {
+                                    Ok(NewTaskPayload::CloseSubchannel(_)) => {
                                         session_ending = true;
                                         "ending"
                                     }
@@ -1333,7 +1355,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     session_ending = false;
 
                     // Prepare for the new session.
-                    match new_task_receiver.recv() {
+                    match new_task_receiver.recv().map(|a| a.into()) {
                         Ok(NewTaskPayload::OpenSubchannel(context_and_result_with_timings)) => {
                             let (new_context, new_result_with_timings) =
                                 *context_and_result_with_timings;
@@ -1408,7 +1430,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         let Ok(message) = message else {
                             break;
                         };
-                        if let Some(task) = runnable_task_receiver.after_select(message) {
+                        if let Some(task) = runnable_task_receiver.after_select(message.into()) {
                             (task, &finished_blocked_task_sender)
                         } else {
                             continue;
@@ -1477,7 +1499,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
     fn send_task(&self, task: Task) -> ScheduleResult {
         debug!("send_task()");
         self.new_task_sender
-            .send(NewTaskPayload::Payload(task))
+            .send(NewTaskPayload::Payload(task).into())
             .map_err(|_| SchedulerError::Aborted)
     }
 
@@ -1560,7 +1582,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
         let mut abort_detected = self
             .new_task_sender
-            .send(NewTaskPayload::CloseSubchannel)
+            .send(NewTaskPayload::CloseSubchannel(enum_ptr::Unit::new()).into())
             .is_err();
 
         if abort_detected {
@@ -1587,10 +1609,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         assert!(!self.are_threads_joined());
         assert_matches!(self.session_result_with_timings, None);
         self.new_task_sender
-            .send(NewTaskPayload::OpenSubchannel(Box::new((
-                context,
-                result_with_timings,
-            ))))
+            .send(NewTaskPayload::OpenSubchannel(Box::new((context, result_with_timings))).into())
             .expect("no new session after aborted");
     }
 }

@@ -2149,6 +2149,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-ptr"
+version = "0.2.0-beta.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b280676e2bb2bf8a0331a4f9bc7331092928c18cd31943502faddb893551531c"
+dependencies = [
+ "enum-ptr-derive",
+]
+
+[[package]]
+name = "enum-ptr-derive"
+version = "0.2.0-beta.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb5604665870a6e57a16d4d936dd749ea7b0a9695f0fe4dae359aedde77256f7"
+dependencies = [
+ "darling",
+ "quote",
+ "syn 2.0.77",
+]
+
+[[package]]
 name = "env_logger"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8337,6 +8357,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "derivative",
+ "enum-ptr",
  "lazy_static",
  "log",
  "qualifier_attr",
