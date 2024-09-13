@@ -1289,7 +1289,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                                 runnable_task_sender.send_aux_payload(task).unwrap();
                                                 "sc_i_task"
                                             } else {
-                                                state_machine.buffer_task(task);
+                                                state_machine.buffer_running_task(task);
                                                 "buffer"
                                             }
                                         } else {
