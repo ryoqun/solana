@@ -1062,6 +1062,7 @@ impl SchedulingStateMachine {
             // don't add ".." here
         } = self;
         alive_task_count.reset_to_zero();
+        running_task_count.reset_to_zero();
         handled_task_total.reset_to_zero();
         buffered_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
