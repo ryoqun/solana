@@ -949,7 +949,7 @@ impl SchedulingStateMachine {
                         .try_unblock(&mut self.count_token)
                     {
                         self.blocked_task_count.decrement_self();
-                        self.buffered_task_queue.push_back(task);
+                        assert!(self.buffered_task_queue.insert(task.index, task).is_none());
                     }
 
                     match usage_queue.try_lock(
