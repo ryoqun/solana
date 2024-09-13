@@ -10,7 +10,7 @@
 //! execute in parallel. Lastly, `SchedulingStateMachine` should be notified about the completion
 //! of the exeuction via [`::deschedule_task()`](SchedulingStateMachine::deschedule_task), so that
 //! conflicting tasks can be returned from
-//! [`::schedule_next_unblocked_task()`](SchedulingStateMachine::schedule_next_unblocked_task) as
+//! [`::schedule_next_buffered_task()`](SchedulingStateMachine::schedule_next_buffered_task) as
 //! newly-unblocked runnable ones.
 //!
 //! The design principle of this crate (`solana-unified-scheduler-logic`) is simplicity for the
@@ -661,7 +661,7 @@ impl UsageQueueInner {
     }
 
     #[must_use]
-    fn pop_unblocked_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
+    fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
             self.blocked_usages_from_tasks
                 .first_key_value()
@@ -695,10 +695,10 @@ const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
-    unblocked_task_queue: VecDeque<Task>,
+    buffered_task_queue: VecDeque<Task>,
     active_task_count: ShortCounter,
     handled_task_total: ShortCounter,
-    unblocked_task_total: ShortCounter,
+    buffered_task_total: ShortCounter,
     blocked_task_count: ShortCounter,
     reblocked_lock_total: ShortCounter,
     task_total: ShortCounter,
@@ -726,12 +726,12 @@ impl SchedulingStateMachine {
         self.active_task_count.is_zero()
     }
 
-    pub fn has_unblocked_task(&self) -> bool {
-        !self.unblocked_task_queue.is_empty()
+    pub fn has_buffered_task(&self) -> bool {
+        !self.buffered_task_queue.is_empty()
     }
 
-    pub fn unblocked_task_queue_count(&self) -> usize {
-        self.unblocked_task_queue.len()
+    pub fn buffered_task_queue_count(&self) -> usize {
+        self.buffered_task_queue.len()
     }
 
     pub fn active_task_count(&self) -> u32 {
@@ -742,8 +742,8 @@ impl SchedulingStateMachine {
         self.handled_task_total.current()
     }
 
-    pub fn unblocked_task_total(&self) -> u32 {
-        self.unblocked_task_total.current()
+    pub fn buffered_task_total(&self) -> u32 {
+        self.buffered_task_total.current()
     }
 
     pub fn blocked_task_count(&self) -> u32 {
@@ -771,9 +771,9 @@ impl SchedulingStateMachine {
     }
 
     #[must_use]
-    pub fn schedule_next_unblocked_task(&mut self) -> Option<Task> {
-        self.unblocked_task_queue.pop_front().inspect(|_| {
-            self.unblocked_task_total.increment_self();
+    pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
+        self.buffered_task_queue.pop_front().inspect(|_| {
+            self.buffered_task_total.increment_self();
         })
     }
 
@@ -915,35 +915,35 @@ impl SchedulingStateMachine {
     fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                let mut unblocked_task_from_queue =
+                let mut buffered_task_from_queue =
                     usage_queue.unlock(context.requested_usage, task.index);
 
-                while let Some((requested_usage, task_with_unblocked_queue)) =
-                    unblocked_task_from_queue
+                while let Some((requested_usage, task_with_buffered_queue)) =
+                    buffered_task_from_queue
                 {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
                     // this means the task is still blocked by other active task's usages. So,
-                    // don't push task into unblocked_task_queue yet. It can be assumed that every
+                    // don't push task into buffered_task_queue yet. It can be assumed that every
                     // task will eventually succeed to be unblocked, and enter in this condition
                     // clause as long as `SchedulingStateMachine` is used correctly.
-                    if let Some(task) = task_with_unblocked_queue
+                    if let Some(task) = task_with_buffered_queue
                         .clone()
                         .try_unblock(&mut self.count_token)
                     {
                         self.blocked_task_count.decrement_self();
-                        self.unblocked_task_queue.push_back(task);
+                        self.buffered_task_queue.push_back(task);
                     }
 
                     match usage_queue.try_lock(
                         requested_usage,
-                        &task_with_unblocked_queue, /* was `task` and had bug.. write test...*/
+                        &task_with_buffered_queue, /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
-                            unblocked_task_from_queue =
+                            buffered_task_from_queue =
                                 if matches!(requested_usage, RequestedUsage::Readonly) {
-                                    usage_queue.pop_unblocked_readonly_usage_from_task()
+                                    usage_queue.pop_buffered_readonly_usage_from_task()
                                 } else {
                                     None
                                 };
@@ -1041,14 +1041,14 @@ impl SchedulingStateMachine {
     /// other slots.
     pub fn reinitialize(&mut self, mode: SchedulingMode) {
         assert!(self.has_no_active_task());
-        assert_eq!(self.unblocked_task_queue.len(), 0);
+        assert_eq!(self.buffered_task_queue.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
-            unblocked_task_queue: _,
+            buffered_task_queue: _,
             active_task_count,
             handled_task_total,
-            unblocked_task_total,
+            buffered_task_total,
             blocked_task_count: _,
             reblocked_lock_total,
             task_total,
@@ -1059,7 +1059,7 @@ impl SchedulingStateMachine {
         } = self;
         active_task_count.reset_to_zero();
         handled_task_total.reset_to_zero();
-        unblocked_task_total.reset_to_zero();
+        buffered_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
         task_total.reset_to_zero();
         *scheduling_mode = mode;
@@ -1081,10 +1081,10 @@ impl SchedulingStateMachine {
         Self {
             // It's very unlikely this is desired to be configurable, like
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
-            unblocked_task_queue: VecDeque::with_capacity(1024),
+            buffered_task_queue: VecDeque::with_capacity(1024),
             active_task_count: ShortCounter::zero(),
             handled_task_total: ShortCounter::zero(),
-            unblocked_task_total: ShortCounter::zero(),
+            buffered_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
             reblocked_lock_total: ShortCounter::zero(),
             task_total: ShortCounter::zero(),
@@ -1268,26 +1268,26 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
 
         state_machine.deschedule_task(&task1);
-        assert!(state_machine.has_unblocked_task());
-        assert_eq!(state_machine.unblocked_task_queue_count(), 1);
+        assert!(state_machine.has_buffered_task());
+        assert_eq!(state_machine.buffered_task_queue_count(), 1);
 
-        // unblocked_task_total() should be incremented
-        assert_eq!(state_machine.unblocked_task_total(), 0);
+        // buffered_task_total() should be incremented
+        assert_eq!(state_machine.buffered_task_total(), 0);
         assert_eq!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_eq!(state_machine.unblocked_task_total(), 1);
+        assert_eq!(state_machine.buffered_task_total(), 1);
 
-        // there's no blocked task anymore; calling schedule_next_unblocked_task should be noop and
-        // shouldn't increment the unblocked_task_total().
-        assert!(!state_machine.has_unblocked_task());
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
-        assert_eq!(state_machine.unblocked_task_total(), 1);
+        // there's no blocked task anymore; calling schedule_next_buffered_task should be noop and
+        // shouldn't increment the buffered_task_total().
+        assert!(!state_machine.has_buffered_task());
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
+        assert_eq!(state_machine.buffered_task_total(), 1);
 
-        assert_eq!(state_machine.unblocked_task_queue_count(), 0);
+        assert_eq!(state_machine.buffered_task_queue_count(), 0);
         state_machine.deschedule_task(&task2);
 
         assert_matches!(
@@ -1319,31 +1319,31 @@ mod tests {
         );
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
 
-        assert_eq!(state_machine.unblocked_task_queue_count(), 0);
+        assert_eq!(state_machine.buffered_task_queue_count(), 0);
         state_machine.deschedule_task(&task1);
-        assert_eq!(state_machine.unblocked_task_queue_count(), 1);
+        assert_eq!(state_machine.buffered_task_queue_count(), 1);
 
         // new task is arriving after task1 is already descheduled and task2 got unblocked
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
-        assert_eq!(state_machine.unblocked_task_total(), 0);
+        assert_eq!(state_machine.buffered_task_total(), 0);
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_eq!(state_machine.unblocked_task_total(), 1);
+        assert_eq!(state_machine.buffered_task_total(), 1);
 
         state_machine.deschedule_task(&task2);
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
-        assert_eq!(state_machine.unblocked_task_total(), 2);
+        assert_eq!(state_machine.buffered_task_total(), 2);
 
         state_machine.deschedule_task(&task3);
         assert!(state_machine.has_no_active_task());
@@ -1377,11 +1377,11 @@ mod tests {
 
         assert_eq!(state_machine.active_task_count(), 2);
         assert_eq!(state_machine.handled_task_total(), 0);
-        assert_eq!(state_machine.unblocked_task_queue_count(), 0);
+        assert_eq!(state_machine.buffered_task_queue_count(), 0);
         state_machine.deschedule_task(&task1);
         assert_eq!(state_machine.active_task_count(), 1);
         assert_eq!(state_machine.handled_task_total(), 1);
-        assert_eq!(state_machine.unblocked_task_queue_count(), 0);
+        assert_eq!(state_machine.buffered_task_queue_count(), 0);
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.active_task_count(), 0);
         assert_eq!(state_machine.handled_task_total(), 2);
@@ -1418,20 +1418,20 @@ mod tests {
 
         assert_eq!(state_machine.active_task_count(), 3);
         assert_eq!(state_machine.handled_task_total(), 0);
-        assert_eq!(state_machine.unblocked_task_queue_count(), 0);
+        assert_eq!(state_machine.buffered_task_queue_count(), 0);
         state_machine.deschedule_task(&task1);
         assert_eq!(state_machine.active_task_count(), 2);
         assert_eq!(state_machine.handled_task_total(), 1);
-        assert_eq!(state_machine.unblocked_task_queue_count(), 0);
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_eq!(state_machine.buffered_task_queue_count(), 0);
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
         state_machine.deschedule_task(&task2);
         assert_eq!(state_machine.active_task_count(), 1);
         assert_eq!(state_machine.handled_task_total(), 2);
-        assert_eq!(state_machine.unblocked_task_queue_count(), 1);
+        assert_eq!(state_machine.buffered_task_queue_count(), 1);
         // task3 is finally unblocked after all of readable tasks (task1 and task2) is finished.
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
@@ -1462,23 +1462,23 @@ mod tests {
         assert_matches!(state_machine.schedule_task(task2.clone()), None);
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
         state_machine.deschedule_task(&task2);
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
         state_machine.deschedule_task(&task3);
         assert!(state_machine.has_no_active_task());
     }
@@ -1507,7 +1507,7 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
@@ -1544,29 +1544,29 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
         // the above deschedule_task(task1) call should only unblock task2 and task3 because these
         // are read-locking. And shouldn't unblock task4 because it's write-locking
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
 
         state_machine.deschedule_task(&task2);
         // still task4 is blocked...
-        assert_matches!(state_machine.schedule_next_unblocked_task(), None);
+        assert_matches!(state_machine.schedule_next_buffered_task(), None);
 
         state_machine.deschedule_task(&task3);
         // finally task4 should be unblocked
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(104)
         );
@@ -1613,7 +1613,7 @@ mod tests {
         state_machine.deschedule_task(&task1);
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
@@ -1662,26 +1662,26 @@ mod tests {
         // addr1: locked by task_0_1, queue: [task2, task1]
         // addr2: locked by task2, queue: [task1]
 
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task0_1);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
         // now
         // addr1: locked by task2, queue: [task1]
         // addr2: locked by task2, queue: [task1]
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(99)
         );
 
         state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(101)
         );
@@ -1747,26 +1747,26 @@ mod tests {
         // addr1: locked by task_0_1, queue: [task2, task1]
         // addr2: locked by task2, queue: [task1]
 
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task0_1);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
         // now
         // addr1: locked by task2, queue: [task1]
         // addr2: locked by task2, queue: [task1]
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(99)
         );
 
         state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(101)
         );
@@ -1832,26 +1832,26 @@ mod tests {
         // addr1: locked by task_0_1, queue: [task2, task1]
         // addr2: locked by task2, queue: [task1]
 
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task0_1);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
         // now
         // addr1: locked by task2, queue: [task1]
         // addr2: locked by task2, queue: [task1]
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(99)
         );
 
         state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(101)
         );
@@ -1945,23 +1945,23 @@ mod tests {
         // addr1: locked by task1_2, queue: [task1_3]
         // addr2: locked by [task0_1, task1_2], queue: [task2, task1, task1_3]
 
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task0_1);
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         // now
         // addr1: locked by task1_2, queue: [task1_3]
         // addr2: locked by task1_2, queue: [task2, task1, task1_3]
         //
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task1_2);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
         // now
         // addr1: unlocked, queue: [task1_3]
         // addr2: unlocked, queue: [task2, task1, task1_3]
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(99)
         );
@@ -1969,22 +1969,22 @@ mod tests {
         // addr1: unlocked, queue: [task1_3]
         // addr2: locked by task2, queue: [task1, task1_3]
 
-        assert!(!state_machine.has_unblocked_task());
+        assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task2);
-        assert!(state_machine.has_unblocked_task());
+        assert!(state_machine.has_buffered_task());
         // now
         // addr1: unlocked, queue: [task1_3]
         // addr2: unlocked, queue: [task1, task1_3]
 
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(101)
         );
         assert_matches!(
             state_machine
-                .schedule_next_unblocked_task()
+                .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(104)
         );

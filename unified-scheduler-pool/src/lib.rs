@@ -1184,10 +1184,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             },
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
-                            state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.unblocked_task_queue_count(), state_machine.handled_task_total(),
+                            state_machine.active_task_count(), state_machine.blocked_task_count(), state_machine.buffered_task_queue_count(), state_machine.handled_task_total(),
                             ignored_error_count,
                             state_machine.task_total(),
-                            state_machine.unblocked_task_total(),
+                            state_machine.buffered_task_total(),
                             state_machine.reblocked_lock_total(),
                             new_task_receiver.len(),
                             runnable_task_sender.len(), runnable_task_sender.aux_len(),
@@ -1240,8 +1240,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // which isn't great and is inconsistent with `if`s in the Rust's match
                         // arm. So, eagerly binding the result to a variable unconditionally here
                         // makes no perf. difference...
-                        let dummy_unblocked_task_receiver =
-                            dummy_receiver(state_machine.has_unblocked_task());
+                        let dummy_buffered_task_receiver =
+                            dummy_receiver(state_machine.has_buffered_task());
 
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
@@ -1267,11 +1267,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 std::mem::forget(executed_task);
                                 "desc_b_task"
                             },
-                            recv(dummy_unblocked_task_receiver) -> dummy => {
+                            recv(dummy_buffered_task_receiver) -> dummy => {
                                 assert_matches!(dummy, Err(RecvError));
 
                                 let task = state_machine
-                                    .schedule_next_unblocked_task()
+                                    .schedule_next_buffered_task()
                                     .expect("unblocked task");
                                 runnable_task_sender.send_payload(task).unwrap();
                                 "sc_b_task"
