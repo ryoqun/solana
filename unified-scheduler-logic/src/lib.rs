@@ -406,7 +406,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Clone, Debug)]
-pub struct Task(Arc<TaskInner>);
+pub struct Task(std::rc::Rc<TaskInner>);
 
 impl Task {
     fn new(task: TaskInner) -> Self {
