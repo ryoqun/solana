@@ -1074,7 +1074,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         use crate::chained_channel::{ChainedChannelSender, WithMessageType};
         type RunnableTaskSender = ChainedChannelSender<Task, SchedulingContext>;
         let (mut runnable_task_sender, runnable_task_receiver): (RunnableTaskSender, _) =
-            chained_channel::unbounded(context);
+            chained_channel::unbounded(context.clone());
         const_assert_eq!(
             mem::size_of::<<RunnableTaskSender as WithMessageType>::ChannelMessage>(),
             16
