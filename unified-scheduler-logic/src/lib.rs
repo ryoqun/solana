@@ -1059,6 +1059,7 @@ impl SchedulingStateMachine {
     /// other slots.
     pub fn reinitialize(&mut self, mode: SchedulingMode) {
         assert!(self.has_no_alive_task());
+        assert!(self.running_task_count(), 0);
         assert_eq!(self.buffered_task_queue.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
         // nice trick to ensure all fields are handled here if new one is added.
