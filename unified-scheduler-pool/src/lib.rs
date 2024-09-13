@@ -1241,7 +1241,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // arm. So, eagerly binding the result to a variable unconditionally here
                         // makes no perf. difference...
                         let dummy_buffered_task_receiver =
-                            dummy_receiver(state_machine.has_buffered_task());
+                            dummy_receiver(state_machine.has_runnable_task());
 
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
