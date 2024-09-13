@@ -1049,6 +1049,8 @@ impl SchedulingStateMachine {
         let Self {
             buffered_task_queue: _,
             alive_task_count,
+            running_task_count,
+            max_running_task_count: _,
             handled_task_total,
             buffered_task_total,
             blocked_task_count: _,
