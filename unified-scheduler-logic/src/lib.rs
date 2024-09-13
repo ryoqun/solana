@@ -1085,6 +1085,8 @@ impl SchedulingStateMachine {
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
             buffered_task_queue: VecDeque::with_capacity(1024),
             alive_task_count: ShortCounter::zero(),
+            running_task_count: ShortCounter::zero(),
+            max_running_task_count: 50,
             handled_task_total: ShortCounter::zero(),
             buffered_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
