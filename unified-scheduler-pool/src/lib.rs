@@ -950,7 +950,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 if !context.can_commit() {
                     info!("detected max tick height at scheduler thread...");
                     *result = Err(TransactionError::CommitFailed);
-                    return Some(executed_task, true));
+                    return Some((executed_task, true));
                 }
                 match executed_task.result_with_timings.0 {
                 Ok(()) => Some((executed_task, false)),
