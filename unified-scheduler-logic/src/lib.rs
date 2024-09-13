@@ -733,6 +733,10 @@ impl SchedulingStateMachine {
     }
 
     pub fn has_runnable_task(&self) -> bool {
+        self.is_task_runnable() && self.has_buffered_task()
+    }
+
+    pub fn is_task_runnable(&self) -> bool {
         self.running_task_count.current() < self.max_running_task_count
     }
 
@@ -774,7 +778,7 @@ impl SchedulingStateMachine {
         self.task_total.increment_self();
         self.alive_task_count.increment_self();
         self.try_lock_usage_queues(task).and_then(|task| {
-            if self.running_task_count.current() < self.max_running_task_count {
+            if self.is_task_runnable() {
                 self.running_task_count.increment_self();
                 Some(task)
             } else {
@@ -787,7 +791,7 @@ impl SchedulingStateMachine {
     #[must_use]
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
         self.buffered_task_queue.pop_first().map(|(_index, task)| {
-            assert!(self.has_runnable_task());
+            assert!(self.is_task_runnable());
             self.running_task_count.increment_self();
             self.buffered_task_total.increment_self();
             task
