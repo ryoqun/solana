@@ -954,9 +954,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 }
                 match executed_task.result_with_timings.0 {
                 Ok(()) => Some((executed_task, false)),
-                Err(error @ TransactionError::CommitFailed) => {
+                Err(TransactionError::CommitFailed) => {
                     info!("maybe reached max tick height...: {error:?}");
-                    *result = Err(error);
+                    *result = Err(TransactionError::CommitFailed);
                     // it's okay to abort scheduler as this error gurantees determinstic bank
                     // freezing...
                     Some((executed_task, true))
