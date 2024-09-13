@@ -416,7 +416,7 @@ impl Task {
 
 impl std::ops::Deref for Task {
     type Target = TaskInner;
-    fn deref(&self) -> &<Self as Deref>::Target { self.0 }
+    fn deref(&self) -> &<Self as std::ops::Deref>::Target { self.0 }
 }
 
 const_assert_eq!(mem::size_of::<Task>(), 8);
