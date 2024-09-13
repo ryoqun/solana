@@ -1410,7 +1410,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             break 'nonaborted_main_loop;
                         }
                         Ok(NewTaskPayload::Payload(task)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
-                            // buffer!
+                            if let Some(task) = state_machine.schedule_task(task) {
+                                state_machine.buffer_running_task(task);
+                            }
                         }
                         Ok(_) => unreachable!(),
                     }
