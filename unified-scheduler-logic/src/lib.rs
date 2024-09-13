@@ -405,9 +405,12 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
+#[derive(Clone, Debug)]
 pub struct Task(Arc<TaskInner>);
 
 impl std::ops::Deref for Task {
+    type Target = TaskInner;
+    fn deref(&self) -> &<Self as Deref>::Target { self.0 }
 }
 
 const_assert_eq!(mem::size_of::<Task>(), 8);
