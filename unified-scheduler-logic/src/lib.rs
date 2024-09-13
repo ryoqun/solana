@@ -405,7 +405,11 @@ type LockResult = Result<(), ()>;
 const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
-pub type Task = Arc<TaskInner>;
+pub struct Task(Arc<TaskInner>);
+
+impl std::ops::Deref for Task {
+}
+
 const_assert_eq!(mem::size_of::<Task>(), 8);
 
 /// [`Token`] for [`UsageQueue`].
