@@ -697,7 +697,8 @@ const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 pub struct SchedulingStateMachine {
     buffered_task_queue: VecDeque<Task>,
     alive_task_count: ShortCounter,
-    active_task_count: ShortCounter,
+    running_task_count: ShortCounter,
+    max_running_task_count: usize,
     handled_task_total: ShortCounter,
     buffered_task_total: ShortCounter,
     blocked_task_count: ShortCounter,
