@@ -1257,7 +1257,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // to measure _actual_ cpu usage easily with the select approach.
                         let mut step_type = select! {
                             recv(finished_blocked_task_receiver) -> executed_task => {
-                                let Some((executed_task, should_pause) = Self::accumulate_result_with_timings(
+                                let Some((executed_task, should_pause)) = Self::accumulate_result_with_timings(
                                     &context,
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler"),
