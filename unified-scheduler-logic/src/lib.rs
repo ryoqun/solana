@@ -736,6 +736,10 @@ impl SchedulingStateMachine {
         self.is_task_runnable() && self.has_buffered_task()
     }
 
+    pub fn has_no_running_task(&self) -> bool {
+        self.running_task_count.current() == 0
+    }
+
     pub fn is_task_runnable(&self) -> bool {
         self.running_task_count.current() < self.max_running_task_count
     }

@@ -1113,6 +1113,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 .expect("no 2nd start_threads()");
 
             let mut session_ending = false;
+            let mut session_pausing = false;
 
             // Now, this is the main loop for the scheduler thread, which is a special beast.
             //
@@ -1176,7 +1177,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
                         $level! {
-                            "sch: {}: slot: {}({})[{:12}]({}): state_machine(({}({}b{}B)=>{}({}E))/{}|{}TB|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
+                            "sch: {}: slot: {}({})[{:12}]({}{}): state_machine(({}({}b{}B)=>{}({}E))/{}|{}TB|{}Lr) channels(<{} >{}+{} <{}+{}) {}",
                             scheduler_id, slot,
                             match state_machine.mode() {
                                 SchedulingMode::BlockVerification => "v",
@@ -1184,6 +1185,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             },
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
+                            (if session_pausing {"P"} else {"-"}),
                             state_machine.alive_task_count(), state_machine.blocked_task_count(), state_machine.buffered_task_queue_count(), state_machine.handled_task_total(),
                             ignored_error_count,
                             state_machine.task_total(),
@@ -1290,8 +1292,16 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         }
                                     }
                                     Ok(NewTaskPayload::CloseSubchannel(_)) => {
-                                        session_ending = true;
-                                        "ending"
+                                        match state_machine.mode() {
+                                            SchedulingMode::BlockVerification => {
+                                                session_ending = true;
+                                                "ending"
+                                            },
+                                            SchedulingMode::BlockProduction => {
+                                                session_pausing = true;
+                                                "pausing"
+                                            },
+                                        }
                                     }
                                     Ok(NewTaskPayload::OpenSubchannel(_context_and_result_with_timings)) =>
                                         unreachable!(),
@@ -1323,13 +1333,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             true
                         } else if is_running && state_machine.has_no_alive_task() {
                             is_running = false;
-                            if !session_ending {
+                            if !session_ending && !session_pausing {
                                 step_type = "waiting";
                                 true
                             } else {
                                 false
                             }
-                        } else if step_type == "ending" {
+                        } else if step_type == "ending" || step_tpe == "pausing" {
                             true
                         } else {
                             false
@@ -1340,11 +1350,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             log_scheduler!(trace, step_type);
                         }
 
-                        is_finished = session_ending && state_machine.has_no_alive_task();
+                        is_finished = (session_ending && state_machine.has_no_alive_task() || session_pausing && state_machine.has_no_running_task());
                     }
 
                     // Finalize the current session after asserting it's explicitly requested so.
-                    assert!(session_ending);
+                    assert!(session_ending || session_pausing);
                     // Send result first because this is blocking the replay code-path.
                     session_result_sender
                         .send(result_with_timings)
@@ -1353,8 +1363,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     log_interval = LogInterval::default();
                     is_running = false;
                     session_ending = false;
+                    session_pausing = false;
 
                     // Prepare for the new session.
+                    loop {
                     match new_task_receiver.recv().map(|a| a.into()) {
                         Ok(NewTaskPayload::OpenSubchannel(context_and_result_with_timings)) => {
                             let (new_context, new_result_with_timings) =
@@ -1362,19 +1374,29 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             // We just received subsequent (= not initial) session and about to
                             // enter into the preceding `while(!is_finished) {...}` loop again.
                             // Before that, propagate new SchedulingContext to handler threads
-                            session_started_at = Instant::now();
-                            state_machine.reinitialize(new_context.mode());
-                            reported_new_task_total = 0;
-                            reported_retired_task_total = 0;
-                            ignored_error_count = 0;
-                            slot = new_context.bank().slot();
-                            log_scheduler!(info, "started");
+                            assert_eq!(state_machine.mode(), new_context.mode());
+
+                            match state_machine.mode() {
+                                SchedulingMode::BlockVerification => {
+                                    session_started_at = Instant::now();
+                                    state_machine.reinitialize(new_context.mode());
+                                    reported_new_task_total = 0;
+                                    reported_retired_task_total = 0;
+                                    ignored_error_count = 0;
+                                    slot = new_context.bank().slot();
+                                    log_scheduler!(info, "started");
+                                },
+                                SchedulingMode::BlockProduction => {
+                                    log_scheduler!(info, "unpaused");
+                                },
+                            }
 
                             runnable_task_sender
                                 .send_chained_channel(new_context.clone(), handler_count)
                                 .unwrap();
                             context = new_context;
                             result_with_timings = new_result_with_timings;
+                            break;
                         }
                         Err(_) => {
                             // This unusual condition must be triggered by ThreadManager::drop().
@@ -1382,7 +1404,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             result_with_timings = initialized_result_with_timings();
                             break 'nonaborted_main_loop;
                         }
+                        Ok(NewTaskPayload::Payload(task)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
+                            // buffer!
+                        }
                         Ok(_) => unreachable!(),
+                    }
                     }
                 }
 
