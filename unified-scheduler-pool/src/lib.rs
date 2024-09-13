@@ -1370,7 +1370,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     session_result_sender
                         .send(result_with_timings)
                         .expect("always outlived receiver");
-                    log_scheduler!(info, "ended");
+                    if session_ending {
+                        log_scheduler!(info, "ended");
+                    } else {
+                        log_scheduler!(info, "paused");
+                    }
                     log_interval = LogInterval::default();
                     is_running = false;
                     session_ending = false;
@@ -1391,6 +1395,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                             match state_machine.mode() {
                                 SchedulingMode::BlockVerification => {
+                                    assert_eq!(ignored_error_count, 0);
                                     state_machine.reinitialize(new_context.mode());
                                     reported_new_task_total = 0;
                                     reported_retired_task_total = 0;
