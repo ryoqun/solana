@@ -695,7 +695,7 @@ const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
-    buffered_task_queue: VecDeque<Task>,
+    buffered_task_queue: BTreeMap<Index, Task>,
     alive_task_count: ShortCounter,
     running_task_count: ShortCounter,
     max_running_task_count: u32,
