@@ -410,7 +410,7 @@ pub struct Task(std::rc::Rc<TaskInner>);
 
 impl Task {
     fn new(task: TaskInner) -> Self {
-        Self(Arc::new(task))
+        Self(std::rc::Rc::new(task))
     }
 
     #[must_use]
