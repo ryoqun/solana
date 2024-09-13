@@ -1104,7 +1104,7 @@ impl SchedulingStateMachine {
             buffered_task_queue: VecDeque::with_capacity(1024),
             alive_task_count: ShortCounter::zero(),
             running_task_count: ShortCounter::zero(),
-            max_running_task_count: 3,
+            max_running_task_count: 1,
             handled_task_total: ShortCounter::zero(),
             buffered_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
