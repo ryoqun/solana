@@ -1243,7 +1243,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // arm. So, eagerly binding the result to a variable unconditionally here
                         // makes no perf. difference...
                         let dummy_buffered_task_receiver =
-                            dummy_receiver(state_machine.has_runnable_task());
+                            dummy_receiver(state_machine.has_runnable_task() && !session_pausing);
 
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
@@ -1285,8 +1285,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     Ok(NewTaskPayload::Payload(task)) => {
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
-                                            runnable_task_sender.send_aux_payload(task).unwrap();
-                                            "sc_i_task"
+                                            if !session_pausing {
+                                                runnable_task_sender.send_aux_payload(task).unwrap();
+                                                "sc_i_task"
+                                            } else {
+                                                state_machine.buffer_task(task);
+                                                "buffer"
+                                            }
                                         } else {
                                             "new_b_task"
                                         }
