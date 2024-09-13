@@ -770,6 +770,7 @@ impl SchedulingStateMachine {
         self.task_total.increment_self();
         self.alive_task_count.increment_self();
         self.try_lock_usage_queues(task).and_then(|task| {
+            task
         })
     }
 
