@@ -786,7 +786,7 @@ impl SchedulingStateMachine {
 
     #[must_use]
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
-        self.buffered_task_queue.pop_front().inspect(|_| {
+        self.buffered_task_queue.pop_first().inspect(|_| {
             assert!(self.has_runnable_task());
             self.running_task_count.increment_self();
             self.buffered_task_total.increment_self();
