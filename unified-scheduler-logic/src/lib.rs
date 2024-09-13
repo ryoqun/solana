@@ -409,6 +409,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 pub struct Task(std::rc::Rc<TaskInner>);
 
 unsafe impl Sync for Task {}
+unsafe impl Send for Task {}
 
 impl Task {
     fn new(task: TaskInner) -> Self {
