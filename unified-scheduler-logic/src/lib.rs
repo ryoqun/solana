@@ -408,7 +408,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 #[derive(Clone, Debug)]
 pub struct Task(std::rc::Rc<TaskInner>);
 
-impl enum_ptr::Align for Task {
+impl enum_ptr::Aligned for Task {
 }
 
 unsafe impl Sync for Task {}
