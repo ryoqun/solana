@@ -409,7 +409,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 pub struct Task(std::rc::Rc<TaskInner>);
 
 unsafe impl enum_ptr::Aligned for Task {
-    const ALIGNMENT: usize = align_of::<std::rc::Rc<TaskInner>>();
+    const ALIGNMENT: usize = std::mem::align_of::<std::rc::Rc<TaskInner>>();
 }
 
 unsafe impl Sync for Task {}
