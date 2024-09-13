@@ -1339,7 +1339,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             } else {
                                 false
                             }
-                        } else if step_type == "ending" || step_tpe == "pausing" {
+                        } else if step_type == "ending" || step_type == "pausing" {
                             true
                         } else {
                             false
