@@ -1803,13 +1803,14 @@ where
         // Refer to the comment in is_trashed() as to the exact definition of the concept of
         // _trashed_ and the interaction among different parts of unified scheduler.
         let should_trash = self.is_trashed();
+        let id = self.id();
         if should_trash {
-            info!("trashing scheduler (id: {})...", self.id());
+            info!("trashing scheduler (id: {})...", id);
         }
         self.thread_manager
             .pool
             .clone()
-            .return_scheduler(*self, self.id(), should_trash);
+            .return_scheduler(*self, id, should_trash);
     }
 }
 
