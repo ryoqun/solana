@@ -346,7 +346,7 @@ where
                     .expect("not poisoned")
                     .push((scheduler, Instant::now()));
             } else {
-                assert!(self.block_producing_scheduler_inner.lock().unwrap().1.insert(scheduler).is_none());
+                assert!(self.block_producing_scheduler_inner.lock().unwrap().1.replace(scheduler).is_none());
             }
         }
     }
