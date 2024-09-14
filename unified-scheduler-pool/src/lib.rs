@@ -340,7 +340,7 @@ where
                 .push(scheduler);
         } else {
             let bp_id: u64 = self.block_producing_scheduler_inner.lock().unwrap().0;
-            if scheduler.id() != bp_id {
+            if scheduler.id != bp_id {
                 self.scheduler_inners
                     .lock()
                     .expect("not poisoned")
