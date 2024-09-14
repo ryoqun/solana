@@ -339,10 +339,15 @@ where
                 .expect("not poisoned")
                 .push(scheduler);
         } else {
-            self.scheduler_inners
-                .lock()
-                .expect("not poisoned")
-                .push((scheduler, Instant::now()));
+            let bp_id: u64 = self.block_producing_scheduler_inner.lock().unwrap().0;
+            if scheduler.id() != bp_id {
+                self.scheduler_inners
+                    .lock()
+                    .expect("not poisoned")
+                    .push((scheduler, Instant::now()));
+            } else {
+                assert!(self.block_producing_scheduler_inner.lock().unwrap().1.insert(scheduler).is_none());
+            }
         }
     }
 
