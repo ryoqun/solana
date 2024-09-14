@@ -1445,6 +1445,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 state_machine.rebuffer_executing_task(task);
                             }
                         }
+                        Ok(NewTaskPayload::CloseSubchannel(_)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
+                            info!("ignoring duplicate CloseSubchannel...");
+
+                        }
                         Ok(p) => unreachable!("{:?}", p),
                     }
                     }
