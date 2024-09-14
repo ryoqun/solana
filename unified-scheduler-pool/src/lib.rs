@@ -358,7 +358,7 @@ where
     ) -> S {
         assert_matches!(result_with_timings, (Ok(_), _));
 
-        if matches!(context.mode(), SchedulerPool::BlockVerification) {
+        if matches!(context.mode(), SchedulingMode::BlockVerification) {
             // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
             // returned recently
             if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop()
