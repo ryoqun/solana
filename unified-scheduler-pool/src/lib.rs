@@ -582,7 +582,7 @@ impl ExecutedTask {
 use enum_ptr::{Aligned, Compact, EnumPtr, Unit};
 
 #[repr(C, usize)]
-#[derive(EnumPtr)]
+#[derive(Debug, EnumPtr)]
 pub enum SubchanneledPayload<P1: Aligned, P2: Aligned> {
     Payload(P1),
     OpenSubchannel(P2),
