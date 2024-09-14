@@ -1748,7 +1748,7 @@ impl BlockProducingUnifiedScheduler {
         &self,
         transaction_with_index: &(&SanitizedTransaction, Index),
     ) -> ScheduleResult {
-        send_task(&self.inner.usage_queue_loader, &self.inner.thread_manager.new_task_sender, transaction_with_index)
+        send_task(&self.usage_queue_loader, &self.new_task_sender, transaction_with_index)
     }
 }
 
