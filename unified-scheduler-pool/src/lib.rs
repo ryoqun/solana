@@ -1735,6 +1735,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
 }
 
 struct BlockProducingUnifiedScheduler {
+    usage_queue_loader: Arc<UsageQueueLoader>,
 }
 
 impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
