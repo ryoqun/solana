@@ -182,6 +182,7 @@ where
 
         let scheduler_pool = Arc::new_cyclic(|weak_self| Self {
             scheduler_inners: Mutex::default(),
+            block_producing_scheduler_inner: Mutex::default(),
             trashed_scheduler_inners: Mutex::default(),
             timeout_listeners: Mutex::default(),
             handler_count,
