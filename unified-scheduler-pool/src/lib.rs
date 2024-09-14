@@ -328,7 +328,7 @@ where
 
     // This fn needs to return immediately due to being part of the blocking
     // `::wait_for_termination()` call.
-    fn return_scheduler(&self, scheduler: S::Inner, should_trash: bool) {
+    fn return_scheduler(&self, scheduler: S::Inner, id: u64, should_trash: bool) {
         if should_trash {
             // Delay drop()-ing this trashed returned scheduler inner by stashing it in
             // self.trashed_scheduler_inners, which is periodically drained by the `solScCleaner`
@@ -340,7 +340,7 @@ where
                 .push(scheduler);
         } else {
             let bp_id: u64 = self.block_producing_scheduler_inner.lock().unwrap().0;
-            if scheduler.id != bp_id {
+            if id != bp_id {
                 self.scheduler_inners
                     .lock()
                     .expect("not poisoned")
@@ -1809,7 +1809,7 @@ where
         self.thread_manager
             .pool
             .clone()
-            .return_scheduler(*self, should_trash);
+            .return_scheduler(*self, self.id(), should_trash);
     }
 }
 
