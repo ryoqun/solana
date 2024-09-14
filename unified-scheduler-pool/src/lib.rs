@@ -1743,6 +1743,15 @@ struct BlockProducingUnifiedScheduler {
     new_task_sender: Sender<CompactNewTaskPayload>,
 }
 
+impl BlockProducingUnifiedScheduler {
+    fn schedule_execution(
+        &self,
+        transaction_with_index: &(&SanitizedTransaction, Index),
+    ) -> ScheduleResult {
+        send_task(&self.inner.usage_queue_loader, &self.inner.thread_manager.new_task_sender, transaction_with_index)
+    }
+}
+
 fn send_task(
     usage_queue_loader: &UsageQueueLoader,
     new_task_sender: &Sender<CompactNewTaskPayload>,
