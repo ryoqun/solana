@@ -368,7 +368,7 @@ where
                 S::spawn(self.self_arc(), context, result_with_timings)
             }
         } else {
-            let g = self.block_producing_scheduler_inner.lock().expect("not poisoned");
+            let mut g = self.block_producing_scheduler_inner.lock().expect("not poisoned");
             if let Some(inner) = g.1.take()
             {
                 S::from_inner(inner, context, result_with_timings)
