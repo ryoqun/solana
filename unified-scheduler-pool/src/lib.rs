@@ -803,7 +803,7 @@ pub struct PooledScheduler<TH: TaskHandler> {
 #[derive(Debug)]
 pub struct PooledSchedulerInner<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     thread_manager: ThreadManager<S, TH>,
-    usage_queue_loader: UsageQueueLoader,
+    usage_queue_loader: Arc<UsageQueueLoader>,
 }
 
 impl<S, TH> Drop for ThreadManager<S, TH>
