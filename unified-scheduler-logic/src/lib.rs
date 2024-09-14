@@ -792,7 +792,7 @@ impl SchedulingStateMachine {
         })
     }
 
-    pub fn buffer_executing_task(&mut self, task: Task) {
+    pub fn rebuffer_executing_task(&mut self, task: Task) {
         self.executing_task_count.decrement_self();
         assert!(self.buffered_task_queue.insert(task.index, task).is_none());
     }
