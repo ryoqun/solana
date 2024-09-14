@@ -1751,7 +1751,7 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
             self.inner.usage_queue_loader.load(pubkey)
         });
         debug!("send_task()");
-        self.inner.
+        self.inner
             .thread_manager
             .new_task_sender
             .send(NewTaskPayload::Payload(task).into())
