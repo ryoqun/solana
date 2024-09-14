@@ -380,7 +380,7 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 let s = S::spawn(self.self_arc(), context, result_with_timings);
-                g.0 = Some(s.id());
+                assert!(g.0.replace(Some(s.id())).is_none());
                 s
             }
         }
