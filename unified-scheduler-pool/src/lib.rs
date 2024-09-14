@@ -380,6 +380,7 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 let s = S::spawn(self.self_arc(), context, result_with_timings);
+                s.usage_queue_loader;
                 assert!(g.0.replace(s.id()).is_none());
                 s
             }
