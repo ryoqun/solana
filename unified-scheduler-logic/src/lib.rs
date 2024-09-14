@@ -697,8 +697,8 @@ const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 pub struct SchedulingStateMachine {
     buffered_task_queue: BTreeMap<Index, Task>,
     alive_task_count: ShortCounter,
-    running_task_count: ShortCounter,
-    max_running_task_count: u32,
+    executing_task_count: ShortCounter,
+    max_executing_task_count: u32,
     handled_task_total: ShortCounter,
     buffered_task_total: ShortCounter,
     blocked_task_count: ShortCounter,
@@ -736,12 +736,12 @@ impl SchedulingStateMachine {
         self.is_task_runnable() && self.has_buffered_task()
     }
 
-    pub fn has_no_running_task(&self) -> bool {
-        self.running_task_count.current() == 0
+    pub fn has_no_executing_task(&self) -> bool {
+        self.executing_task_count.current() == 0
     }
 
     pub fn is_task_runnable(&self) -> bool {
-        self.running_task_count.current() < self.max_running_task_count
+        self.executing_task_count.current() < self.max_executing_task_count
     }
 
     pub fn buffered_task_queue_count(&self) -> usize {
@@ -783,7 +783,7 @@ impl SchedulingStateMachine {
         self.alive_task_count.increment_self();
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() {
-                self.running_task_count.increment_self();
+                self.executing_task_count.increment_self();
                 Some(task)
             } else {
                 assert!(self.buffered_task_queue.insert(task.index, task).is_none());
@@ -792,8 +792,8 @@ impl SchedulingStateMachine {
         })
     }
 
-    pub fn buffer_running_task(&mut self, task: Task) {
-        self.running_task_count.decrement_self();
+    pub fn buffer_executing_task(&mut self, task: Task) {
+        self.executing_task_count.decrement_self();
         assert!(self.buffered_task_queue.insert(task.index, task).is_none());
     }
 
@@ -801,7 +801,7 @@ impl SchedulingStateMachine {
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
         self.buffered_task_queue.pop_first().map(|(_index, task)| {
             assert!(self.is_task_runnable());
-            self.running_task_count.increment_self();
+            self.executing_task_count.increment_self();
             self.buffered_task_total.increment_self();
             task
         })
@@ -818,7 +818,7 @@ impl SchedulingStateMachine {
     /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
     /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
-        self.running_task_count.decrement_self();
+        self.executing_task_count.decrement_self();
         self.alive_task_count.decrement_self();
         self.handled_task_total.increment_self();
         self.unlock_usage_queues(task);
@@ -1072,15 +1072,15 @@ impl SchedulingStateMachine {
     /// other slots.
     pub fn reinitialize(&mut self, mode: SchedulingMode) {
         assert!(self.has_no_alive_task());
-        assert_eq!(self.running_task_count.current(), 0);
+        assert_eq!(self.executing_task_count.current(), 0);
         assert_eq!(self.buffered_task_queue.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
             buffered_task_queue: _,
             alive_task_count,
-            running_task_count,
-            max_running_task_count: _,
+            executing_task_count,
+            max_executing_task_count: _,
             handled_task_total,
             buffered_task_total,
             blocked_task_count: _,
@@ -1092,7 +1092,7 @@ impl SchedulingStateMachine {
             // don't add ".." here
         } = self;
         alive_task_count.reset_to_zero();
-        running_task_count.reset_to_zero();
+        executing_task_count.reset_to_zero();
         handled_task_total.reset_to_zero();
         buffered_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
@@ -1118,8 +1118,8 @@ impl SchedulingStateMachine {
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
             buffered_task_queue: BTreeMap::new(), //VecDeque::with_capacity(1024),
             alive_task_count: ShortCounter::zero(),
-            running_task_count: ShortCounter::zero(),
-            max_running_task_count: 50,
+            executing_task_count: ShortCounter::zero(),
+            max_executing_task_count: 50,
             handled_task_total: ShortCounter::zero(),
             buffered_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),

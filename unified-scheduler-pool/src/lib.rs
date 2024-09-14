@@ -1292,7 +1292,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                                 runnable_task_sender.send_aux_payload(task).unwrap();
                                                 "sc_i_task"
                                             } else {
-                                                state_machine.buffer_running_task(task);
+                                                state_machine.buffer_executing_task(task);
                                                 "buffer"
                                             }
                                         } else {
@@ -1361,7 +1361,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             log_scheduler!(trace, step_type);
                         }
 
-                        is_finished = (session_ending && state_machine.has_no_alive_task() || session_pausing && state_machine.has_no_running_task());
+                        is_finished = (session_ending && state_machine.has_no_alive_task() || session_pausing && state_machine.has_no_executing_task());
                     }
 
                     // Finalize the current session after asserting it's explicitly requested so.
@@ -1422,7 +1422,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         }
                         Ok(NewTaskPayload::Payload(task)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
                             if let Some(task) = state_machine.schedule_task(task) {
-                                state_machine.buffer_running_task(task);
+                                state_machine.buffer_executing_task(task);
                             }
                         }
                         Ok(_) => unreachable!(),
