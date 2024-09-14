@@ -77,6 +77,7 @@ type AtomicSchedulerId = AtomicU64;
 #[derive(Debug)]
 pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
+    block_producing_scheduler_inner: Mutex<S::Inner>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     timeout_listeners: Mutex<Vec<(TimeoutListener, Instant)>>,
     handler_count: usize,
@@ -1421,7 +1422,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             break 'nonaborted_main_loop;
                         }
                         Ok(NewTaskPayload::Payload(task)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
-                            assert!(session_pausing);
                             if let Some(task) = state_machine.schedule_task(task) {
                                 state_machine.rebuffer_executing_task(task);
                             }
