@@ -1445,7 +1445,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 state_machine.rebuffer_executing_task(task);
                             }
                         }
-                        Ok(_) => unreachable!(),
+                        Ok(p) => unreachable!("{:?}", p),
                     }
                     }
                 }
