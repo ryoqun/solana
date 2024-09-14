@@ -77,7 +77,7 @@ type AtomicSchedulerId = AtomicU64;
 #[derive(Debug)]
 pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
-    block_producing_scheduler_inner: Mutex<Option<S::Inner>>,
+    block_producing_scheduler_inner: Mutex<(u64, Option<S::Inner>)>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     timeout_listeners: Mutex<Vec<(TimeoutListener, Instant)>>,
     handler_count: usize,
@@ -358,13 +358,25 @@ where
     ) -> S {
         assert_matches!(result_with_timings, (Ok(_), _));
 
-        // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
-        // returned recently
-        if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop()
-        {
-            S::from_inner(inner, context, result_with_timings)
+        if matches!(context.mode(), SchedulerPool:::BlockVerification) {
+            // pop is intentional for filo, expecting relatively warmed-up scheduler due to having been
+            // returned recently
+            if let Some((inner, _pooled_at)) = self.scheduler_inners.lock().expect("not poisoned").pop()
+            {
+                S::from_inner(inner, context, result_with_timings)
+            } else {
+                S::spawn(self.self_arc(), context, result_with_timings)
+            }
         } else {
-            S::spawn(self.self_arc(), context, result_with_timings)
+            let g = self.block_producing_scheduler_inner.lock().expect("not poisoned");
+            if let Some(inner) = g.1.take()
+            {
+                S::from_inner(inner, context, result_with_timings)
+            } else {
+                let s = S::spawn(self.self_arc(), context, result_with_timings);
+                g.0 = s.id();
+                s
+            }
         }
     }
 
