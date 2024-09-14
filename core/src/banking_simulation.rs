@@ -449,6 +449,12 @@ impl SimulatorLoop {
                 info!("Bank::new_from_parent()!");
 
                 logger.log_jitter(&bank);
+                assert!(bank.is_complete());
+                if let Some((result, completed_execute_timings)) =
+                    bank.wait_for_completed_scheduler()
+                {
+                    info!("us result: {:?}", result);
+                }
                 bank.freeze();
                 let new_slot = if bank.slot() == self.parent_slot {
                     info!("initial leader block!");
