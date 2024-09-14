@@ -380,7 +380,6 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 let s = S::spawn(self.self_arc(), context, result_with_timings);
-                s.usage_queue_loader;
                 assert!(g.0.replace(s.id()).is_none());
                 s
             }
@@ -1693,6 +1692,10 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
     ) -> Self
     where
         Self: Sized;
+
+    fn create_block_producing_scheduler() -> BlockProducingUnifiedScheduler {
+        panic!();
+    }
 }
 
 impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
