@@ -1734,6 +1734,9 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
     }
 }
 
+struct BlockProducingUnifiedScheduler {
+}
+
 impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
     fn id(&self) -> SchedulerId {
         self.inner.id()
