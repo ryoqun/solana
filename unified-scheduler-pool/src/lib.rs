@@ -1560,13 +1560,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             .collect();
     }
 
-    fn send_task(&self, task: Task) -> ScheduleResult {
-        debug!("send_task()");
-        self.new_task_sender
-            .send(NewTaskPayload::Payload(task).into())
-            .map_err(|_| SchedulerError::Aborted)
-    }
-
     fn ensure_join_threads(&mut self, should_receive_session_result: bool) {
         trace!("ensure_join_threads() is called");
 
@@ -1757,7 +1750,14 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
         let task = SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.inner.usage_queue_loader.load(pubkey)
         });
-        self.inner.thread_manager.send_task(task)
+        debug!("send_task()");
+        self.inner.
+            .thread_manager
+            .new_task_sender
+            .send(NewTaskPayload::Payload(task).into())
+            .map_err(|_| SchedulerError::Aborted)
+    }
+
     }
 
     fn recover_error_after_abort(&mut self) -> TransactionError {
