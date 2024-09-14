@@ -1758,8 +1758,6 @@ impl<TH: TaskHandler> InstalledScheduler for PooledScheduler<TH> {
             .map_err(|_| SchedulerError::Aborted)
     }
 
-    }
-
     fn recover_error_after_abort(&mut self) -> TransactionError {
         self.inner
             .thread_manager
