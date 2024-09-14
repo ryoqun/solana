@@ -77,7 +77,7 @@ type AtomicSchedulerId = AtomicU64;
 #[derive(Debug)]
 pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
-    block_producing_scheduler_inner: Mutex<(u64, Option<S::Inner>)>,
+    block_producing_scheduler_inner: Mutex<(Option<u64>, Option<S::Inner>)>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     timeout_listeners: Mutex<Vec<(TimeoutListener, Instant)>>,
     handler_count: usize,
@@ -329,9 +329,9 @@ where
     // This fn needs to return immediately due to being part of the blocking
     // `::wait_for_termination()` call.
     fn return_scheduler(&self, scheduler: S::Inner, id: u64, should_trash: bool) {
-        let bp_id: u64 = self.block_producing_scheduler_inner.lock().unwrap().0;
+        let bp_id: Option<u64> = self.block_producing_scheduler_inner.lock().unwrap().0;
         if should_trash {
-            assert!(id != bp_id);
+            assert!(Some(id) != bp_id);
             // Delay drop()-ing this trashed returned scheduler inner by stashing it in
             // self.trashed_scheduler_inners, which is periodically drained by the `solScCleaner`
             // thread. Dropping it could take long time (in fact,
@@ -341,7 +341,7 @@ where
                 .expect("not poisoned")
                 .push(scheduler);
         } else {
-            if id != bp_id {
+            if Some(id) != bp_id {
                 self.scheduler_inners
                     .lock()
                     .expect("not poisoned")
@@ -380,7 +380,7 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 let s = S::spawn(self.self_arc(), context, result_with_timings);
-                g.0 = s.id();
+                g.0 = Some(s.id());
                 s
             }
         }
