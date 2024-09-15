@@ -793,12 +793,17 @@ impl BankingStage {
                                             })
                                             .collect::<Vec<_>>();
 
+                                            /*
                                             match bank.schedule_transaction_executions(
                                                 ppp.iter().map(|(a, b)| (a, b)),
                                             ) {
                                                 Ok(()) => (),
                                                 Err(TransactionError::CommitFailed) => break,
                                                 _ => unreachable!(),
+                                            }
+                                            */
+                                            for (a, b) in ppp {
+                                                s.schedule_execution(a, b);
                                             }
                                         }
 
