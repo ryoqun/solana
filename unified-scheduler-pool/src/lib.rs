@@ -1738,6 +1738,13 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
             .start_threads(context.clone(), result_with_timings);
         Self { inner, context }
     }
+
+    fn create_block_producing_scheduler(&self) -> BlockProducingUnifiedScheduler {
+        BlockProducingUnifiedScheduler {
+            usage_queue_loader: self.usage_queue_loader.clone(),
+            new_task_sender: self.inner.thread_manager.new_task_sender.clone(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
