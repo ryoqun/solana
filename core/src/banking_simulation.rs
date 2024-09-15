@@ -760,21 +760,6 @@ impl BankingSimulator {
             random_keypair,
             SocketAddrSpace::Unspecified,
         ));
-        // Broadcast stage is needed to save the simulated blocks for post-run analysis by
-        // inserting produced shreds into the blockstore.
-        let broadcast_stage = BroadcastStageType::Standard.new_broadcast_stage(
-            vec![UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()],
-            cluster_info.clone(),
-            entry_receiver,
-            retransmit_slots_receiver,
-            exit.clone(),
-            blockstore.clone(),
-            bank_forks.clone(),
-            shred_version,
-            sender,
-        );
-
-        info!("Start banking stage!...");
         // Create a partially-dummy ClusterInfo for the banking stage.
         let cluster_info = Arc::new(DummyClusterInfo {
             id: simulated_leader.into(),
@@ -835,6 +820,21 @@ impl BankingSimulator {
             DEFAULT_HASHES_PER_BATCH,
             record_receiver,
         );
+        // Broadcast stage is needed to save the simulated blocks for post-run analysis by
+        // inserting produced shreds into the blockstore.
+        let broadcast_stage = BroadcastStageType::Standard.new_broadcast_stage(
+            vec![UdpSocket::bind((Ipv4Addr::LOCALHOST, 0)).unwrap()],
+            cluster_info.clone(),
+            entry_receiver,
+            retransmit_slots_receiver,
+            exit.clone(),
+            blockstore.clone(),
+            bank_forks.clone(),
+            shred_version,
+            sender,
+        );
+
+        info!("Start banking stage!...");
         let banking_stage = BankingStage::new_num_threads(
             block_production_method.clone(),
             &cluster_info,
