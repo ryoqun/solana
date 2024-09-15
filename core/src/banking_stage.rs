@@ -726,7 +726,7 @@ impl BankingStage {
                     let bank = bank_forks.read().unwrap().working_bank();
                     let decision = decision_maker.make_consume_or_forward_decision();
                     match decision {
-                        BufferedPacketsDecision::Consume(_bank_start) |
+                        BufferedPacketsDecision::Consume(_) |
                         BufferedPacketsDecision::ForwardAndHold |
                         BufferedPacketsDecision::Hold => {
                             //info!("consume!");
