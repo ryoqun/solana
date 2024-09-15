@@ -993,6 +993,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     // freezing...
                     Some((executed_task, true))
                 }
+                Err(ref e @ TransactionError::WouldExceedMaxBlockCostLimit) |
+                Err(ref e @ TransactionError::WouldExceedMaxVoteCostLimit) |
+                Err(ref e @ TransactionError::WouldExceedMaxAccountCostLimit) |
+                Err(ref e @ TransactionError::WouldExceedAccountDataBlockLimit) => {
+                }
                 Err(ref error) => {
                     // return true for should_pause on the first detection of retryable error
                     debug!("error is detected while accumulating....: {error:?}");
