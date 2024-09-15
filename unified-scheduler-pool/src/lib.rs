@@ -445,7 +445,7 @@ where
     }
 
     fn create_banking_scheduler(&self) -> Arc<dyn BlockProducingScheduler> {
-        self.block_producing_scheduler_inner.lock().unwrap().0.map(|id, bps| bps)
+        self.block_producing_scheduler_inner.lock().unwrap().0.map(|(id, bps)| bps)
     }
 }
 
