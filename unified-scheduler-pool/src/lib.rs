@@ -1327,7 +1327,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                                 "sc_i_task"
                                             } else {
                                                 state_machine.rebuffer_executing_task(task);
-                                                "buffer"
+                                                "rebuffer"
                                             }
                                         } else {
                                             "new_b_task"

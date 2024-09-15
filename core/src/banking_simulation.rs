@@ -807,23 +807,6 @@ impl BankingSimulator {
             id: simulated_leader.into(),
         });
         let prioritization_fee_cache = &Arc::new(PrioritizationFeeCache::new(0u64));
-        let banking_stage = BankingStage::new_num_threads(
-            block_production_method.clone(),
-            &cluster_info,
-            &poh_recorder,
-            non_vote_receiver,
-            tpu_vote_receiver,
-            gossip_vote_receiver,
-            BankingStage::num_threads(),
-            None,
-            replay_vote_sender,
-            None,
-            connection_cache,
-            bank_forks.clone(),
-            prioritization_fee_cache,
-            false,
-        );
-
         let (&_slot, &raw_base_event_time) = freeze_time_by_slot
             .range(parent_slot..)
             .next()
@@ -851,6 +834,23 @@ impl BankingSimulator {
             })
             .zip_eq(batch_and_tx_counts)
             .collect::<Vec<_>>();
+
+        let banking_stage = BankingStage::new_num_threads(
+            block_production_method.clone(),
+            &cluster_info,
+            &poh_recorder,
+            non_vote_receiver,
+            tpu_vote_receiver,
+            gossip_vote_receiver,
+            BankingStage::num_threads(),
+            None,
+            replay_vote_sender,
+            None,
+            connection_cache,
+            bank_forks.clone(),
+            prioritization_fee_cache,
+            false,
+        );
 
         let sender_loop = SenderLoop {
             parent_slot,
