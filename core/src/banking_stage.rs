@@ -756,7 +756,7 @@ impl BankingStage {
                                                 }
                                                 let Some(tx) = p.build_sanitized_transaction(
                                                     bank.vote_only_bank(),
-                                                    &bank,
+                                                    &*bank,
                                                     bank.get_reserved_account_keys(),
                                                 ) else {
                                                     return None;
