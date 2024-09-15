@@ -715,33 +715,6 @@ impl BankingSimulator {
             info!("skipping purging...");
         }
 
-        info!("Poh is starting!");
-
-        let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
-            bank.tick_height(),
-            bank.last_blockhash(),
-            bank.clone(),
-            None,
-            bank.ticks_per_slot(),
-            false,
-            blockstore.clone(),
-            blockstore.get_new_shred_signal(0),
-            &leader_schedule_cache,
-            &genesis_config.poh_config,
-            None,
-            exit.clone(),
-        );
-        let poh_recorder = Arc::new(RwLock::new(poh_recorder));
-        solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
-        let poh_service = PohService::new(
-            poh_recorder.clone(),
-            &genesis_config.poh_config,
-            exit.clone(),
-            bank.ticks_per_slot(),
-            DEFAULT_PINNED_CPU_CORE,
-            DEFAULT_HASHES_PER_BATCH,
-            record_receiver,
-        );
 
         // Enable BankingTracer to approximate the real environment as close as possible because
         // it's not expected to disable BankingTracer on production environments.
@@ -835,6 +808,33 @@ impl BankingSimulator {
             .zip_eq(batch_and_tx_counts)
             .collect::<Vec<_>>();
 
+        info!("Poh is starting!");
+
+        let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
+            bank.tick_height(),
+            bank.last_blockhash(),
+            bank.clone(),
+            None,
+            bank.ticks_per_slot(),
+            false,
+            blockstore.clone(),
+            blockstore.get_new_shred_signal(0),
+            &leader_schedule_cache,
+            &genesis_config.poh_config,
+            None,
+            exit.clone(),
+        );
+        let poh_recorder = Arc::new(RwLock::new(poh_recorder));
+        solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
+        let poh_service = PohService::new(
+            poh_recorder.clone(),
+            &genesis_config.poh_config,
+            exit.clone(),
+            bank.ticks_per_slot(),
+            DEFAULT_PINNED_CPU_CORE,
+            DEFAULT_HASHES_PER_BATCH,
+            record_receiver,
+        );
         let banking_stage = BankingStage::new_num_threads(
             block_production_method.clone(),
             &cluster_info,
