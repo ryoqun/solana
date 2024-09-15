@@ -803,7 +803,7 @@ impl BankingStage {
                                             }
                                             */
                                             for (a, b) in ppp {
-                                                s.schedule_execution(a, b);
+                                                s.schedule_execution(&(a, b));
                                             }
                                         }
 
