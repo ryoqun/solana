@@ -786,6 +786,7 @@ impl SchedulingStateMachine {
                 self.executing_task_count.increment_self();
                 Some(task)
             } else {
+                self.buffered_task_total.increment_self();
                 assert!(self.buffered_task_queue.insert(task.index, task).is_none());
                 None
             }
@@ -794,6 +795,7 @@ impl SchedulingStateMachine {
 
     pub fn rebuffer_executing_task(&mut self, task: Task) {
         self.executing_task_count.decrement_self();
+        self.buffered_task_total.increment_self();
         assert!(self.buffered_task_queue.insert(task.index, task).is_none());
     }
 
@@ -802,7 +804,6 @@ impl SchedulingStateMachine {
         self.buffered_task_queue.pop_first().map(|(_index, task)| {
             assert!(self.is_task_runnable());
             self.executing_task_count.increment_self();
-            self.buffered_task_total.increment_self();
             task
         })
     }
@@ -962,6 +963,7 @@ impl SchedulingStateMachine {
                         .try_unblock(&mut self.count_token)
                     {
                         self.blocked_task_count.decrement_self();
+                        self.buffered_task_total.increment_self();
                         assert!(self.buffered_task_queue.insert(task.index, task).is_none());
                     }
 
