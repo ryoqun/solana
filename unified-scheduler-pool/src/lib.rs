@@ -1416,10 +1416,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     } else {
                         log_scheduler!(info, "paused");
                     }
-                    log_interval = LogInterval::default();
                     is_running = false;
-                    session_ending = false;
-                    session_pausing = false;
                     let already_ignored = &mut false;
 
                     // Prepare for the new session.
@@ -1437,6 +1434,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
                             match state_machine.mode() {
                                 SchedulingMode::BlockVerification => {
+                                    log_interval = LogInterval::default();
                                     state_machine.reinitialize(new_context.mode());
                                     reported_task_total = 0;
                                     reported_executed_task_total = 0;
@@ -1458,12 +1456,16 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 .unwrap();
                             context = new_context;
                             result_with_timings = new_result_with_timings;
+                            session_ending = false;
+                            session_pausing = false;
                             break;
                         }
                         Err(_) => {
                             // This unusual condition must be triggered by ThreadManager::drop().
                             // Initialize result_with_timings with a harmless value...
                             result_with_timings = initialized_result_with_timings();
+                            session_ending = false;
+                            session_pausing = false;
                             break 'nonaborted_main_loop;
                         }
                         Ok(NewTaskPayload::Payload(task)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
