@@ -1062,6 +1062,14 @@ impl SchedulingStateMachine {
         })
     }
 
+    pub fn reset_task_total(&mut self) {
+        self.task_total.reset_to_zero();
+    }
+
+    pub fn reset_executed_task_total(&mut self) {
+        self.executed_task_total.reset_to_zero();
+    }
+
     /// Rewind the inactive state machine to be initialized
     ///
     /// This isn't called _reset_ to indicate this isn't safe to call this at any given moment.
@@ -1083,11 +1091,11 @@ impl SchedulingStateMachine {
             alive_task_count,
             executing_task_count,
             max_executing_task_count: _,
-            executed_task_total,
+            executed_task_total: _,
             buffered_task_total,
             blocked_task_count: _,
             reblocked_lock_total,
-            task_total,
+            task_total: _,
             count_token: _,
             usage_queue_token: _,
             scheduling_mode,
@@ -1095,10 +1103,10 @@ impl SchedulingStateMachine {
         } = self;
         alive_task_count.reset_to_zero();
         executing_task_count.reset_to_zero();
-        executed_task_total.reset_to_zero();
         buffered_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
-        task_total.reset_to_zero();
+        self.reset_task_total();
+        self.reset_executed_task_total();
         *scheduling_mode = mode;
     }
 
