@@ -776,7 +776,7 @@ impl BankingSimulator {
             .range(parent_slot..)
             .next()
             .expect("timed hashes");
-        let base_event_time = raw_base_event_time - WARMUP_DURATION;
+        let base_event_time = raw_base_event_time - self.warmup_duration;
 
         let total_batch_count = packet_batches_by_time.len();
         let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
