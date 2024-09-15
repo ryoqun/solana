@@ -255,7 +255,7 @@ impl BankForks {
     }
 
     pub fn create_block_producing_scheduler(&self) -> Arc<dyn BlockProducingScheduler> {
-        self.scheduler_pool.unwrap().create_banking_scheduler()
+        self.scheduler_pool.unwrap().create_banking_scheduler(&self)
     }
 
     pub fn insert(&mut self, mode: SchedulingMode, mut bank: Bank) -> BankWithScheduler {
