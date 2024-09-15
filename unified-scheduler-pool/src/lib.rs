@@ -1694,9 +1694,7 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
     where
         Self: Sized;
 
-    fn create_block_producing_scheduler(&self) -> BlockProducingUnifiedScheduler {
-        panic!();
-    }
+    fn create_block_producing_scheduler(&self) -> BlockProducingUnifiedScheduler;
 }
 
 impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
