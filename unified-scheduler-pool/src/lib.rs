@@ -77,7 +77,7 @@ type AtomicSchedulerId = AtomicU64;
 #[derive(Debug)]
 pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
-    block_producing_scheduler_inner: Mutex<(Option<(u64, BlockProducingUnifiedScheduler)>, Option<S::Inner>)>,
+    block_producing_scheduler_inner: Mutex<(Option<(u64, Arc<BlockProducingUnifiedScheduler>)>, Option<S::Inner>)>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     timeout_listeners: Mutex<Vec<(TimeoutListener, Instant)>>,
     handler_count: usize,
@@ -380,7 +380,7 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 let s = S::spawn(self.self_arc(), context, result_with_timings);
-                let bps = s.create_block_producing_scheduler();
+                let bps = Arc::new(s.create_block_producing_scheduler());
                 assert!(g.0.replace((s.id(), bps)).is_none());
                 s
             }
