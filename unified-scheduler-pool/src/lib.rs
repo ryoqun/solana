@@ -998,7 +998,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 Err(ref e @ TransactionError::WouldExceedMaxAccountCostLimit) |
                 Err(ref e @ TransactionError::WouldExceedAccountDataBlockLimit) => {
                     debug!("hit block cost: {e:?}");
-                    Some(executed_task, true))
+                    Some((executed_task, true))
                 }
                 Err(ref error) => {
                     debug!("error is detected while accumulating....: {error:?}");
