@@ -997,7 +997,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 Err(ref e @ TransactionError::WouldExceedMaxVoteCostLimit) |
                 Err(ref e @ TransactionError::WouldExceedMaxAccountCostLimit) |
                 Err(ref e @ TransactionError::WouldExceedAccountDataBlockLimit) => {
-                    debug!("hit block cost: {e:?}");
+                    info!("hit block cost: {e:?}");
                     Some((executed_task, true))
                 }
                 Err(ref error) => {
@@ -1445,6 +1445,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     reported_task_total = 0;
                                     reported_executed_task_total = 0;
                                     assert_eq!(ignored_error_count, 0);
+                                    session_ending = false;
                                     log_scheduler!(info, "started");
                                 },
                                 SchedulingMode::BlockProduction => {
@@ -1453,6 +1454,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     reported_task_total = 0;
                                     reported_executed_task_total = 0;
                                     ignored_error_count = 0;
+                                    session_pausing = false;
                                     log_scheduler!(info, "unpaused");
                                 },
                             }
@@ -1462,8 +1464,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 .unwrap();
                             context = new_context;
                             result_with_timings = new_result_with_timings;
-                            session_ending = false;
-                            session_pausing = false;
                             break;
                         }
                         Err(_) => {
