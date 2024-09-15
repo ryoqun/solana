@@ -252,6 +252,10 @@ impl BankForks {
         bank_with_scheduler
     }
 
+    pub fn create_block_producing_scheduler(&self) -> Arc<dyn BlockProducingScheduler> {
+        self.scheduler_pool.create_banking_scheduler()
+    }
+
     pub fn insert(&mut self, mode: SchedulingMode, mut bank: Bank) -> BankWithScheduler {
         if self.root.load(Ordering::Relaxed) < self.highest_slot_at_startup {
             bank.set_check_program_modification_slot(true);
