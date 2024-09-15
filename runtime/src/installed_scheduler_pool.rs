@@ -254,7 +254,7 @@ pub struct SchedulingContext {
 }
 
 impl SchedulingContext {
-    pub(crate) fn new(mode: SchedulingMode, bank: Arc<Bank>) -> Self {
+    pub fn new(mode: SchedulingMode, bank: Arc<Bank>) -> Self {
         Self { mode, bank, started_at: Arc::new(Mutex::new((Instant::now(), false))) }
     }
 
