@@ -811,14 +811,14 @@ impl BankingSimulator {
             exit.clone(),
         );
         let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
-            start_bank.ticks_per_slot(),
+            poh_bank.ticks_per_slot(),
             self.genesis_config
                 .poh_config
                 .target_tick_duration
                 .as_nanos() as u64,
-        ) * start_bank.ticks_per_slot();
+        ) * poh_bank.ticks_per_slot();
         let warmup_duration = Duration::from_nanos(
-            (simulated_slot - (start_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
+            (simulated_slot - (poh_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
         );
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
         solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
