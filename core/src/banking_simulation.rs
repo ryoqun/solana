@@ -885,6 +885,7 @@ impl BankingSimulator {
             total_batch_count,
             timed_batches_to_send,
             warmup_duration,
+            poh_bank,
         };
 
         let simulator_loop = SimulatorLoop {
