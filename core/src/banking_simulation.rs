@@ -812,7 +812,7 @@ impl BankingSimulator {
         );
         let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
             poh_bank.ticks_per_slot(),
-            self.genesis_config
+            genesis_config
                 .poh_config
                 .target_tick_duration
                 .as_nanos() as u64,
