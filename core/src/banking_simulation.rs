@@ -747,7 +747,7 @@ impl BankingSimulator {
         let (retransmit_slots_sender, retransmit_slots_receiver) = unbounded();
         let shred_version = compute_shred_version(
             &genesis_config.hash(),
-            Some(&bank_forks.read().unwrap().root_bank().hard_forks()),
+            Some(&bank.hard_forks()),
         );
         let (sender, _receiver) = tokio::sync::mpsc::channel(1);
 
