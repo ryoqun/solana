@@ -416,6 +416,7 @@ impl SimulatorLoop {
         base_simulation_time: SystemTime,
         sender_thread: EventSenderThread,
     ) -> (EventSenderThread, Sender<Slot>) {
+        self.poh_recorder.write().unwrap().reset(bank, self.first_simulated_slot);
         info!("warmup start!");
         loop {
             let current_slot = self.poh_recorder.read().unwrap().slot();
