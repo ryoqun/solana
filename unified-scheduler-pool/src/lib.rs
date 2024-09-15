@@ -77,7 +77,7 @@ type AtomicSchedulerId = AtomicU64;
 #[derive(Debug)]
 pub struct SchedulerPool<S: SpawnableScheduler<TH>, TH: TaskHandler> {
     scheduler_inners: Mutex<Vec<(S::Inner, Instant)>>,
-    block_producing_scheduler_inner: Mutex<(Option<u64>, Option<S::Inner>)>,
+    block_producing_scheduler_inner: Mutex<(Option<(u64, BlockProducingUnifiedScheduler)>, Option<S::Inner>)>,
     trashed_scheduler_inners: Mutex<Vec<S::Inner>>,
     timeout_listeners: Mutex<Vec<(TimeoutListener, Instant)>>,
     handler_count: usize,
@@ -970,14 +970,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             SchedulingMode::BlockProduction => {
                 if !context.can_commit() {
                     info!("detected max tick height at scheduler thread...");
-                    *result = Err(TransactionError::CommitFailed);
+                    //*result = Err(TransactionError::CommitFailed);
                     return Some((executed_task, true));
                 }
                 match executed_task.result_with_timings.0 {
                 Ok(()) => Some((executed_task, false)),
                 Err(TransactionError::CommitFailed) => {
                     info!("maybe reached max tick height...");
-                    *result = Err(TransactionError::CommitFailed);
+                    //*result = Err(TransactionError::CommitFailed);
                     // it's okay to abort scheduler as this error gurantees determinstic bank
                     // freezing...
                     Some((executed_task, true))
