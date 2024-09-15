@@ -451,7 +451,7 @@ where
         let scheduler = self.take_resumed_scheduler(context, initialized_result_with_timings());
         let (result_with_timings, uninstalled_scheduler) =
             scheduler.wait_for_termination(false);
-        uninstalled_scheduler.return_to_pool();
+        let () = uninstalled_scheduler.return_to_pool();
         self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned().unwrap()
     }
 }
