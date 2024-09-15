@@ -1365,13 +1365,14 @@ mod tests {
         // new task is arriving after task1 is already descheduled and task2 got unblocked
         assert_matches!(state_machine.schedule_task(task3.clone()), None);
 
-        assert_eq!(state_machine.buffered_task_total(), 0);
+        assert_eq!(state_machine.buffered_task_total(), 1);
         assert_matches!(
             state_machine
                 .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
+        // buffered_task_total() should be incremented
         assert_eq!(state_machine.buffered_task_total(), 1);
 
         state_machine.deschedule_task(&task2);
