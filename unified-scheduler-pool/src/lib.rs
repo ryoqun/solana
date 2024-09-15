@@ -380,8 +380,8 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 let s = S::spawn(self.self_arc(), context, result_with_timings);
-                s.create_block_producing_scheduler();
-                assert!(g.0.replace(s.id()).is_none());
+                let bps = s.create_block_producing_scheduler();
+                assert!(g.0.replace((s.id(), bps)).is_none());
                 s
             }
         }
