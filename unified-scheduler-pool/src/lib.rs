@@ -1741,7 +1741,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
 
     fn create_block_producing_scheduler(&self) -> BlockProducingUnifiedScheduler {
         BlockProducingUnifiedScheduler {
-            usage_queue_loader: self.usage_queue_loader.clone(),
+            usage_queue_loader: self.inner.usage_queue_loader.clone(),
             new_task_sender: self.inner.thread_manager.new_task_sender.clone(),
         }
     }
