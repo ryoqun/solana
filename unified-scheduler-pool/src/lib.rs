@@ -1299,7 +1299,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
                                 std::mem::forget(executed_task);
-                                if should_pause {
+                                if should_pause && !session_pausing {
                                     session_pausing = true;
                                     "pausing"
                                 } else {
@@ -1340,8 +1340,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                                 "ending"
                                             },
                                             SchedulingMode::BlockProduction => {
-                                                session_pausing = true;
-                                                "pausing"
+                                                if !session_pausing {
+                                                    session_pausing = true;
+                                                    "pausing"
+                                                } else {
+                                                    "close_subch"
+                                                }
                                             },
                                         }
                                     }
@@ -1366,7 +1370,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
                                 std::mem::forget(executed_task);
-                                if should_pause {
+                                if should_pause && !session_pausing {
                                     session_pausing = true;
                                     "pausing"
                                 } else {
