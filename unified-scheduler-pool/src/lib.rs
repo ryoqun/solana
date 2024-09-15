@@ -1742,7 +1742,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct BlockProducingUnifiedScheduler {
     usage_queue_loader: Arc<UsageQueueLoader>,
     new_task_sender: Sender<CompactNewTaskPayload>,
