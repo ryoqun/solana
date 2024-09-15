@@ -1085,6 +1085,9 @@ impl SchedulingStateMachine {
         assert_eq!(self.executing_task_count.current(), 0);
         assert_eq!(self.buffered_task_queue.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
+
+        self.reset_task_total();
+        self.reset_executed_task_total();
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
             buffered_task_queue: _,
@@ -1105,8 +1108,6 @@ impl SchedulingStateMachine {
         executing_task_count.reset_to_zero();
         buffered_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
-        self.reset_task_total();
-        self.reset_executed_task_total();
         *scheduling_mode = mode;
     }
 
