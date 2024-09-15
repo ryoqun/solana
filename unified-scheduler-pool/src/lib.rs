@@ -1219,7 +1219,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             $prefix,
                             (if session_ending {"S"} else {"-"}),
                             (if session_pausing {"P"} else {"-"}),
-                            state_machine.alive_task_count(), state_machine.blocked_task_count(), state_machine.buffered_task_queue_count(), state_machine.handled_task_total(),
+                            state_machine.alive_task_count(), state_machine.blocked_task_count(), state_machine.buffered_task_queue_count(), state_machine.executed_task_total(),
                             ignored_error_count,
                             state_machine.task_total(),
                             state_machine.buffered_task_total(),
@@ -1240,20 +1240,20 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         format!(
                                             "<{}>{}",
                                             1_000_000_u128 * ((state_machine.task_total() - reported_new_task_total) as u128) / log_elapsed_us,
-                                            1_000_000_u128 * ((state_machine.handled_task_total() - reported_retired_task_total) as u128) / log_elapsed_us,
+                                            1_000_000_u128 * ((state_machine.executed_task_total() - reported_retired_task_total) as u128) / log_elapsed_us,
                                         )
                                     } else { "-".to_string() },
                                     if session_elapsed_us > 0 {
                                         format!(
                                             "<{}>{}",
                                             1_000_000_u128 * (state_machine.task_total() as u128) / session_elapsed_us,
-                                            1_000_000_u128 * (state_machine.handled_task_total() as u128) / session_elapsed_us,
+                                            1_000_000_u128 * (state_machine.executed_task_total() as u128) / session_elapsed_us,
                                         )
                                     } else { "-".to_string() },
                                 );
                                 #[allow(unused_assignments)]
                                 {
-                                    (log_reported_at, reported_new_task_total, reported_retired_task_total) = (now, state_machine.task_total(), state_machine.handled_task_total());
+                                    (log_reported_at, reported_new_task_total, reported_retired_task_total) = (now, state_machine.task_total(), state_machine.executed_task_total());
                                 }
                                 l
                             },
