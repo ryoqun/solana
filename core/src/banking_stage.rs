@@ -698,7 +698,7 @@ impl BankingStage {
         }
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
-        let s = bank_forks.create_block_producing_scheduler();
+        let s = bank_forks.read().unwrap().create_block_producing_scheduler();
         info!("create_block_producing_scheduler: end!");
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
