@@ -723,12 +723,12 @@ impl BankingStage {
             std::thread::Builder::new()
                 .name(format!("solScSubmit{:02}", thx))
                 .spawn(move || 'outer: loop {
-                    let bank = bank_forks.read().unwrap().working_bank();
                     let decision = decision_maker.make_consume_or_forward_decision();
                     match decision {
                         BufferedPacketsDecision::Consume(_) |
                         BufferedPacketsDecision::ForwardAndHold |
                         BufferedPacketsDecision::Hold => {
+                            let bank = bank_forks.read().unwrap().working_bank();
                             //info!("consume!");
                             let transaction_account_lock_limit =
                                 bank.get_transaction_account_lock_limit();
