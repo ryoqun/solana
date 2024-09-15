@@ -329,7 +329,7 @@ where
     // This fn needs to return immediately due to being part of the blocking
     // `::wait_for_termination()` call.
     fn return_scheduler(&self, scheduler: S::Inner, id: u64, should_trash: bool) {
-        let bp_id: Option<u64> = self.block_producing_scheduler_inner.lock().unwrap().0.map(|(id, s)| id);
+        let bp_id: Option<u64> = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, s)| id);
         if should_trash {
             assert!(Some(id) != bp_id);
             // Delay drop()-ing this trashed returned scheduler inner by stashing it in
