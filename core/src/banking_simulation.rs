@@ -818,7 +818,7 @@ impl BankingSimulator {
                 .as_nanos() as u64,
         ) * poh_bank.ticks_per_slot();
         let warmup_duration = Duration::from_nanos(
-            (simulated_slot - (poh_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
+            (self.first_simulated_slot - poh_bank.slot()) * target_ns_per_slot,
         );
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
         solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
