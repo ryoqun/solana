@@ -721,10 +721,11 @@ impl BankingStage {
                     let decision = decision_maker.make_consume_or_forward_decision();
                     match decision {
                         BufferedPacketsDecision::Consume(bank_start) => {
+                            info!("consume"!);
                             let bank = bank_start.working_bank;
                             let transaction_account_lock_limit =
                                 bank.get_transaction_account_lock_limit();
-                            let recv_timeout = Duration::from_millis(10);
+                            let recv_timeout = Duration::from_millis(100);
 
                             let start = Instant::now();
 
@@ -808,15 +809,18 @@ impl BankingStage {
                             }
                         }
                         BufferedPacketsDecision::Forward => {
+                            info!("forward"!);
                             while let Ok(_) = packet_deserializer.packet_batch_receiver.try_recv() {
                             }
-                            std::thread::sleep(Duration::from_millis(10));
+                            std::thread::sleep(Duration::from_millis(100));
                         }
                         BufferedPacketsDecision::ForwardAndHold => {
-                            std::thread::sleep(Duration::from_millis(10));
+                            info!("forward and hold"!);
+                            std::thread::sleep(Duration::from_millis(100));
                         }
                         BufferedPacketsDecision::Hold => {
-                            std::thread::sleep(Duration::from_millis(10));
+                            info!("hold"!);
+                            std::thread::sleep(Duration::from_millis(100));
                         }
                     }
                     if poh_recorder.read().unwrap().is_exited.load(Ordering::Relaxed) {
