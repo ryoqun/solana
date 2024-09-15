@@ -1310,14 +1310,14 @@ mod tests {
         assert!(state_machine.has_buffered_task());
         assert_eq!(state_machine.buffered_task_queue_count(), 1);
 
-        // buffered_task_total() should be incremented
-        assert_eq!(state_machine.buffered_task_total(), 0);
+        assert_eq!(state_machine.buffered_task_total(), 1);
         assert_eq!(
             state_machine
                 .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
+        // buffered_task_total() should be incremented
         assert_eq!(state_machine.buffered_task_total(), 1);
 
         // there's no blocked task anymore; calling schedule_next_buffered_task should be noop and
