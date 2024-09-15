@@ -91,6 +91,8 @@ impl Index<u64> for BankForks {
     }
 }
 
+use crate::installed_scheduler_pool::BlockProducingScheduler;
+
 impl BankForks {
     pub fn new_rw_arc(root_bank: Bank) -> Arc<RwLock<Self>> {
         let root_bank = Arc::new(root_bank);
