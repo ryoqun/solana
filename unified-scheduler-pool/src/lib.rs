@@ -1757,6 +1757,7 @@ struct BlockProducingUnifiedScheduler {
     new_task_sender: Sender<CompactNewTaskPayload>,
 }
 
+use solana_runtime::installed_scheduler_pool::BlockProducingScheduler;
 impl BlockProducingScheduler for BlockProducingUnifiedScheduler {
     fn schedule_execution(
         &self,
