@@ -1287,11 +1287,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                std::mem::forget(executed_task);
                                 if should_pause {
                                     session_pausing = true;
+                                    "pausing"
+                                } else {
+                                    "desc_b_task"
                                 }
-                                std::mem::forget(executed_task);
-                                "desc_b_task"
                             },
                             recv(dummy_buffered_task_receiver) -> dummy => {
                                 assert_matches!(dummy, Err(RecvError));
@@ -1352,11 +1354,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
+                                std::mem::forget(executed_task);
                                 if should_pause {
                                     session_pausing = true;
+                                    "pausing"
+                                } else {
+                                    "desc_i_task"
                                 }
-                                std::mem::forget(executed_task);
-                                "desc_i_task"
                             },
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
