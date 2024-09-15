@@ -776,7 +776,21 @@ impl BankingSimulator {
             .range(parent_slot..)
             .next()
             .expect("timed hashes");
-        let base_event_time = raw_base_event_time - self.warmup_duration;
+
+        let poh_bank = bank_forks.read().unwrap().root_bank();
+        let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
+            poh_bank.ticks_per_slot(),
+            genesis_config
+                .poh_config
+                .target_tick_duration
+                .as_nanos() as u64,
+        ) * poh_bank.ticks_per_slot();
+        let warmup_duration = Duration::from_nanos(
+            (self.first_simulated_slot - poh_bank.slot()) * target_ns_per_slot,
+        );
+        // if slot is too short => bail
+        info!("warmup_duration: {:?}", warmup_duration);
+        let base_event_time = raw_base_event_time - warmup_duration;
 
         let total_batch_count = packet_batches_by_time.len();
         let timed_batches_to_send = packet_batches_by_time.split_off(&base_event_time);
@@ -801,8 +815,6 @@ impl BankingSimulator {
             .collect::<Vec<_>>();
 
         info!("Poh is starting!");
-
-        let poh_bank = bank_forks.read().unwrap().root_bank();
         let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
             poh_bank.tick_height(),
             poh_bank.last_blockhash(),
@@ -817,18 +829,6 @@ impl BankingSimulator {
             None,
             exit.clone(),
         );
-        let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
-            poh_bank.ticks_per_slot(),
-            genesis_config
-                .poh_config
-                .target_tick_duration
-                .as_nanos() as u64,
-        ) * poh_bank.ticks_per_slot();
-        let warmup_duration = Duration::from_nanos(
-            (self.first_simulated_slot - poh_bank.slot()) * target_ns_per_slot,
-        );
-        // if slot is too short => bail
-        info!("warmup_duration: {:?}", warmup_duration);
         drop(poh_bank);
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
         solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
