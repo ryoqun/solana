@@ -62,6 +62,8 @@ pub trait InstalledSchedulerPool: Send + Sync + Debug {
     ) -> InstalledSchedulerBox;
 
     fn register_timeout_listener(&self, timeout_listener: TimeoutListener);
+
+    fn create_banking_scheduler(&self) -> Arc<dyn BlockProducingScheduler>;
 }
 
 #[derive(Debug)]
