@@ -721,7 +721,7 @@ impl BankingStage {
                     let decision = decision_maker.make_consume_or_forward_decision();
                     match decision {
                         BufferedPacketsDecision::Consume(bank_start) => {
-                            info!("consume"!);
+                            info!("consume!");
                             let bank = bank_start.working_bank;
                             let transaction_account_lock_limit =
                                 bank.get_transaction_account_lock_limit();
@@ -809,17 +809,17 @@ impl BankingStage {
                             }
                         }
                         BufferedPacketsDecision::Forward => {
-                            info!("forward"!);
+                            info!("forward!");
                             while let Ok(_) = packet_deserializer.packet_batch_receiver.try_recv() {
                             }
                             std::thread::sleep(Duration::from_millis(100));
                         }
                         BufferedPacketsDecision::ForwardAndHold => {
-                            info!("forward and hold"!);
+                            info!("forward and hold!");
                             std::thread::sleep(Duration::from_millis(100));
                         }
                         BufferedPacketsDecision::Hold => {
-                            info!("hold"!);
+                            info!("hold!");
                             std::thread::sleep(Duration::from_millis(100));
                         }
                     }
