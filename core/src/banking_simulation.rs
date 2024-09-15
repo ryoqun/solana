@@ -330,6 +330,7 @@ struct SenderLoop {
     raw_base_event_time: SystemTime,
     total_batch_count: usize,
     timed_batches_to_send: TimedBatchesToSend,
+    warmup_duration: Duration,
 }
 
 impl SenderLoop {
@@ -883,6 +884,7 @@ impl BankingSimulator {
             raw_base_event_time,
             total_batch_count,
             timed_batches_to_send,
+            warmup_duration,
         };
 
         let simulator_loop = SimulatorLoop {
