@@ -443,6 +443,9 @@ where
             .unwrap()
             .push((timeout_listener, Instant::now()));
     }
+
+    fn create_banking_scheduler(&self) -> Arc<dyn BlockProducingScheduler> {
+    }
 }
 
 pub trait TaskHandler: Send + Sync + Debug + Sized + 'static {
