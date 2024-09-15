@@ -1757,7 +1757,7 @@ struct BlockProducingUnifiedScheduler {
     new_task_sender: Sender<CompactNewTaskPayload>,
 }
 
-impl BlockProducingUnifiedScheduler {
+impl BlockProducingScheduler for BlockProducingUnifiedScheduler {
     fn schedule_execution(
         &self,
         transaction_with_index: &(&SanitizedTransaction, Index),
