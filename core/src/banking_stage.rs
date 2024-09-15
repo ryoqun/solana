@@ -717,6 +717,8 @@ impl BankingStage {
             let id_generator = id_generator.clone();
             let packet_deserializer = PacketDeserializer::new(receiver, bank_forks.clone());
             let poh_recorder = poh_recorder.clone();
+            let bank_forks = bank_forks.clone();
+            let s = s.clone();
 
             std::thread::Builder::new()
                 .name(format!("solScSubmit{:02}", thx))
