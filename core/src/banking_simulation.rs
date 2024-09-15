@@ -900,7 +900,6 @@ impl BankingSimulator {
             leader_schedule_cache,
             retransmit_slots_sender,
             retracer,
-            poh_bank,
         };
 
         let simulator_threads = SimulatorThreads {
