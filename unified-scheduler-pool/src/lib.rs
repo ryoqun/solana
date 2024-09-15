@@ -1419,6 +1419,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     is_running = false;
                     session_ending = false;
                     session_pausing = false;
+                    let already_ignored = &mut false;
 
                     // Prepare for the new session.
                     loop {
@@ -1466,6 +1467,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             }
                         }
                         Ok(NewTaskPayload::CloseSubchannel(_)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
+                            assert!(std::mem::replace(already_ignored, true));
                             info!("ignoring duplicate CloseSubchannel...");
                         }
                         Ok(p) => unreachable!("{:?}", p),
