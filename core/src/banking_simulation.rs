@@ -127,8 +127,8 @@ pub enum SimulateError {
 }
 
 // Defined to be enough to cover the holding phase prior to leader slots with some idling (+5 secs)
-const WARMUP_DURATION: Duration =
-    Duration::from_millis(HOLD_TRANSACTIONS_SLOT_OFFSET * DEFAULT_MS_PER_SLOT + 5000);
+//const WARMUP_DURATION: Duration =
+//    Duration::from_millis(HOLD_TRANSACTIONS_SLOT_OFFSET * DEFAULT_MS_PER_SLOT + 5000);
 
 /// BTreeMap is intentional because events could be unordered slightly due to tracing jitter.
 type PacketBatchesByTime = BTreeMap<SystemTime, (ChannelLabel, BankingPacketBatch)>;
@@ -338,7 +338,7 @@ impl SenderLoop {
             "simulating events: {} (out of {}), starting at slot {} (based on {} from traced event slot: {}) (warmup: -{:?})",
             self.timed_batches_to_send.len(), self.total_batch_count, self.first_simulated_slot,
             SenderLoopLogger::format_as_timestamp(self.raw_base_event_time),
-            self.parent_slot, WARMUP_DURATION,
+            self.parent_slot, self.warmup_duration,
         );
     }
 
@@ -415,7 +415,14 @@ impl SimulatorLoop {
         base_simulation_time: SystemTime,
         sender_thread: EventSenderThread,
     ) -> (EventSenderThread, Sender<Slot>) {
-        sleep(WARMUP_DURATION);
+        info!("warmup start!");
+        loop {
+            let current_slot = self.poh_recorder.read().unwrap().slot();
+            if current_slot >= self.first_simulated_slot {
+                break;
+            }
+            sleep(Duration::from_millis(10));
+        }
         info!("warmup done!");
         self.start(base_simulation_time, sender_thread)
     }
