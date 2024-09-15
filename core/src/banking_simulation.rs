@@ -795,12 +795,13 @@ impl BankingSimulator {
 
         info!("Poh is starting!");
 
+        let poh_bank = bank_forks.read().unwrap().root_bank();
         let (poh_recorder, entry_receiver, record_receiver) = PohRecorder::new_with_clear_signal(
-            bank.tick_height(),
-            bank.last_blockhash(),
-            bank.clone(),
+            poh_bank.tick_height(),
+            poh_bank.last_blockhash(),
+            poh_bank.clone(),
             None,
-            bank.ticks_per_slot(),
+            poh_bank.ticks_per_slot(),
             false,
             blockstore.clone(),
             blockstore.get_new_shred_signal(0),
@@ -808,6 +809,16 @@ impl BankingSimulator {
             &genesis_config.poh_config,
             None,
             exit.clone(),
+        );
+        let target_ns_per_slot = solana_poh::poh_service::PohService::target_ns_per_tick(
+            start_bank.ticks_per_slot(),
+            self.genesis_config
+                .poh_config
+                .target_tick_duration
+                .as_nanos() as u64,
+        ) * start_bank.ticks_per_slot();
+        let warmup_duration = Duration::from_nanos(
+            (simulated_slot - (start_bank.slot() + skipped_slot_offset)) * target_ns_per_slot,
         );
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
         solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
