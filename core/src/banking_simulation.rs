@@ -820,6 +820,9 @@ impl BankingSimulator {
         let warmup_duration = Duration::from_nanos(
             (self.first_simulated_slot - poh_bank.slot()) * target_ns_per_slot,
         );
+        // if slot is too short => bail
+        info!("warmup_duration: {:?}", warmup_duration);
+        drop(poh_bank);
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
         solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
         let poh_service = PohService::new(
