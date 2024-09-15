@@ -444,7 +444,7 @@ where
             .push((timeout_listener, Instant::now()));
     }
 
-    fn create_banking_scheduler(&self) -> Arc<dyn BlockProducingScheduler> {
+    fn create_banking_scheduler(&self, bank_forks: &BankForks) -> Arc<dyn BlockProducingScheduler> {
         self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned().unwrap()
     }
 }
