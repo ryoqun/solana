@@ -424,6 +424,8 @@ where
     }
 }
 
+use solana_runtime::bank_forks::BankForks;
+
 impl<S, TH> InstalledSchedulerPool for SchedulerPool<S, TH>
 where
     S: SpawnableScheduler<TH>,
