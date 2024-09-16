@@ -448,7 +448,7 @@ where
 
     fn create_banking_scheduler(&self, bank_forks: &BankForks) -> Arc<dyn BlockProducingScheduler> {
         let s = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned();
-        if Some(ss) = s {
+        if let Some(ss) = s {
             return ss;
         } else {
             let context = SchedulingContext::new(SchedulingMode::BlockProduction, bank_forks.root_bank());
