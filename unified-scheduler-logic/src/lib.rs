@@ -1137,7 +1137,7 @@ impl SchedulingStateMachine {
             buffered_task_queue: BTreeMap::new(), //VecDeque::with_capacity(1024),
             alive_task_count: ShortCounter::zero(),
             executing_task_count: ShortCounter::zero(),
-            max_executing_task_count: 50,
+            max_executing_task_count: 200,
             executed_task_total: ShortCounter::zero(),
             buffered_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
