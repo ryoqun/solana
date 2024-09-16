@@ -532,12 +532,15 @@ impl Usage {
         }
     }
 
-    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage, first_blocked_task_index: Index) -> bool {
+    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage, first_blocked_task_index: Option<Index>) -> bool {
         match self {
             Self::Readonly(current_tasks) => {
-                // this is imprecise....
                 if matches!(requested_usage, RequestedUsage::Readonly) {
-                    return false;
+                    if let Some(first_blocked_task_index) = first_blocked_task_index {
+                        new_task_index < first_blocked_task_index
+                    } else {
+                        false
+                    }
                 } else {
                     current_tasks.range(new_task_index..).any(|(_index, current_task)|
                         current_task.blocked_usage_count(count_token) > 0
