@@ -636,12 +636,14 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
-            Some(Usage::Writable(_current_task)) => match requested_usage {
+            Some(Usage::Writable(current_task)) => {
+                assert_eq!(task_index, current_task.index);
+                match requested_usage {
                 RequestedUsage::Writable => {
                     is_unused_now = true;
                 }
                 RequestedUsage::Readonly => unreachable!(),
-            },
+            }},
             None => unreachable!(),
         }
 
