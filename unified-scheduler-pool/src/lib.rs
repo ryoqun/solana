@@ -341,7 +341,7 @@ where
                     .expect("not poisoned")
                     .push(scheduler);
             } else {
-                // handle trash bp sch....
+                // handle (outgrown) trash bp sch....
                 assert!(self.block_producing_scheduler_inner.lock().unwrap().1.replace(scheduler).is_none());
             }
         } else {
