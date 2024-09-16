@@ -664,7 +664,7 @@ impl UsageQueueInner {
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
-        self.blocked_usages_from_tasks.first()
+        self.blocked_usages_from_tasks.first_key_value().map(|(k, _v)| k)
     }
 
     #[must_use]
