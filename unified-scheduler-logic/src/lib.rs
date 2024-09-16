@@ -890,12 +890,18 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let mut t = vec![];
-                                for (&current_index, task) in current_tasks.range(new_task.index..) {
+                                for (current_index, task) in current_tasks.range(new_task.index..) {
                                     let c = task.blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
                                         t.push(current_index);
                                     }
                                 }
+                                let r = if current_tasks.len() - t.len() == 0 {
+                                    *current_usage = Usage::Writable(new_task.clone());
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                };
                                 for current_index in t.into_iter() {
                                     let tt =
                                         current_tasks.remove(&current_index).unwrap();
@@ -906,12 +912,7 @@ impl SchedulingStateMachine {
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
-                                if current_tasks.is_empty() {
-                                    *current_usage = Usage::Writable(new_task.clone());
-                                    Ok(())
-                                } else {
-                                    Err(())
-                                }
+                                r
                             }
                         }
                     }
