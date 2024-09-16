@@ -681,9 +681,11 @@ mod chained_channel {
             self.sender.send(ChainedChannel::Payload(payload).into())
         }
 
+        /*
         pub(super) fn send_aux_payload(&self, payload: P) -> std::result::Result<(), SendError<P>> {
             self.aux_sender.send(payload)
         }
+        */
 
         pub(super) fn send_chained_channel(
             &mut self,
@@ -747,9 +749,11 @@ mod chained_channel {
             &self.receiver
         }
 
+        /*
         pub(super) fn aux_for_select(&self) -> &Receiver<P> {
             &self.aux_receiver
         }
+        */
 
         pub(super) fn never_receive_from_aux(&mut self) {
             self.aux_receiver = never();
@@ -1339,7 +1343,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             if !session_pausing {
-                                                runnable_task_sender.send_aux_payload(task).unwrap();
+                                                runnable_task_sender.send_payload(task).unwrap();
                                                 "sc_i_task"
                                             } else {
                                                 state_machine.rebuffer_executing_task(task);
@@ -1375,6 +1379,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     }
                                 }
                             },
+                            /*
                             recv(finished_idle_task_receiver) -> executed_task => {
                                 let Some((executed_task, should_pause)) = Self::accumulate_result_with_timings(
                                     &context,
@@ -1393,6 +1398,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     "desc_i_task"
                                 }
                             },
+                            */
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
                             is_running = true;
@@ -1564,6 +1570,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             continue;
                         }
                     },
+                    /*
                     recv(runnable_task_receiver.aux_for_select()) -> task => {
                         if let Ok(task) = task {
                             (task, &finished_idle_task_sender)
@@ -1572,6 +1579,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             continue;
                         }
                     },
+                    */
                 };
                 defer! {
                     if !thread::panicking() {
