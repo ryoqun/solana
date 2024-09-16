@@ -847,8 +847,9 @@ impl SchedulingStateMachine {
 
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
+                let fbti = self.usage_queue.first_blocked_task_index();
                 let lock_result = match usage_queue.current_usage.as_mut() {
-                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index, context.requested_usage) => {
+                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index, context.requested_usage, fbti) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
                         match (&mut current_usage, context.requested_usage) {
