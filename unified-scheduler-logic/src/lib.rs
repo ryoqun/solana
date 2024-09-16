@@ -899,6 +899,12 @@ impl SchedulingStateMachine {
                                 let t: Vec<Task> = t.into_iter().map(|current_index| {
                                     current_tasks.remove(&current_index).unwrap()
                                 }).collect();
+                                let r = if current_tasks.is_empty() {
+                                    *current_usage = Usage::Writable(new_task.clone());
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                };
                                 for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
@@ -907,12 +913,6 @@ impl SchedulingStateMachine {
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
-                                let r = if current_tasks.len() - t.len() == 0 {
-                                    *current_usage = Usage::Writable(new_task.clone());
-                                    Ok(())
-                                } else {
-                                    Err(())
-                                };
                                 r
                             }
                         }
