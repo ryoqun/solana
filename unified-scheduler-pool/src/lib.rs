@@ -1336,10 +1336,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "sc_b_task"
                             },
                             recv(new_task_receiver) -> message => {
-                                assert!(!session_ending);
+                                assert!(state_machine.mode() == SchedulingMode::BlockProduction || !session_ending);
 
                                 match message.map(|a| a.into()) {
                                     Ok(NewTaskPayload::Payload(task)) => {
+                                        if session_ending {
+                                            continue;
+                                        }
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
                                         if let Some(task) = state_machine.schedule_task(task) {
                                             if !session_pausing {
