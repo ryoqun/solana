@@ -629,10 +629,9 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     if current_tasks.len() == 1 {
                         is_unused_now = true;
-                    } else {
-                        // todo test this for unbounded growth of inifnite readable only locks....
-                        current_tasks.remove(&task_index).unwrap();
                     }
+                    // todo test this for unbounded growth of inifnite readable only locks....
+                    current_tasks.remove(&task_index).unwrap();
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
