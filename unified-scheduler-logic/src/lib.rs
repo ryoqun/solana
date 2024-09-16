@@ -905,6 +905,7 @@ impl SchedulingStateMachine {
                                 } else {
                                     Err(())
                                 };
+                                /*
                                 for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
@@ -913,6 +914,7 @@ impl SchedulingStateMachine {
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
+                                */
                                 r
                             }
                         }
