@@ -331,15 +331,19 @@ where
     fn return_scheduler(&self, scheduler: S::Inner, id: u64, should_trash: bool) {
         let bp_id: Option<u64> = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, s)| id).copied();
         if should_trash {
-            assert!(Some(id) != bp_id);
-            // Delay drop()-ing this trashed returned scheduler inner by stashing it in
-            // self.trashed_scheduler_inners, which is periodically drained by the `solScCleaner`
-            // thread. Dropping it could take long time (in fact,
-            // PooledSchedulerInner::usage_queue_loader can contain many entries to drop).
-            self.trashed_scheduler_inners
-                .lock()
-                .expect("not poisoned")
-                .push(scheduler);
+            if Some(id) != bp_id {
+                // Delay drop()-ing this trashed returned scheduler inner by stashing it in
+                // self.trashed_scheduler_inners, which is periodically drained by the `solScCleaner`
+                // thread. Dropping it could take long time (in fact,
+                // PooledSchedulerInner::usage_queue_loader can contain many entries to drop).
+                self.trashed_scheduler_inners
+                    .lock()
+                    .expect("not poisoned")
+                    .push(scheduler);
+            } else {
+                // handle trash bp sch....
+                assert!(self.block_producing_scheduler_inner.lock().unwrap().1.replace(scheduler).is_none());
+            }
         } else {
             if Some(id) != bp_id {
                 self.scheduler_inners
