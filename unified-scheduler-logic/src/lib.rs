@@ -900,7 +900,7 @@ impl SchedulingStateMachine {
                                     current_tasks.remove(&current_index).unwrap()
                                 });
                                 let r = if current_tasks.len() - t.len() == 0 {
-                                    //*current_usage = Usage::Writable(new_task.clone());
+                                    *current_usage = Usage::Writable(new_task.clone());
                                     Ok(())
                                 } else {
                                     Err(())
