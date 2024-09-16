@@ -1433,6 +1433,20 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     }
                     is_running = false;
                     let already_ignored = &mut false;
+                    match state_machine.mode() {
+                        SchedulingMode::BlockVerification => {
+                            reported_task_total = 0;
+                            reported_executed_task_total = 0;
+                            assert_eq!(ignored_error_count, 0);
+                        },
+                        SchedulingMode::BlockProduction => {
+                            state_machine.reset_task_total();
+                            state_machine.reset_executed_task_total();
+                            reported_task_total = 0;
+                            reported_executed_task_total = 0;
+                            ignored_error_count = 0;
+                        },
+                    }
 
                     // Prepare for the new session.
                     loop {
@@ -1451,18 +1465,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 SchedulingMode::BlockVerification => {
                                     log_interval = LogInterval::default();
                                     state_machine.reinitialize(new_context.mode());
-                                    reported_task_total = 0;
-                                    reported_executed_task_total = 0;
-                                    assert_eq!(ignored_error_count, 0);
                                     session_ending = false;
                                     log_scheduler!(info, "started");
                                 },
                                 SchedulingMode::BlockProduction => {
-                                    state_machine.reset_task_total();
-                                    state_machine.reset_executed_task_total();
-                                    reported_task_total = 0;
-                                    reported_executed_task_total = 0;
-                                    ignored_error_count = 0;
                                     session_pausing = false;
                                     log_scheduler!(info, "unpaused");
                                 },
