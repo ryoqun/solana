@@ -896,15 +896,16 @@ impl SchedulingStateMachine {
                                         t.push(current_index);
                                     }
                                 }
+                                let t = t.inter_iter().map(|current_index| {
+                                    current_tasks.remove(&current_index).unwrap();
+                                });
                                 let r = if current_tasks.len() - t.len() == 0 {
                                     //*current_usage = Usage::Writable(new_task.clone());
                                     Ok(())
                                 } else {
                                     Err(())
                                 };
-                                for current_index in t.into_iter() {
-                                    let tt =
-                                        current_tasks.remove(&current_index).unwrap();
+                                for tt in t.into_iter() {
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
                                         tt.index,
