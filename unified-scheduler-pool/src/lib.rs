@@ -1440,6 +1440,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             assert_eq!(ignored_error_count, 0);
                         },
                         SchedulingMode::BlockProduction => {
+                            session_started_at = Instant::now();
                             state_machine.reset_task_total();
                             state_machine.reset_executed_task_total();
                             reported_task_total = 0;
@@ -1469,6 +1470,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     log_scheduler!(info, "started");
                                 },
                                 SchedulingMode::BlockProduction => {
+                                    state_machine.reset_task_total();
+                                    state_machine.reset_executed_task_total();
+                                    reported_task_total = 0;
+                                    reported_executed_task_total = 0;
+                                    ignored_error_count = 0;
                                     session_pausing = false;
                                     log_scheduler!(info, "unpaused");
                                 },
