@@ -899,7 +899,7 @@ impl SchedulingStateMachine {
                                 let t_len = t.len();
                                 let t: Vec<usize> = t.into_iter().map(|current_index| {
                                     current_tasks.remove(&current_index).unwrap()
-                                });
+                                }).collect();
                                 let r = if current_tasks.len() - t_len == 0 {
                                     *current_usage = Usage::Writable(new_task.clone());
                                     Ok(())
