@@ -1319,7 +1319,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 };
                                 state_machine.deschedule_task(&executed_task.task);
                                 std::mem::forget(executed_task);
-                                if should_pause && !session_pausing {
+                                if should_pause && !session_pausing && slot != 282254387 {
                                     session_pausing = true;
                                     "pausing"
                                 } else {
@@ -1362,8 +1362,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                             },
                                             SchedulingMode::BlockProduction => {
                                                 if !session_pausing {
-                                                    session_pausing = true;
-                                                    "pausing"
+                                                    if slot != 282254387 {
+                                                        session_pausing = true;
+                                                        "pausing"
+                                                    } else {
+                                                        session_ending = true;
+                                                        "ending"
+                                                    }
                                                 } else {
                                                     "close_subch"
                                                 }
@@ -1469,22 +1474,19 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             slot = new_context.bank().slot();
                             session_started_at = Instant::now();
 
-                            match state_machine.mode() {
-                                SchedulingMode::BlockVerification => {
-                                    log_interval = LogInterval::default();
-                                    state_machine.reinitialize(new_context.mode());
-                                    session_ending = false;
-                                    log_scheduler!(info, "started");
-                                },
-                                SchedulingMode::BlockProduction => {
-                                    state_machine.reset_task_total();
-                                    state_machine.reset_executed_task_total();
-                                    reported_task_total = 0;
-                                    reported_executed_task_total = 0;
-                                    ignored_error_count = 0;
-                                    session_pausing = false;
-                                    log_scheduler!(info, "unpaused");
-                                },
+                            if session_ending {
+                                log_interval = LogInterval::default();
+                                state_machine.reinitialize(new_context.mode());
+                                session_ending = false;
+                                log_scheduler!(info, "started");
+                            } else {
+                                state_machine.reset_task_total();
+                                state_machine.reset_executed_task_total();
+                                reported_task_total = 0;
+                                reported_executed_task_total = 0;
+                                ignored_error_count = 0;
+                                session_pausing = false;
+                                log_scheduler!(info, "unpaused");
                             }
 
                             runnable_task_sender
