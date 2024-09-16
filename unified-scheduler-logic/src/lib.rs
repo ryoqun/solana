@@ -896,7 +896,7 @@ impl SchedulingStateMachine {
                                         t.push(current_index);
                                     }
                                 }
-                                let t = t.inter_iter().map(|current_index| {
+                                let t = t.into_iter().map(|current_index| {
                                     current_tasks.remove(&current_index).unwrap();
                                 });
                                 let r = if current_tasks.len() - t.len() == 0 {
