@@ -897,7 +897,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 let t_len = t.len();
-                                let t = t.into_iter().map(|current_index| {
+                                let t: Vec<usize> = t.into_iter().map(|current_index| {
                                     current_tasks.remove(&current_index).unwrap()
                                 });
                                 let r = if current_tasks.len() - t_len == 0 {
