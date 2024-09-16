@@ -890,24 +890,15 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let mut t = vec![];
-                                for current_index in current_tasks.range(new_task.index..) {
-                                    let c: u32 = current_tasks
-                                        .get(&current_index)
-                                        .unwrap()
-                                        .blocked_usage_count(&mut self.count_token);
+                                for (current_index, _task) in current_tasks.range(new_task.index..) {
+                                    let c = task.blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
-                                        let reverted_task =
-                                            current_tasks.remove(&current_index).unwrap();
-                                        t.push(reverted_task);
+                                        t.push(current_index);
                                     }
                                 }
-                                let r = if current_tasks.is_empty() {
-                                    *current_usage = Usage::Writable(new_task.clone());
-                                    Ok(())
-                                } else {
-                                    Err(())
-                                };
-                                for tt in t.into_iter() {
+                                for current_index in t.into_iter() {
+                                    let tt =
+                                        current_tasks.remove(&current_index).unwrap();
                                     tt.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
                                         tt.index,
@@ -915,7 +906,12 @@ impl SchedulingStateMachine {
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
-                                r
+                                if current_tasks.is_empty() {
+                                    *current_usage = Usage::Writable(new_task.clone());
+                                    Ok(())
+                                } else {
+                                    Err(())
+                                }
                             }
                         }
                     }
