@@ -896,6 +896,7 @@ impl SchedulingStateMachine {
                                         t.push(current_index);
                                     }
                                 }
+                                assert!(!t.is_empty());
                                 let t: Vec<Task> = t.into_iter().map(|current_index| {
                                     current_tasks.remove(&current_index).unwrap()
                                 }).collect();
