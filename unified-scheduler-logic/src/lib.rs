@@ -532,7 +532,7 @@ impl Usage {
         }
     }
 
-    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, first_blocked_task_index: Index) -> bool {
+    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage, first_blocked_task_index: Index) -> bool {
         match self {
             Self::Readonly(current_tasks) => {
                 // this is imprecise....
