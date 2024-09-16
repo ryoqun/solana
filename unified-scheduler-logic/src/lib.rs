@@ -889,7 +889,7 @@ impl SchedulingStateMachine {
                                 */
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
-                                let mut t: Vec<Index> = vec![];
+                                let mut t = vec![];
                                 for (&current_index, task) in current_tasks.range(new_task.index..) {
                                     let c = task.blocked_usage_count(&mut self.count_token);
                                     if c > 0 {
