@@ -416,9 +416,9 @@ impl SimulatorLoop {
         base_simulation_time: SystemTime,
         sender_thread: EventSenderThread,
     ) -> (EventSenderThread, Sender<Slot>) {
-        //info!("warmup hack!");
-        //sleep(Duration::from_millis(330));
-        //self.poh_recorder.write().unwrap().reset(self.bank_forks.write().unwrap().root_bank(), Some((self.first_simulated_slot, self.first_simulated_slot+4)));
+        info!("warmup hack!");
+        sleep(Duration::from_millis(330));
+        self.poh_recorder.write().unwrap().reset(self.bank_forks.write().unwrap().root_bank(), Some((self.first_simulated_slot, self.first_simulated_slot+4)));
         info!("warmup start!");
         loop {
             let current_slot = self.poh_recorder.read().unwrap().slot();

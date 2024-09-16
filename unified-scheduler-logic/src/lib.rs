@@ -832,13 +832,11 @@ impl SchedulingStateMachine {
         self.executed_task_total.increment_self();
         self.unlock_usage_queues(task);
         if self.blocked_task_count() > 0 {
-            if matches!(self.scheduling_mode, SchedulingMode::BlockVerification) {
-                assert_gt!(
-                    self.alive_task_count(),
-                    self.blocked_task_count(),
-                    "no deadlock"
-                );
-            }
+            assert_gt!(
+                self.alive_task_count(),
+                self.blocked_task_count(),
+                "no deadlock"
+            );
         }
     }
 
