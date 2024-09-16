@@ -902,7 +902,7 @@ impl SchedulingStateMachine {
                                 } else {
                                     Err(())
                                 };
-                                for current_index in t.into_iter() {
+                                for current_index: Index in t.into_iter() {
                                     let tt =
                                         current_tasks.remove(&current_index).unwrap();
                                     tt.increment_blocked_usage_count(&mut self.count_token);
