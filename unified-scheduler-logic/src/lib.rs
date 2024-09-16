@@ -663,6 +663,10 @@ impl UsageQueueInner {
             .is_none());
     }
 
+    fn first_blocked_task_index(&self) -> Option<Index> {
+        self.blocked_usages_from_tasks.first()
+    }
+
     #[must_use]
     fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
