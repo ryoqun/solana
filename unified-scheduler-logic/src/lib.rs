@@ -572,6 +572,7 @@ impl PartialOrd for UsageFromTask2 {
 
 impl PartialEq<UsageFromTask2> for UsageFromTask2 {
     fn eq(&self, other: &Self) -> bool {
+        self.1.index == other.1.index
     }
 }
 
