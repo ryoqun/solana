@@ -520,14 +520,14 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BinaryHeap<Task>),
+    Readonly(BTreeMap<Index, Task>),
     Writable(Task),
 }
 
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
-            RequestedUsage::Readonly => Self::Readonly(BinaryHeap::from([task])),
+            RequestedUsage::Readonly => Self::Readonly(BTreeMap::from([(task.index, task)])),
             RequestedUsage::Writable => Self::Writable(task),
         }
     }
@@ -557,26 +557,6 @@ struct UsageQueueInner {
 type UsageFromTask = (RequestedUsage, Task);
 #[derive(Debug)]
 struct UsageFromTask2(RequestedUsage, Task);
-
-impl Ord for Task {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.index.cmp(&self.index)
-        //self.1.index.cmp(&other.1.index)
-    }
-}
-
-impl PartialOrd for Task {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Eq for Task {}
-impl PartialEq<Task> for Task {
-    fn eq(&self, other: &Self) -> bool {
-        self.index == other.index
-    }
-}
 
 impl Ord for UsageFromTask2 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
