@@ -531,28 +531,6 @@ impl Usage {
             RequestedUsage::Writable => Self::Writable(task),
         }
     }
-
-    fn should_revert(&self, count_token: &mut Token<ShortCounter>, new_task_index: Index, requested_usage: RequestedUsage, first_blocked_task_index: Option<Index>) -> bool {
-        match self {
-            Self::Readonly(current_tasks) => {
-                if matches!(requested_usage, RequestedUsage::Readonly) {
-                    if let Some(first_blocked_task_index) = first_blocked_task_index {
-                        new_task_index < first_blocked_task_index
-                    } else {
-                        false
-                    }
-                } else {
-                    current_tasks.range(new_task_index..).any(|(_index, current_task)|
-                        current_task.blocked_usage_count(count_token) > 0
-                    )
-                }
-            },
-            Self::Writable(current_task) => {
-                // write test for <....
-                new_task_index < current_task.index && current_task.blocked_usage_count(count_token) > 0
-            },
-        }
-    }
 }
 
 /// Status about how a task is requesting to use a particular [`UsageQueue`].
@@ -846,9 +824,8 @@ impl SchedulingStateMachine {
 
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                let fbti = usage_queue.first_blocked_task_index();
                 let lock_result = (match usage_queue.current_usage.as_mut() {
-                    Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index, context.requested_usage, fbti) => {
+                    Some(mut current_usage) => {
                         //assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
                         match (&mut current_usage, context.requested_usage) {
@@ -883,18 +860,27 @@ impl SchedulingStateMachine {
                                 }
                             }
                             (Usage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
-                                usage_queue
-                                    .try_lock(context.requested_usage, &new_task)
-                                    .unwrap();
-                                Some(Ok(()))
-                                // even the following passes the unit tests... think about this
-                                /*
-                                if usage_queue.has_no_blocked_usage() {
-                                    usage_queue.try_lock(context.requested_usage, &new_task)
+                                let first_blocked_task_index = usage_queue.first_blocked_task_index();
+                                if let Some(first_blocked_task_index) = first_blocked_task_index {
+                                    if new_task_index < first_blocked_task_index {
+                                        usage_queue
+                                            .try_lock(context.requested_usage, &new_task)
+                                            .unwrap();
+                                        Some(Ok(()))
+                                        // even the following passes the unit tests... think about this
+                                        /*
+                                        if usage_queue.has_no_blocked_usage() {
+                                            usage_queue.try_lock(context.requested_usage, &new_task)
+                                        } else {
+                                            Err(())
+                                        }
+                                        */
+                                    } else {
+                                        None
+                                    }
                                 } else {
-                                    Err(())
+                                    None
                                 }
-                                */
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let mut t = vec![];
