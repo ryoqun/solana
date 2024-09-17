@@ -555,7 +555,7 @@ struct UsageQueueInner {
 }
 
 type UsageFromTask = (RequestedUsage, Task);
-#[derive(Debug, Eq)]
+#[derive(Debug)]
 struct UsageFromTask2(RequestedUsage, Task);
 
 impl Ord for UsageFromTask2 {
@@ -570,6 +570,7 @@ impl PartialOrd for UsageFromTask2 {
     }
 }
 
+impl Eq for UsageFromTask2 {}
 impl PartialEq<UsageFromTask2> for UsageFromTask2 {
     fn eq(&self, other: &Self) -> bool {
         self.1.index == other.1.index
