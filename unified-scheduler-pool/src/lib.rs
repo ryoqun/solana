@@ -1049,6 +1049,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
 
+        let prefix = match context.mode() {
+            kk
+        };
+
+
         // Firstly, setup bi-directional messaging between the scheduler and handlers to pass
         // around tasks, by creating 2 channels (one for to-be-handled tasks from the scheduler to
         // the handlers and the other for finished tasks from the handlers to the scheduler).
@@ -1644,9 +1649,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     trace!("returning back task from handler to scheduler...");
                 }
             }
-        };
-
-        let prefix = match scheduling_context.mode() {
         };
 
         self.scheduler_thread = Some(
