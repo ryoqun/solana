@@ -826,8 +826,6 @@ impl SchedulingStateMachine {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
-                        //assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
-
                         match (&mut current_usage, context.requested_usage) {
                             (Usage::Writable(ct), RequestedUsage::Writable) => {
                                 if new_task.index < ct.index && ct.blocked_usage_count(&mut self.count_token) > 0 {
@@ -918,6 +916,8 @@ impl SchedulingStateMachine {
                     _ => {
                         None
                     }
+                }).inspect(|_| {
+                    assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
                 }).unwrap_or_else(|| {
                     if usage_queue.has_no_blocked_usage() {
                         usage_queue.try_lock(context.requested_usage, &new_task)
