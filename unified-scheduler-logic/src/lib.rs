@@ -921,7 +921,7 @@ impl SchedulingStateMachine {
                     _ => {
                         None
                     }
-                }).or_else(|| {
+                }).unwrap_or_else(|| {
                     if usage_queue.has_no_blocked_usage() {
                         usage_queue.try_lock(context.requested_usage, &new_task)
                     } else {
