@@ -551,7 +551,6 @@ use std::cmp::Reverse;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
     blocked_usages_from_tasks2: BinaryHeap<UsageFromTask2>,
 }
 
@@ -591,7 +590,6 @@ impl Default for UsageQueueInner {
             //
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
-            blocked_usages_from_tasks: BTreeMap::new(),
             blocked_usages_from_tasks2: BinaryHeap::with_capacity(128),
         }
     }
