@@ -673,7 +673,7 @@ impl UsageQueueInner {
     }
 
     #[must_use]
-    fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
+    fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask2> {
         if matches!(
             self.blocked_usages_from_tasks2
                 .peek()
