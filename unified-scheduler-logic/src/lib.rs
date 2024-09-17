@@ -689,7 +689,7 @@ impl UsageQueueInner {
     }
 
     fn has_no_blocked_usage(&self) -> bool {
-        self.blocked_usages_from_tasks.is_empty()
+        self.blocked_usages_from_tasks2.is_empty()
     }
 }
 
