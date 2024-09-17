@@ -654,7 +654,7 @@ impl UsageQueueInner {
             self.current_usage = None;
             self.blocked_usages_from_tasks2
                 .pop()
-                .map(|UsageFromTask2(usage, _task)| usage)
+                .map(|UsageFromTask2(usage, task)| (usage, task))
         } else {
             None
         }
