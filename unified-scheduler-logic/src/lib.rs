@@ -552,7 +552,7 @@ use std::cmp::Reverse;
 struct UsageQueueInner {
     current_usage: Option<Usage>,
     blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
-    blocked_usages_from_tasks2: BinaryHeap<Reverse<UsageFromTask2>>,
+    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask2>,
 }
 
 type UsageFromTask = (RequestedUsage, Task);
@@ -561,7 +561,7 @@ struct UsageFromTask2(RequestedUsage, Task);
 
 impl Ord for UsageFromTask2 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.1.index.cmp(&other.1.index)
+        other.1.index.cmp(&self.1.index)
     }
 }
 
