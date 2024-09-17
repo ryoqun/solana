@@ -1249,8 +1249,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             finished_blocked_task_receiver.len(), finished_idle_task_receiver.len(),
                             {
                                 let now = Instant::now();
+                                let cpu_now = cpu_time::ThreadTime::now();
                                 let session_elapsed_us = now.duration_since(session_started_at).as_micros();
                                 let log_elapsed_us = now.duration_since(log_reported_at).as_micros();
+                                let cpu_log_elapsed_us = cpu_now.duration_since(cpu_log_reported_at).as_micros();
 
                                 let l = format!(
                                     "tps({}us|{}us): ({}|{})",
@@ -1275,6 +1277,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 {
                                     (log_reported_at, reported_task_total, reported_executed_task_total) = (now, state_machine.task_total(), state_machine.executed_task_total());
                                 }
+                                cpu_log_reported_at = cpu_now;
                                 l
                             },
                         }
