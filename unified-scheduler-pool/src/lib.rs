@@ -1257,11 +1257,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let cpu_log_elapsed_us = cpu_now.duration_since(cpu_log_reported_at).as_micros();
 
                                 let l = format!(
-                                    "tps({}us|{}us|{}us|{}us): ({}|{})",
+                                    "tps({}us|{}us): ({}|{}) ({}us|{}us): ({}|{})",
                                     log_elapsed_us,
                                     session_elapsed_us,
-                                    cpu_log_elapsed_us,
-                                    cpu_session_elapsed_us,
                                     if log_elapsed_us > 0 {
                                         format!(
                                             "<{}>{}",
@@ -1274,6 +1272,22 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                             "<{}>{}",
                                             1_000_000_u128 * (state_machine.task_total() as u128) / session_elapsed_us,
                                             1_000_000_u128 * (state_machine.executed_task_total() as u128) / session_elapsed_us,
+                                        )
+                                    } else { "-".to_string() },
+                                    cpu_log_elapsed_us,
+                                    cpu_session_elapsed_us,
+                                    if cpu_log_elapsed_us > 0 {
+                                        format!(
+                                            "<{}>{}",
+                                            1_000_000_u128 * ((state_machine.task_total() - reported_task_total) as u128) / cpu_log_elapsed_us,
+                                            1_000_000_u128 * ((state_machine.executed_task_total() - reported_executed_task_total) as u128) / cpu_log_elapsed_us,
+                                        )
+                                    } else { "-".to_string() },
+                                    if cpu_session_elapsed_us > 0 {
+                                        format!(
+                                            "<{}>{}",
+                                            1_000_000_u128 * (state_machine.task_total() as u128) / cpu_session_elapsed_us,
+                                            1_000_000_u128 * (state_machine.executed_task_total() as u128) / cpu_session_elapsed_us,
                                         )
                                     } else { "-".to_string() },
                                 );
