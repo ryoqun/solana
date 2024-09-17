@@ -1050,7 +1050,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let mut slot = context.bank().slot();
 
         let prefix = match context.mode() {
-            kk
+            
         };
 
 
