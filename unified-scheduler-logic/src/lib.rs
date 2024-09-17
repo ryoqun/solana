@@ -558,6 +558,19 @@ type UsageFromTask = (RequestedUsage, Task);
 #[derive(Debug)]
 struct UsageFromTask2(RequestedUsage, Task);
 
+impl Ord for Task {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.index.cmp(&self.index)
+        //self.1.index.cmp(&other.1.index)
+    }
+}
+
+impl PartialOrd for Task {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Ord for UsageFromTask2 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.1.index.cmp(&self.1.index)
