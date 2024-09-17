@@ -533,7 +533,8 @@ struct SimulatorThreads {
 impl SimulatorThreads {
     fn finish(self, sender_thread: EventSenderThread, retransmit_slots_sender: Sender<Slot>) {
         info!("Sleeping a bit before signaling exit");
-        sleep(Duration::from_millis(100));
+        // this is needed for metrics flush
+        sleep(Duration::from_millis(3000));
         self.exit.store(true, Ordering::Relaxed);
 
         // The order is important. Consuming sender_thread by joining will drop some channels. That
