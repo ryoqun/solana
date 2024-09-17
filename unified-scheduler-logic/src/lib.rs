@@ -554,7 +554,7 @@ struct UsageQueueInner {
     blocked_usages_from_tasks2: BinaryHeap<UsageFromTask>,
 }
 
-type UsageFromTask = (RequestedUsage, Task);
+struct UsageFromTask(RequestedUsage, Task);
 
 impl Default for UsageQueueInner {
     fn default() -> Self {
