@@ -540,6 +540,8 @@ enum RequestedUsage {
     Writable,
 }
 
+use std::collections::BinaryHeap;
+
 /// Internal scheduling data about a particular address.
 ///
 /// Specifically, it holds the current [`Usage`] (or no usage with [`Usage::Unused`]) and which
