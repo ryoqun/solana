@@ -852,7 +852,11 @@ impl SchedulingStateMachine {
                         //assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
                         match (&mut current_usage, context.requested_usage) {
-                            (Usage::Writable(_), RequestedUsage::Writable) => {
+                            (Usage::Writable(ct), RequestedUsage::Writable) => {
+                                if !(new_task_index < ct.index && ct.blocked_usage_count(count_token) > 0) {
+                                    return None;
+                                }
+
                                 let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                 let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                 reverted_task.increment_blocked_usage_count(&mut self.count_token);
