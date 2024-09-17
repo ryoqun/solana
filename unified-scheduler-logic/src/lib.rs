@@ -675,7 +675,7 @@ impl UsageQueueInner {
     #[must_use]
     fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
-            self.blocked_usages_from_tasks
+            self.blocked_usages_from_tasks2
                 .peek()
                 .map(|(_key, usage)| usage),
             Some((RequestedUsage::Readonly, _))
