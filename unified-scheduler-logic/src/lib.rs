@@ -864,7 +864,7 @@ impl SchedulingStateMachine {
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
                                 } else {
-                                    return None;
+                                    None
                                 }
                             }
                             (Usage::Writable(_), RequestedUsage::Readonly) => {
