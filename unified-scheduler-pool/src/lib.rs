@@ -1223,8 +1223,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 let mut log_interval = LogInterval::default();
                 let mut is_running = false;
                 let mut session_started_at = Instant::now();
+                let mut cpu_session_started_at = cpu_time::ThreadTime::now();
                 let (mut log_reported_at, mut reported_task_total, mut reported_executed_task_total) = (session_started_at, 0, 0);
-                let mut cpu_log_reported_at = cpu_time::ThreadTime::now();
+                let mut cpu_log_reported_at = cpu_session_started_at;
                 let mut ignored_error_count = 0;
 
                 macro_rules! log_scheduler {
@@ -1251,13 +1252,16 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let now = Instant::now();
                                 let cpu_now = cpu_time::ThreadTime::now();
                                 let session_elapsed_us = now.duration_since(session_started_at).as_micros();
+                                let cpu_session_elapsed_us = cpu_now.duration_since(cpu_session_started_at).as_micros();
                                 let log_elapsed_us = now.duration_since(log_reported_at).as_micros();
                                 let cpu_log_elapsed_us = cpu_now.duration_since(cpu_log_reported_at).as_micros();
 
                                 let l = format!(
-                                    "tps({}us|{}us): ({}|{})",
+                                    "tps({}us|{}us|{}us|{}us): ({}|{})",
                                     log_elapsed_us,
                                     session_elapsed_us,
+                                    cpu_log_elapsed_us,
+                                    cpu_session_elapsed_us,
                                     if log_elapsed_us > 0 {
                                         format!(
                                             "<{}>{}",
@@ -1460,6 +1464,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         },
                         SchedulingMode::BlockProduction => {
                             session_started_at = Instant::now();
+                            cpu_session_started_at = cpu_time::ThreadTime::now();
                             state_machine.reset_task_total();
                             state_machine.reset_executed_task_total();
                             reported_task_total = 0;
@@ -1480,6 +1485,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             assert_eq!(state_machine.mode(), new_context.mode());
                             slot = new_context.bank().slot();
                             session_started_at = Instant::now();
+                            cpu_session_started_at = cpu_time::ThreadTime::now();
 
                             if session_ending {
                                 log_interval = LogInterval::default();
