@@ -862,7 +862,7 @@ impl SchedulingStateMachine {
                             (Usage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
                                 let first_blocked_task_index = usage_queue.first_blocked_task_index();
                                 if let Some(first_blocked_task_index) = first_blocked_task_index {
-                                    if new_task_index < first_blocked_task_index {
+                                    if new_task.index < first_blocked_task_index {
                                         usage_queue
                                             .try_lock(context.requested_usage, &new_task)
                                             .unwrap();
