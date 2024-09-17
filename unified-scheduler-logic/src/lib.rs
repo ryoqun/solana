@@ -570,6 +570,11 @@ impl PartialOrd for UsageFromTask2 {
     }
 }
 
+impl PartialEq<UsageFromTask2> for UsageFromTask2 {
+    fn eq(&self, other: &Self) -> bool {
+    }
+}
+
 impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
