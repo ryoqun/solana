@@ -976,7 +976,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         context: &SchedulingContext,
         (result, timings): &mut ResultWithTimings,
         executed_task: HandlerResult,
-        ignored_error_count: &mut usize,
+        error_count: &mut usize,
     ) -> Option<(Box<ExecutedTask>, bool)> {
         let Ok(executed_task) = executed_task else {
             return None;
@@ -995,6 +995,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 if !context.can_commit() {
                     //info!("detected max tick height at scheduler thread...");
                     //*result = Err(TransactionError::CommitFailed);
+                    *error_count += 1;
                     return Some((executed_task, true));
                 }
                 match executed_task.result_with_timings.0 {
@@ -1004,6 +1005,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     //*result = Err(TransactionError::CommitFailed);
                     // it's okay to abort scheduler as this error gurantees determinstic bank
                     // freezing...
+                    *error_count += 1;
                     Some((executed_task, true))
                 }
                 Err(ref e @ TransactionError::WouldExceedMaxBlockCostLimit) |
@@ -1011,11 +1013,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 Err(ref e @ TransactionError::WouldExceedMaxAccountCostLimit) |
                 Err(ref e @ TransactionError::WouldExceedAccountDataBlockLimit) => {
                     info!("hit block cost: {e:?}");
+                    *error_count += 1;
                     Some((executed_task, true))
                 }
                 Err(ref error) => {
                     debug!("error is detected while accumulating....: {error:?}");
-                    *ignored_error_count += 1;
+                    *error_count += 1;
                     Some((executed_task, false))
                 }
             }},
@@ -1226,7 +1229,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                 let mut cpu_session_started_at = cpu_time::ThreadTime::now();
                 let (mut log_reported_at, mut reported_task_total, mut reported_executed_task_total) = (session_started_at, 0, 0);
                 let mut cpu_log_reported_at = cpu_session_started_at;
-                let mut ignored_error_count = 0;
+                let mut error_count = 0;
 
                 macro_rules! log_scheduler {
                     ($level:ident, $prefix:tt) => {
@@ -1241,7 +1244,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             (if session_ending {"S"} else {"-"}),
                             (if session_pausing {"P"} else {"-"}),
                             state_machine.alive_task_count(), state_machine.blocked_task_count(), state_machine.buffered_task_queue_count(), state_machine.executed_task_total(),
-                            ignored_error_count,
+                            error_count,
                             state_machine.task_total(),
                             state_machine.buffered_task_total(),
                             state_machine.reblocked_lock_total(),
@@ -1335,7 +1338,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     &context,
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler"),
-                                    &mut ignored_error_count,
+                                    &mut error_count,
                                 ) else {
                                     break 'nonaborted_main_loop;
                                 };
@@ -1416,7 +1419,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     &context,
                                     &mut result_with_timings,
                                     executed_task.expect("alive handler"),
-                                    &mut ignored_error_count,
+                                    &mut error_count,
                                 ) else {
                                     break 'nonaborted_main_loop;
                                 };
@@ -1474,7 +1477,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         SchedulingMode::BlockVerification => {
                             reported_task_total = 0;
                             reported_executed_task_total = 0;
-                            assert_eq!(ignored_error_count, 0);
+                            assert_eq!(error_count, 0);
                         },
                         SchedulingMode::BlockProduction => {
                             session_started_at = Instant::now();
@@ -1483,7 +1486,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             state_machine.reset_executed_task_total();
                             reported_task_total = 0;
                             reported_executed_task_total = 0;
-                            ignored_error_count = 0;
+                            error_count = 0;
                         },
                     }
 
@@ -1511,7 +1514,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 state_machine.reset_executed_task_total();
                                 reported_task_total = 0;
                                 reported_executed_task_total = 0;
-                                ignored_error_count = 0;
+                                error_count = 0;
                                 session_pausing = false;
                                 log_scheduler!(info, "unpaused");
                             }
