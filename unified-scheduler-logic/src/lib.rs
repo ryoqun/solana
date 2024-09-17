@@ -560,8 +560,8 @@ struct UsageFromTask2(RequestedUsage, Task);
 
 impl Ord for UsageFromTask2 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        //other.1.index.cmp(&self.1.index)
-        self.1.index.cmp(&other.1.index)
+        other.1.index.cmp(&self.1.index)
+        //self.1.index.cmp(&other.1.index)
     }
 }
 
