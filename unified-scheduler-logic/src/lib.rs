@@ -847,7 +847,7 @@ impl SchedulingStateMachine {
         for context in new_task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let fbti = usage_queue.first_blocked_task_index();
-                let lock_result = match usage_queue.current_usage.as_mut() {
+                let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) if current_usage.should_revert(&mut self.count_token, new_task.index, context.requested_usage, fbti) => {
                         assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
 
@@ -861,7 +861,7 @@ impl SchedulingStateMachine {
                                     (RequestedUsage::Writable, reverted_task),
                                 );
                                 self.reblocked_lock_total.increment_self();
-                                Ok(())
+                                Some(Ok(()))
                             }
                             (Usage::Writable(_), RequestedUsage::Readonly) => {
                                 let old_usage = std::mem::replace(current_usage, Usage::new(RequestedUsage::Readonly, new_task.clone()));
@@ -872,13 +872,13 @@ impl SchedulingStateMachine {
                                     (RequestedUsage::Writable, reverted_task),
                                 );
                                 self.reblocked_lock_total.increment_self();
-                                Ok(())
+                                Some(Ok(()))
                             }
                             (Usage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
                                 usage_queue
                                     .try_lock(context.requested_usage, &new_task)
                                     .unwrap();
-                                Ok(())
+                                Some(Ok(()))
                                 // even the following passes the unit tests... think about this
                                 /*
                                 if usage_queue.has_no_blocked_usage() {
@@ -914,18 +914,20 @@ impl SchedulingStateMachine {
                                     );
                                     self.reblocked_lock_total.increment_self();
                                 }
-                                r
+                                Some(r)
                             }
                         }
                     }
                     _ => {
-                        if usage_queue.has_no_blocked_usage() {
-                            usage_queue.try_lock(context.requested_usage, &new_task)
-                        } else {
-                            Err(())
-                        }
+                        None
                     }
-                };
+                }).or_else({
+                    if usage_queue.has_no_blocked_usage() {
+                        usage_queue.try_lock(context.requested_usage, &new_task)
+                    } else {
+                        Err(())
+                    }
+                });
 
                 if let Err(()) = lock_result {
                     blocked_usage_count.increment_self();
