@@ -904,25 +904,28 @@ impl SchedulingStateMachine {
                                         t.push(current_index);
                                     }
                                 }
-                                assert!(!t.is_empty());
-                                let t: Vec<Task> = t.into_iter().map(|current_index| {
-                                    current_tasks.remove(&current_index).unwrap()
-                                }).collect();
-                                let r = if current_tasks.is_empty() {
-                                    *current_usage = Usage::Writable(new_task.clone());
-                                    Ok(())
+                                if !t.is_empty() {
+                                    let t: Vec<Task> = t.into_iter().map(|current_index| {
+                                        current_tasks.remove(&current_index).unwrap()
+                                    }).collect();
+                                    let r = if current_tasks.is_empty() {
+                                        *current_usage = Usage::Writable(new_task.clone());
+                                        Ok(())
+                                    } else {
+                                        Err(())
+                                    };
+                                    for tt in t.into_iter() {
+                                        tt.increment_blocked_usage_count(&mut self.count_token);
+                                        usage_queue.insert_blocked_usage_from_task(
+                                            tt.index,
+                                            (RequestedUsage::Readonly, tt),
+                                        );
+                                        self.reblocked_lock_total.increment_self();
+                                    }
+                                    Some(r)
                                 } else {
-                                    Err(())
-                                };
-                                for tt in t.into_iter() {
-                                    tt.increment_blocked_usage_count(&mut self.count_token);
-                                    usage_queue.insert_blocked_usage_from_task(
-                                        tt.index,
-                                        (RequestedUsage::Readonly, tt),
-                                    );
-                                    self.reblocked_lock_total.increment_self();
+                                    None
                                 }
-                                Some(r)
                             }
                         }
                     }
