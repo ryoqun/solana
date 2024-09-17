@@ -1049,10 +1049,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
 
-        let prefix = match context.mode() {
-            
+        let postfix = match context.mode() {
+            SchedulingMode::BlockVerification => "V",
+            SchedulingMode::BlockProduction => "P",
         };
-
 
         // Firstly, setup bi-directional messaging between the scheduler and handlers to pass
         // around tasks, by creating 2 channels (one for to-be-handled tasks from the scheduler to
@@ -1653,7 +1653,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
         self.scheduler_thread = Some(
             thread::Builder::new()
-                .name("solScheduler".to_owned())
+                .name("solSchedule{postfix}".to_owned())
                 .spawn_tracked(scheduler_main_loop)
                 .unwrap(),
         );
@@ -1662,7 +1662,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             .map({
                 |thx| {
                     thread::Builder::new()
-                        .name(format!("solScHandler{:02}", thx))
+                        .name(format!("solScHandle{postfix}{:02}", thx))
                         .spawn_tracked(handler_main_loop())
                         .unwrap()
                 }
