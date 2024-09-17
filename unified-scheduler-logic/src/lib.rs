@@ -660,11 +660,11 @@ impl UsageQueueInner {
         }
     }
 
-    fn insert_blocked_usage_from_task(&mut self, index: Index, usage_from_task: UsageFromTask) {
+    fn insert_blocked_usage_from_task(&mut self, index: Index, (usage, task): UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         self
             .blocked_usages_from_tasks2
-            .push(usage_from_task);
+            .push(UsageFromTask2(usage, task));
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
