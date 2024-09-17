@@ -1646,6 +1646,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
             }
         };
 
+        let prefix = match scheduling_context.mode() {
+        };
+
         self.scheduler_thread = Some(
             thread::Builder::new()
                 .name("solScheduler".to_owned())
