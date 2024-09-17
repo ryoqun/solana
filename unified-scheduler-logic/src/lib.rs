@@ -555,6 +555,7 @@ struct UsageQueueInner {
 }
 
 type UsageFromTask = (RequestedUsage, Task);
+#[derive(Debug)]
 struct UsageFromTask2(RequestedUsage, Task);
 
 impl Default for UsageQueueInner {
