@@ -853,7 +853,7 @@ impl SchedulingStateMachine {
 
                         match (&mut current_usage, context.requested_usage) {
                             (Usage::Writable(ct), RequestedUsage::Writable) => {
-                                if !(new_task_index < ct.index && ct.blocked_usage_count(count_token) > 0) {
+                                if !(new_task.index < ct.index && ct.blocked_usage_count(self.count_token) > 0) {
                                     return None;
                                 }
 
