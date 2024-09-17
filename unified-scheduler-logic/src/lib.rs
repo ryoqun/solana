@@ -551,10 +551,11 @@ use std::collections::BinaryHeap;
 struct UsageQueueInner {
     current_usage: Option<Usage>,
     blocked_usages_from_tasks: BTreeMap<Index, UsageFromTask>,
-    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask>,
+    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask2>,
 }
 
-struct UsageFromTask(RequestedUsage, Task);
+type UsageFromTask = (RequestedUsage, Task);
+struct UsageFromTask2(RequestedUsage, Task);
 
 impl Default for UsageQueueInner {
     fn default() -> Self {
