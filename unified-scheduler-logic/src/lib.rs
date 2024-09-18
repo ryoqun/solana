@@ -713,7 +713,7 @@ impl UsageQueueInner {
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
-        self.blocked_usages_from_tasks2.peek().map(|uft| uft.index())
+        self.blocked_usages_from_tasks2.peek().map_ref(|uft| uft.index())
     }
 
     #[must_use]
