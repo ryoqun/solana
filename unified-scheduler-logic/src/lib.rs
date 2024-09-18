@@ -589,11 +589,11 @@ impl UsageFromTask3 {
     }
 }
 
-impl From<UsageFromTask3> for UsageFromTask {
-    fn from(this: UsageFromTask3) -> Self {
-        match this {
-            UsageFromTask3::Readonly(t) => (RequestedUsage::Readonly, t),
-            UsageFromTask3::Writable(t) => (RequestedUsage::Writable, t),
+impl From<UsageFromTask> for UsageFromTask3 {
+    fn from((usage, task): UsageFromTask) -> Self {
+        match usage {
+            RequestedUsage::Readonly => Self::Readonly(task),
+            RequestedUsage::Writable => Self::Writable(task),
         }
     }
 }
