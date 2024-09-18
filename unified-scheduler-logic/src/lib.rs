@@ -554,6 +554,8 @@ struct UsageQueueInner {
     blocked_usages_from_tasks2: BinaryHeap<UsageFromTask2>,
 }
 
+#[repr(C, usize)]
+#[derive(Debug, EnumPtr)]
 enum UsageFromTask3 {
     Readonly(Task),
     Writable(Task),
