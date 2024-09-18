@@ -573,6 +573,13 @@ impl UsageFromTask3 {
             Self::Writable(t) => t.index,
         }
     }
+
+    fn usage(&self) -> RequestedUsage {
+        match self {
+            Self::Readonly(_t) => RequestedUsage::Readonly,
+            Self::Writable(_t) => RequestedUsage::Writable,
+        }
+    }
 }
 
 impl From<UsageFromTask3> for UsageFromTask {
