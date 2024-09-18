@@ -1016,7 +1016,7 @@ impl SchedulingStateMachine {
                 let mut buffered_task_from_queue =
                     usage_queue.unlock(context.requested_usage, task.index);
 
-                while let Some(buffered_task_from_queue) = buffered_task_from_queue {
+                while let Some(buffered_task_from_queue2) = buffered_task_from_queue {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
                     // this means the task is still blocked by other active task's usages. So,
                     // don't push task into buffered_task_queue yet. It can be assumed that every
@@ -1032,14 +1032,14 @@ impl SchedulingStateMachine {
                     }
 
                     match usage_queue.try_lock(
-                        buffered_task_from_queue.usage(),
+                        buffered_task_from_queue2.usage(),
                         &task_with_buffered_queue, /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
                             buffered_task_from_queue =
-                                if matches!(buffered_task_queue.usage(), RequestedUsage::Readonly) {
+                                if matches!(buffered_task_from_queue2.usage(), RequestedUsage::Readonly) {
                                     usage_queue.pop_buffered_readonly_usage_from_task()
                                 } else {
                                     None
