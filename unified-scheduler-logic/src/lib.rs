@@ -732,7 +732,7 @@ impl UsageQueueInner {
         assert_matches!(self.current_usage, Some(_));
         self
             .blocked_usages_from_tasks2
-            .push(UsageFromTask2(usage, task));
+            .push((usage, task).into());
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
