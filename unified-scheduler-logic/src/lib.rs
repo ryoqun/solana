@@ -555,6 +555,7 @@ struct UsageQueueInner {
 }
 
 use enum_ptr::EnumPtr;
+use enum_ptr::Compact;
 
 #[repr(C, usize)]
 #[derive(Debug, EnumPtr)]
