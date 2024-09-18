@@ -555,8 +555,11 @@ struct UsageQueueInner {
 }
 
 type UsageFromTask = (RequestedUsage, Task);
+const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
+
 #[derive(Debug)]
 struct UsageFromTask2(RequestedUsage, Task);
+const_assert_eq!(mem::size_of::<UsageFromTask2>(), 16);
 
 impl Ord for UsageFromTask2 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
