@@ -453,8 +453,8 @@ pub struct TaskInner {
     /// Carrying this along with the transaction is needed to properly record the execution result
     /// of it.
     index: Index,
-    lock_contexts: Vec<LockContext>,
     blocked_usage_count: TokenCell<ShortCounter>,
+    lock_contexts: Vec<LockContext>,
     transaction: SanitizedTransaction,
 }
 
