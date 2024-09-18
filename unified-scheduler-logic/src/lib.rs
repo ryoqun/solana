@@ -541,7 +541,6 @@ enum RequestedUsage {
 }
 
 use std::collections::BinaryHeap;
-use std::cmp::Reverse;
 
 /// Internal scheduling data about a particular address.
 ///
@@ -704,7 +703,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn insert_blocked_usage_from_task(&mut self, index: Index, (usage, task): UsageFromTask) {
+    fn insert_blocked_usage_from_task(&mut self, (usage, task): UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         self
             .blocked_usages_from_tasks2
@@ -902,7 +901,6 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                     reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
-                                        reverted_task.index,
                                         (RequestedUsage::Writable, reverted_task),
                                     );
                                     self.reblocked_lock_total.increment_self();
@@ -917,7 +915,6 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                     reverted_task.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
-                                        reverted_task.index,
                                         (RequestedUsage::Writable, reverted_task),
                                     );
                                     self.reblocked_lock_total.increment_self();
@@ -970,7 +967,6 @@ impl SchedulingStateMachine {
                                     for tt in t.into_iter() {
                                         tt.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
-                                            tt.index,
                                             (RequestedUsage::Readonly, tt),
                                         );
                                         self.reblocked_lock_total.increment_self();
@@ -998,7 +994,7 @@ impl SchedulingStateMachine {
                 if let Err(()) = lock_result {
                     blocked_usage_count.increment_self();
                     let usage_from_task = (context.requested_usage, new_task.clone());
-                    usage_queue.insert_blocked_usage_from_task(new_task.index, usage_from_task);
+                    usage_queue.insert_blocked_usage_from_task(usage_from_task);
                 }
             });
         }
