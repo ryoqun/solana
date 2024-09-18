@@ -1033,7 +1033,7 @@ impl SchedulingStateMachine {
 
                     match usage_queue.try_lock(
                         buffered_task_from_queue2.usage(),
-                        &task_with_buffered_queue, /* was `task` and had bug.. write test...*/
+                        &buffered_task_from_queue2.task(), /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
