@@ -598,15 +598,6 @@ impl From<UsageFromTask3> for UsageFromTask {
     }
 }
 
-impl From<UsageFromTask> for UsageFromTask3 {
-    fn from((usage, task): UsageFromTask) -> Self {
-        match usage {
-            RequestedUsage::Readonly => Self::Readonly(task),
-            RequestedUsage::Writable => Self::Writable(task),
-        }
-    }
-}
-
 impl Ord for UsageFromTask3 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
