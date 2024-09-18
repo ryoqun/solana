@@ -1653,7 +1653,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
 
         self.scheduler_thread = Some(
             thread::Builder::new()
-                .name("solSchedule{postfix}".to_owned())
+                .name(format!("solSchedule{postfix}"))
                 .spawn_tracked(scheduler_main_loop)
                 .unwrap(),
         );
