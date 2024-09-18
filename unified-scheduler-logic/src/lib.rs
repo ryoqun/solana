@@ -1032,14 +1032,14 @@ impl SchedulingStateMachine {
                     }
 
                     match usage_queue.try_lock(
-                        requested_usage,
+                        buffered_task_from_queue.usage(),
                         &task_with_buffered_queue, /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
                             buffered_task_from_queue =
-                                if matches!(requested_usage, RequestedUsage::Readonly) {
+                                if matches!(buffered_task_queue.usage(), RequestedUsage::Readonly) {
                                     usage_queue.pop_buffered_readonly_usage_from_task()
                                 } else {
                                     None
