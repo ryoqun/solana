@@ -575,6 +575,26 @@ impl UsageFromTask3 {
     }
 }
 
+impl Ord for UsageFromTask3 {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        other.index().cmp(&self.index())
+        //self.index().cmp(&other.index())
+    }
+}
+
+impl PartialOrd for UsageFromTask3 {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for UsageFromTask3 {}
+impl PartialEq<UsageFromTask3> for UsageFromTask3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.index() == other.index()
+    }
+}
+
 type UsageFromTask = (RequestedUsage, Task);
 const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
 
