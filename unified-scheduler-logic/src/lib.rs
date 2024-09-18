@@ -1016,9 +1016,7 @@ impl SchedulingStateMachine {
                 let mut buffered_task_from_queue =
                     usage_queue.unlock(context.requested_usage, task.index);
 
-                while let Some((requested_usage, task_with_buffered_queue)) =
-                    buffered_task_from_queue
-                {
+                while let Some(buffered_task_from_queue) = buffered_task_from_queue {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
                     // this means the task is still blocked by other active task's usages. So,
                     // don't push task into buffered_task_queue yet. It can be assumed that every
