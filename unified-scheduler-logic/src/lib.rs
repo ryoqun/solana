@@ -562,6 +562,7 @@ enum UsageFromTask3 {
     Readonly(Task),
     Writable(Task),
 }
+const_assert_eq!(mem::size_of::<UsageFromTask3>(), 16);
 
 type UsageFromTask = (RequestedUsage, Task);
 const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
