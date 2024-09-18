@@ -670,7 +670,7 @@ impl UsageQueueInner {
         &mut self,
         requested_usage: RequestedUsage,
         task_index: Index,
-    ) -> Option<UsageFromTask> {
+    ) -> Option<UsageFromTask3> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(current_tasks)) => match requested_usage {
@@ -699,7 +699,6 @@ impl UsageQueueInner {
             self.blocked_usages_from_tasks2
                 .pop()
                 .map(|uft| uft.into())
-                .map(|uft: UsageFromTask3| uft.into())
         } else {
             None
         }
