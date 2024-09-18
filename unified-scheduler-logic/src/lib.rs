@@ -550,7 +550,7 @@ use std::collections::BinaryHeap;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask3>,
+    blocked_usages_from_tasks2: BinaryHeap<Compact<UsageFromTask3>>,
 }
 
 use enum_ptr::EnumPtr;
