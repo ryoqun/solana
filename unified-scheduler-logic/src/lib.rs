@@ -554,6 +554,11 @@ struct UsageQueueInner {
     blocked_usages_from_tasks2: BinaryHeap<UsageFromTask2>,
 }
 
+enum UsageFromTask3 {
+    Readonly(Task),
+    Writable(Task),
+}
+
 type UsageFromTask = (RequestedUsage, Task);
 const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
 
