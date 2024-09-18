@@ -583,8 +583,8 @@ impl UsageFromTask3 {
 
     fn task(&self) -> &Task {
         match self {
-            Self::Readonly(_t) => t,
-            Self::Writable(_t) => t,
+            Self::Readonly(t) => t,
+            Self::Writable(t) => t,
         }
     }
 }
