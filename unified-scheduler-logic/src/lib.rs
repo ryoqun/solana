@@ -618,9 +618,6 @@ impl PartialEq<UsageFromTask3> for UsageFromTask3 {
     }
 }
 
-type UsageFromTask = (RequestedUsage, Task);
-const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
-
 impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
