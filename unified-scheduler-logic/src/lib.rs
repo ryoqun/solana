@@ -551,7 +551,7 @@ use std::cmp::Reverse;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask2>,
+    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask3>,
 }
 
 use enum_ptr::EnumPtr;
