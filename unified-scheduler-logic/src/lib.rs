@@ -591,6 +591,15 @@ impl From<UsageFromTask3> for UsageFromTask {
     }
 }
 
+impl From<UsageFromTask> for UsageFromTask3 {
+    fn from((usage, task): UsageFromTask) -> Self {
+        match usage {
+            RequestedUsage::Readonly => Self::Readonly(t),
+            RequestedUsage::Writable => Self::Writable(t),
+        }
+    }
+}
+
 impl Ord for UsageFromTask3 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
@@ -723,7 +732,7 @@ impl UsageQueueInner {
         assert_matches!(self.current_usage, Some(_));
         self
             .blocked_usages_from_tasks2
-            .push(UsageFromTask3(usage, task));
+            .push(UsageFromTask2(usage, task));
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
