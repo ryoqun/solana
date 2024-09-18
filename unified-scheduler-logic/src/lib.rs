@@ -601,8 +601,8 @@ impl From<UsageFromTask> for UsageFromTask3 {
 
 impl Ord for UsageFromTask3 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.index().cmp(&self.index())
-        //self.index().cmp(&other.index())
+        //other.index().cmp(&self.index())
+        self.index().cmp(&other.index())
     }
 }
 
