@@ -566,6 +566,15 @@ enum UsageFromTask3 {
 const_assert_eq!(mem::size_of::<UsageFromTask3>(), 16);
 const_assert_eq!(mem::size_of::<Compact<UsageFromTask3>>(), 8);
 
+impl UsageFromTask3 {
+    fn index(&self) -> Index {
+        match self {
+            Self::Readonly(t) => t.index,
+            Self::Writable(t) => t.index,
+        }
+    }
+}
+
 type UsageFromTask = (RequestedUsage, Task);
 const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
 
