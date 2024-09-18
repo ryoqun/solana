@@ -705,9 +705,10 @@ impl UsageQueueInner {
 
     fn insert_blocked_usage_from_task(&mut self, (usage, task): UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
+        let uft: UsageFromTask3 = (usage, task).into();
         self
             .blocked_usages_from_tasks2
-            .push(Compact::<UsageFromTask3>::from((usage, task).into()));
+            .push(uft.into());
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
