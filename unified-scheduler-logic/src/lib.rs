@@ -575,6 +575,9 @@ impl UsageFromTask3 {
     }
 }
 
+impl From<UsageFromTask3> for UsageFromTask {
+}
+
 impl Ord for UsageFromTask3 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
