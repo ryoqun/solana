@@ -448,6 +448,7 @@ pub type Index = u128;
 
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
+#[repr(C)]
 pub struct TaskInner {
     /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
     /// Carrying this along with the transaction is needed to properly record the execution result
