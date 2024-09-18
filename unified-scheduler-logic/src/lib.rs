@@ -449,13 +449,13 @@ pub type Index = u128;
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
 pub struct TaskInner {
-    transaction: SanitizedTransaction,
     /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
     /// Carrying this along with the transaction is needed to properly record the execution result
     /// of it.
     index: Index,
     lock_contexts: Vec<LockContext>,
     blocked_usage_count: TokenCell<ShortCounter>,
+    transaction: SanitizedTransaction,
 }
 
 impl TaskInner {
