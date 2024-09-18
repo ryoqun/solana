@@ -719,7 +719,7 @@ impl UsageQueueInner {
         if matches!(
             self.blocked_usages_from_tasks2
                 .peek()
-                .map(|uft| uft.ref().usage()),
+                .map(|uft| uft.usage()),
             Some(RequestedUsage::Readonly)
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
