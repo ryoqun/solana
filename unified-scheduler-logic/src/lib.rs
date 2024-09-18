@@ -997,7 +997,7 @@ impl SchedulingStateMachine {
                 if let Err(()) = lock_result {
                     blocked_usage_count.increment_self();
                     let usage_from_task = (context.requested_usage, new_task.clone());
-                    usage_queue.insert_blocked_usage_from_task(usage_from_task);
+                    usage_queue.insert_blocked_usage_from_task(usage_from_task.into());
                 }
             });
         }
