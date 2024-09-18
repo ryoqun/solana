@@ -147,13 +147,12 @@ mod utils {
 
         #[must_use]
         pub(super) fn increment(self) -> Self {
-            //Self(self.0.checked_add(1).unwrap())
-            Self(self.0 + 1)
+            Self(self.0.checked_add(1).unwrap())
         }
 
         #[must_use]
         pub(super) fn decrement(self) -> Self {
-            Self(self.0 - 1)
+            Self(self.0.checked_sub(1).unwrap())
         }
 
         pub(super) fn increment_self(&mut self) -> &mut Self {
@@ -552,7 +551,7 @@ use std::collections::BinaryHeap;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks2: BinaryHeap<UsageFromTask3>,
+    blocked_usages_from_tasks2: BinaryHeap<Compact<UsageFromTask3>>,
 }
 
 use enum_ptr::EnumPtr;
@@ -708,7 +707,7 @@ impl UsageQueueInner {
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
-        self.blocked_usages_from_tasks2.peek().map(|uft| uft.index())
+        self.blocked_usages_from_tasks2.peek().map(|uft| uft.map_ref(|u| u.index()))
     }
 
     #[must_use]
@@ -716,7 +715,7 @@ impl UsageQueueInner {
         if matches!(
             self.blocked_usages_from_tasks2
                 .peek()
-                .map(|uft| uft.usage()),
+                .map(|uft| uft.map_ref(|u| u.usage())),
             Some(RequestedUsage::Readonly)
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
