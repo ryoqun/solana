@@ -1022,7 +1022,7 @@ impl SchedulingStateMachine {
                     // don't push task into buffered_task_queue yet. It can be assumed that every
                     // task will eventually succeed to be unblocked, and enter in this condition
                     // clause as long as `SchedulingStateMachine` is used correctly.
-                    if let Some(task) = task_with_buffered_queue
+                    if let Some(task) = buffered_task_from_queue2.task()
                         .clone()
                         .try_unblock(&mut self.count_token)
                     {
