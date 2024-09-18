@@ -623,30 +623,6 @@ impl PartialEq<UsageFromTask3> for UsageFromTask3 {
 type UsageFromTask = (RequestedUsage, Task);
 const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
 
-#[derive(Debug)]
-struct UsageFromTask2(RequestedUsage, Task);
-const_assert_eq!(mem::size_of::<UsageFromTask2>(), 16);
-
-impl Ord for UsageFromTask2 {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.1.index.cmp(&self.1.index)
-        //self.1.index.cmp(&other.1.index)
-    }
-}
-
-impl PartialOrd for UsageFromTask2 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Eq for UsageFromTask2 {}
-impl PartialEq<UsageFromTask2> for UsageFromTask2 {
-    fn eq(&self, other: &Self) -> bool {
-        self.1.index == other.1.index
-    }
-}
-
 impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
