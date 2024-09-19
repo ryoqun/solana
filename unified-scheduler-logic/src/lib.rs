@@ -586,6 +586,7 @@ enum RequestedUsage {
 }
 
 use std::collections::BinaryHeap;
+use std::collections::binary_heap::PeekMut;
 
 /// Internal scheduling data about a particular address.
 ///
@@ -736,7 +737,6 @@ impl UsageQueueInner {
                     // todo test this for unbounded growth of inifnite readable only locks....
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
                         if peeked_task.0.is_executed(token) {
-                            use std::collections::binary_heap::PeekMut;
                             PeekMut::pop(peeked_task);
                         }
                     }
