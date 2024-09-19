@@ -477,6 +477,10 @@ impl TaskInner {
             .with_borrow_mut(token, |usage_count| usage_count.current())
     }
 
+    fn has_blocked_usage(&self, token: &mut BlockedUsageCountToken) -> bool {
+        self.blocked_usage_count(token) > 0
+    }
+
     fn set_blocked_usage_count(&self, token: &mut BlockedUsageCountToken, count: ShortCounter) {
         self.blocked_usage_count
             .with_borrow_mut(token, |usage_count| {
@@ -892,7 +896,7 @@ impl SchedulingStateMachine {
                     Some(mut current_usage) => {
                         match (&mut current_usage, context.requested_usage) {
                             (Usage::Writable(ct), RequestedUsage::Writable) => {
-                                if new_task.index < ct.index && ct.blocked_usage_count(&mut self.count_token) > 0 {
+                                if new_task.index < ct.index && ct.has_blocked_usage(&mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                     let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                     reverted_task.increment_blocked_usage_count(&mut self.count_token);
@@ -906,7 +910,7 @@ impl SchedulingStateMachine {
                                 }
                             }
                             (Usage::Writable(ct), RequestedUsage::Readonly) => {
-                                if new_task.index < ct.index && ct.blocked_usage_count(&mut self.count_token) > 0 {
+                                if new_task.index < ct.index && ct.has_blocked_usage(&mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::new(RequestedUsage::Readonly, new_task.clone()));
                                     let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                     reverted_task.increment_blocked_usage_count(&mut self.count_token);
@@ -945,8 +949,7 @@ impl SchedulingStateMachine {
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let mut t = vec![];
                                 for (&current_index, task) in current_tasks.range(new_task.index..) {
-                                    let c = task.blocked_usage_count(&mut self.count_token);
-                                    if c > 0 {
+                                    if task.has_blocked_usage(&mut self.count_token) {
                                         t.push(current_index);
                                     }
                                 }
