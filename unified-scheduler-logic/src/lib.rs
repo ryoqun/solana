@@ -889,7 +889,11 @@ impl SchedulingStateMachine {
     }
 
     fn try_reblock_task(blocking_task: &Task, buffered_task_queue: &mut BufferedTaskQueue, token: &mut BlockedUsageCountToken) -> bool {
-        blocking_task.has_blocked_usage(token)
+        if blocking_task.has_blocked_usage(token) {
+            return true;
+        } else {
+            buffered_task_queue.remove(blocking_task.index).is_some()
+        }
     }
 
     #[must_use]
