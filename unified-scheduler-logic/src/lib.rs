@@ -837,8 +837,8 @@ impl SchedulingStateMachine {
         self.task_total.current()
     }
 
-    fn mark_task_as_executed(&mut self, task: Task) -> Task {
-        reblocked_task.mark_as_executed(&mut self.count_token);
+    fn mark_task_as_executed(&mut self, task: &Task) -> Task {
+        task.mark_as_executed(&mut self.count_token);
     }
 
     /// Schedules given `task`, returning it if successful.
