@@ -1082,7 +1082,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 for b in still_blocking_tasks {
-                                    blocking_tasks.push(b);
+                                    blocking_tasks.push(Reverse(b));
                                 }
                                 if !reblocked_tasks.is_empty() {
                                     let lock_result = if blocking_tasks.is_empty() {
