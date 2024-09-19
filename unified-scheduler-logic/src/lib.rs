@@ -519,10 +519,10 @@ impl TaskInner {
             })
     }
 
-    fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
+    fn is_buffered(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
-                matches!(*status, TaskStatus::Executed)
+                matches!(*status, TaskStatus::Buffered)
             })
     }
 }
@@ -925,7 +925,7 @@ impl SchedulingStateMachine {
     fn try_reblock_task(blocking_task: &Task, buffered_task_queue: &mut TaskTree, blocked_task_count: &mut ShortCounter, token: &mut BlockedUsageCountToken) -> bool {
         if blocking_task.has_blocked_usage(token) {
             true
-        } else if !blocked_task.is_executed(token) {
+        } else if blocking_task.is_buffered(token) {
             blocked_task_count.increment_self();
             true
         } else {
