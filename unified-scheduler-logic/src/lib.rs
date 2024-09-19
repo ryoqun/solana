@@ -947,23 +947,23 @@ impl SchedulingStateMachine {
                                 }
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
-                                let mut t = vec![];
+                                let mut indexes = vec![];
                                 for (&current_index, task) in current_tasks.range(new_task.index..) {
                                     if task.has_blocked_usage(&mut self.count_token) {
-                                        t.push(current_index);
+                                        indexes.push(current_index);
                                     }
                                 }
-                                if !t.is_empty() {
-                                    let t: Vec<Task> = t.into_iter().map(|current_index| {
-                                        current_tasks.remove(&current_index).unwrap()
-                                    }).collect();
+                                if !indexes.is_empty() {
+                                    let tasks = indexes.into_iter().map(|index| {
+                                        current_tasks.remove(&index).unwrap()
+                                    }).collect::<Vec<_>>();
                                     let r = if current_tasks.is_empty() {
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
                                     } else {
                                         Err(())
                                     };
-                                    for tt in t.into_iter() {
+                                    for tt in tasks.into_iter() {
                                         tt.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask3::Readonly(tt),
