@@ -762,6 +762,7 @@ impl UsageQueueInner {
                     if blocking_tasks.is_empty() {
                         is_unused_now = true;
                     }
+                    dbg!(is_unused_now);
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
