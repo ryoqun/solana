@@ -494,7 +494,7 @@ impl TaskInner {
 
     fn increment_blocked_usage_count(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(usage_count, _)| {
+            .with_borrow_mut(token, |(usage_count,)| {
                 usage_count.increment_self();
             })
     }
@@ -1137,7 +1137,7 @@ impl SchedulingStateMachine {
             transaction,
             index,
             lock_contexts,
-            blocked_usage_count: TokenCell::new(ShortCounter::zero()),
+            blocked_usage_count: TokenCell::new((ShortCounter::zero(),)),
         })
     }
 
