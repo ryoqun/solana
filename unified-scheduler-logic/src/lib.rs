@@ -884,6 +884,7 @@ impl SchedulingStateMachine {
     pub fn rebuffer_executing_task(&mut self, task: Task) {
         self.executing_task_count.decrement_self();
         self.buffered_task_total.increment_self();
+        // assert task is executed?
         task.mark_as_buffered(&mut self.count_token);
         assert!(self.buffered_task_queue.insert(task.index, task).is_none());
     }
@@ -909,6 +910,7 @@ impl SchedulingStateMachine {
     /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
     /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
+        // assert blocked_usage_count == 0?
         self.executing_task_count.decrement_self();
         self.alive_task_count.decrement_self();
         self.executed_task_total.increment_self();
