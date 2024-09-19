@@ -6316,6 +6316,7 @@ dependencies = [
  "lazy_static",
  "log",
  "lru",
+ "min-max-heap",
  "num_enum",
  "prio-graph",
  "qualifier_attr",
@@ -8342,7 +8343,6 @@ version = "2.1.0"
 dependencies = [
  "assert_matches",
  "enum-ptr",
- "min-max-heap",
  "more-asserts",
  "solana-sdk",
  "static_assertions",

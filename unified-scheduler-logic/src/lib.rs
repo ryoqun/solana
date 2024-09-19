@@ -563,7 +563,7 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BinaryHeap<Task>),
+    Readonly(BinaryHeap<Reverse<Task>>),
     Writable(Task),
 }
 
