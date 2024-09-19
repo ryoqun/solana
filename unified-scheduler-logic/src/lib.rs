@@ -494,7 +494,7 @@ impl TaskInner {
 
     fn increment_blocked_usage_count(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |usage_count| {
+            .with_borrow_mut(token, |(usage_count, _)| {
                 usage_count.increment_self();
             })
     }
