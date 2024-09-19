@@ -948,7 +948,7 @@ impl SchedulingStateMachine {
     /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
     /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
-        task.mark_as_unlocked();
+        task.mark_as_unlocked(&mut self.count_token);
         // assert blocked_usage_count == 0?
         self.executing_task_count.decrement_self();
         self.alive_task_count.decrement_self();
