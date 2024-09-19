@@ -895,8 +895,8 @@ impl SchedulingStateMachine {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
                         match (&mut current_usage, context.requested_usage) {
-                            (Usage::Writable(ct), RequestedUsage::Writable) => {
-                                if new_task.index < ct.index && ct.has_blocked_usage(&mut self.count_token) {
+                            (Usage::Writable(blocking_task), RequestedUsage::Writable) => {
+                                if new_task.index < blocking_task.index && blocking_task.has_blocked_usage(&mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                     let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                     reverted_task.increment_blocked_usage_count(&mut self.count_token);
@@ -909,8 +909,8 @@ impl SchedulingStateMachine {
                                     None
                                 }
                             }
-                            (Usage::Writable(ct), RequestedUsage::Readonly) => {
-                                if new_task.index < ct.index && ct.has_blocked_usage(&mut self.count_token) {
+                            (Usage::Writable(blocking_task), RequestedUsage::Readonly) => {
+                                if new_task.index < blocking_task.index && blocking_task.has_blocked_usage(&mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::new(RequestedUsage::Readonly, new_task.clone()));
                                     let Usage::Writable(reverted_task) = old_usage else { panic!() };
                                     reverted_task.increment_blocked_usage_count(&mut self.count_token);
@@ -948,29 +948,29 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let mut indexes = vec![];
-                                for (&current_index, task) in current_tasks.range(new_task.index..) {
+                                for (&index, task) in current_tasks.range(new_task.index..) {
                                     if task.has_blocked_usage(&mut self.count_token) {
-                                        indexes.push(current_index);
+                                        indexes.push(index);
                                     }
                                 }
                                 if !indexes.is_empty() {
                                     let tasks = indexes.into_iter().map(|index| {
                                         current_tasks.remove(&index).unwrap()
                                     }).collect::<Vec<_>>();
-                                    let r = if current_tasks.is_empty() {
+                                    let lock_result = if current_tasks.is_empty() {
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
                                     } else {
                                         Err(())
                                     };
-                                    for tt in tasks.into_iter() {
-                                        tt.increment_blocked_usage_count(&mut self.count_token);
+                                    for reblocked_task in tasks.into_iter() {
+                                        reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
-                                            UsageFromTask3::Readonly(tt),
+                                            UsageFromTask3::Readonly(reblocked_task),
                                         );
                                         self.reblocked_lock_total.increment_self();
                                     }
-                                    Some(r)
+                                    Some(lock_result)
                                 } else {
                                     None
                                 }
