@@ -555,7 +555,7 @@ use std::collections::BinaryHeap;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks2: BinaryHeap<Compact<UsageFromTask>>,
+    blocked_usages_from_tasks: BinaryHeap<Compact<UsageFromTask>>,
 }
 
 use enum_ptr::EnumPtr;
@@ -635,7 +635,7 @@ impl Default for UsageQueueInner {
             //
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
-            blocked_usages_from_tasks2: BinaryHeap::with_capacity(128),
+            blocked_usages_from_tasks: BinaryHeap::with_capacity(128),
         }
     }
 }
@@ -695,7 +695,7 @@ impl UsageQueueInner {
 
         if is_unused_now {
             self.current_usage = None;
-            self.blocked_usages_from_tasks2
+            self.blocked_usages_from_tasks
                 .pop()
                 .map(|uft| uft.into())
         } else {
@@ -706,24 +706,24 @@ impl UsageQueueInner {
     fn insert_blocked_usage_from_task(&mut self, uft: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         self
-            .blocked_usages_from_tasks2
+            .blocked_usages_from_tasks
             .push(uft.into());
     }
 
     fn first_blocked_task_index(&self) -> Option<Index> {
-        self.blocked_usages_from_tasks2.peek().map(|uft| uft.map_ref(|u| u.index()))
+        self.blocked_usages_from_tasks.peek().map(|uft| uft.map_ref(|u| u.index()))
     }
 
     #[must_use]
     fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
-            self.blocked_usages_from_tasks2
+            self.blocked_usages_from_tasks
                 .peek()
                 .map(|uft| uft.map_ref(|u| u.usage())),
             Some(RequestedUsage::Readonly)
         ) {
             assert_matches!(self.current_usage, Some(Usage::Readonly(_)));
-            self.blocked_usages_from_tasks2
+            self.blocked_usages_from_tasks
                 .pop()
                 .map(|uft| uft.into())
         } else {
@@ -732,7 +732,7 @@ impl UsageQueueInner {
     }
 
     fn has_no_blocked_usage(&self) -> bool {
-        self.blocked_usages_from_tasks2.is_empty()
+        self.blocked_usages_from_tasks.is_empty()
     }
 }
 
