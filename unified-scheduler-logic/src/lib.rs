@@ -522,6 +522,7 @@ impl TaskInner {
     }
 
     fn mark_as_unlocked(&self, token: &mut BlockedUsageCountToken) {
+        assert!(!self.has_blocked_usage(token));
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
                 *status = TaskStatus::Unlocked;
