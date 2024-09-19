@@ -911,12 +911,16 @@ impl SchedulingStateMachine {
 
     #[must_use]
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
-        self.buffered_task_queue.pop_first().map(|(_index, task)| {
+        while let Some(peeked_task) = self.buffered_task_queue.pop() {
             assert!(self.is_task_runnable());
-            self.executing_task_count.increment_self();
-            task.mark_as_executed(&mut self.count_token);
-            task
-        })
+            if peeked_task.has_blocked_usage(&mut self.count_token) {
+                continue;
+            } else {
+                self.executing_task_count.increment_self();
+                task.mark_as_executed(&mut self.count_token);
+                return task;
+            }
+        }
     }
 
     /// Deschedules given scheduled `task`.
