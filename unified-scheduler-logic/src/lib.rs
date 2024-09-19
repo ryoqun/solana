@@ -453,6 +453,7 @@ pub type Index = u128;
 #[derive(Debug)]
 enum TaskStatus {
     Buffered,
+    Executed,
     Unlocked,
 }
 
@@ -502,6 +503,13 @@ impl TaskInner {
         self.blocked_usage_count
             .with_borrow_mut(token, |(usage_count,_)| {
                 usage_count.increment_self();
+            })
+    }
+
+    fn mark_as_executed(&self, token: &mut BlockedUsageCountToken) {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                *status = TaskStatus::Executed;
             })
     }
 
@@ -915,6 +923,7 @@ impl SchedulingStateMachine {
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() {
                 self.executing_task_count.increment_self();
+                task.mark_as_executed(&mut self.count_token);
                 Some(task)
             } else {
                 self.buffered_task_total.increment_self();
@@ -940,6 +949,7 @@ impl SchedulingStateMachine {
                 continue;
             } else {
                 self.executing_task_count.increment_self();
+                task.mark_as_executed(&mut self.count_token);
                 return Some(task);
             }
         }
