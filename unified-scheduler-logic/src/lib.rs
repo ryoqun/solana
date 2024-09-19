@@ -453,7 +453,6 @@ pub type Index = u128;
 #[derive(Debug)]
 enum TaskStatus {
     Buffered,
-    Executed,
     Unlocked,
 }
 
@@ -506,13 +505,6 @@ impl TaskInner {
             })
     }
 
-    fn mark_as_executed(&self, token: &mut BlockedUsageCountToken) {
-        self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                *status = TaskStatus::Executed;
-            })
-    }
-
     fn mark_as_buffered(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
@@ -520,17 +512,17 @@ impl TaskInner {
             })
     }
 
+    fn mark_as_unlocked(&self, token: &mut BlockedUsageCountToken) {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                *status = TaskStatus::Unlocked;
+            })
+    }
+
     fn is_buffered(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
                 matches!(*status, TaskStatus::Buffered)
-            })
-    }
-
-    fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
-        self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                matches!(*status, TaskStatus::Executed)
             })
     }
 
@@ -744,7 +736,7 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     // todo test this for unbounded growth of inifnite readable only locks....
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
-                        if peeked_task.0.is_executed(token) {
+                        if peeked_task.0.is_unlocked(token) {
                             PeekMut::pop(peeked_task);
                         } else {
                             break;
@@ -914,7 +906,6 @@ impl SchedulingStateMachine {
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() {
                 self.executing_task_count.increment_self();
-                task.mark_as_executed(&mut self.count_token);
                 Some(task)
             } else {
                 self.buffered_task_total.increment_self();
@@ -940,7 +931,6 @@ impl SchedulingStateMachine {
                 continue;
             } else {
                 self.executing_task_count.increment_self();
-                task.mark_as_executed(&mut self.count_token);
                 return Some(task);
             }
         }
@@ -958,6 +948,7 @@ impl SchedulingStateMachine {
     /// tasks inside `SchedulingStateMachine` to provide an offloading-based optimization
     /// opportunity for callers.
     pub fn deschedule_task(&mut self, task: &Task) {
+        task.mark_as_unlocked();
         // assert blocked_usage_count == 0?
         self.executing_task_count.decrement_self();
         self.alive_task_count.decrement_self();
