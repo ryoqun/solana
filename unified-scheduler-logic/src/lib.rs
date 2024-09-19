@@ -837,7 +837,7 @@ impl SchedulingStateMachine {
         self.task_total.current()
     }
 
-    fn mark_task_as_executed(&mut self, task: &Task) -> Task {
+    fn mark_task_as_executed(&mut self, task: &Task) {
         task.mark_as_executed(&mut self.count_token);
     }
 
