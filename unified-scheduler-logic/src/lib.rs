@@ -2198,7 +2198,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
-                let _ = usage_queue.unlock(RequestedUsage::Writable, 0);
+                let _ = usage_queue.unlock(RequestedUsage::Writable, 0, &mut state_machine.count_token);
             });
     }
 
