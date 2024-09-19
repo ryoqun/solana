@@ -1043,7 +1043,7 @@ impl SchedulingStateMachine {
                                         }
                                     }
                                 }
-                                if !indexes.is_empty() {
+                                if !reblocked_tasks.is_empty() {
                                     let lock_result = if blocking_tasks.is_empty() {
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
