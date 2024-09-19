@@ -450,6 +450,11 @@ const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
 pub type Index = u128;
 
+enum TaskStatus {
+    Buffered,
+    Executed,
+}
+
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
 #[repr(C)]
@@ -458,7 +463,7 @@ pub struct TaskInner {
     /// Carrying this along with the transaction is needed to properly record the execution result
     /// of it.
     index: Index,
-    blocked_usage_count: TokenCell<(ShortCounter,)>,
+    blocked_usage_count: TokenCell<(ShortCounter,TaskStatus)>,
     lock_contexts: Vec<LockContext>,
     transaction: SanitizedTransaction,
 }
