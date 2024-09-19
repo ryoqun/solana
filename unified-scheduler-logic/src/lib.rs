@@ -525,7 +525,7 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BTreeMap<Index, Task>),
+    Readonly(TaskTree),
     Writable(Task),
 }
 
@@ -745,13 +745,13 @@ impl UsageQueueInner {
 pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
-type BufferedTaskQueue = BTreeMap<Index, Task>;
+type TaskTree = BTreeMap<Index, Task>;
 
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
-    buffered_task_queue: BufferedTaskQueue,
+    buffered_task_queue: TaskTree,
     alive_task_count: ShortCounter,
     executing_task_count: ShortCounter,
     max_executing_task_count: u32,
@@ -888,7 +888,7 @@ impl SchedulingStateMachine {
         }
     }
 
-    fn try_reblock_task(blocking_task: &Task, buffered_task_queue: &mut BufferedTaskQueue, token: &mut BlockedUsageCountToken) -> bool {
+    fn try_reblock_task(blocking_task: &Task, buffered_task_queue: &mut TaskTree, token: &mut BlockedUsageCountToken) -> bool {
         blocking_task.has_blocked_usage(token) ||
             buffered_task_queue.remove(&blocking_task.index).is_some()
     }
