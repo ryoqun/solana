@@ -650,10 +650,10 @@ impl UsageQueueInner {
                 ));
                 Ok(())
             }
-            Some(Usage::Readonly(current_tasks)) => match requested_usage {
+            Some(Usage::Readonly(blocking_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    //dbg!(&current_tasks.keys());
-                    let old = current_tasks.insert(task.index, task.clone());
+                    //dbg!(&blocking_tasks.keys());
+                    let old = blocking_tasks.insert(task.index, task.clone());
                     //dbg!(task.index);
                     assert!(old.is_none(), "not existing index: {}", task.index);
                     Ok(())
@@ -672,13 +672,13 @@ impl UsageQueueInner {
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some(Usage::Readonly(current_tasks)) => match requested_usage {
+            Some(Usage::Readonly(blocking_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    if current_tasks.len() == 1 {
+                    if blocking_tasks.len() == 1 {
                         is_unused_now = true;
                     }
                     // todo test this for unbounded growth of inifnite readable only locks....
-                    current_tasks.remove(&task_index).unwrap();
+                    blocking_tasks.remove(&task_index).unwrap();
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
@@ -953,24 +953,24 @@ impl SchedulingStateMachine {
                                     None
                                 }
                             }
-                            (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
+                            (Usage::Readonly(blocking_tasks), RequestedUsage::Writable) => {
                                 let mut indexes = vec![];
-                                for (&index, blocking_task) in current_tasks.range(new_task.index..) {
+                                for (&index, blocking_task) in blocking_tasks.range(new_task.index..) {
                                     if Self::try_reblock_task(blocking_task, &mut self.buffered_task_queue, &mut self.count_token) {
                                         indexes.push(index);
                                     }
                                 }
                                 if !indexes.is_empty() {
-                                    let tasks = indexes.into_iter().map(|index| {
-                                        current_tasks.remove(&index).unwrap()
+                                    let reblocked_tasks = indexes.into_iter().map(|index| {
+                                        blocking_tasks.remove(&index).unwrap()
                                     }).collect::<Vec<_>>();
-                                    let lock_result = if current_tasks.is_empty() {
+                                    let lock_result = if blocking_tasks.is_empty() {
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
                                     } else {
                                         Err(())
                                     };
-                                    for reblocked_task in tasks.into_iter() {
+                                    for reblocked_task in reblocked_tasks.into_iter() {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask::Readonly(reblocked_task),
