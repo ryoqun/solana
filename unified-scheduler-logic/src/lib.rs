@@ -892,7 +892,7 @@ impl SchedulingStateMachine {
         if blocking_task.has_blocked_usage(token) {
             return true;
         } else {
-            buffered_task_queue.remove(blocking_task.index).is_some()
+            buffered_task_queue.remove(&blocking_task.index).is_some()
         }
     }
 
