@@ -782,7 +782,7 @@ type TaskTree = BTreeMap<Index, Task>;
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
-    buffered_task_queue: TaskTree,
+    buffered_task_queue: BinaryHeap<Task>,
     alive_task_count: ShortCounter,
     executing_task_count: ShortCounter,
     max_executing_task_count: u32,
