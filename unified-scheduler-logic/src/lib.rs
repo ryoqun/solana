@@ -560,6 +560,8 @@ impl LockContext {
     }
 }
 
+use std::cmp::Reverse;
+
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
