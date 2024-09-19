@@ -921,6 +921,7 @@ impl SchedulingStateMachine {
                 return Some(task);
             }
         }
+        None
     }
 
     /// Deschedules given scheduled `task`.
