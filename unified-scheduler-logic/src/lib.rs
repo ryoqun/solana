@@ -146,20 +146,24 @@ mod utils {
         }
 
         #[must_use]
+        #[track_caller]
         pub(super) fn increment(self) -> Self {
             Self(self.0.checked_add(1).unwrap())
         }
 
         #[must_use]
+        #[track_caller]
         pub(super) fn decrement(self) -> Self {
             Self(self.0.checked_sub(1).unwrap())
         }
 
+        #[track_caller]
         pub(super) fn increment_self(&mut self) -> &mut Self {
             *self = self.increment();
             self
         }
 
+        #[track_caller]
         pub(super) fn decrement_self(&mut self) -> &mut Self {
             *self = self.decrement();
             self
