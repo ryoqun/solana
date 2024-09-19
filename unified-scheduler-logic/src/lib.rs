@@ -511,6 +511,13 @@ impl TaskInner {
                 *status = TaskStatus::Executed;
             })
     }
+
+    fn mark_as_buffered(&self, token: &mut BlockedUsageCountToken) {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                *status = TaskStatus::Buffered;
+            })
+    }
 }
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
@@ -844,10 +851,6 @@ impl SchedulingStateMachine {
         self.task_total.current()
     }
 
-    fn mark_task_as_executed(&mut self, task: &Task) {
-        task.mark_as_executed(&mut self.count_token);
-    }
-
     /// Schedules given `task`, returning it if successful.
     ///
     /// Returns `Some(task)` if it's immediately scheduled. Otherwise, returns `None`,
@@ -861,6 +864,7 @@ impl SchedulingStateMachine {
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() {
                 self.executing_task_count.increment_self();
+                task.mark_as_executed(&mut self.count_token);
                 Some(task)
             } else {
                 self.buffered_task_total.increment_self();
@@ -873,6 +877,7 @@ impl SchedulingStateMachine {
     pub fn rebuffer_executing_task(&mut self, task: Task) {
         self.executing_task_count.decrement_self();
         self.buffered_task_total.increment_self();
+        task.mark_as_buffered(&mut self.count_token);
         assert!(self.buffered_task_queue.insert(task.index, task).is_none());
     }
 
@@ -881,6 +886,7 @@ impl SchedulingStateMachine {
         self.buffered_task_queue.pop_first().map(|(_index, task)| {
             assert!(self.is_task_runnable());
             self.executing_task_count.increment_self();
+            task.mark_as_executed(&mut self.count_token);
             task
         })
     }
