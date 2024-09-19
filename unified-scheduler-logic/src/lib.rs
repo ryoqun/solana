@@ -556,7 +556,7 @@ impl LockContext {
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(TaskTree),
+    Readonly(BinaryHeap<Task>),
     Writable(Task),
 }
 
@@ -704,9 +704,7 @@ impl UsageQueueInner {
             Some(Usage::Readonly(blocking_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     //dbg!(&blocking_tasks.keys());
-                    let old = blocking_tasks.insert(task.index, task.clone());
-                    //dbg!(task.index);
-                    assert!(old.is_none(), "not existing index: {}", task.index);
+                    blocking_tasks.push(task.clone());
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
