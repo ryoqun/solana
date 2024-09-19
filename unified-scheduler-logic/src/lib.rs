@@ -1068,15 +1068,21 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(blocking_tasks), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
+                                let mut still_blocking_tasks = vec![];
                                 while let Some(blocking_task) = blocking_tasks.peek_mut() {
                                     if new_task.index < blocking_task.0.0.index {
                                         let blocking_task = PeekMut::pop(blocking_task).0;
                                         if Self::try_reblock_task(&blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                             reblocked_tasks.push(blocking_task);
+                                        } else {
+                                            still_blocking_tasks.push(blocking_tasks);
                                         }
                                     } else {
                                         break;
                                     }
+                                }
+                                for b in still_blocking_tasks {
+                                    blocking_tasks.push(b);
                                 }
                                 if !reblocked_tasks.is_empty() {
                                     let lock_result = if blocking_tasks.is_empty() {
