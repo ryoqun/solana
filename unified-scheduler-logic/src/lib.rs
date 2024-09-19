@@ -736,7 +736,7 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     // todo test this for unbounded growth of inifnite readable only locks....
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
-                        if peeked_task.0.is_executed(token) {
+                        if peeked_task.0.is_unlocked(token) {
                             PeekMut::pop(peeked_task);
                         } else {
                             break;
