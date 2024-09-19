@@ -738,6 +738,8 @@ impl UsageQueueInner {
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
                         if peeked_task.0.is_executed(token) {
                             PeekMut::pop(peeked_task);
+                        } else {
+                            break;
                         }
                     }
                     if blocking_tasks.is_empty() {
