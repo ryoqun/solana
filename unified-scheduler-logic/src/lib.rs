@@ -536,6 +536,13 @@ impl TaskInner {
             })
     }
 
+    fn is_buffered(&self, token: &mut BlockedUsageCountToken) -> bool {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                matches!(*status, TaskStatus::Executed)
+            })
+    }
+
     fn is_unlocked(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
