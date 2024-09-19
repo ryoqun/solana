@@ -555,7 +555,7 @@ use std::collections::BinaryHeap;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    blocked_usages_from_tasks2: BinaryHeap<Compact<UsageFromTask3>>,
+    blocked_usages_from_tasks2: BinaryHeap<Compact<UsageFromTask>>,
 }
 
 use enum_ptr::EnumPtr;
@@ -563,14 +563,14 @@ use enum_ptr::Compact;
 
 #[repr(C, usize)]
 #[derive(Debug, EnumPtr)]
-enum UsageFromTask3 {
+enum UsageFromTask {
     Readonly(Task),
     Writable(Task),
 }
-const_assert_eq!(mem::size_of::<UsageFromTask3>(), 16);
-const_assert_eq!(mem::size_of::<Compact<UsageFromTask3>>(), 8);
+const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
+const_assert_eq!(mem::size_of::<Compact<UsageFromTask>>(), 8);
 
-impl UsageFromTask3 {
+impl UsageFromTask {
     fn index(&self) -> Index {
         match self {
             Self::Readonly(t) => t.index,
@@ -593,7 +593,7 @@ impl UsageFromTask3 {
     }
 }
 
-impl From<(RequestedUsage, Task)> for UsageFromTask3 {
+impl From<(RequestedUsage, Task)> for UsageFromTask {
     fn from((usage, task): (RequestedUsage, Task)) -> Self {
         match usage {
             RequestedUsage::Readonly => Self::Readonly(task),
@@ -602,21 +602,21 @@ impl From<(RequestedUsage, Task)> for UsageFromTask3 {
     }
 }
 
-impl Ord for UsageFromTask3 {
+impl Ord for UsageFromTask {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
         //self.index().cmp(&other.index())
     }
 }
 
-impl PartialOrd for UsageFromTask3 {
+impl PartialOrd for UsageFromTask {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Eq for UsageFromTask3 {}
-impl PartialEq<UsageFromTask3> for UsageFromTask3 {
+impl Eq for UsageFromTask {}
+impl PartialEq<UsageFromTask> for UsageFromTask {
     fn eq(&self, other: &Self) -> bool {
         self.index() == other.index()
     }
@@ -669,7 +669,7 @@ impl UsageQueueInner {
         &mut self,
         requested_usage: RequestedUsage,
         task_index: Index,
-    ) -> Option<UsageFromTask3> {
+    ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(current_tasks)) => match requested_usage {
@@ -703,7 +703,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn insert_blocked_usage_from_task(&mut self, uft: UsageFromTask3) {
+    fn insert_blocked_usage_from_task(&mut self, uft: UsageFromTask) {
         assert_matches!(self.current_usage, Some(_));
         self
             .blocked_usages_from_tasks2
@@ -715,7 +715,7 @@ impl UsageQueueInner {
     }
 
     #[must_use]
-    fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask3> {
+    fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         if matches!(
             self.blocked_usages_from_tasks2
                 .peek()
@@ -901,7 +901,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
-                                        UsageFromTask3::Writable(reblocked_task),
+                                        UsageFromTask::Writable(reblocked_task),
                                     );
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
@@ -915,7 +915,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
-                                        UsageFromTask3::Writable(reblocked_task),
+                                        UsageFromTask::Writable(reblocked_task),
                                     );
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
@@ -966,7 +966,7 @@ impl SchedulingStateMachine {
                                     for reblocked_task in tasks.into_iter() {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
-                                            UsageFromTask3::Readonly(reblocked_task),
+                                            UsageFromTask::Readonly(reblocked_task),
                                         );
                                         self.reblocked_lock_total.increment_self();
                                     }
