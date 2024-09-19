@@ -450,6 +450,7 @@ const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
 pub type Index = u128;
 
+#[derive(Debug)]
 enum TaskStatus {
     Buffered,
     Executed,
