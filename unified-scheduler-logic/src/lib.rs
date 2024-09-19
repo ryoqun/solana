@@ -886,6 +886,10 @@ impl SchedulingStateMachine {
         }
     }
 
+    fn try_reblock_task(&mut self, blocking_task: &Task) -> bool {
+        blocking_task.has_blocked_usage(&mut self.count_token)
+    }
+
     #[must_use]
     fn try_lock_usage_queues(&mut self, new_task: Task) -> Option<Task> {
         let mut blocked_usage_count = ShortCounter::zero();
@@ -896,7 +900,7 @@ impl SchedulingStateMachine {
                     Some(mut current_usage) => {
                         match (&mut current_usage, context.requested_usage) {
                             (Usage::Writable(blocking_task), RequestedUsage::Writable) => {
-                                if new_task.index < blocking_task.index && blocking_task.has_blocked_usage(&mut self.count_token) {
+                                if new_task.index < blocking_task.index && self.try_reblock_task(blocking_task) {
                                     let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
