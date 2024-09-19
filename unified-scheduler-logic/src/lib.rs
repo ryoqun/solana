@@ -895,7 +895,7 @@ impl SchedulingStateMachine {
                 Some(task)
             } else {
                 self.buffered_task_total.increment_self();
-                assert!(self.buffered_task_queue.push(task).is_none());
+                self.buffered_task_queue.push(task);
                 None
             }
         })
