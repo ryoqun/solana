@@ -1034,18 +1034,16 @@ impl SchedulingStateMachine {
                                 }
                             }
                             (Usage::Readonly(blocking_tasks), RequestedUsage::Writable) => {
-                                let mut indexes = vec![];
-                                /*
-                                for (&index, blocking_task) in blocking_tasks.range(new_task.index..) {
-                                    if Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
-                                        indexes.push(index);
+                                let mut reblocked_tasks = vec![];
+                                while let Some(blocking_task) in blocking_tasks.peek_mut() {
+                                    if next_task.index < blocking_task.index {
+                                        let blocking_task = PeekMut::pop(blocking_task);
+                                        if Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
+                                            reblocked_tasks.push(blocking_task);
+                                        }
                                     }
                                 }
-                                */
                                 if !indexes.is_empty() {
-                                    let reblocked_tasks = indexes.into_iter().map(|index| {
-                                        blocking_tasks.remove(&index).unwrap()
-                                    }).collect::<Vec<_>>();
                                     let lock_result = if blocking_tasks.is_empty() {
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
