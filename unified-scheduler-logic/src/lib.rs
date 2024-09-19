@@ -725,6 +725,7 @@ impl UsageQueueInner {
         &mut self,
         requested_usage: RequestedUsage,
         task_index: Index,
+        token: &mut BlockedUsageCountToken,
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
@@ -732,7 +733,7 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     // todo test this for unbounded growth of inifnite readable only locks....
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
-                        if peeked_task.is_executed(&mut self.count_token) {
+                        if peeked_task.is_executed(token) {
                             use std::collections::binary_heap::PeekMut;
                             PeekMut::pop(peeked_task);
                         }
