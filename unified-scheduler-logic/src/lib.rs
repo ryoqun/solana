@@ -2241,7 +2241,7 @@ mod tests {
                     RequestedUsage::Readonly,
                     task,
                 ));
-                let _ = usage_queue.unlock(RequestedUsage::Writable, task_index);
+                let _ = usage_queue.unlock(RequestedUsage::Writable, task_index, &mut state_machine.count_token);
             });
     }
 }
