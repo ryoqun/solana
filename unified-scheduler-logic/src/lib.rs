@@ -454,6 +454,7 @@ pub type Index = u128;
 enum TaskStatus {
     Buffered,
     Executed,
+    Unlocked,
 }
 
 /// Internal scheduling data about a particular task.
@@ -530,6 +531,13 @@ impl TaskInner {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
                 matches!(*status, TaskStatus::Executed)
+            })
+    }
+
+    fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                matches!(*status, TaskStatus::Unlocked)
             })
     }
 }
