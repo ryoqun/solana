@@ -1036,7 +1036,7 @@ impl SchedulingStateMachine {
                             (Usage::Readonly(blocking_tasks), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
                                 while let Some(blocking_task) = blocking_tasks.peek_mut() {
-                                    if new_task.index < blocking_task.index {
+                                    if new_task.index < blocking_task.0.0.index {
                                         let blocking_task = PeekMut::pop(blocking_task);
                                         if Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                             reblocked_tasks.push(blocking_task.0);
