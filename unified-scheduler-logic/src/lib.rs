@@ -445,7 +445,7 @@ type UsageQueueToken = Token<UsageQueueInner>;
 const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 
 /// [`Token`] for [task](Task)'s [internal mutable data](`TaskInner::blocked_usage_count`).
-type BlockedUsageCountToken = Token<ShortCounter>;
+type BlockedUsageCountToken = Token<(ShortCounter,)>;
 const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
 pub type Index = u128;
