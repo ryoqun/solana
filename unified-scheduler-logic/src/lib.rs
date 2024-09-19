@@ -918,7 +918,7 @@ impl SchedulingStateMachine {
             } else {
                 self.executing_task_count.increment_self();
                 task.mark_as_executed(&mut self.count_token);
-                return task;
+                return Some(task);
             }
         }
     }
