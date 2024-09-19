@@ -906,7 +906,7 @@ impl SchedulingStateMachine {
         self.buffered_task_total.increment_self();
         // assert task is executed?
         task.mark_as_buffered(&mut self.count_token);
-        self.buffered_task_queue.push(task).is_none();
+        self.buffered_task_queue.push(task);
     }
 
     #[must_use]
