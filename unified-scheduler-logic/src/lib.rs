@@ -887,7 +887,7 @@ impl SchedulingStateMachine {
     }
 
     fn try_reblock_task(blocking_task: &Task, token: &mut BlockedUsageCountToken) -> bool {
-        blocking_task.has_blocked_usage(&mut self.count_token)
+        blocking_task.has_blocked_usage(token)
     }
 
     #[must_use]
