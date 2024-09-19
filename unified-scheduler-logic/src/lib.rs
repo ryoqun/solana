@@ -936,6 +936,7 @@ impl SchedulingStateMachine {
     }
 
     pub fn rebuffer_executing_task(&mut self, task: Task) {
+        assert!(task.is_executed(&mut self.count_token));
         assert!(task.has_blocked_usage(&mut self.count_token));
         self.executing_task_count.decrement_self();
         self.buffered_task_total.increment_self();
