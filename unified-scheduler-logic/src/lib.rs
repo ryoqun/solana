@@ -743,7 +743,6 @@ impl UsageQueueInner {
             Some(Usage::Readonly(blocking_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     // todo test this for unbounded growth of inifnite readable only locks....
-                    /*
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
                         if peeked_task.0.is_unlocked(token) {
                             PeekMut::pop(peeked_task);
@@ -751,7 +750,6 @@ impl UsageQueueInner {
                             break;
                         }
                     }
-                    */
                     if blocking_tasks.is_empty() {
                         is_unused_now = true;
                     }
