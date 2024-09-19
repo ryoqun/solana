@@ -522,7 +522,7 @@ impl TaskInner {
     fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
-                *status == TaskStatus::Executed
+                matches!(*status, TaskStatus::Executed)
             })
     }
 }
