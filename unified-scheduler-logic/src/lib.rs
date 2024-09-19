@@ -713,7 +713,7 @@ impl UsageQueueInner {
             Some(Usage::Readonly(blocking_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     //dbg!(&blocking_tasks.keys());
-                    blocking_tasks.push(task.clone());
+                    blocking_tasks.push(Reverse(task.clone()));
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
