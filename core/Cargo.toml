@@ -31,7 +31,6 @@ itertools = { workspace = true }
 lazy_static = { workspace = true }
 log = { workspace = true }
 lru = { workspace = true }
-min-max-heap = { workspace = true }
 num_enum = { workspace = true }
 prio-graph = { workspace = true }
 qualifier_attr = { workspace = true }
