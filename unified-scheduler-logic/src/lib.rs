@@ -1035,11 +1035,13 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(blocking_tasks), RequestedUsage::Writable) => {
                                 let mut indexes = vec![];
+                                /*
                                 for (&index, blocking_task) in blocking_tasks.range(new_task.index..) {
                                     if Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                         indexes.push(index);
                                     }
                                 }
+                                */
                                 if !indexes.is_empty() {
                                     let reblocked_tasks = indexes.into_iter().map(|index| {
                                         blocking_tasks.remove(&index).unwrap()
