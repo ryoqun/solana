@@ -1097,7 +1097,7 @@ impl SchedulingStateMachine {
         for context in task.lock_contexts() {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut buffered_task_from_queue =
-                    usage_queue.unlock(context.requested_usage, task.index);
+                    usage_queue.unlock(context.requested_usage, task.index, &mut self.count_token);
 
                 while let Some(buffered_task_from_queue2) = buffered_task_from_queue {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
