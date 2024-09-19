@@ -2177,7 +2177,9 @@ mod tests {
         // addr2: locked by [task0_1, task1_2], queue: [task2, task1, task1_3]
 
         assert!(!state_machine.has_buffered_task());
+        dbg!(state_machine.buffered_task_queue_count());
         state_machine.deschedule_task(&task0_1);
+        dbg!(state_machine.buffered_task_queue_count());
         assert!(!state_machine.has_buffered_task());
         // now
         // addr1: locked by task1_2, queue: [task1_3]
