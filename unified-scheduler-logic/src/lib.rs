@@ -898,10 +898,10 @@ impl SchedulingStateMachine {
                             (Usage::Writable(blocking_task), RequestedUsage::Writable) => {
                                 if new_task.index < blocking_task.index && blocking_task.has_blocked_usage(&mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
-                                    let Usage::Writable(reverted_task) = old_usage else { panic!() };
-                                    reverted_task.increment_blocked_usage_count(&mut self.count_token);
+                                    let Usage::Writable(reblocked_task) = old_usage else { panic!() };
+                                    reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
-                                        UsageFromTask3::Writable(reverted_task),
+                                        UsageFromTask3::Writable(reblocked_task),
                                     );
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
@@ -912,10 +912,10 @@ impl SchedulingStateMachine {
                             (Usage::Writable(blocking_task), RequestedUsage::Readonly) => {
                                 if new_task.index < blocking_task.index && blocking_task.has_blocked_usage(&mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::new(RequestedUsage::Readonly, new_task.clone()));
-                                    let Usage::Writable(reverted_task) = old_usage else { panic!() };
-                                    reverted_task.increment_blocked_usage_count(&mut self.count_token);
+                                    let Usage::Writable(reblocked_task) = old_usage else { panic!() };
+                                    reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     usage_queue.insert_blocked_usage_from_task(
-                                        UsageFromTask3::Writable(reverted_task),
+                                        UsageFromTask3::Writable(reblocked_task),
                                     );
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
