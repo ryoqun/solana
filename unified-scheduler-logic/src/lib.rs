@@ -1039,7 +1039,7 @@ impl SchedulingStateMachine {
                                     if next_task.index < blocking_task.index {
                                         let blocking_task = PeekMut::pop(blocking_task);
                                         if Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
-                                            reblocked_tasks.push(blocking_task);
+                                            reblocked_tasks.push(blocking_task.0);
                                         }
                                     }
                                 }
@@ -1053,7 +1053,7 @@ impl SchedulingStateMachine {
                                     for reblocked_task in reblocked_tasks.into_iter() {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
-                                            UsageFromTask::Readonly(reblocked_task.0),
+                                            UsageFromTask::Readonly(reblocked_task),
                                         );
                                         self.reblocked_lock_total.increment_self();
                                     }
