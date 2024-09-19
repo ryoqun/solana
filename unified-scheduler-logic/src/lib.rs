@@ -525,6 +525,13 @@ impl TaskInner {
                 matches!(*status, TaskStatus::Buffered)
             })
     }
+
+    fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                matches!(*status, TaskStatus::Executed)
+            })
+    }
 }
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
@@ -725,7 +732,7 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     // todo test this for unbounded growth of inifnite readable only locks....
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
-                        if *peeked_task.is_executed() {
+                        if peeked_task.is_executed() {
                             peeked_task.pop();
                         }
                     }
