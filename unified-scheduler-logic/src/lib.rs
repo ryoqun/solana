@@ -733,7 +733,7 @@ impl UsageQueueInner {
                     // todo test this for unbounded growth of inifnite readable only locks....
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
                         if peeked_task.is_executed() {
-                            peeked_task.pop();
+                            PeekMut::pop(peeked_task);
                         }
                     }
                     if blocking_tasks.is_empty() {
