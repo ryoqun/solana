@@ -1142,7 +1142,7 @@ impl SchedulingStateMachine {
             transaction,
             index,
             lock_contexts,
-            blocked_usage_count: TokenCell::new((ShortCounter::zero(),)),
+            blocked_usage_count: TokenCell::new((ShortCounter::zero(),TaskStatus::Buffered)),
         })
     }
 
