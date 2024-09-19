@@ -635,8 +635,8 @@ impl From<(RequestedUsage, Task)> for UsageFromTask {
 
 impl Ord for Task {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.index().cmp(&self.index())
-        //self.index().cmp(&other.index())
+        other.index.cmp(&self.index)
+        //self.index.cmp(&other.index)
     }
 }
 
@@ -649,11 +649,11 @@ impl PartialOrd for Task {
 impl Eq for Task {}
 impl PartialEq<Task> for Task {
     fn eq(&self, other: &Self) -> bool {
-        self.index() == other.index()
+        self.index == other.index
     }
 }
 
-impl Ord for Task {
+impl Ord for UsageFromTask {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
         //self.index().cmp(&other.index())
