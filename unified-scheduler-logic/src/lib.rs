@@ -954,7 +954,7 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(current_tasks), RequestedUsage::Writable) => {
                                 let mut indexes = vec![];
-                                for (&index, task) in current_tasks.range(new_task.index..) {
+                                for (&index, blocking_task) in current_tasks.range(new_task.index..) {
                                     if Self::try_reblock_task(blocking_task, &mut self.buffered_task_queue, &mut self.count_token) {
                                         indexes.push(index);
                                     }
