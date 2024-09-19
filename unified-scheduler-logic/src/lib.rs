@@ -428,7 +428,7 @@ impl Task {
     fn try_unblock(self, token: &mut BlockedUsageCountToken) -> Option<Task> {
         let did_unblock = self
             .blocked_usage_count
-            .with_borrow_mut(token, |usage_count| usage_count.decrement_self().is_zero());
+            .with_borrow_mut(token, |(usage_count, )| usage_count.decrement_self().is_zero());
         did_unblock.then_some(self)
     }
 }
