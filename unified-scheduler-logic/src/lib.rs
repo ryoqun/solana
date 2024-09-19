@@ -850,11 +850,20 @@ impl SchedulingStateMachine {
         self.alive_task_count.is_zero()
     }
 
-    pub fn has_buffered_task(&self) -> bool {
-        !self.buffered_task_queue.is_empty()
+    pub fn has_buffered_task(&mut self) -> bool {
+        while let Some(task) = self.buffered_task_queue.peek_mut() {
+            use std::collections::binary_heap::PeekMut;
+            if task.has_blocked_usage(&mut self.count_token) {
+                PeekMut::pop(task);
+                continue;
+            } else {
+                return true;
+            }
+        }
+        false
     }
 
-    pub fn has_runnable_task(&self) -> bool {
+    pub fn has_runnable_task(&mut self) -> bool {
         self.is_task_runnable() && self.has_buffered_task()
     }
 
