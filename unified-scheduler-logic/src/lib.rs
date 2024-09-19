@@ -518,6 +518,13 @@ impl TaskInner {
                 *status = TaskStatus::Buffered;
             })
     }
+
+    fn is_executed(&self, token: &mut BlockedUsageCountToken) {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                status == TaskStatus::Executed
+            })
+    }
 }
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
