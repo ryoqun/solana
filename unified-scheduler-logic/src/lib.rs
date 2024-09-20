@@ -1081,9 +1081,9 @@ impl SchedulingStateMachine {
                                     None
                                 }
                             }
-                            (Usage::Readonly(blocking_tasks, count), RequestedUsage::Writable) => {
+                            (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
-                                while let Some(blocking_task) = blocking_tasks.peek_mut() {
+                                while let Some(blocking_task) = usage_queue.readonly_tasks.peek_mut() {
                                     if new_task.index < blocking_task.0.0.index {
                                         let blocking_task = PeekMut::pop(blocking_task).0;
                                         if Self::try_reblock_task(&blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
@@ -1096,7 +1096,7 @@ impl SchedulingStateMachine {
                                 }
                                 if !reblocked_tasks.is_empty() {
                                     let lock_result = if count.is_zero() {
-                                        assert!(blocking_tasks.is_empty());
+                                        assert!(usage_queue.readonly_tasks.is_empty());
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
                                     } else {
