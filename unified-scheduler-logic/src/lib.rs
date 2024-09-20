@@ -718,6 +718,7 @@ impl Default for UsageQueueInner {
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
             blocked_usages_from_tasks: BinaryHeap::with_capacity(128),
+            readonly_tasks: BinaryHeap::with_capacity(128),
         }
     }
 }
