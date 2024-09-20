@@ -870,11 +870,15 @@ impl SchedulingStateMachine {
     pub fn has_buffered_task(&mut self) -> bool {
         while let Some(task) = self.buffered_task_queue.peek_mut() {
             use std::collections::binary_heap::PeekMut;
+            let status = task.status(&mut self.count_token);
             if task.has_blocked_usage(&mut self.count_token) {
                 PeekMut::pop(task);
                 continue;
+            } else if status == TaskStatus::Executed {
+                assert!(task.has_no_blocked_usage(&mut self.count_token));
+                continue;
             } else {
-                assert!(task.is_buffered(&mut self.count_token));
+                assert_eq!(status, TaskStatus::Buffered);
                 return true;
             }
         }
@@ -959,6 +963,9 @@ impl SchedulingStateMachine {
             assert!(task.is_buffered(&mut self.count_token));
             assert!(self.is_task_runnable());
             if task.has_blocked_usage(&mut self.count_token) {
+                continue;
+            } else if status == TaskStatus::Executed {
+                assert!(task.has_no_blocked_usage(&mut self.count_token));
                 continue;
             } else {
                 self.executing_task_count.increment_self();
