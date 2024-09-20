@@ -589,6 +589,7 @@ enum Usage {
     Writable(Task),
 }
 
+/*
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
@@ -597,6 +598,7 @@ impl Usage {
         }
     }
 }
+*/
 
 /// Status about how a task is requesting to use a particular [`UsageQueue`].
 #[derive(Clone, Copy, Debug, PartialEq)]
