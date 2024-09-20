@@ -2245,7 +2245,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "internal error: entered unreachable code")]
+    #[should_panic(expected = "assertion `left == right` failed\n  left: (3, Readonly)\n right: (3, Writable)")]
     fn test_unreachable_unlock_conditions2() {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
