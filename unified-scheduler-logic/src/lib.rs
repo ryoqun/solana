@@ -882,8 +882,8 @@ impl SchedulingStateMachine {
                 PeekMut::pop(task);
                 continue;
             } else if status == TaskStatus::Executed {
-                PeekMut::pop(task);
                 assert!(!task.has_blocked_usage(&mut self.count_token));
+                PeekMut::pop(task);
                 continue;
             } else {
                 assert_eq!(status, TaskStatus::Buffered);
