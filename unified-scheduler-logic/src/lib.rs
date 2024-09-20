@@ -582,7 +582,7 @@ use std::cmp::Reverse;
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BinaryHeap<Reverse<Task>>, usize),
+    Readonly(BinaryHeap<Reverse<Task>>, ShortCounter),
     Writable(Task),
 }
 
@@ -750,8 +750,9 @@ impl UsageQueueInner {
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some(Usage::Readonly(blocking_tasks)) => match unlocked_requested_usage {
+            Some(Usage::Readonly(blocking_tasks, count)) => match unlocked_requested_usage {
                 RequestedUsage::Readonly => {
+                    count.decrement_self();
                     // todo test this for unbounded growth of inifnite readable only locks....
                     //dbg!(blocking_tasks.len());
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
