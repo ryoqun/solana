@@ -1058,7 +1058,7 @@ impl SchedulingStateMachine {
                                     None
                                 }
                             }
-                            (Usage::Readonly(_blocking_tasks, _count), RequestedUsage::Readonly) => {
+                            (Usage::Readonly(_count), RequestedUsage::Readonly) => {
                                 let first_blocked_task_index = usage_queue.first_blocked_task_index();
                                 if let Some(first_blocked_task_index) = first_blocked_task_index {
                                     if new_task.index < first_blocked_task_index {
