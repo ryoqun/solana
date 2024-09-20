@@ -446,7 +446,7 @@ const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
 pub type Index = u128;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum TaskStatus {
     Buffered,
     Executed,
@@ -543,6 +543,13 @@ impl TaskInner {
         self.blocked_usage_count
             .with_borrow_mut(token, |(_, status)| {
                 matches!(*status, TaskStatus::Unlocked)
+            })
+    }
+
+    fn status(&self, token: &mut BlockedUsageCountToken) -> TaskStatus {
+        self.blocked_usage_count
+            .with_borrow_mut(token, |(_, status)| {
+                *status
             })
     }
 }
