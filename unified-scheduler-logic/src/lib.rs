@@ -1043,7 +1043,7 @@ impl SchedulingStateMachine {
                                     None
                                 }
                             }
-                            (Usage::Readonly(_current_tasks), RequestedUsage::Readonly) => {
+                            (Usage::Readonly(_blocking_tasks), RequestedUsage::Readonly) => {
                                 let first_blocked_task_index = usage_queue.first_blocked_task_index();
                                 if let Some(first_blocked_task_index) = first_blocked_task_index {
                                     if new_task.index < first_blocked_task_index {
@@ -1070,7 +1070,7 @@ impl SchedulingStateMachine {
                                 let mut reblocked_tasks = vec![];
                                 let mut still_blocking_tasks = vec![];
                                 while let Some(blocking_task) = blocking_tasks.peek_mut() {
-                                    if new_task.index < blocking_task.0.0.index {
+                                    if new_task.index > blocking_task.0.0.index {
                                         let blocking_task = PeekMut::pop(blocking_task).0;
                                         if Self::try_reblock_task(&blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                             reblocked_tasks.push(blocking_task);
