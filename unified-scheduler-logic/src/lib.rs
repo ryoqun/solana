@@ -582,14 +582,14 @@ use std::cmp::Reverse;
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BinaryHeap<Reverse<Task>>),
+    Readonly((BinaryHeap<Reverse<Task>>, usize)),
     Writable(Task),
 }
 
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
-            RequestedUsage::Readonly => Self::Readonly(BinaryHeap::from([Reverse(task)])),
+            RequestedUsage::Readonly => Self::Readonly((BinaryHeap::from([Reverse(task)]) ,1),
             RequestedUsage::Writable => Self::Writable(task),
         }
     }
