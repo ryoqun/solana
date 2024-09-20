@@ -596,7 +596,7 @@ impl Usage {
 }
 
 /// Status about how a task is requesting to use a particular [`UsageQueue`].
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum RequestedUsage {
     Readonly,
     Writable,
