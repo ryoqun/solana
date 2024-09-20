@@ -708,8 +708,8 @@ impl Default for UsageQueueInner {
             //
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
-            blocked_usages_from_tasks: BinaryHeap::with_capacity(128),
             current_readonly_tasks: BinaryHeap::with_capacity(128),
+            blocked_usages_from_tasks: BinaryHeap::with_capacity(128),
         }
     }
 }
@@ -725,9 +725,7 @@ impl UsageQueueInner {
                         self.current_readonly_tasks.push(Reverse(task.clone()));
                     },
                     RequestedUsage::Writable => {
-                        self.current_usage = Some(Usage::Writable(
-                            task.clone(),
-                        ));
+                        self.current_usage = Some(Usage::Writable(task.clone()));
                     },
                 }
                 Ok(())
