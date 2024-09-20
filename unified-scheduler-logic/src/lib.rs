@@ -762,7 +762,8 @@ impl UsageQueueInner {
                             break;
                         }
                     }
-                    if blocking_tasks.is_empty() {
+                    if count.is_zero() {
+                        assert!(blocking_tasks.is_empty());
                         is_unused_now = true;
                     }
                     //dbg!(is_unused_now);
@@ -1069,7 +1070,7 @@ impl SchedulingStateMachine {
                                     None
                                 }
                             }
-                            (Usage::Readonly(blocking_tasks), RequestedUsage::Writable) => {
+                            (Usage::Readonly(blocking_tasks, count), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
                                 let mut still_blocking_tasks = vec![];
                                 while let Some(blocking_task) = blocking_tasks.peek_mut() {
@@ -1095,6 +1096,7 @@ impl SchedulingStateMachine {
                                         Err(())
                                     };
                                     for reblocked_task in reblocked_tasks {
+                                        count.decrement_self();
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask::Readonly(reblocked_task),
