@@ -836,8 +836,6 @@ impl UsageQueueInner {
 pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
-type TaskTree = BTreeMap<Index, Task>;
-
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
