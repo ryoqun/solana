@@ -877,7 +877,7 @@ impl SchedulingStateMachine {
     pub fn has_buffered_task(&mut self) -> bool {
         while let Some(task) = self.buffered_task_queue.peek_mut() {
             use std::collections::binary_heap::PeekMut;
-            let status = task.task_status(&mut self.count_token);
+            let status = task.status(&mut self.count_token);
             if task.has_blocked_usage(&mut self.count_token) {
                 PeekMut::pop(task);
                 continue;
