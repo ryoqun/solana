@@ -607,7 +607,7 @@ use std::collections::binary_heap::PeekMut;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    readonly_tasks: BinaryHeap<Reverse<Task>>, 
+    current_readonly_tasks: BinaryHeap<Reverse<Task>>,
     blocked_usages_from_tasks: BinaryHeap<Compact<UsageFromTask>>,
 }
 
@@ -709,7 +709,7 @@ impl Default for UsageQueueInner {
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
             blocked_usages_from_tasks: BinaryHeap::with_capacity(128),
-            readonly_tasks: BinaryHeap::with_capacity(128),
+            current_readonly_tasks: BinaryHeap::with_capacity(128),
         }
     }
 }
@@ -721,8 +721,8 @@ impl UsageQueueInner {
                 match requested_usage {
                     RequestedUsage::Readonly => {
                         self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
-                        assert!(self.readonly_tasks.is_empty());
-                        self.readonly_tasks.push(Reverse(task.clone()));
+                        assert!(self.current_readonly_tasks.is_empty());
+                        self.current_readonly_tasks.push(Reverse(task.clone()));
                     },
                     RequestedUsage::Writable => {
                         self.current_usage = Some(Usage::Writable(
@@ -734,8 +734,8 @@ impl UsageQueueInner {
             }
             Some(Usage::Readonly(count)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    //dbg!(&self.readonly_tasks.keys());
-                    self.readonly_tasks.push(Reverse(task.clone()));
+                    //dbg!(&self.current_readonly_tasks.keys());
+                    self.current_readonly_tasks.push(Reverse(task.clone()));
                     count.increment_self();
                     Ok(())
                 }
@@ -758,8 +758,8 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     count.decrement_self();
                     // todo test this for unbounded growth of inifnite readable only locks....
-                    //dbg!(self.readonly_tasks.len());
-                    while let Some(peeked_task) = self.readonly_tasks.peek_mut() {
+                    //dbg!(self.current_readonly_tasks.len());
+                    while let Some(peeked_task) = self.current_readonly_tasks.peek_mut() {
                         if peeked_task.0.is_unlocked(token) {
                             PeekMut::pop(peeked_task);
                         } else {
@@ -767,7 +767,7 @@ impl UsageQueueInner {
                         }
                     }
                     if count.is_zero() {
-                        assert!(self.readonly_tasks.is_empty());
+                        assert!(self.current_readonly_tasks.is_empty());
                         is_unused_now = true;
                     }
                     //dbg!(is_unused_now);
@@ -1046,8 +1046,8 @@ impl SchedulingStateMachine {
                                     let old_usage = std::mem::replace(current_usage, Usage::Readonly(ShortCounter::one()));
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
-                                    assert!(usage_queue.readonly_tasks.is_empty());
-                                    usage_queue.readonly_tasks.push(Reverse(new_task.clone()));
+                                    assert!(usage_queue.current_readonly_tasks.is_empty());
+                                    usage_queue.current_readonly_tasks.push(Reverse(new_task.clone()));
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
                                     );
@@ -1082,7 +1082,7 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
-                                while let Some(blocking_task) = usage_queue.readonly_tasks.peek_mut() {
+                                while let Some(blocking_task) = usage_queue.current_readonly_tasks.peek_mut() {
                                     if new_task.index < blocking_task.0.0.index {
                                         let blocking_task = PeekMut::pop(blocking_task).0;
                                         if Self::try_reblock_task(&blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
@@ -1095,7 +1095,7 @@ impl SchedulingStateMachine {
                                 }
                                 if !reblocked_tasks.is_empty() {
                                     let lock_result = if count.is_zero() {
-                                        assert!(usage_queue.readonly_tasks.is_empty());
+                                        assert!(usage_queue.current_readonly_tasks.is_empty());
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
                                     } else {
