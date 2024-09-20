@@ -1080,7 +1080,7 @@ impl SchedulingStateMachine {
                                     }
                                 }
                                 if !reblocked_tasks.is_empty() {
-                                    let lock_result = if blocking_tasks.is_empty() {
+                                    let lock_result = if count.is_zero() {
                                         *current_usage = Usage::Writable(new_task.clone());
                                         Ok(())
                                     } else {
