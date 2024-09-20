@@ -995,9 +995,9 @@ impl SchedulingStateMachine {
     fn try_reblock_task(blocking_task: &Task, blocked_task_count: &mut ShortCounter, token: &mut BlockedUsageCountToken) -> bool {
         if blocking_task.has_blocked_usage(token) {
             true
-        } else if blocking_task.is_buffered(token) {
-            blocked_task_count.increment_self();
-            true
+        //} else if blocking_task.is_buffered(token) {
+        //    blocked_task_count.increment_self();
+        //    true
         } else {
             false
         }
