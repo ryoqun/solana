@@ -585,7 +585,7 @@ use std::cmp::Reverse;
 /// Status about how the [`UsageQueue`] is used currently.
 #[derive(Debug)]
 enum Usage {
-    Readonly(BinaryHeap<Reverse<Task>>, ShortCounter),
+    Readonly(ShortCounter),
     Writable(Task),
 }
 
@@ -616,6 +616,7 @@ use std::collections::binary_heap::PeekMut;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
+    readonly_tasks: BinaryHeap<Reverse<Task>>, 
     blocked_usages_from_tasks: BinaryHeap<Compact<UsageFromTask>>,
 }
 
