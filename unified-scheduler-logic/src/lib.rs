@@ -776,11 +776,12 @@ impl UsageQueueInner {
 
         if is_unused_now {
             self.current_usage = None;
-            let t = self.blocked_usages_from_tasks
+            self.blocked_usages_from_tasks
                 .pop()
                 .map(|uft| uft.into());
-            assert_eq!((t.is_buffered(token), t.has_blocked_usage(token)), (true, true));
-            t
+                .inspect(|t| {
+                    assert_eq!((t.is_buffered(token), t.has_blocked_usage(token)), (true, true));
+                })
         } else {
             None
         }
