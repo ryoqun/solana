@@ -752,7 +752,7 @@ impl UsageQueueInner {
             Some(Usage::Readonly(blocking_tasks)) => match requested_usage {
                 RequestedUsage::Readonly => {
                     // todo test this for unbounded growth of inifnite readable only locks....
-                    dbg!(blocking_tasks.len());
+                    //dbg!(blocking_tasks.len());
                     while let Some(peeked_task) = blocking_tasks.peek_mut() {
                         if peeked_task.0.is_unlocked(token) {
                             PeekMut::pop(peeked_task);
@@ -763,7 +763,7 @@ impl UsageQueueInner {
                     if blocking_tasks.is_empty() {
                         is_unused_now = true;
                     }
-                    dbg!(is_unused_now);
+                    //dbg!(is_unused_now);
                 }
                 RequestedUsage::Writable => unreachable!(),
             },
@@ -946,7 +946,7 @@ impl SchedulingStateMachine {
 
     pub fn rebuffer_executing_task(&mut self, task: Task) {
         assert!(task.is_executed(&mut self.count_token));
-        assert!(task.has_blocked_usage(&mut self.count_token));
+        assert!(!task.has_blocked_usage(&mut self.count_token));
         self.executing_task_count.decrement_self();
         self.buffered_task_total.increment_self();
         // assert task is executed?
