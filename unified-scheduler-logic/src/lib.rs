@@ -1149,6 +1149,7 @@ impl SchedulingStateMachine {
                     {
                         self.blocked_task_count.decrement_self();
                         self.buffered_task_total.increment_self();
+                        assert!(task.is_buffered(&mut self.count_token));
                         self.buffered_task_queue.push(task);
                     }
 
