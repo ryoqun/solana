@@ -755,12 +755,12 @@ impl UsageQueueInner {
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some(Usage::Readonly(blocking_tasks, count)) => match unlocked_requested_usage {
+            Some(Usage::Readonly(count)) => match unlocked_requested_usage {
                 RequestedUsage::Readonly => {
                     count.decrement_self();
                     // todo test this for unbounded growth of inifnite readable only locks....
-                    //dbg!(blocking_tasks.len());
-                    while let Some(peeked_task) = blocking_tasks.peek_mut() {
+                    //dbg!(self.readonly_tasks.len());
+                    while let Some(peeked_task) = self.readonly_tasks.peek_mut() {
                         if peeked_task.0.is_unlocked(token) {
                             PeekMut::pop(peeked_task);
                         } else {
@@ -768,7 +768,7 @@ impl UsageQueueInner {
                         }
                     }
                     if count.is_zero() {
-                        assert!(blocking_tasks.is_empty());
+                        assert!(self.readonly_tasks.is_empty());
                         is_unused_now = true;
                     }
                     //dbg!(is_unused_now);
