@@ -589,7 +589,7 @@ enum Usage {
 impl Usage {
     fn new(requested_usage: RequestedUsage, task: Task) -> Self {
         match requested_usage {
-            RequestedUsage::Readonly => Self::Readonly(BinaryHeap::from([Reverse(task)]), ShortCounter::zero()),
+            RequestedUsage::Readonly => Self::Readonly(BinaryHeap::from([Reverse(task)]), ShortCounter::one()),
             RequestedUsage::Writable => Self::Writable(task),
         }
     }
