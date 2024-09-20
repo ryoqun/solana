@@ -133,10 +133,6 @@ mod utils {
             Self(1)
         }
 
-        pub(super) fn is_one(&self) -> bool {
-            self.0 == 1
-        }
-
         pub(super) fn is_zero(&self) -> bool {
             self.0 == 0
         }
