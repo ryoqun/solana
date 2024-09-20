@@ -733,10 +733,10 @@ impl UsageQueueInner {
                 ));
                 Ok(())
             }
-            Some(Usage::Readonly(blocking_tasks, count)) => match requested_usage {
+            Some(Usage::Readonly(count)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    //dbg!(&blocking_tasks.keys());
-                    blocking_tasks.push(Reverse(task.clone()));
+                    //dbg!(&self.readonly_tasks.keys());
+                    self.readonly_tasks.push(Reverse(task.clone()));
                     count.increment_self();
                     Ok(())
                 }
