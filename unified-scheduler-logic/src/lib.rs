@@ -1091,7 +1091,7 @@ impl SchedulingStateMachine {
                                     } else {
                                         Err(())
                                     };
-                                    for reblocked_task in reblocked_tasks.into_iter() {
+                                    for reblocked_task in reblocked_tasks {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask::Readonly(reblocked_task),
