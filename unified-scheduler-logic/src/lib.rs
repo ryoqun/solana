@@ -874,6 +874,7 @@ impl SchedulingStateMachine {
                 PeekMut::pop(task);
                 continue;
             } else {
+                assert!(task.is_buffered(&mut self.count_token));
                 return true;
             }
         }
@@ -936,6 +937,7 @@ impl SchedulingStateMachine {
                 Some(task)
             } else {
                 self.buffered_task_total.increment_self();
+                assert!(task.is_buffered(&mut self.count_token));
                 self.buffered_task_queue.push(task);
                 None
             }
@@ -947,7 +949,6 @@ impl SchedulingStateMachine {
         assert!(!task.has_blocked_usage(&mut self.count_token));
         self.executing_task_count.decrement_self();
         self.buffered_task_total.increment_self();
-        // assert task is executed?
         task.mark_as_buffered(&mut self.count_token);
         self.buffered_task_queue.push(task);
     }
@@ -955,6 +956,7 @@ impl SchedulingStateMachine {
     #[must_use]
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
         while let Some(task) = self.buffered_task_queue.pop() {
+            assert!(task.is_executed(&mut self.count_token));
             assert!(self.is_task_runnable());
             if task.has_blocked_usage(&mut self.count_token) {
                 continue;
