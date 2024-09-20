@@ -1080,13 +1080,18 @@ impl SchedulingStateMachine {
                             }
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
+                                let mut last_index = None;
                                 while let Some(blocking_task) = usage_queue.current_readonly_tasks.peek_mut() {
-                                    if new_task.index < blocking_task.0.0.index {
+                                    let index = blocking_task.0.0.index;
+                                    if new_task.index < index || blocking_task.0.is_unlocked(&mut self.count_token) {
+                                        assert!(Some(index) != last_index);
                                         let blocking_task = PeekMut::pop(blocking_task).0;
+
                                         if Self::try_reblock_task(&blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                             count.decrement_self();
                                             reblocked_tasks.push(blocking_task);
                                         }
+                                        last_index = Some(index);
                                     } else {
                                         break;
                                     }
