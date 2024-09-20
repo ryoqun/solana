@@ -729,10 +729,18 @@ impl UsageQueueInner {
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match &mut self.current_usage {
             None => {
-                self.current_usage = Some(Usage::new(
-                    requested_usage,
-                    task.clone(),
-                ));
+                match requested_usage {
+                    RequestedUsage::Readonly => {
+                        self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
+                        assert!(self.readonly_tasks.is_empty());
+                        self.readonly_tasks.push(Reverse(task.clone()));
+                    },
+                    RequestedUsage::Writable => {
+                        self.current_usage = Some(Usage::Writable(
+                            task.clone(),
+                        ));
+                    },
+                }
                 Ok(())
             }
             Some(Usage::Readonly(count)) => match requested_usage {
