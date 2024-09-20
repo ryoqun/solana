@@ -779,7 +779,7 @@ impl UsageQueueInner {
             self.blocked_usages_from_tasks
                 .pop()
                 .map(|uft| uft.into())
-                .inspect(|uft: UsageFromTask| {
+                .inspect(|uft: &UsageFromTask| {
                     assert_eq!((uft.task().is_buffered(token), uft.task().has_blocked_usage(token)), (true, true));
                 })
         } else {
