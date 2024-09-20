@@ -768,7 +768,7 @@ impl UsageQueueInner {
                 RequestedUsage::Writable => unreachable!(),
             },
             Some(Usage::Writable(blocking_task)) => {
-                assert_eq!(task_index, blocking_task.index);
+                assert_eq!((task_index, requested_usage), (blocking_task.index, RequestedUsage::Writable));
                 match requested_usage {
                 RequestedUsage::Writable => {
                     is_unused_now = true;
