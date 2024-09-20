@@ -732,7 +732,7 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     //dbg!(&blocking_tasks.keys());
                     blocking_tasks.push(Reverse(task.clone()));
-                    *count += 1;
+                    count.increment_self();
                     Ok(())
                 }
                 RequestedUsage::Writable => Err(()),
