@@ -1051,7 +1051,8 @@ impl SchedulingStateMachine {
                                     let old_usage = std::mem::replace(current_usage, Usage::Readonly(ShortCounter::one()));
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
-                                    usage_queue.readonly_tasks.insert(task.clone());
+                                    assert!(usage_queue.readonly_tasks.is_empty());
+                                    usage_queue.readonly_tasks.push(task.clone());
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
                                     );
