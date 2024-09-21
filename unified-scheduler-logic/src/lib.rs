@@ -561,6 +561,7 @@ enum LockContext {
     Writable(UsageQueue),
 }
 const_assert_eq!(mem::size_of::<LockContext>(), 16);
+const_assert_eq!(mem::size_of::<Compact<LockContext>>(), 8);
 
 impl LockContext {
     fn new(usage_queue: UsageQueue, requested_usage: RequestedUsage) -> Self {
