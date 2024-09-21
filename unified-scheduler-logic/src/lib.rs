@@ -733,28 +733,28 @@ impl Default for UsageQueueInner {
 }
 
 impl UsageQueueInner {
-    fn try_lock(&mut self, lock_context: &LockContext, task: &Task) -> LockResult {
+    fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match &mut self.current_usage {
             None => {
-                match lock_context {
-                    LockContext::Readonly(_) => {
+                match requested_usage {
+                    RequestedUsage::Readonly => {
                         self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
                         self.current_readonly_tasks.push(Reverse(task.clone()));
                     },
-                    LockContext::Writable(_) => {
+                    RequestedUsage::Writable => {
                         self.current_usage = Some(Usage::Writable(task.clone()));
                     },
                 }
                 Ok(())
             }
-            Some(Usage::Readonly(count)) => match lock_context {
-                LockContext::Readonly(_) => {
+            Some(Usage::Readonly(count)) => match requested_usage {
+                RequestedUsage::Readonly => {
                     //dbg!(&self.current_readonly_tasks.keys());
                     self.current_readonly_tasks.push(Reverse(task.clone()));
                     count.increment_self();
                     Ok(())
                 }
-                LockContext::Writable(_) => Err(()),
+                RequestedUsage::Writable => Err(()),
             },
             Some(Usage::Writable(_current_task)) => Err(()),
         }
@@ -1117,7 +1117,7 @@ impl SchedulingStateMachine {
                     }
                 }).unwrap_or_else(|| {
                     if usage_queue.has_no_blocked_usage() {
-                        usage_queue.try_lock(context.requested_usage(), &new_task)
+                        usage_queue.try_lock(context.requested_usage2(), &new_task)
                     } else {
                         Err(())
                     }
