@@ -556,9 +556,9 @@ impl TaskInner {
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
 #[derive(Debug)]
-struct LockContext {
-    usage_queue: UsageQueue,
-    requested_usage: RequestedUsage,
+enum LockContext {
+    Readonly(UsageQueue),
+    Writable(UsageQueue),
 }
 const_assert_eq!(mem::size_of::<LockContext>(), 16);
 
