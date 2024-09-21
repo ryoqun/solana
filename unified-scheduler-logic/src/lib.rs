@@ -443,7 +443,7 @@ const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 type BlockedUsageCountToken = Token<(ShortCounter,TaskStatus)>;
 const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
-pub type Index = u128;
+pub type Index = u64;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum TaskStatus {
@@ -570,7 +570,7 @@ impl LockContext {
         }
     }
 
-    fn requested_usage(&self) -> RequestedUsage {
+    fn requested_usage2(&self) -> RequestedUsage {
         match self {
             Self::Readonly(_) => RequestedUsage::Readonly,
             Self::Writable(_) => RequestedUsage::Writable,
