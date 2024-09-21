@@ -756,7 +756,7 @@ impl UsageQueueInner {
     #[must_use]
     fn unlock(
         &mut self,
-        unlocked_task_context: &TaskContext,
+        unlocked_task_context: &LockContext,
         unlocked_task_index: Index,
         token: &mut BlockedUsageCountToken,
     ) -> Option<UsageFromTask> {
