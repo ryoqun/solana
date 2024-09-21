@@ -654,8 +654,7 @@ impl UsageFromTask {
 
     fn task(&self) -> &Task {
         match self {
-            Self::Readonly(t) => t,
-            Self::Writable(t) => t,
+            Self::Readonly(t) | Self::Writable(t) => t,
         }
     }
 }
@@ -851,7 +850,6 @@ const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 unsafe impl enum_ptr::Aligned for UsageQueue {
     const ALIGNMENT: usize = std::mem::align_of::<TokenCell<UsageQueueInner>>();
 }
-
 
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
