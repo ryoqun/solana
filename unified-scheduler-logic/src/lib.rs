@@ -1040,6 +1040,7 @@ impl SchedulingStateMachine {
         let mut blocked_usage_count = ShortCounter::zero();
 
         for context in new_task.lock_contexts() {
+            context.map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
@@ -1155,6 +1156,7 @@ impl SchedulingStateMachine {
                     let usage_from_task = (context.requested_usage(), new_task.clone());
                     usage_queue.insert_blocked_usage_from_task(usage_from_task.into());
                 }
+            });
             });
         }
 
