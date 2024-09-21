@@ -577,7 +577,7 @@ impl LockContext {
         }
     }
 
-    fn requested_usage(&self) -> &UsageQueue {
+    fn usage_queue(&self) -> &UsageQueue {
         match self {
             Self::Readonly(u) | Self::Writable(u) => &u,
         }
