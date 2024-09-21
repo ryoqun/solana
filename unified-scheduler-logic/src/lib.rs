@@ -564,9 +564,9 @@ const_assert_eq!(mem::size_of::<LockContext>(), 16);
 
 impl LockContext {
     fn new(usage_queue: UsageQueue, requested_usage: RequestedUsage) -> Self {
-        Self {
-            usage_queue,
-            requested_usage,
+        match requested_usage {
+            RequestedUsage::Readonly => Self::Readonly(usage_queue),
+            RequestedUsage::Writable => Self::Writable(usage_queue),
         }
     }
 
