@@ -1172,6 +1172,7 @@ impl SchedulingStateMachine {
 
     fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
+            context.map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut buffered_task_from_queue =
                     usage_queue.unlock(context.requested_usage(), task.index, &mut self.count_token);
@@ -1209,6 +1210,7 @@ impl SchedulingStateMachine {
                         LockResult::Err(()) => panic!("should never fail in this context"),
                     }
                 }
+            });
             });
         }
     }
