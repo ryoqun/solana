@@ -443,7 +443,7 @@ const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 type BlockedUsageCountToken = Token<(ShortCounter,TaskStatus)>;
 const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
-pub type Index = u64;
+pub type Index = u128;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum TaskStatus {
