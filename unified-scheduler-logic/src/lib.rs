@@ -577,6 +577,13 @@ impl LockContext {
         }
     }
 
+    fn usage_from_task(&self, task: Task) -> UsageFromTask {
+        match self {
+            Self::Readonly(_) => UsageFromTask::Readonly(task),
+            Self::Writable(_) => UsageFromTask::Writable(task),
+        }
+    }
+
     fn usage_queue(&self) -> &UsageQueue {
         match self {
             Self::Readonly(u) | Self::Writable(u) => &u,
