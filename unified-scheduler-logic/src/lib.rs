@@ -1058,7 +1058,7 @@ impl SchedulingStateMachine {
                                 if let Some(first_blocked_task_index) = first_blocked_task_index {
                                     if new_task.index < first_blocked_task_index {
                                         usage_queue
-                                            .try_lock(context.requested_usage(), &new_task)
+                                            .try_lock(context.requested_usage2(), &new_task)
                                             .unwrap();
                                         Some(Ok(()))
                                         // even the following passes the unit tests... think about this
