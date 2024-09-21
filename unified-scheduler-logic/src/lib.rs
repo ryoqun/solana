@@ -756,14 +756,14 @@ impl UsageQueueInner {
     #[must_use]
     fn unlock(
         &mut self,
-        unlocked_requested_usage: RequestedUsage,
+        unlocked_task_context: &TaskContext,
         unlocked_task_index: Index,
         token: &mut BlockedUsageCountToken,
     ) -> Option<UsageFromTask> {
         let mut is_unused_now = false;
         match &mut self.current_usage {
-            Some(Usage::Readonly(count)) => match unlocked_requested_usage {
-                RequestedUsage::Readonly => {
+            Some(Usage::Readonly(count)) => match unlocked_task_context {
+                LockContext::Readonly(_) => {
                     count.decrement_self();
                     // todo test this for unbounded growth of inifnite readable only locks....
                     //dbg!(self.current_readonly_tasks.len());
@@ -779,7 +779,7 @@ impl UsageQueueInner {
                     }
                     //dbg!(is_unused_now);
                 }
-                RequestedUsage::Writable => unreachable!(),
+                LockContext::Writable(_) => unreachable!(),
             },
             Some(Usage::Writable(blocking_task)) => {
                 is_unused_now = true;
