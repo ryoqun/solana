@@ -577,12 +577,18 @@ impl LockContext {
         }
     }
 
+    fn requested_usage(&self) -> &UsageQueue {
+        match self {
+            Self::Readonly(u) | Self::Writable(u) => &u,
+        }
+    }
+
     fn with_usage_queue_mut<R>(
         &self,
         usage_queue_token: &mut UsageQueueToken,
         f: impl FnOnce(&mut UsageQueueInner) -> R,
     ) -> R {
-        self.usage_queue.0.with_borrow_mut(usage_queue_token, f)
+        self.usage_queue().0.with_borrow_mut(usage_queue_token, f)
     }
 }
 
