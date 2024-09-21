@@ -474,7 +474,7 @@ impl TaskInner {
         &self.transaction
     }
 
-    fn lock_contexts(&self) -> &[LockContext] {
+    fn lock_contexts(&self) -> &[Compact<LockContext>] {
         &self.lock_contexts
     }
 
