@@ -1277,7 +1277,7 @@ impl SchedulingStateMachine {
                     } else {
                         RequestedUsage::Readonly
                     },
-                )
+                ).into()
             })
             .collect();
 
