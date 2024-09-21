@@ -572,8 +572,8 @@ impl LockContext {
 
     fn requested_usage(&self) -> RequestedUsage {
         match self {
-            Self::Readonly => RequestedUsage::Readonly,
-            Self::Writable => RequestedUsage::Writable,
+            Self::Readonly(_) => RequestedUsage::Readonly,
+            Self::Writable(_) => RequestedUsage::Writable,
         }
     }
 
