@@ -1131,7 +1131,7 @@ impl SchedulingStateMachine {
                     assert_matches!(self.scheduling_mode, SchedulingMode::BlockProduction);
                 }).unwrap_or_else(|| {
                     if usage_queue.has_no_blocked_usage() {
-                        usage_queue.try_lock(context.requested_usage, &new_task)
+                        usage_queue.try_lock(context.requested_usage(), &new_task)
                     } else {
                         Err(())
                     }
