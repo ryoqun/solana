@@ -1338,7 +1338,7 @@ impl SchedulingStateMachine {
     }
 }
 
-#[cfg(false)]
+#[cfg(test)]
 mod tests {
     use {
         super::*,
