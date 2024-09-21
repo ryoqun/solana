@@ -633,7 +633,6 @@ use enum_ptr::Compact;
 enum UsageFromTask {
     Readonly(Task),
     Writable(Task),
-    C(Box<usize>, Box<usize>),
 }
 const_assert_eq!(mem::size_of::<UsageFromTask>(), 16);
 const_assert_eq!(mem::size_of::<Compact<UsageFromTask>>(), 8);
