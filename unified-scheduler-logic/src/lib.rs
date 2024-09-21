@@ -848,6 +848,11 @@ impl UsageQueueInner {
 pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
+unsafe impl enum_ptr::Aligned for UsageQueue {
+    const ALIGNMENT: usize = std::mem::align_of::<TokenCell<UsageQueueInner>>();
+}
+
+
 /// A high-level `struct`, managing the overall scheduling of [tasks](Task), to be used by
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
