@@ -555,7 +555,8 @@ impl TaskInner {
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
-#[derive(Debug)]
+#[derive(Debug, EnumPtr)]
+#[repr(C, usize)]
 enum LockContext {
     Readonly(UsageQueue),
     Writable(UsageQueue),
