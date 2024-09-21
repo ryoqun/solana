@@ -461,7 +461,7 @@ pub struct TaskInner {
     /// of it.
     index: Index,
     blocked_usage_count: TokenCell<(ShortCounter,TaskStatus)>,
-    lock_contexts: Vec<LockContext>,
+    lock_contexts: Vec<Compact<LockContext>>,
     transaction: SanitizedTransaction,
 }
 
