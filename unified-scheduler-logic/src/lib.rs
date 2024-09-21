@@ -570,6 +570,13 @@ impl LockContext {
         }
     }
 
+    fn requested_usage(&self) -> RequestedUsage {
+        match self {
+            Self::Readonly => RequestedUsage::Readonly,
+            Self::Writable => RequestedUsage::Writable,
+        }
+    }
+
     fn with_usage_queue_mut<R>(
         &self,
         usage_queue_token: &mut UsageQueueToken,
