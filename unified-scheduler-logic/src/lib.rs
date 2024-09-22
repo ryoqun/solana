@@ -621,8 +621,8 @@ use dary_heap::PeekMut;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    current_readonly_tasks:  dary_heap::SenaryHeap<Reverse<Task>>,
-    blocked_usages_from_tasks:  dary_heap::SenaryHeap<Compact<UsageFromTask>>,
+    current_readonly_tasks:  dary_heap::OctonaryHeap<Reverse<Task>>,
+    blocked_usages_from_tasks:  dary_heap::OctonaryHeap<Compact<UsageFromTask>>,
 }
 
 use enum_ptr::EnumPtr;
@@ -721,8 +721,8 @@ impl Default for UsageQueueInner {
             //
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
-            current_readonly_tasks:  dary_heap::SenaryHeap::with_capacity(128),
-            blocked_usages_from_tasks:  dary_heap::SenaryHeap::with_capacity(128),
+            current_readonly_tasks:  dary_heap::OctonaryHeap::with_capacity(128),
+            blocked_usages_from_tasks:  dary_heap::OctonaryHeap::with_capacity(128),
         }
     }
 }
@@ -855,7 +855,7 @@ unsafe impl enum_ptr::Aligned for UsageQueue {
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
-    buffered_task_queue:  dary_heap::SenaryHeap<Task>,
+    buffered_task_queue:  dary_heap::OctonaryHeap<Task>,
     alive_task_count: ShortCounter,
     executing_task_count: ShortCounter,
     max_executing_task_count: u32,
@@ -1351,7 +1351,7 @@ impl SchedulingStateMachine {
         Self {
             // It's very unlikely this is desired to be configurable, like
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
-            buffered_task_queue:  dary_heap::SenaryHeap::with_capacity(1024), // BTreeMap::new(), //VecDeque::with_capacity(1024),
+            buffered_task_queue:  dary_heap::OctonaryHeap::with_capacity(1024), // BTreeMap::new(), //VecDeque::with_capacity(1024),
             alive_task_count: ShortCounter::zero(),
             executing_task_count: ShortCounter::zero(),
             max_executing_task_count: 200,
