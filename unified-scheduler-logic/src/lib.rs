@@ -615,8 +615,8 @@ enum RequestedUsage {
     Writable,
 }
 
-use std::collections::BinaryHeap;
-use std::collections::binary_heap::PeekMut;
+//use std::collections::binary_heap::PeekMut;
+use dary_heap::PeekMut;
 
 /// Internal scheduling data about a particular address.
 ///
@@ -626,8 +626,8 @@ use std::collections::binary_heap::PeekMut;
 #[derive(Debug)]
 struct UsageQueueInner {
     current_usage: Option<Usage>,
-    current_readonly_tasks: BinaryHeap<Reverse<Task>>,
-    blocked_usages_from_tasks: BinaryHeap<Compact<UsageFromTask>>,
+    current_readonly_tasks:  dary_heap::SenaryHeap<Reverse<Task>>,
+    blocked_usages_from_tasks:  dary_heap::SenaryHeap<Compact<UsageFromTask>>,
 }
 
 use enum_ptr::EnumPtr;
@@ -726,8 +726,8 @@ impl Default for UsageQueueInner {
             //
             // Note that large cap should be accompanied with proper scheduler cleaning after use,
             // which should be handled by higher layers (i.e. scheduler pool).
-            current_readonly_tasks: BinaryHeap::with_capacity(128),
-            blocked_usages_from_tasks: BinaryHeap::with_capacity(128),
+            current_readonly_tasks:  dary_heap::SenaryHeap::with_capacity(128),
+            blocked_usages_from_tasks:  dary_heap::SenaryHeap::with_capacity(128),
         }
     }
 }
@@ -852,7 +852,7 @@ unsafe impl enum_ptr::Aligned for UsageQueue {
 /// `solana-unified-scheduler-pool`.
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
-    buffered_task_queue: BinaryHeap<Task>,
+    buffered_task_queue:  dary_heap::SenaryHeap<Task>,
     alive_task_count: ShortCounter,
     executing_task_count: ShortCounter,
     max_executing_task_count: u32,
@@ -887,7 +887,6 @@ impl SchedulingStateMachine {
 
     pub fn has_buffered_task(&mut self) -> bool {
         while let Some(task) = self.buffered_task_queue.peek_mut() {
-            use std::collections::binary_heap::PeekMut;
             let status = task.status(&mut self.count_token);
             if task.has_blocked_usage(&mut self.count_token) {
                 PeekMut::pop(task);
@@ -1325,7 +1324,7 @@ impl SchedulingStateMachine {
         Self {
             // It's very unlikely this is desired to be configurable, like
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
-            buffered_task_queue: BinaryHeap::with_capacity(1024), // BTreeMap::new(), //VecDeque::with_capacity(1024),
+            buffered_task_queue:  dary_heap::SenaryHeap::with_capacity(1024), // BTreeMap::new(), //VecDeque::with_capacity(1024),
             alive_task_count: ShortCounter::zero(),
             executing_task_count: ShortCounter::zero(),
             max_executing_task_count: 200,
