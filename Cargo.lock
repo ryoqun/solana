@@ -1834,12 +1834,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dary_heap"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7762d17f1241643615821a8455a0b2c3e803784b058693d990b11f2dce25a0ca"
-
-[[package]]
 name = "dashmap"
 version = "5.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8348,7 +8342,6 @@ name = "solana-unified-scheduler-logic"
 version = "2.1.0"
 dependencies = [
  "assert_matches",
- "dary_heap",
  "enum-ptr",
  "more-asserts",
  "solana-sdk",
