@@ -405,7 +405,7 @@ const_assert_eq!(mem::size_of::<LockResult>(), 1);
 
 /// Something to be scheduled; usually a wrapper of [`SanitizedTransaction`].
 #[derive(Clone, Debug)]
-pub struct Task(std::rc::Rc<TaskInner>);
+pub struct Task(rclite::Rc<TaskInner>);
 
 unsafe impl enum_ptr::Aligned for Task {
     const ALIGNMENT: usize = std::mem::align_of::<TaskInner>();
@@ -416,7 +416,7 @@ unsafe impl Send for Task {}
 
 impl Task {
     fn new(task: TaskInner) -> Self {
-        Self(std::rc::Rc::new(task))
+        Self(rclite::Rc::new(task))
     }
 
     #[must_use]
@@ -462,7 +462,7 @@ pub struct TaskInner {
     index: Index,
     blocked_usage_count: TokenCell<(ShortCounter,TaskStatus)>,
     lock_contexts: Vec<Compact<LockContext>>,
-    transaction: SanitizedTransaction,
+    transaction: Box<SanitizedTransaction>,
 }
 
 impl TaskInner {
@@ -1252,7 +1252,7 @@ impl SchedulingStateMachine {
             .collect();
 
         Task::new(TaskInner {
-            transaction,
+            transaction: Box::new(transaction),
             index,
             lock_contexts,
             blocked_usage_count: TokenCell::new((ShortCounter::zero(),TaskStatus::Buffered)),
