@@ -423,7 +423,11 @@ impl Task {
     fn try_unblock(self, token: &mut BlockedUsageCountToken) -> Option<Task> {
         let did_unblock = self
             .blocked_usage_count
-            .with_borrow_mut(token, |(usage_count, _)| usage_count.decrement_self().is_zero());
+            .with_borrow_mut(token, |counter_with_status| {
+                let c = counter_with_status.count();
+                counter_with_status.set_count(c - 1);
+                c == 1
+            });
         did_unblock.then_some(self)
     }
 }
@@ -440,29 +444,55 @@ type UsageQueueToken = Token<UsageQueueInner>;
 const_assert_eq!(mem::size_of::<UsageQueueToken>(), 0);
 
 /// [`Token`] for [task](Task)'s [internal mutable data](`TaskInner::blocked_usage_count`).
-type BlockedUsageCountToken = Token<(ShortCounter,TaskStatus)>;
+type BlockedUsageCountToken = Token<CounterWithStatus>;
 const_assert_eq!(mem::size_of::<BlockedUsageCountToken>(), 0);
 
 pub type Index = u128;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+#[repr(u8)]
 enum TaskStatus {
     Buffered,
     Executed,
     Unlocked,
 }
 
+impl TaskStatus {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::Buffered,
+            1 => Self::Executed,
+            _ => Self::Unlocked,
+        }
+    }
+}
+
+use bitfield_struct::bitfield;
+#[bitfield(u32)]
+struct CounterWithStatus {
+    #[bits(2)]
+    status: TaskStatus,
+    #[bits(30)]
+    count: u32,
+}
+
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
-#[repr(C)]
 pub struct TaskInner {
     /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
     /// Carrying this along with the transaction is needed to properly record the execution result
     /// of it.
+    lock_contexts: Box<(Vec<Compact<LockContext>>, SanitizedTransaction)>,
     index: Index,
-    blocked_usage_count: TokenCell<(ShortCounter,TaskStatus)>,
-    lock_contexts: Vec<Compact<LockContext>>,
-    transaction: Box<SanitizedTransaction>,
+    blocked_usage_count: TokenCell<CounterWithStatus>,
+}
+
+struct RcInnerDemo {
+  data: TaskInner,
+  counter: std::cell::Cell<u32>,
 }
 
 impl TaskInner {
@@ -471,16 +501,16 @@ impl TaskInner {
     }
 
     pub fn transaction(&self) -> &SanitizedTransaction {
-        &self.transaction
+        &self.lock_contexts.1
     }
 
     fn lock_contexts(&self) -> &[Compact<LockContext>] {
-        &self.lock_contexts
+        &self.lock_contexts.0
     }
 
     fn blocked_usage_count(&self, token: &mut BlockedUsageCountToken) -> u32 {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(usage_count,_)| usage_count.current())
+            .with_borrow_mut(token, |counter_with_status| counter_with_status.count())
     }
 
     fn has_blocked_usage(&self, token: &mut BlockedUsageCountToken) -> bool {
@@ -489,64 +519,64 @@ impl TaskInner {
 
     fn set_blocked_usage_count(&self, token: &mut BlockedUsageCountToken, count: ShortCounter) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(usage_count,_)| {
-                *usage_count = count;
+            .with_borrow_mut(token, |(counter_with_status)| {
+                counter_with_status.set_count(count.current());
             })
     }
 
     fn increment_blocked_usage_count(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(usage_count,_)| {
-                usage_count.increment_self();
+            .with_borrow_mut(token, |counter_with_status| {
+                counter_with_status.set_count(counter_with_status.count() + 1)
             })
     }
 
     fn mark_as_executed(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                *status = TaskStatus::Executed;
+            .with_borrow_mut(token, |counter_with_status| {
+                counter_with_status.set_status(TaskStatus::Executed);
             })
     }
 
     fn mark_as_buffered(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                *status = TaskStatus::Buffered;
+            .with_borrow_mut(token, |counter_with_status| {
+                counter_with_status.set_status(TaskStatus::Buffered);
             })
     }
 
     fn mark_as_unlocked(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                *status = TaskStatus::Unlocked;
+            .with_borrow_mut(token, |counter_with_status| {
+                counter_with_status.set_status(TaskStatus::Unlocked);
             })
     }
 
     fn is_buffered(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                matches!(*status, TaskStatus::Buffered)
+            .with_borrow_mut(token, |counter_with_status| {
+                matches!(counter_with_status.status(), TaskStatus::Buffered)
             })
     }
 
     fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                matches!(*status, TaskStatus::Executed)
+            .with_borrow_mut(token, |counter_with_status| {
+                matches!(counter_with_status.status(), TaskStatus::Executed)
             })
     }
 
     fn is_unlocked(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                matches!(*status, TaskStatus::Unlocked)
+            .with_borrow_mut(token, |counter_with_status| {
+                matches!(counter_with_status.status(), TaskStatus::Unlocked)
             })
     }
 
     fn status(&self, token: &mut BlockedUsageCountToken) -> TaskStatus {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(_, status)| {
-                *status
+            .with_borrow_mut(token, |counter_with_status| {
+                counter_with_status.status()
             })
     }
 }
@@ -1252,10 +1282,9 @@ impl SchedulingStateMachine {
             .collect();
 
         Task::new(TaskInner {
-            transaction: Box::new(transaction),
             index,
-            lock_contexts,
-            blocked_usage_count: TokenCell::new((ShortCounter::zero(),TaskStatus::Buffered)),
+            lock_contexts: Box::new((lock_contexts, transaction)),
+            blocked_usage_count: TokenCell::new(CounterWithStatus::default()),
         })
     }
 
