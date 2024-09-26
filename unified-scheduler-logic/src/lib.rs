@@ -479,7 +479,7 @@ struct CounterWithStatus {
     count: u32,
 }
 
-#[repr(packed)]
+#[repr(C, packed)]
 struct PackedTaskInner {
     index: Index,
     lock_context_and_transaction: Box<(Vec<Compact<LockContext>>, Box<SanitizedTransaction>)>,
