@@ -479,11 +479,12 @@ struct CounterWithStatus {
     count: u32,
 }
 
+#[repr(C, packed)]
 struct PackedTaskInner {
     index: Index,
     lock_context_and_transaction: Box<(Vec<Compact<LockContext>>, Box<SanitizedTransaction>)>,
 }
-//const_assert_eq!(mem::size_of::<PackedTaskInner>(), 24);
+const_assert_eq!(mem::size_of::<PackedTaskInner>(), 24);
 
 impl std::fmt::Debug for PackedTaskInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -510,7 +511,7 @@ struct RcInnerDemo {
   data: TaskInner,
   counter: std::cell::Cell<u32>,
 }
-//const_assert_eq!(mem::size_of::<RcInnerDemo>(), 32);
+const_assert_eq!(mem::size_of::<RcInnerDemo>(), 32);
 
 impl TaskInner {
     pub fn task_index(&self) -> Index {
