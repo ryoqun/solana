@@ -479,14 +479,31 @@ struct CounterWithStatus {
     count: u32,
 }
 
+#[repr(packed)]
+struct PackedTaskInner {
+    index: Index,
+    lock_context_and_transaction: Box<(Vec<Compact<LockContext>>, Box<SanitizedTransaction>)>,
+}
+const_assert_eq!(mem::size_of::<PackedTaskInner>(), 24);
+
+impl std::fmt::Debug for PackedTaskInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let index = self.index;
+        f.debug_struct("PackedTaskInner")
+            .field("index", &index)
+            .field("lock_contexts", &self.lock_context_and_transaction.0)
+            .field("transaction", &self.lock_context_and_transaction.1)
+            .finish()
+    }
+}
+
 /// Internal scheduling data about a particular task.
 #[derive(Debug)]
 pub struct TaskInner {
     /// The index of a transaction in ledger entries; not used by SchedulingStateMachine by itself.
     /// Carrying this along with the transaction is needed to properly record the execution result
     /// of it.
-    lock_contexts: Box<(Vec<Compact<LockContext>>, SanitizedTransaction)>,
-    index: Index,
+    packed_task_inner: PackedTaskInner,
     blocked_usage_count: TokenCell<CounterWithStatus>,
 }
 
@@ -494,18 +511,23 @@ struct RcInnerDemo {
   data: TaskInner,
   counter: std::cell::Cell<u32>,
 }
+const_assert_eq!(mem::size_of::<RcInnerDemo>(), 32);
 
 impl TaskInner {
     pub fn task_index(&self) -> Index {
-        self.index
+        self.index()
     }
 
     pub fn transaction(&self) -> &SanitizedTransaction {
-        &self.lock_contexts.1
+        &self.packed_task_inner.lock_context_and_transaction.1
+    }
+
+    pub fn index(&self) -> Index {
+        self.packed_task_inner.index
     }
 
     fn lock_contexts(&self) -> &[Compact<LockContext>] {
-        &self.lock_contexts.0
+        &self.packed_task_inner.lock_context_and_transaction.0
     }
 
     fn blocked_usage_count(&self, token: &mut BlockedUsageCountToken) -> u32 {
@@ -675,8 +697,8 @@ const_assert_eq!(mem::size_of::<Compact<UsageFromTask>>(), 8);
 impl UsageFromTask {
     fn index(&self) -> Index {
         match self {
-            Self::Readonly(t) => t.index,
-            Self::Writable(t) => t.index,
+            Self::Readonly(t) => t.index(),
+            Self::Writable(t) => t.index(),
         }
     }
 
@@ -705,7 +727,7 @@ impl From<(RequestedUsage, Task)> for UsageFromTask {
 
 impl Ord for Task {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.index.cmp(&self.index)
+        other.index().cmp(&self.index())
         //self.index.cmp(&other.index)
     }
 }
@@ -719,7 +741,7 @@ impl PartialOrd for Task {
 impl Eq for Task {}
 impl PartialEq<Task> for Task {
     fn eq(&self, other: &Self) -> bool {
-        self.index == other.index
+        self.index() == other.index()
     }
 }
 
@@ -1054,7 +1076,7 @@ impl SchedulingStateMachine {
                     Some(mut current_usage) => {
                         match (&mut current_usage, context.requested_usage2()) {
                             (Usage::Writable(blocking_task), RequestedUsage::Writable) => {
-                                if new_task.index < blocking_task.index && Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
+                                if new_task.index() < blocking_task.index() && Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
@@ -1068,7 +1090,7 @@ impl SchedulingStateMachine {
                                 }
                             }
                             (Usage::Writable(blocking_task), RequestedUsage::Readonly) => {
-                                if new_task.index < blocking_task.index && Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
+                                if new_task.index() < blocking_task.index() && Self::try_reblock_task(blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
                                     let old_usage = std::mem::replace(current_usage, Usage::Readonly(ShortCounter::one()));
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
@@ -1085,7 +1107,7 @@ impl SchedulingStateMachine {
                             (Usage::Readonly(_count), RequestedUsage::Readonly) => {
                                 let first_blocked_task_index = usage_queue.first_blocked_task_index();
                                 if let Some(first_blocked_task_index) = first_blocked_task_index {
-                                    if new_task.index < first_blocked_task_index {
+                                    if new_task.index() < first_blocked_task_index {
                                         usage_queue
                                             .try_lock(context.requested_usage2(), &new_task)
                                             .unwrap();
@@ -1108,8 +1130,8 @@ impl SchedulingStateMachine {
                             (Usage::Readonly(count), RequestedUsage::Writable) => {
                                 let mut reblocked_tasks = vec![];
                                 while let Some(blocking_task) = usage_queue.current_readonly_tasks.peek_mut() {
-                                    let index = blocking_task.0.0.index;
-                                    if new_task.index < index || blocking_task.0.is_unlocked(&mut self.count_token) {
+                                    let index = blocking_task.0.0.index();
+                                    if new_task.index() < index || blocking_task.0.is_unlocked(&mut self.count_token) {
                                         let blocking_task = PeekMut::pop(blocking_task).0;
 
                                         if Self::try_reblock_task(&blocking_task, &mut self.blocked_task_count, &mut self.count_token) {
@@ -1176,7 +1198,7 @@ impl SchedulingStateMachine {
             context.map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut buffered_task_from_queue =
-                    usage_queue.unlock(context, task.index, &mut self.count_token);
+                    usage_queue.unlock(context, task.index(), &mut self.count_token);
 
                 while let Some(buffered_task_from_queue2) = buffered_task_from_queue {
                     // When `try_unblock()` returns `None` as a failure of unblocking this time,
@@ -1282,8 +1304,7 @@ impl SchedulingStateMachine {
             .collect();
 
         Task::new(TaskInner {
-            index,
-            lock_contexts: Box::new((lock_contexts, transaction)),
+            packed_task_inner: PackedTaskInner { lock_context_and_transaction: Box::new((lock_contexts, Box::new(transaction))), index},
             blocked_usage_count: TokenCell::new(CounterWithStatus::default()),
         })
     }
