@@ -269,6 +269,7 @@ impl SimulatorLoopLogger {
     fn log_frozen_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         info!(
             "bank cost: slot(+{}ms): {} {:?} (frozen)",
+            bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
         );
