@@ -481,7 +481,7 @@ impl SimulatorLoop {
                     .slot_leader_at(new_slot, None)
                     .unwrap();
                 if new_leader != self.simulated_leader {
-                    logger.on_new_leader(&bank, new_slot, new_leader);
+                    logger.on_new_leader(&bank, bank_created.elapsed(), new_slot, new_leader);
                     break;
                 } else if sender_thread.is_finished() {
                     warn!("sender thread existed maybe due to completion of sending traced events");
