@@ -268,7 +268,7 @@ impl SimulatorLoopLogger {
 
     fn log_frozen_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         info!(
-            "bank slot(+{}ms): {} costs: {:?} fees: {} (frozen)",
+            "simulated bank slot(+{}ms): {} costs: {:?} fees: {} (frozen)",
             bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
@@ -278,7 +278,7 @@ impl SimulatorLoopLogger {
 
     fn log_ongoing_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         debug!(
-            "bank slot(+{}ms): {} costs: {:?} fees: {} (ongoing)",
+            "simulated bank slot(+{}ms): {} costs: {:?} fees: {} (ongoing)",
             bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
