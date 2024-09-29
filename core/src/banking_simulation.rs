@@ -436,7 +436,7 @@ impl SimulatorLoop {
         base_simulation_time: SystemTime,
         sender_thread: EventSenderThread,
     ) -> (EventSenderThread, Sender<Slot>) {
-        let logger = SimulatorLoopLogger {
+        let mut logger = SimulatorLoopLogger {
             simulated_leader: self.simulated_leader,
             base_event_time: self.base_event_time,
             base_simulation_time,
