@@ -257,7 +257,7 @@ struct SimulatorLoopLogger {
     freeze_time_by_slot: FreezeTimeBySlot,
     base_event_time: SystemTime,
     base_simulation_time: SystemTime,
-    current_bank: Option<(Slot, Instant)>,
+    current_bank_slot: Option<(Slot, Instant)>,
 }
 
 impl SimulatorLoopLogger {
@@ -442,7 +442,7 @@ impl SimulatorLoop {
             base_event_time: self.base_event_time,
             base_simulation_time,
             freeze_time_by_slot: self.freeze_time_by_slot,
-            current_slot: None,
+            current_bank_slot: None,
         };
         let mut bank = self.bank;
         loop {
