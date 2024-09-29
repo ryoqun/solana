@@ -272,7 +272,7 @@ impl SimulatorLoopLogger {
             bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
-            bank.collector_fees.load(Relaxed),
+            bank.collector_fees(),
         );
     }
 
@@ -282,7 +282,7 @@ impl SimulatorLoopLogger {
             bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
-            bank.collector_fees.load(Relaxed),
+            bank.collector_fees(),
         );
     }
 

@@ -5414,7 +5414,7 @@ impl Bank {
 
     fn collector_fees(&self) -> u64 {
         self.collector_fees.load(Relaxed)
-    )
+    }
 
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
     /// Should it be included in *this* bank?
