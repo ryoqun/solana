@@ -314,7 +314,7 @@ impl SimulatorLoopLogger {
     }
 
     fn on_new_leader(&self, bank: &Bank, bank_elapsed: Duration, new_slot: Slot, new_leader: Pubkey) {
-        self.log_frozen_bank_cost(bank);
+        self.log_frozen_bank_cost(bank, bank_elapsed);
         info!(
             "{} isn't leader anymore at slot {}; new leader: {}",
             self.simulated_leader, new_slot, new_leader
