@@ -53,7 +53,7 @@ use {
             Arc, RwLock,
         },
         thread::{self, sleep, JoinHandle},
-        time::{Duration, SystemTime},
+        time::{Duration, Instant, SystemTime},
     },
     thiserror::Error,
 };
