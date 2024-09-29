@@ -5412,7 +5412,7 @@ impl Bank {
         hash
     }
 
-    fn collector_fees(&self) -> u64 {
+    pub fn collector_fees(&self) -> u64 {
         self.collector_fees.load(Relaxed)
     }
 
