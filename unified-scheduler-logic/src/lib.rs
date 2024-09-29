@@ -142,33 +142,28 @@ mod utils {
 
         #[must_use]
         #[track_caller]
-        #[inline(always)]
         pub(super) fn increment(self) -> Self {
             Self(self.0 + 1)
         }
 
         #[must_use]
         #[track_caller]
-        #[inline(always)]
         pub(super) fn decrement(self) -> Self {
             Self(self.0 - 1)
         }
 
         #[track_caller]
-        #[inline(always)]
         pub(super) fn increment_self(&mut self) -> &mut Self {
             *self = self.increment();
             self
         }
 
         #[track_caller]
-        #[inline(always)]
         pub(super) fn decrement_self(&mut self) -> &mut Self {
             *self = self.decrement();
             self
         }
 
-        #[inline(always)]
         pub(super) fn reset_to_zero(&mut self) -> &mut Self {
             self.0 = 0;
             self
@@ -234,7 +229,6 @@ mod utils {
         ///
         /// Note that lifetime of the acquired reference is still restricted to 'self, not
         /// 'token, in order to avoid use-after-free undefined behaviors.
-        #[inline(always)]
         pub(super) fn with_borrow_mut<R>(
             &self,
             _token: &mut Token<V>,
@@ -426,7 +420,6 @@ impl Task {
     }
 
     #[must_use]
-    #[inline(always)]
     fn try_unblock(self, token: &mut BlockedUsageCountToken) -> Option<Task> {
         let did_unblock = self
             .blocked_usage_count
@@ -441,7 +434,6 @@ impl Task {
 
 impl std::ops::Deref for Task {
     type Target = TaskInner;
-    #[inline(always)]
     fn deref(&self) -> &<Self as std::ops::Deref>::Target { &*self.0 }
 }
 
@@ -466,11 +458,9 @@ enum TaskStatus {
 }
 
 impl TaskStatus {
-    #[inline(always)]
     const fn into_bits(self) -> u8 {
         self as _
     }
-    #[inline(always)]
     const fn from_bits(value: u8) -> Self {
         match value {
             0 => Self::Buffered,
@@ -528,33 +518,27 @@ impl TaskInner {
         self.index()
     }
 
-    #[inline(always)]
     pub fn transaction(&self) -> &SanitizedTransaction {
         &self.packed_task_inner.lock_context_and_transaction.1
     }
 
-    #[inline(always)]
     pub fn index(&self) -> Index {
         self.packed_task_inner.index
     }
 
-    #[inline(always)]
     fn lock_contexts(&self) -> &[Compact<LockContext>] {
         &self.packed_task_inner.lock_context_and_transaction.0
     }
 
-    #[inline(always)]
     fn blocked_usage_count(&self, token: &mut BlockedUsageCountToken) -> u32 {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| counter_with_status.count())
     }
 
-    #[inline(always)]
     fn has_blocked_usage(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count(token) > 0
     }
 
-    #[inline(always)]
     fn set_blocked_usage_count(&self, token: &mut BlockedUsageCountToken, count: ShortCounter) {
         self.blocked_usage_count
             .with_borrow_mut(token, |(counter_with_status)| {
@@ -562,7 +546,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn increment_blocked_usage_count(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -570,7 +553,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn mark_as_executed(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -578,7 +560,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn mark_as_buffered(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -586,7 +567,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn mark_as_unlocked(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -594,7 +574,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn is_buffered(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -602,7 +581,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -610,7 +588,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn is_unlocked(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -618,7 +595,6 @@ impl TaskInner {
             })
     }
 
-    #[inline(always)]
     fn status(&self, token: &mut BlockedUsageCountToken) -> TaskStatus {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
@@ -646,7 +622,6 @@ impl LockContext {
         }
     }
 
-    #[inline(always)]
     fn requested_usage2(&self) -> RequestedUsage {
         match self {
             Self::Readonly(_) => RequestedUsage::Readonly,
@@ -654,7 +629,6 @@ impl LockContext {
         }
     }
 
-    #[inline(always)]
     fn usage_from_task(&self, task: Task) -> UsageFromTask {
         match self {
             Self::Readonly(_) => UsageFromTask::Readonly(task),
@@ -662,14 +636,12 @@ impl LockContext {
         }
     }
 
-    #[inline(always)]
     fn usage_queue(&self) -> &UsageQueue {
         match self {
             Self::Readonly(u) | Self::Writable(u) => &u,
         }
     }
 
-    #[inline(always)]
     fn with_usage_queue_mut<R>(
         &self,
         usage_queue_token: &mut UsageQueueToken,
@@ -754,7 +726,6 @@ impl From<(RequestedUsage, Task)> for UsageFromTask {
 }
 
 impl Ord for Task {
-    #[inline(always)]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
         //self.index.cmp(&other.index)
@@ -762,7 +733,6 @@ impl Ord for Task {
 }
 
 impl PartialOrd for Task {
-    #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
@@ -770,14 +740,12 @@ impl PartialOrd for Task {
 
 impl Eq for Task {}
 impl PartialEq<Task> for Task {
-    #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.index() == other.index()
     }
 }
 
 impl Ord for UsageFromTask {
-    #[inline(always)]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         other.index().cmp(&self.index())
         //self.index().cmp(&other.index())
@@ -785,7 +753,6 @@ impl Ord for UsageFromTask {
 }
 
 impl PartialOrd for UsageFromTask {
-    #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
@@ -793,14 +760,12 @@ impl PartialOrd for UsageFromTask {
 
 impl Eq for UsageFromTask {}
 impl PartialEq<UsageFromTask> for UsageFromTask {
-    #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.index() == other.index()
     }
 }
 
 impl Default for UsageQueueInner {
-    #[inline(always)]
     fn default() -> Self {
         Self {
             current_usage: None,
@@ -820,7 +785,6 @@ impl Default for UsageQueueInner {
 }
 
 impl UsageQueueInner {
-    #[inline(always)]
     fn try_lock(&mut self, requested_usage: RequestedUsage, task: &Task) -> LockResult {
         match &mut self.current_usage {
             None => {
