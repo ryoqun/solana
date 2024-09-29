@@ -5409,9 +5409,6 @@ impl Bank {
                 "".to_string()
             }
         );
-        info!(
-            "bank frozen: {slot} collector_fees: {}", self.collector_fees.load(Relaxed),
-        );
         hash
     }
 
