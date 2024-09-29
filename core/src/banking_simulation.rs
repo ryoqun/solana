@@ -257,7 +257,8 @@ struct SimulatorLoopLogger {
     freeze_time_by_slot: FreezeTimeBySlot,
     base_event_time: SystemTime,
     base_simulation_time: SystemTime,
-}
+    current_bank: Option<(Slot, Instant)>,
+}a
 
 impl SimulatorLoopLogger {
     fn bank_costs(bank: &Bank) -> (u64, u64) {
