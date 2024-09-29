@@ -57,6 +57,7 @@ use {
     },
     thiserror::Error,
 };
+use std::sync::atomic::Ordering::Relaxed;
 
 /// This creates a simulated environment around `BankingStage` to produce leader's blocks based on
 /// recorded banking trace events (`TimedTracedEvent`).
