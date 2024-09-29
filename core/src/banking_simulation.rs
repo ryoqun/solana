@@ -266,9 +266,9 @@ impl SimulatorLoopLogger {
             .unwrap()
     }
 
-    fn log_frozen_bank_cost(&self, bank: &Bank) {
+    fn log_frozen_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         info!(
-            "bank cost: slot: {} {:?} (frozen)",
+            "bank cost: slot(+{}ms): {} {:?} (frozen)",
             bank.slot(),
             Self::bank_costs(bank),
         );
@@ -312,7 +312,7 @@ impl SimulatorLoopLogger {
         }
     }
 
-    fn on_new_leader(&self, bank: &Bank, new_slot: Slot, new_leader: Pubkey) {
+    fn on_new_leader(&self, bank: &Bank, bank_elapsed: Duration, new_slot: Slot, new_leader: Pubkey) {
         self.log_frozen_bank_cost(bank);
         info!(
             "{} isn't leader anymore at slot {}; new leader: {}",
@@ -475,7 +475,6 @@ impl SimulatorLoop {
                     info!("next leader block!");
                     bank.slot() + 1
                 };
-                bank_created = Instant::now();
                 let new_leader = self
                     .leader_schedule_cache
                     .slot_leader_at(new_slot, None)
@@ -499,8 +498,9 @@ impl SimulatorLoop {
                 self.retracer
                     .hash_event(bank.slot(), &bank.last_blockhash(), &bank.hash());
                 if *bank.collector_id() == self.simulated_leader {
-                    logger.log_frozen_bank_cost(&bank);
+                    logger.log_frozen_bank_cost(&bank, bank_created.elapsed());
                 }
+                bank_created = Instant::now();
                 self.retransmit_slots_sender.send(bank.slot()).unwrap();
                 self.bank_forks.write().unwrap().insert(solana_sdk::scheduling::SchedulingMode::BlockProduction, new_bank);
                 bank = self
