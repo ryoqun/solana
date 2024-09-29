@@ -266,7 +266,7 @@ impl SimulatorLoopLogger {
             .unwrap()
     }
 
-    fn log_frozen_bank_cost(&self, bank: &Bank) {
+    fn log_frozen_bank_cost(&mut self, bank: &Bank) {
         info!(
             "bank cost: slot: {} {:?} (frozen)",
             bank.slot(),
@@ -274,7 +274,7 @@ impl SimulatorLoopLogger {
         );
     }
 
-    fn log_ongoing_bank_cost(&self, bank: &Bank) {
+    fn log_ongoing_bank_cost(&mut self, bank: &Bank) {
         debug!(
             "bank cost: slot: {} {:?} (ongoing)",
             bank.slot(),
@@ -311,7 +311,7 @@ impl SimulatorLoopLogger {
         }
     }
 
-    fn on_new_leader(&self, bank: &Bank, new_slot: Slot, new_leader: Pubkey) {
+    fn on_new_leader(&mut self, bank: &Bank, new_slot: Slot, new_leader: Pubkey) {
         self.log_frozen_bank_cost(bank);
         info!(
             "{} isn't leader anymore at slot {}; new leader: {}",
