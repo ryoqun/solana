@@ -53,7 +53,7 @@ use {
             Arc, RwLock,
         },
         thread::{self, sleep, JoinHandle},
-        time::{Duration, Instant, SystemTime},
+        time::{Duration, SystemTime},
     },
     thiserror::Error,
 };
@@ -257,7 +257,6 @@ struct SimulatorLoopLogger {
     freeze_time_by_slot: FreezeTimeBySlot,
     base_event_time: SystemTime,
     base_simulation_time: SystemTime,
-    current_bank_slot: Option<(Slot, Instant)>,
 }
 
 impl SimulatorLoopLogger {
@@ -267,7 +266,7 @@ impl SimulatorLoopLogger {
             .unwrap()
     }
 
-    fn log_frozen_bank_cost(&mut self, bank: &Bank) {
+    fn log_frozen_bank_cost(&self, bank: &Bank) {
         info!(
             "bank cost: slot: {} {:?} (frozen)",
             bank.slot(),
@@ -275,7 +274,7 @@ impl SimulatorLoopLogger {
         );
     }
 
-    fn log_ongoing_bank_cost(&mut self, bank: &Bank) {
+    fn log_ongoing_bank_cost(&self, bank: &Bank) {
         debug!(
             "bank cost: slot: {} {:?} (ongoing)",
             bank.slot(),
@@ -312,7 +311,7 @@ impl SimulatorLoopLogger {
         }
     }
 
-    fn on_new_leader(&mut self, bank: &Bank, new_slot: Slot, new_leader: Pubkey) {
+    fn on_new_leader(&self, bank: &Bank, new_slot: Slot, new_leader: Pubkey) {
         self.log_frozen_bank_cost(bank);
         info!(
             "{} isn't leader anymore at slot {}; new leader: {}",
@@ -437,14 +436,13 @@ impl SimulatorLoop {
         base_simulation_time: SystemTime,
         sender_thread: EventSenderThread,
     ) -> (EventSenderThread, Sender<Slot>) {
-        let mut logger = SimulatorLoopLogger {
+        let logger = SimulatorLoopLogger {
             simulated_leader: self.simulated_leader,
             base_event_time: self.base_event_time,
             base_simulation_time,
             freeze_time_by_slot: self.freeze_time_by_slot,
-            current_bank_slot: None,
         };
-        let mut bank = self.bank;
+        let (mut bank, mut bank_created) = (self.bank, Instant::now());
         loop {
             if self.poh_recorder.read().unwrap().bank().is_none() {
                 let next_leader_slot = self.leader_schedule_cache.next_leader_slot(
@@ -476,6 +474,7 @@ impl SimulatorLoop {
                     info!("next leader block!");
                     bank.slot() + 1
                 };
+                bank_created = Instant::now();
                 let new_leader = self
                     .leader_schedule_cache
                     .slot_leader_at(new_slot, None)
@@ -514,7 +513,7 @@ impl SimulatorLoop {
                     .unwrap()
                     .set_bank(bank.clone_with_scheduler(), false);
             } else {
-                logger.log_ongoing_bank_cost(&bank);
+                logger.log_ongoing_bank_cost(&bank, bank_created.elapsed());
             }
 
             sleep(Duration::from_millis(10));
