@@ -274,9 +274,10 @@ impl SimulatorLoopLogger {
         );
     }
 
-    fn log_ongoing_bank_cost(&self, bank: &Bank) {
+    fn log_ongoing_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         debug!(
-            "bank cost: slot: {} {:?} (ongoing)",
+            "bank cost: slot(+{}ms): {} {:?} (ongoing)",
+            bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
         );
