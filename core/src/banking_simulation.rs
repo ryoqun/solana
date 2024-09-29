@@ -442,6 +442,7 @@ impl SimulatorLoop {
             base_event_time: self.base_event_time,
             base_simulation_time,
             freeze_time_by_slot: self.freeze_time_by_slot,
+            current_slot: None,
         };
         let mut bank = self.bank;
         loop {
