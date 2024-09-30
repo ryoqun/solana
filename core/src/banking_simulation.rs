@@ -268,7 +268,7 @@ impl SimulatorLoopLogger {
 
     fn log_frozen_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         info!(
-            "simulated bank slot(+{}ms): {} costs: {:?} fees: {} (frozen)",
+            "simulated bank slot+delta: {}+{}ms costs: {:?} fees: {} (frozen)",
             bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
@@ -278,7 +278,7 @@ impl SimulatorLoopLogger {
 
     fn log_ongoing_bank_cost(&self, bank: &Bank, bank_elapsed: Duration) {
         debug!(
-            "simulated bank slot(+{}ms): {} costs: {:?} fees: {} (ongoing)",
+            "simulated bank slot+delta: {}+{}ms costs: {:?} fees: {} (ongoing)",
             bank_elapsed.as_millis(),
             bank.slot(),
             Self::bank_costs(bank),
@@ -503,15 +503,21 @@ impl SimulatorLoop {
                 if *bank.collector_id() == self.simulated_leader {
                     logger.log_frozen_bank_cost(&bank, bank_created.elapsed());
                 }
-                bank_created = Instant::now();
                 self.retransmit_slots_sender.send(bank.slot()).unwrap();
                 self.bank_forks.write().unwrap().insert(solana_sdk::scheduling::SchedulingMode::BlockProduction, new_bank);
-                bank = self
-                    .bank_forks
-                    .read()
-                    .unwrap()
-                    .working_bank_with_scheduler()
-                    .clone_with_scheduler();
+                (
+                    bank,
+                    bank_created,
+                ) = (
+                    self
+                        .bank_forks
+                        .read()
+                        .unwrap()
+                        .working_bank_with_scheduler()
+                        .clone_with_scheduler(),
+                    Instant::now()
+                );
+                logger.log_ongoing_bank_cost(&bank, bank_created.elapsed());
                 self.poh_recorder
                     .write()
                     .unwrap()
