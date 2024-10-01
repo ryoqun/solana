@@ -75,6 +75,7 @@ pub struct CostTracker {
     /// the tracker, but are still waiting for an update with actual usage or
     /// removal if the transaction does not end up getting committed.
     in_flight_transaction_count: usize,
+    started_at: Instant,
 }
 
 impl Default for CostTracker {
