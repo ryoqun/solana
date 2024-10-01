@@ -268,6 +268,9 @@ impl CostTracker {
     fn would_fit(&self, tx_cost: &TransactionCost) -> Result<(), CostTrackerError> {
         let watermark_rate = self.started_at.elapsed().as_secs_f64() / 0.300;
         let watermark = (self.block_cost_limit as f64 * watermark_rate) as u64;
+        if self.block_cost > self.block_cost_limit {
+            return Err(CostTrackerError::WouldExceedBlockMaxLimit);
+        }
 
         let cost: u64 = tx_cost.sum();
 
