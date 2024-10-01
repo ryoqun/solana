@@ -102,6 +102,7 @@ impl Default for CostTracker {
             secp256k1_instruction_signature_count: 0,
             ed25519_instruction_signature_count: 0,
             in_flight_transaction_count: 0,
+            started_at: std::time::Instant::now(),
         }
     }
 }
