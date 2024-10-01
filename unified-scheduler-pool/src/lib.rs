@@ -501,7 +501,7 @@ impl TaskHandler for DefaultTaskHandler {
                     if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
                         use solana_cost_model::cost_tracker::CostTrackerError;
                         if matches!(e, CostTrackerError::WouldExceedAccountMaxLimit) {
-                            sleep();
+                            sleep(Duration::from_millis(10));
                             continue;
                         } else {
                             *result = Err(e.into());
