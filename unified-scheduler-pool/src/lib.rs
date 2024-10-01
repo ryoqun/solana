@@ -499,8 +499,13 @@ impl TaskHandler for DefaultTaskHandler {
                 let c = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
                 loop {
                     if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
-                        *result = Err(e.into());
-                        break (Some(c), false)
+                        if matches!(e, CostTrackerError::WouldExceedAccountMaxLimit) {
+                            sleep()
+                            continue;
+                        } else {
+                            *result = Err(e.into());
+                            break (Some(c), false)
+                        }
                     } else {
                         break (Some(c), true)
                     }

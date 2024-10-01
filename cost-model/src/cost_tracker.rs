@@ -269,7 +269,7 @@ impl CostTracker {
         let watermark_rate = self.started_at.elapsed().as_secs_f64() / 0.300;
         let watermark_cost = (self.block_cost_limit as f64 * watermark_rate) as u64;
         if self.block_cost > watermark_cost {
-            return Err(CostTrackerError::WouldExceedBlockMaxLimit);
+            return Err(CostTrackerError::WouldExceedAccountMaxLimit);
         }
 
         let cost: u64 = tx_cost.sum();
