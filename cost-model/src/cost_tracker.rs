@@ -267,7 +267,7 @@ impl CostTracker {
 
     fn would_fit(&self, tx_cost: &TransactionCost) -> Result<(), CostTrackerError> {
         let cost: u64 = tx_cost.sum();
-        self.started_at.elapsed().as_f64();
+        self.started_at.elapsed().as_secs_f64();
 
         if tx_cost.is_simple_vote() {
             // if vote transaction, check if it exceeds vote_transaction_limit
