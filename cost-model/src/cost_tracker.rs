@@ -30,8 +30,6 @@ pub enum CostTrackerError {
 
     /// would exceed account data total limit
     WouldExceedAccountDataTotalLimit,
-
-    TryAgain,
 }
 
 impl From<CostTrackerError> for TransactionError {

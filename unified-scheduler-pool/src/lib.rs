@@ -497,11 +497,13 @@ impl TaskHandler for DefaultTaskHandler {
             let (cost, added_cost) = if matches!(scheduling_context.mode(), SchedulingMode::BlockProduction) {
                 use solana_cost_model::cost_model::CostModel;
                 let c = CostModel::calculate_cost(transaction, &scheduling_context.bank().feature_set);
-                if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
-                    *result = Err(e.into());
-                    (Some(c), false)
-                } else {
-                    (Some(c), true)
+                loop {
+                    if let Err(e) = scheduling_context.bank().write_cost_tracker().unwrap().try_add(&c) {
+                        *result = Err(e.into());
+                        break (Some(c), false)
+                    } else {
+                        break (Some(c), true)
+                    }
                 }
             } else {
                 (None, false)
