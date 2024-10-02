@@ -710,6 +710,7 @@ impl BankingStage {
                 let bank = bank_forks2.read().unwrap().working_bank();
                 let transaction_account_lock_limit =
                     bank.get_transaction_account_lock_limit();
+                let mut tasks = vec![];
                 for pp in &aaa.0 {
                     // over-provision
                     let task_id =
@@ -776,7 +777,7 @@ impl BankingStage {
                     */
                     for (a, b) in ppp {
                         //s.schedule_execution(&(&a, b));
-                        s.as_ref().unwrap().create_task(&(&a, b));
+                        tasks.push(s.as_ref().unwrap().create_task(&(&a, b)));
                     }
                 }
             }
