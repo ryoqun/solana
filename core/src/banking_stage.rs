@@ -689,7 +689,8 @@ impl BankingStage {
         // todo: forwarding, proper handling of buffered packets, vote storage, vote only
         // blocks...
         struct MonotonicIdGenerator {
-            next_task_id: std::sync::atomic::AtomicU32,
+            //next_task_id: std::sync::atomic::AtomicU32,
+            next_task_id: u64,
         }
 
         impl MonotonicIdGenerator {
@@ -699,8 +700,12 @@ impl BankingStage {
                 })
             }
 
-            fn bulk_assign_task_ids(&self, count: u32) -> u32 {
-                self.next_task_id.fetch_add(count, Ordering::AcqRel)
+            //fn bulk_assign_task_ids(&self, count: u32) -> u32 {
+            fn bulk_assign_task_ids(&mut self, count: u64) -> u64 {
+                //self.next_task_id.fetch_add(count, Ordering::AcqRel)
+                let current = self.next_task_id;
+                self.next_task_id += count;
+                current
             }
         }
         let id_generator = MonotonicIdGenerator::new();
