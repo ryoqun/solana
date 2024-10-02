@@ -705,6 +705,7 @@ impl BankingStage {
         info!("create_block_producing_scheduler: start!");
         let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             |aaa| {
+                let bank = bank_forks.read().unwrap().working_bank();
                 for pp in &aaa.0 {
                     // over-provision
                     let task_id =
