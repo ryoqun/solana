@@ -1586,7 +1586,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                     loop {
                     select! {
                         recv(new_task_receiver) -> a => {
-                            match a.into() {
+                            match a.map(|a| a.into()) {
                                 Ok(NewTaskPayload::OpenSubchannel(context_and_result_with_timings)) => {
                                     let (new_context, new_result_with_timings) =
                                         *context_and_result_with_timings;
