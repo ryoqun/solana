@@ -397,7 +397,7 @@ where
             return ss;
         } else {
             let context = SchedulingContext::new(SchedulingMode::BlockProduction, bank_forks.root_bank());
-            let scheduler = self.take_resumed_scheduler(context, initialized_result_with_timings());
+            let scheduler = Box::new(self.do_take_resumed_scheduler(context, initialized_result_with_timings()));
             let (result_with_timings, uninstalled_scheduler) =
                 scheduler.wait_for_termination(false);
             let () = uninstalled_scheduler.return_to_pool();
