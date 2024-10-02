@@ -856,6 +856,7 @@ impl Validator {
             )
         };
         let poh_recorder = Arc::new(RwLock::new(poh_recorder));
+        let mut unified_scheduler_pool = None;
 
         match (
             &config.block_verification_method,
@@ -864,7 +865,7 @@ impl Validator {
             (BlockVerificationMethod::UnifiedScheduler, _)
             | (_, BlockProductionMethod::UnifiedScheduler) => {
                 solana_unified_scheduler_pool::MY_POH.lock().unwrap().insert(poh_recorder.read().unwrap().new_recorder());
-                let scheduler_pool = DefaultSchedulerPool::new_dyn(
+                let scheduler_pool = DefaultSchedulerPool::new(
                     config.unified_scheduler_handler_threads,
                     config.runtime_config.log_messages_bytes_limit,
                     transaction_status_sender.clone(),
@@ -873,6 +874,7 @@ impl Validator {
                     Some(poh_recorder.read().unwrap().new_recorder()),
                     None,
                 );
+                unified_scheduler_pool = Some(scheduler_pool.clone());
                 bank_forks
                     .write()
                     .unwrap()

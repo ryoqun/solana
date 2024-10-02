@@ -628,7 +628,7 @@ use solana_perf::packet::PacketBatch;
 use solana_sdk::saturating_add_assign;
 use serde::Serialize;
 use serde::Deserialize;
-type A = crossbeam_channel::Receiver<std::sync::Arc<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>;
+type BankingPacketReceiver = crossbeam_channel::Receiver<std::sync::Arc<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>;
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SigverifyTracerPacketStats {
