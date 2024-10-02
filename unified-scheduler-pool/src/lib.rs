@@ -1506,8 +1506,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             recv(banking_packet_receiver) -> banking_packet => {
                                 let Ok(banking_packet) = banking_packet else {
                                     break 'nonaborted_main_loop;
-                                }
+                                };
                                 on_recv.unwrap()((banking_packet));
+                                "banking"
                             }
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
