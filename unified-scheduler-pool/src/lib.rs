@@ -1370,6 +1370,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         }
                     }
                 }
+                let (banking_packet_receiver, on_recv) = banking_context.unzip();
+                let banking_packet_receiver = banking_packet_receiver.unwrap_or(disconnected());
+
                 log_scheduler!(info, "started");
 
                 // The following loop maintains and updates ResultWithTimings as its
@@ -1387,9 +1390,6 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         // makes no perf. difference...
                         let dummy_buffered_task_receiver =
                             dummy_receiver(state_machine.has_runnable_task() && !session_pausing);
-
-                        let (banking_packet_receiver, on_recv) = banking_context.unzip();
-                        let banking_packet_receiver = banking_packet_receiver.unwrap_or(disconnected());
 
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
