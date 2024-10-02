@@ -365,7 +365,7 @@ where
         &self,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) -> Vec<Task> + Send + 'static)>,
     ) -> S {
         assert_matches!(result_with_timings, (Ok(_), _));
 
@@ -393,7 +393,7 @@ where
         }
     }
 
-    pub fn create_banking_scheduler(&self, bank_forks: &BankForks, recv: BankingPacketReceiver, on_banking_packet_receive: impl FnMut(BankingPacketBatch) -> Vec<solana_unified_scheduler_logic::Task> + Send + 'static) -> Arc<BlockProducingUnifiedScheduler> {
+    pub fn create_banking_scheduler(&self, bank_forks: &BankForks, recv: BankingPacketReceiver, on_banking_packet_receive: impl FnMut(BankingPacketBatch) -> Vec<Task> + Send + 'static) -> Arc<BlockProducingUnifiedScheduler> {
         let s = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned();
         if let Some(ss) = s {
             return ss;
@@ -460,7 +460,7 @@ where
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
     ) -> InstalledSchedulerBox {
-        Box::new(self.do_take_resumed_scheduler(context, result_with_timings, None::<(_, fn(BankingPacketBatch))>))
+        Box::new(self.do_take_resumed_scheduler(context, result_with_timings, None::<(_, fn(BankingPacketBatch) -> Vec<Task>)>))
     }
 
     fn register_timeout_listener(&self, timeout_listener: TimeoutListener) {
@@ -1106,7 +1106,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         &mut self,
         mut context: SchedulingContext,
         mut result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) -> Vec<Task> + Send + 'static)>,
     ) {
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
@@ -1868,7 +1868,7 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) -> Vec<Task> + Send + 'static)>,
     ) -> Self
     where
         Self: Sized;
@@ -1903,7 +1903,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl FnMut(BankingPacketBatch) -> Vec<Task> + Send + 'static)>,
     ) -> Self {
         info!(
             "spawning new scheduler pool for slot: {}",
