@@ -717,6 +717,7 @@ impl BankingStage {
         }
         let mut id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
+        use std::sync::Mutex;
         let s: Arc<Mutex<Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>>>> = Arc::new(Mutex::new(None));
         let s2 = s.clone();
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
