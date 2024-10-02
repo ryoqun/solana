@@ -1525,7 +1525,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     }
                                 }
                                 "banking"
-                            }
+                            },
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
                             is_running = true;
@@ -1670,7 +1670,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     log_scheduler!(trace, "rebuffer");
                                 }
                             }
-                        }
+                        },
                     }
                     }
                 }
