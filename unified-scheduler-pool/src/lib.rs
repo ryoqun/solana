@@ -391,7 +391,7 @@ where
         }
     }
 
-    fn create_banking_scheduler(&self, bank_forks: &BankForks) -> Arc<dyn BlockProducingScheduler> {
+    pub fn create_banking_scheduler(&self, bank_forks: &BankForks) -> Arc<dyn BlockProducingScheduler> {
         let s = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned();
         if let Some(ss) = s {
             return ss;
