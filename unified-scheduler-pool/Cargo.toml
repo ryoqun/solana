@@ -32,6 +32,7 @@ solana-timings = { workspace = true }
 solana-unified-scheduler-logic = { workspace = true }
 static_assertions = { workspace = true }
 vec_extract_if_polyfill = { workspace = true }
+serde = { workspace = true }
 
 [dev-dependencies]
 assert_matches = { workspace = true }
