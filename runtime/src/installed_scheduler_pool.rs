@@ -222,9 +222,9 @@ pub trait BlockProducingScheduler: Send + Sync + Debug + 'static {
         transaction_with_index: &'a (&'a SanitizedTransaction, Index),
     ) -> ScheduleResult;
 
-    fn create_task(
-        &self,
-        &(transaction, index): &(&SanitizedTransaction, Index),
+    fn create_task<'a>(
+        &'a self,
+        transactions_with_index: &'a (&'a SanitizedTransaction, Index),
     ) -> Task;
 }
 
