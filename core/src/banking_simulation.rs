@@ -762,7 +762,7 @@ impl BankingSimulator {
         );
 
         let (non_vote_sender, non_vote_receiver) = retracer.create_channel_non_vote();
-        let (tpu_vote_sender, tpu_vote_receiver) = if !matches!(block_production_method, BlockProductionMethod::UninstalledScheduler) {
+        let (tpu_vote_sender, tpu_vote_receiver) = if !matches!(block_production_method, BlockProductionMethod::UnifiedScheduler) {
            retracer.create_channel_tpu_vote()
         } else {
            retracer.create_unified_channel_tpu_vote(&non_vote_sender, &non_vote_receiver)
