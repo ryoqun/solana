@@ -780,6 +780,7 @@ impl BankingStage {
                         tasks.push(s.as_ref().unwrap().create_task(&(&a, b)));
                     }
                 }
+                tasks
             }
         ));
         info!("create_block_producing_scheduler: end!");
