@@ -459,7 +459,7 @@ where
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
     ) -> InstalledSchedulerBox {
-        Box::new(self.do_take_resumed_scheduler(context, result_with_timings, None))
+        Box::new(self.do_take_resumed_scheduler(context, result_with_timings, None::<Option<(_, fn())>>))
     }
 
     fn register_timeout_listener(&self, timeout_listener: TimeoutListener) {
