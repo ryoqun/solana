@@ -706,9 +706,14 @@ impl BankingStage {
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
         let mut s: Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>> = None;
+        let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
         let bank_forks2 = bank_forks.clone();
         s = Some(unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver,
             move |aaa| {
+                let decision = decision_maker.make_consume_or_forward_decision();
+                if matches!(decision, BufferedPacketsDecision::Forward) {
+                    return vec![];
+                }
                 let bank = bank_forks2.read().unwrap().working_bank();
                 let transaction_account_lock_limit =
                     bank.get_transaction_account_lock_limit();
@@ -787,7 +792,6 @@ impl BankingStage {
         ));
         info!("create_block_producing_scheduler: end!");
 
-        let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
         /*
         use solana_rayon_threadlimit::get_thread_count;
