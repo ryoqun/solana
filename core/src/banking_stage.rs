@@ -708,7 +708,7 @@ impl BankingStage {
                 current
             }
         }
-        let id_generator = MonotonicIdGenerator::new();
+        let mut id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
         let mut s: Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>> = None;
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
