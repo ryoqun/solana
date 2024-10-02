@@ -391,6 +391,20 @@ where
         }
     }
 
+    fn create_banking_scheduler(&self, bank_forks: &BankForks) -> Arc<dyn BlockProducingScheduler> {
+        let s = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned();
+        if let Some(ss) = s {
+            return ss;
+        } else {
+            let context = SchedulingContext::new(SchedulingMode::BlockProduction, bank_forks.root_bank());
+            let scheduler = self.take_resumed_scheduler(context, initialized_result_with_timings());
+            let (result_with_timings, uninstalled_scheduler) =
+                scheduler.wait_for_termination(false);
+            let () = uninstalled_scheduler.return_to_pool();
+            self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned().unwrap()
+        }
+    }
+
     #[cfg(feature = "dev-context-only-utils")]
     pub fn pooled_scheduler_count(&self) -> usize {
         self.scheduler_inners.lock().expect("not poisoned").len()
@@ -448,20 +462,6 @@ where
             .lock()
             .unwrap()
             .push((timeout_listener, Instant::now()));
-    }
-
-    fn create_banking_scheduler(&self, bank_forks: &BankForks) -> Arc<dyn BlockProducingScheduler> {
-        let s = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned();
-        if let Some(ss) = s {
-            return ss;
-        } else {
-            let context = SchedulingContext::new(SchedulingMode::BlockProduction, bank_forks.root_bank());
-            let scheduler = self.take_resumed_scheduler(context, initialized_result_with_timings());
-            let (result_with_timings, uninstalled_scheduler) =
-                scheduler.wait_for_termination(false);
-            let () = uninstalled_scheduler.return_to_pool();
-            self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned().unwrap()
-        }
     }
 }
 
