@@ -775,7 +775,7 @@ impl BankingStage {
                     */
                     for (a, b) in ppp {
                         //s.schedule_execution(&(&a, b));
-                        s.create_task(&(&a, b))
+                        s.create_task(&(&a, b));
                     }
                 }
             }
