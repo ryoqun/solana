@@ -1941,7 +1941,9 @@ impl BlockProducingScheduler for BlockProducingUnifiedScheduler {
     ) -> ScheduleResult {
         send_task(&self.usage_queue_loader, &self.new_task_sender, transaction_with_index)
     }
+}
 
+impl BlockProducingUnifiedScheduler {
     fn create_task(
         &self,
         &(transaction, index): &(&SanitizedTransaction, Index),

@@ -221,11 +221,6 @@ pub trait BlockProducingScheduler: Send + Sync + Debug + 'static {
         &'a self,
         transaction_with_index: &'a (&'a SanitizedTransaction, Index),
     ) -> ScheduleResult;
-
-    fn create_task<'a>(
-        &'a self,
-        transactions_with_index: &'a (&'a SanitizedTransaction, Index),
-    ) -> Task;
 }
 
 #[cfg_attr(feature = "dev-context-only-utils", automock)]
