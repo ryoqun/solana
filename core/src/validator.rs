@@ -1448,6 +1448,7 @@ impl Validator {
             config.block_production_method.clone(),
             config.enable_block_production_forwarding,
             config.generator_config.clone(),
+            unified_scheduler_pool,
         );
 
         datapoint_info!(
