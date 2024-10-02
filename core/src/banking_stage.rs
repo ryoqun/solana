@@ -367,6 +367,7 @@ impl BankingStage {
         bank_forks: Arc<RwLock<BankForks>>,
         prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
         enable_forwarding: bool,
+        unified_scheduler_pool: Option<Arc<solana_unified_scheduler_pool::DefaultSchedulerPool>>,
     ) -> Self {
         Self::new_num_threads(
             block_production_method,
@@ -383,6 +384,7 @@ impl BankingStage {
             bank_forks,
             prioritization_fee_cache,
             enable_forwarding,
+            unified_scheduler_pool,
         )
     }
 
@@ -402,6 +404,7 @@ impl BankingStage {
         bank_forks: Arc<RwLock<BankForks>>,
         prioritization_fee_cache: &Arc<PrioritizationFeeCache>,
         enable_forwarding: bool,
+        unified_scheduler_pool: Option<Arc<solana_unified_scheduler_pool::DefaultSchedulerPool>>,
     ) -> Self {
         use BlockProductionMethod::*;
 

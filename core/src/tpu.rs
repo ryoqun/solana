@@ -248,6 +248,7 @@ impl Tpu {
             bank_forks.clone(),
             prioritization_fee_cache,
             enable_block_production_forwarding,
+            unified_scheduler_pool,
         );
 
         let (entry_receiver, tpu_entry_notifier) =
