@@ -1646,8 +1646,11 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             }
                         },
                         recv(banking_packet_receiver) -> banking_packet => {
-                            /*
                             let Ok(banking_packet) = banking_packet else {
+                                // Initialize result_with_timings with a harmless value...
+                                result_with_timings = initialized_result_with_timings();
+                                session_ending = false;
+                                session_pausing = false;
                                 info!("disconnectd banking_packet_receiver");
                                 break 'nonaborted_main_loop;
                             };
@@ -1660,15 +1663,12 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 if let Some(task) = state_machine.schedule_task(task) {
                                     state_machine.rebuffer_executing_task(task);
                                 }
-                                /*
                                 if log_interval.increment() {
                                     log_scheduler!(info, "rebuffer");
                                 } else {
                                     log_scheduler!(trace, "rebuffer");
                                 }
-                                */
                             }
-                        */
                         }
                     }
                     }
