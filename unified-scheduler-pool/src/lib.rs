@@ -1503,7 +1503,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             },
                             */
                             recv(banking_packet_receiver) -> banking_packet => {
-                                "banking"
+                                on_recv(banking_packet);
                             }
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
