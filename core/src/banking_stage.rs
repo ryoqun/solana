@@ -796,9 +796,10 @@ impl BankingStage {
                         _ => unreachable!(),
                     }
                     */
+                    let ss = s2.lock().unwrap().as_ref().unwrap();
                     for (a, b) in ppp {
                         //s.schedule_execution(&(&a, b));
-                        tasks.push(s2.lock().unwrap().as_ref().unwrap().create_task(&(&a, b)));
+                        tasks.push(ss.create_task(&(&a, b)));
                     }
                 }
                 tasks
