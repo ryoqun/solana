@@ -704,7 +704,7 @@ impl BankingStage {
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
         let mut s: Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>> = None;
-        let bank_forks2 = bank_forks.clone()z
+        let bank_forks2 = bank_forks.clone();
         s = Some(unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             move |aaa| {
                 let bank = bank_forks2.read().unwrap().working_bank();
