@@ -1,5 +1,4 @@
 use {
-    crate::sigverify::SigverifyTracerPacketStats,
     bincode::serialize_into,
     chrono::{DateTime, Local},
     crossbeam_channel::{unbounded, Receiver, SendError, Sender, TryRecvError},
@@ -19,6 +18,8 @@ use {
     },
     thiserror::Error,
 };
+
+use solana_unified_scheduler_pool::SigverifyTracerPacketStats;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
