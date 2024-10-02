@@ -703,11 +703,14 @@ impl BankingStage {
         }
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
-        let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(), |_| {});
+        let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
+            |_| {}
+        );
         info!("create_block_producing_scheduler: end!");
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
 
+        /*
         use solana_rayon_threadlimit::get_thread_count;
         let bank_thread_hdls = [
             gossip_vote_receiver,
@@ -849,8 +852,9 @@ impl BankingStage {
                 .unwrap()
         })
         .collect();
+        */
 
-        Self { bank_thread_hdls }
+        Self { bank_thread_hdls: vec![] }
     }
 
     fn spawn_thread_local_multi_iterator_thread<T: LikeClusterInfo>(
