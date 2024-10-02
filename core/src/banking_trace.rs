@@ -249,11 +249,11 @@ impl BankingTracer {
 
     pub fn create_unified_channel_gossip_vote(
         &self,
-        sender: TracedSender,
-        receiver: BankingPacketReceiver,
+        sender: &TracedSender,
+        receiver: &BankingPacketReceiver,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
         let label = ChannelLabel::GossipVote;
-        Self::do_channel(label, self.active_tracer.as_ref().cloned(), sender.sender, receiver)
+        Self::do_channel(label, self.active_tracer.as_ref().cloned(), sender.sender.clone(), receiver.clone())
     }
 
 
