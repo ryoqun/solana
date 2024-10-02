@@ -1503,7 +1503,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             },
                             */
                             recv(banking_packet_receiver) -> banking_packet => {
-                                if let Ok(banking_packet) = banking_packet else {
+                                let Ok(banking_packet) = banking_packet else {
                                     break 'nonaborted_main_loop;
                                 }
                                 on_recv.unwrap()((banking_packet));
