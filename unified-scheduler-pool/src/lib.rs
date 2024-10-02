@@ -1388,6 +1388,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         let dummy_buffered_task_receiver =
                             dummy_receiver(state_machine.has_runnable_task() && !session_pausing);
 
+                        let (banking_packet_receiver, on_recv) = banking_context.as_ref().unwrap_or((&disconnected, || {}));
+
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
                         // _not-crossbeam-channel_ event sources, precisely at the specified
@@ -1499,6 +1501,8 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                             },
                             */
+                            recv(banking_packet_receiver) -> banking_packet => {
+                            }
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
                             is_running = true;
