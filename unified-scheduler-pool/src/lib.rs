@@ -1389,7 +1389,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             dummy_receiver(state_machine.has_runnable_task() && !session_pausing);
 
                         let (banking_packet_receiver, on_recv) = banking_context.unzip();
-                        let banking_packet_receiver.unwrap_or(disconnected());
+                        let banking_packet_receiver = banking_packet_receiver.unwrap_or(disconnected());
 
                         // There's something special called dummy_unblocked_task_receiver here.
                         // This odd pattern was needed to react to newly unblocked tasks from
