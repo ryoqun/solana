@@ -684,7 +684,7 @@ impl BankingStage {
         bank_forks: Arc<RwLock<BankForks>>,
         unified_scheduler_pool: Arc<solana_unified_scheduler_pool::DefaultSchedulerPool>,
     ) -> Self {
-        assert!(non_vote_receiver.is_same(tpu_vote_receiver));
+        assert!(non_vote_receiver.same_channel(tpu_vote_receiver));
         // todo: forwarding, proper handling of buffered packets, vote storage, vote only
         // blocks...
         struct MonotonicIdGenerator {
