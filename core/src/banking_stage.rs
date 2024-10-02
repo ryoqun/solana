@@ -706,6 +706,8 @@ impl BankingStage {
         let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             |aaa| {
                 let bank = bank_forks.read().unwrap().working_bank();
+                let transaction_account_lock_limit =
+                    bank.get_transaction_account_lock_limit();
                 for pp in &aaa.0 {
                     // over-provision
                     let task_id =
