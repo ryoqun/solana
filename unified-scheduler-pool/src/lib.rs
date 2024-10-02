@@ -1105,7 +1105,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         &mut self,
         mut context: SchedulingContext,
         mut result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl Fn())>,
+        banking_context: Option<(BankingPacketReceiver, impl Fn() + Send)>,
     ) {
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
