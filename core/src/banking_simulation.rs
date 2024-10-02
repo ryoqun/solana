@@ -887,7 +887,7 @@ impl BankingSimulator {
             bank_forks.clone(),
             prioritization_fee_cache,
             false,
-            panic!(),
+            solana_unified_scheduler_pool::MY_SCHEDULER_POOL.lock().unwrap().take().unwrap();
         );
 
         let sender_loop = SenderLoop {
