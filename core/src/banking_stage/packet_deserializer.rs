@@ -7,7 +7,6 @@ use {
     },
     crate::{
         banking_trace::{BankingPacketBatch, BankingPacketReceiver},
-        sigverify::SigverifyTracerPacketStats,
     },
     crossbeam_channel::RecvTimeoutError,
     solana_perf::packet::PacketBatch,
@@ -18,6 +17,8 @@ use {
         time::{Duration, Instant},
     },
 };
+
+use solana_unified_scheduler_pool::SigverifyTracerPacketStats;
 
 /// Results from deserializing packet batches.
 pub struct ReceivePacketResults {
