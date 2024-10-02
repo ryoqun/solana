@@ -717,10 +717,11 @@ impl BankingStage {
         }
         let mut id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
-        let mut s: Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>> = None;
+        let s: Arc<Mutex<Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>>>> = Arc::new(Mutex::new(None));
+        let s2 = s.clone();
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
         let bank_forks2 = bank_forks.clone();
-        s = Some(unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver,
+        let ss = Some(unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver,
             move |aaa| {
                 let decision = decision_maker.make_consume_or_forward_decision();
                 if matches!(decision, BufferedPacketsDecision::Forward) {
@@ -796,12 +797,13 @@ impl BankingStage {
                     */
                     for (a, b) in ppp {
                         //s.schedule_execution(&(&a, b));
-                        tasks.push(s.as_ref().unwrap().create_task(&(&a, b)));
+                        tasks.push(s2.lock().unwrap().create_task(&(&a, b)));
                     }
                 }
                 tasks
             }
         ));
+        s.lock().unwrap().insert(ss);
         info!("create_block_producing_scheduler: end!");
 
 
