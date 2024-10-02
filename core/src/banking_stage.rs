@@ -445,6 +445,7 @@ impl BankingStage {
                 tpu_vote_receiver,
                 gossip_vote_receiver,
                 bank_forks,
+                unified_scheduler_pool.unwrap(),
             ),
         }
     }
@@ -681,6 +682,7 @@ impl BankingStage {
         tpu_vote_receiver: BankingPacketReceiver,
         gossip_vote_receiver: BankingPacketReceiver,
         bank_forks: Arc<RwLock<BankForks>>,
+        unified_scheduler_pool: Arc<solana_unified_scheduler_pool::DefaultSchedulerPool>,
     ) -> Self {
         // todo: forwarding, proper handling of buffered packets, vote storage, vote only
         // blocks...
