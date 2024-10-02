@@ -1508,7 +1508,24 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 };
                                 let tasks = on_recv.as_mut().unwrap()((banking_packet));
-                                "banking"
+                                for task in tasks {
+                                if session_ending {
+                                    continue;
+                                }
+                                sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
+                                if let Some(task) = state_machine.schedule_task(task) {
+                                    if !session_pausing {
+                                        //runnable_task_sender.send_aux_payload(task).unwrap();
+                                        runnable_task_sender.send_payload(task).unwrap();
+                                        "sc_i_task"
+                                    } else {
+                                        state_machine.rebuffer_executing_task(task);
+                                        "rebuffer"
+                                    }
+                                } else {
+                                    "new_b_task"
+                                }
+                                }
                             }
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
