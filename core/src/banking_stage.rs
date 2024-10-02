@@ -703,7 +703,8 @@ impl BankingStage {
         }
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
-        let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
+        let s;
+        s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             |aaa| {
                 let bank = bank_forks.read().unwrap().working_bank();
                 let transaction_account_lock_limit =
