@@ -331,7 +331,7 @@ pub fn load_and_process_ledger(
                 ignored_prioritization_fee_cache,
                 None,
                 None,
-            )
+            );
             MY_SCHEDULER_POOL.lock().unwrap().insert(p.clone());
             bank_forks
                 .write()
