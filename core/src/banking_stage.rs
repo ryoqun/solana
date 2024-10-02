@@ -704,7 +704,76 @@ impl BankingStage {
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
         let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
-            |_| {}
+            |_| {
+                for pp in &aaa.0 {
+                    // over-provision
+                    let task_id =
+                        id_generator.bulk_assign_task_ids(pp.len().try_into().unwrap());
+                    let task_ids =
+                        (task_id..(task_id + TryInto::<u32>::try_into(pp.len()).unwrap())).collect::<Vec<_>>();
+
+                    let indexes =
+                        PacketDeserializer::generate_packet_indexes(&pp);
+                    let ppp = PacketDeserializer::deserialize_packets2(
+                        &pp, &indexes,
+                    )
+                    .filter_map(|(i, p)| {
+                        if p.original_packet().meta().is_tracer_packet() {
+                            warn!("pipeline_tracer: unified_scheduler submit receiver_len: {} {:?} {:?}", packet_deserializer.packet_batch_receiver.len(), std::thread::current(), std::backtrace::Backtrace::force_capture());
+                        }
+                        let Some(tx) = p.build_sanitized_transaction(
+                            bank.vote_only_bank(),
+                            &*bank,
+                            bank.get_reserved_account_keys(),
+                        ) else {
+                            return None;
+                        };
+
+                        if let Err(_) =
+                            SanitizedTransaction::validate_account_locks(
+                                tx.message(),
+                                transaction_account_lock_limit,
+                            )
+                        {
+                            return None;
+                        }
+
+                        use solana_svm_transaction::svm_message::SVMMessage;
+                        let Ok(fb) = process_compute_budget_instructions(
+                            SVMMessage::program_instructions_iter(tx.message()),
+                        ) else {
+                            return None;
+                        };
+
+                        let (priority, _cost) =
+                        SchedulerController::<std::sync::Arc<solana_gossip::cluster_info::ClusterInfo>>::calculate_priority_and_cost(
+                            &tx,
+                            &fb.into(),
+                            &bank,
+                        );
+                        // wire cost tracker....
+                        //let i = ((u32::MAX - TryInto::<u32>::try_into(priority).unwrap()) as u64) << 32
+                        let i = ((u64::MAX - priority) as u128) << 64
+                            | task_ids[*i] as solana_runtime::installed_scheduler_pool::Index;
+
+                        Some((tx, i))
+                    })
+                    .collect::<Vec<_>>();
+
+                    /*
+                    match bank.schedule_transaction_executions(
+                        ppp.iter().map(|(a, b)| (a, b)),
+                    ) {
+                        Ok(()) => (),
+                        Err(TransactionError::CommitFailed) => break,
+                        _ => unreachable!(),
+                    }
+                    */
+                    for (a, b) in ppp {
+                        s.schedule_execution(&(&a, b));
+                    }
+                }
+            }
         );
         info!("create_block_producing_scheduler: end!");
 
