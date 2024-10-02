@@ -16,6 +16,8 @@ use {
     solana_sdk::{packet::Packet, saturating_add_assign},
 };
 
+use solana_unified_scheduler_pool::SigverifyTracerPacketStats;
+
 pub struct TransactionSigVerifier {
     packet_sender: BankingPacketSender,
     tracer_packet_stats: SigverifyTracerPacketStats,

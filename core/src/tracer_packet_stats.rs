@@ -1,8 +1,9 @@
 use {
-    crate::sigverify::SigverifyTracerPacketStats,
     solana_sdk::{pubkey::Pubkey, saturating_add_assign, timing::timestamp},
     std::collections::HashSet,
 };
+
+use solana_unified_scheduler_pool::SigverifyTracerPacketStats;
 
 #[derive(Debug, Default)]
 pub struct BankingStageTracerPacketStats {
