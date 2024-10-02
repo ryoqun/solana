@@ -703,7 +703,7 @@ impl BankingStage {
         }
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
-        let s: Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>;
+        let s: Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>> = None;
         s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             move |aaa| {
                 let bank = bank_forks.read().unwrap().working_bank();
@@ -775,7 +775,7 @@ impl BankingStage {
                     */
                     for (a, b) in ppp {
                         //s.schedule_execution(&(&a, b));
-                        s.create_task(&(&a, b));
+                        s.unwrap().create_task(&(&a, b));
                     }
                 }
             }
