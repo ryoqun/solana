@@ -1105,6 +1105,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         &mut self,
         mut context: SchedulingContext,
         mut result_with_timings: ResultWithTimings,
+        banking_context: Option<(BankingPacketReceiver, impl Fn())>,
     ) {
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
@@ -1903,7 +1904,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         };
         inner
             .thread_manager
-            .start_threads(context.clone(), result_with_timings);
+            .start_threads(context.clone(), result_with_timings, banking_context);
         Self { inner, context }
     }
 
