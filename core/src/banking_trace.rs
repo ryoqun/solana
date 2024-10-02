@@ -243,7 +243,8 @@ impl BankingTracer {
         sender: TracedSender,
         receiver: BankingPacketReceiver,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel(ChannelLabel::TpuVote)
+        let label = ChannelLabel::TpuVote;
+        Self::do_channel(label, self.active_tracer.as_ref().cloned(), sender.sender, receiver)
     }
 
     pub fn create_unified_channel_gossip_vote(
@@ -251,7 +252,8 @@ impl BankingTracer {
         sender: TracedSender,
         receiver: BankingPacketReceiver,
     ) -> (BankingPacketSender, BankingPacketReceiver) {
-        self.create_channel(ChannelLabel::GossipVote)
+        let label = ChannelLabel::GossipVote;
+        Self::do_channel(label, self.active_tracer.as_ref().cloned(), sender.sender, receiver)
     }
 
 
