@@ -237,6 +237,23 @@ impl BankingTracer {
         self.create_channel(ChannelLabel::GossipVote)
     }
 
+    pub fn create_unified_channel_tpu_vote(
+        &self,
+        sender: TracedSender,
+        receiver: BankingPacketReceiver,
+    ) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel(ChannelLabel::TpuVote)
+    }
+
+    pub fn create_unified_channel_gossip_vote(
+        &self,
+        sender: TracedSender,
+        receiver: BankingPacketReceiver,
+    ) -> (BankingPacketSender, BankingPacketReceiver) {
+        self.create_channel(ChannelLabel::GossipVote)
+    }
+
+
     pub fn hash_event(&self, slot: Slot, blockhash: &Hash, bank_hash: &Hash) {
         self.trace_event(|| {
             TimedTracedEvent(
@@ -271,8 +288,8 @@ impl BankingTracer {
     fn do_channel(
         label: ChannelLabel,
         active_tracer: Option<ActiveTracer>,
-        sender: Sender<BankingPacketBatch>,
-        receiver: Receiver<BankingPacketBatch>,
+        sender: BankingPacketSender,
+        receiver: BankingPacketReceiver,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         (TracedSender::new(label, sender, active_tracer), receiver)
     }
