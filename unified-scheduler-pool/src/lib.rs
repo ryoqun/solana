@@ -1944,7 +1944,7 @@ impl BlockProducingScheduler for BlockProducingUnifiedScheduler {
 
     fn create_task(
         &self,
-        (transaction, index): &(&SanitizedTransaction, Index),
+        &(transaction, index): &(&SanitizedTransaction, Index),
     ) -> Task {
         SchedulingStateMachine::create_task(transaction.clone(), *index, &mut |pubkey| {
             self.usage_queue_loader.load(pubkey)
