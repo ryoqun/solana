@@ -625,6 +625,7 @@ const_assert_eq!(mem::size_of::<NewTaskPayload>(), 16);
 const_assert_eq!(mem::size_of::<CompactNewTaskPayload>(), 8);
 
 use solana_perf::packet::PacketBatch;
+use solana_sdk::saturating_add_assign;
 type A = crossbeam_channel::Receiver<std::sync::Arc<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>;
 #[cfg_attr(feature = "frozen-abi", derive(AbiExample))]
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
