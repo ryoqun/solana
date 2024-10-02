@@ -1944,7 +1944,7 @@ impl BlockProducingScheduler for BlockProducingUnifiedScheduler {
 }
 
 impl BlockProducingUnifiedScheduler {
-    fn create_task(
+    pub fn create_task(
         &self,
         &(transaction, index): &(&SanitizedTransaction, Index),
     ) -> Task {
