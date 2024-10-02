@@ -1646,6 +1646,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                             }
                         },
                         recv(banking_packet_receiver) -> banking_packet => {
+                            /*
                             let Ok(banking_packet) = banking_packet else {
                                 info!("disconnectd banking_packet_receiver");
                                 break 'nonaborted_main_loop;
@@ -1667,6 +1668,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                                 */
                             }
+                        */
                         }
                     }
                     }
