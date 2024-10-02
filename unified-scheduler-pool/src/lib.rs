@@ -384,7 +384,7 @@ where
             {
                 S::from_inner(inner, context, result_with_timings)
             } else {
-                let s = S::spawn(self.self_arc(), context, result_with_timings);
+                let s = S::spawn(self.self_arc(), context, result_with_timings, banking_context);
                 let bps = Arc::new(s.create_block_producing_scheduler());
                 assert!(g.0.replace((s.id(), bps)).is_none());
                 s
@@ -1855,6 +1855,7 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
+        banking_context: Option<(BankingPacketReceiver, impl Fn())>,
     ) -> Self
     where
         Self: Sized;
@@ -1889,6 +1890,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
+        banking_context: Option<(BankingPacketReceiver, impl Fn())>,
     ) -> Self {
         info!(
             "spawning new scheduler pool for slot: {}",
