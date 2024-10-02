@@ -332,7 +332,7 @@ pub fn load_and_process_ledger(
                 None,
                 None,
             );
-            MY_SCHEDULER_POOL.lock().unwrap().insert(p.clone());
+            solana_unified_scheduler_pool::MY_SCHEDULER_POOL.lock().unwrap().insert(p.clone());
             bank_forks
                 .write()
                 .unwrap()
