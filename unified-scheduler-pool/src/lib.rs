@@ -1645,6 +1645,27 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 Ok(p) => unreachable!("{:?}", p),
                             }
                         },
+                        recv(banking_packet_receiver) -> banking_packet => {
+                            let Ok(banking_packet) = banking_packet else {
+                                info!("disconnectd banking_packet_receiver");
+                                break 'nonaborted_main_loop;
+                            };
+                            let tasks = on_recv.as_mut().unwrap()((banking_packet));
+                            for task in tasks {
+                                if session_ending {
+                                    continue;
+                                }
+                                sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
+                                if let Some(task) = state_machine.schedule_task(task) {
+                                    state_machine.rebuffer_executing_task(task);
+                                }
+                                if log_interval.increment() {
+                                    log_scheduler!(info, "rebuffer");
+                                } else {
+                                    log_scheduler!(trace, "rebuffer");
+                                }
+                            }
+                        }
                     }
                     }
                 }
