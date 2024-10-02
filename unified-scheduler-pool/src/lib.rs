@@ -1371,7 +1371,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                         }
                     }
                 }
-                let (banking_packet_receiver, on_recv) = banking_context.unzip();
+                let (banking_packet_receiver, mut on_recv) = banking_context.unzip();
                 let banking_packet_receiver = banking_packet_receiver.unwrap_or(disconnected());
 
                 log_scheduler!(info, "started");
