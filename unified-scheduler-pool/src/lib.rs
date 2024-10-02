@@ -393,7 +393,7 @@ where
         }
     }
 
-    pub fn create_banking_scheduler(&self, bank_forks: &BankForks, recv: BankingPacketReceiver, on_banking_packet_receive: impl FnMut(BankingPacketBatch) + Send + 'static) -> BlockProducingUnifiedScheduler {
+    pub fn create_banking_scheduler(&self, bank_forks: &BankForks, recv: BankingPacketReceiver, on_banking_packet_receive: impl FnMut(BankingPacketBatch) + Send + 'static) -> Arc<BlockProducingUnifiedScheduler> {
         let s = self.block_producing_scheduler_inner.lock().unwrap().0.as_ref().map(|(id, bps)| bps).cloned();
         if let Some(ss) = s {
             return ss;
