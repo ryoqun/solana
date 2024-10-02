@@ -1507,7 +1507,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 let Ok(banking_packet) = banking_packet else {
                                     break 'nonaborted_main_loop;
                                 };
-                                on_recv.unwrap()((banking_packet));
+                                on_recv.as_mut().unwrap()((banking_packet));
                                 "banking"
                             }
                         };
