@@ -704,7 +704,7 @@ impl BankingStage {
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
         let s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
-            |_| {
+            |aaa| {
                 for pp in &aaa.0 {
                     // over-provision
                     let task_id =
