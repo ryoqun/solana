@@ -705,7 +705,7 @@ impl BankingStage {
         info!("create_block_producing_scheduler: start!");
         let s: Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>;
         s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
-            |aaa| {
+            move |aaa| {
                 let bank = bank_forks.read().unwrap().working_bank();
                 let transaction_account_lock_limit =
                     bank.get_transaction_account_lock_limit();
