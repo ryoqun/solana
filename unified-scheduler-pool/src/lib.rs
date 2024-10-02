@@ -624,7 +624,7 @@ type CompactNewTaskPayload = Compact<NewTaskPayload>;
 const_assert_eq!(mem::size_of::<NewTaskPayload>(), 16);
 const_assert_eq!(mem::size_of::<CompactNewTaskPayload>(), 8);
 
-type A = crossbeam_channel::Receiver<std::sync::Arc<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>
+type A = crossbeam_channel::Receiver<std::sync::Arc<(Vec<PacketBatch>, std::option::Option<SigverifyTracerPacketStats>)>>;
 
 // A tiny generic message type to synchronize multiple threads everytime some contextual data needs
 // to be switched (ie. SchedulingContext), just using a single communication channel.
