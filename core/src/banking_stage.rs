@@ -694,10 +694,17 @@ impl BankingStage {
         }
 
         impl MonotonicIdGenerator {
+            /*
             fn new() -> Arc<Self> {
                 Arc::new(Self {
                     next_task_id: Default::default(),
                 })
+            }
+            */
+            fn new() -> Self {
+                Self {
+                    next_task_id: Default::default(),
+                }
             }
 
             //fn bulk_assign_task_ids(&self, count: u32) -> u32 {
