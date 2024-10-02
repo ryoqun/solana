@@ -8401,6 +8401,7 @@ dependencies = [
  "solana-cost-model",
  "solana-ledger",
  "solana-logger",
+ "solana-perf",
  "solana-poh",
  "solana-program-runtime",
  "solana-runtime",
