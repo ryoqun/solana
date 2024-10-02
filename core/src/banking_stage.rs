@@ -704,7 +704,7 @@ impl BankingStage {
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
         let s: Option<Arc<solana_unified_scheduler_pool::BlockProducingUnifiedScheduler>> = None;
-        s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
+        s = Some(unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             move |aaa| {
                 let bank = bank_forks.read().unwrap().working_bank();
                 let transaction_account_lock_limit =
@@ -779,7 +779,7 @@ impl BankingStage {
                     }
                 }
             }
-        );
+        ));
         info!("create_block_producing_scheduler: end!");
 
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
