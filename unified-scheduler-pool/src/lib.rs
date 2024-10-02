@@ -377,7 +377,7 @@ where
                 S::from_inner(inner, context, result_with_timings)
             } else {
                 assert!(banking_context.is_none());
-                S::spawn(self.self_arc(), context, result_with_timings, None)
+                S::spawn(self.self_arc(), context, result_with_timings, banking_context)
             }
         } else {
             let mut g = self.block_producing_scheduler_inner.lock().expect("not poisoned");
