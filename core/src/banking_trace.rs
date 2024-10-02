@@ -265,6 +265,15 @@ impl BankingTracer {
         active_tracer: Option<ActiveTracer>,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         let (sender, receiver) = unbounded();
+        do_channel(labl, active_tracer, sender, receiver)
+    }
+
+    fn do_channel(
+        label: ChannelLabel,
+        active_tracer: Option<ActiveTracer>,
+        sender: Sender<BankingPacketBatch>,
+        receiver: Receiver<BankingPacketBatch>,
+    ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         (TracedSender::new(label, sender, active_tracer), receiver)
     }
 
