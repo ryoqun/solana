@@ -8398,6 +8398,7 @@ dependencies = [
  "log",
  "qualifier_attr",
  "scopeguard",
+ "serde",
  "solana-cost-model",
  "solana-ledger",
  "solana-logger",
