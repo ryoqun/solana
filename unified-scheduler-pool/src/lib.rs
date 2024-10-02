@@ -358,13 +358,14 @@ where
 
     #[cfg(test)]
     fn do_take_scheduler(&self, context: SchedulingContext) -> S {
-        self.do_take_resumed_scheduler(context, initialized_result_with_timings())
+        self.do_take_resumed_scheduler(context, initialized_result_with_timings(), None)
     }
 
     fn do_take_resumed_scheduler(
         &self,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
+        banking_context: Option<(BankingPacketReceiver, impl Fn())>,
     ) -> S {
         assert_matches!(result_with_timings, (Ok(_), _));
 
@@ -397,7 +398,11 @@ where
             return ss;
         } else {
             let context = SchedulingContext::new(SchedulingMode::BlockProduction, bank_forks.root_bank());
-            let scheduler = Box::new(self.do_take_resumed_scheduler(context, initialized_result_with_timings()));
+            let scheduler = Box::new(self.do_take_resumed_scheduler(
+                context,
+                initialized_result_with_timings(),
+                Some((recv, on_banking_packet_receive)),
+            ));
             let (result_with_timings, uninstalled_scheduler) =
                 scheduler.wait_for_termination(false);
             let () = uninstalled_scheduler.return_to_pool();
@@ -454,7 +459,7 @@ where
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
     ) -> InstalledSchedulerBox {
-        Box::new(self.do_take_resumed_scheduler(context, result_with_timings))
+        Box::new(self.do_take_resumed_scheduler(context, result_with_timings, None))
     }
 
     fn register_timeout_listener(&self, timeout_listener: TimeoutListener) {
