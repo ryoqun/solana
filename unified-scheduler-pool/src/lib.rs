@@ -1659,11 +1659,13 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 if let Some(task) = state_machine.schedule_task(task) {
                                     state_machine.rebuffer_executing_task(task);
                                 }
+                                /*
                                 if log_interval.increment() {
                                     log_scheduler!(info, "rebuffer");
                                 } else {
                                     log_scheduler!(trace, "rebuffer");
                                 }
+                                */
                             }
                         }
                     }
