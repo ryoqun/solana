@@ -722,7 +722,7 @@ impl BankingStage {
         let s2 = s.clone();
         let decision_maker = DecisionMaker::new(cluster_info.id(), poh_recorder.clone());
         let bank_forks2 = bank_forks.clone();
-        let ss = Some(unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver,
+        let ss = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver,
             move |aaa| {
                 let decision = decision_maker.make_consume_or_forward_decision();
                 if matches!(decision, BufferedPacketsDecision::Forward) {
@@ -803,7 +803,7 @@ impl BankingStage {
                 }
                 tasks
             }
-        ));
+        );
         s.lock().unwrap().insert(ss);
         info!("create_block_producing_scheduler: end!");
 
