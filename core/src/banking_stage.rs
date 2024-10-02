@@ -703,7 +703,7 @@ impl BankingStage {
         }
         let id_generator = MonotonicIdGenerator::new();
         info!("create_block_producing_scheduler: start!");
-        let s;
+        let s: Arc<dyn BlockProducingScheduler>;
         s = unified_scheduler_pool.create_banking_scheduler(&bank_forks.read().unwrap(), non_vote_receiver.clone(),
             |aaa| {
                 let bank = bank_forks.read().unwrap().working_bank();
