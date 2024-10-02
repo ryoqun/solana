@@ -205,7 +205,11 @@ impl Tpu {
             SigVerifyStage::new(packet_receiver, verifier, "solSigVerTpu", "tpu-verifier")
         };
 
-        let (tpu_vote_sender, tpu_vote_receiver) = banking_tracer.create_channel_tpu_vote();
+        let (tpu_vote_sender, tpu_vote_receiver) = if unified_scheduler_pool.is_none() {
+            banking_tracer.create_channel_tpu_vote()
+        } else {
+            banking_tracer.create_unified_channel_tpu_vote(&non_vote_sender, &non_vote_receiver)
+        };
 
         let vote_sigverify_stage = {
             let verifier = TransactionSigVerifier::new_reject_non_vote(tpu_vote_sender);
