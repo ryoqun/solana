@@ -365,7 +365,7 @@ where
         &self,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl Fn() + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl Fn(BankingPacketBatch) + Send + 'static)>,
     ) -> S {
         assert_matches!(result_with_timings, (Ok(_), _));
 
@@ -1105,7 +1105,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
         &mut self,
         mut context: SchedulingContext,
         mut result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl Fn() + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl Fn(BankingPacketBatch) + Send + 'static)>,
     ) {
         let scheduler_id = self.scheduler_id;
         let mut slot = context.bank().slot();
@@ -1866,7 +1866,7 @@ pub trait SpawnableScheduler<TH: TaskHandler>: InstalledScheduler {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl Fn() + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl Fn(BankingPacketBatch) + Send + 'static)>,
     ) -> Self
     where
         Self: Sized;
@@ -1901,7 +1901,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
         pool: Arc<SchedulerPool<Self, TH>>,
         context: SchedulingContext,
         result_with_timings: ResultWithTimings,
-        banking_context: Option<(BankingPacketReceiver, impl Fn() + Send + 'static)>,
+        banking_context: Option<(BankingPacketReceiver, impl Fn(BankingPacketBatch) + Send + 'static)>,
     ) -> Self {
         info!(
             "spawning new scheduler pool for slot: {}",
