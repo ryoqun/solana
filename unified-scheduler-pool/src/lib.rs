@@ -140,7 +140,7 @@ where
     // Some internal impl and test code want an actual concrete type, NOT the
     // `dyn InstalledSchedulerPool`. So don't merge this into `Self::new_dyn()`.
     #[cfg_attr(feature = "dev-context-only-utils", qualifiers(pub))]
-    fn new(
+    pub fn new(
         handler_count: Option<usize>,
         log_messages_bytes_limit: Option<usize>,
         transaction_status_sender: Option<TransactionStatusSender>,
