@@ -23,6 +23,7 @@ use solana_unified_scheduler_pool::SigverifyTracerPacketStats;
 
 pub type BankingPacketBatch = Arc<(Vec<PacketBatch>, Option<SigverifyTracerPacketStats>)>;
 pub type BankingPacketSender = TracedSender;
+pub type RealBankingPacketSender = Sender<BankingPacketBatch>;
 pub type BankingPacketReceiver = Receiver<BankingPacketBatch>;
 pub type TracerThreadResult = Result<(), TraceError>;
 pub type TracerThread = Option<JoinHandle<TracerThreadResult>>;
@@ -288,7 +289,7 @@ impl BankingTracer {
     fn do_channel(
         label: ChannelLabel,
         active_tracer: Option<ActiveTracer>,
-        sender: BankingPacketSender,
+        sender: RealBankingPacketSender,
         receiver: BankingPacketReceiver,
     ) -> (TracedSender, Receiver<BankingPacketBatch>) {
         (TracedSender::new(label, sender, active_tracer), receiver)
