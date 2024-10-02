@@ -149,7 +149,7 @@ where
         transaction_recorder: Option<TransactionRecorder>,
         dummy_sender: Option<DummySender>,
     ) -> Arc<Self> {
-        let p = Self::do_new(
+        Self::do_new(
             handler_count,
             log_messages_bytes_limit,
             transaction_status_sender,
@@ -161,9 +161,7 @@ where
             DEFAULT_MAX_POOLING_DURATION,
             DEFAULT_MAX_USAGE_QUEUE_COUNT,
             DEFAULT_TIMEOUT_DURATION,
-        );
-        MY_SCHEDULER_POOL.lock().unwrap().insert(p);
-        p
+        )
     }
 
     fn do_new(

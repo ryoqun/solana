@@ -323,18 +323,20 @@ pub fn load_and_process_ledger(
             let no_transaction_status_sender = None;
             let no_replay_vote_sender = None;
             let ignored_prioritization_fee_cache = Arc::new(PrioritizationFeeCache::new(0u64));
+            let p = DefaultSchedulerPool::new(
+                unified_scheduler_handler_threads,
+                process_options.runtime_config.log_messages_bytes_limit,
+                no_transaction_status_sender,
+                no_replay_vote_sender,
+                ignored_prioritization_fee_cache,
+                None,
+                None,
+            )
+            MY_SCHEDULER_POOL.lock().unwrap().insert(p.clone());
             bank_forks
                 .write()
                 .unwrap()
-                .install_scheduler_pool(DefaultSchedulerPool::new_dyn(
-                    unified_scheduler_handler_threads,
-                    process_options.runtime_config.log_messages_bytes_limit,
-                    no_transaction_status_sender,
-                    no_replay_vote_sender,
-                    ignored_prioritization_fee_cache,
-                    None,
-                    None,
-                ));
+                .install_scheduler_pool(p);
         }
     }
 
