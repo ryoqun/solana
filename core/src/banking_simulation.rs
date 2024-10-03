@@ -273,7 +273,7 @@ impl SimulatorLoopLogger {
             bank_elapsed.as_millis(),
             Self::bank_costs(bank),
             bank.collector_fees(),
-            bank.slot_transactions(),
+            bank.executed_transaction_count(),
         );
     }
 
@@ -284,7 +284,7 @@ impl SimulatorLoopLogger {
             bank_elapsed.as_millis(),
             Self::bank_costs(bank),
             bank.collector_fees(),
-            bank.slot_transactions(),
+            bank.executed_transaction_count(),
         );
     }
 
