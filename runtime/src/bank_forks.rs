@@ -243,11 +243,12 @@ impl BankForks {
         mode: SchedulingMode,
         bank: Arc<Bank>,
     ) -> BankWithScheduler {
-        if matches!(mode, SchedulingMode::BlockProduction) {
-            trace!(
+        if matches!((bank.slot(), mode), (0, SchedulingMode::BlockProduction)) {
+            info!(
                 "Inserting bank (slot: {}) WITHOUT scheduler into bank_forks...",
                 bank.slot()
             );
+            warn!("bt: {:?} {:?}", std::thread::current(), std::backtrace::Backtrace::force_capture());
             return BankWithScheduler::new_without_scheduler(bank);
         }
         trace!(
