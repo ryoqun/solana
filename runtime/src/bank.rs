@@ -5417,7 +5417,7 @@ impl Bank {
     }
 
     pub fn slot_transactions(&self) -> u64 {
-        self.transaction_count - self.parent().transaction_count
+        self.transaction_count - self.parent().map(|parent| parent.transaction_count).unwrap_or_else(|| self.transaction_count)
     }
 
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
