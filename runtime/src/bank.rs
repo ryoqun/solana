@@ -5416,6 +5416,10 @@ impl Bank {
         self.collector_fees.load(Relaxed)
     }
 
+    pub fn slot_transactions(&self) -> u64 {
+        self.transactions - self.parent().transactions
+    }
+
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
     /// Should it be included in *this* bank?
     fn should_include_epoch_accounts_hash(&self) -> bool {
