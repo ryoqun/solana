@@ -243,7 +243,7 @@ impl BankForks {
         mode: SchedulingMode,
         bank: Arc<Bank>,
     ) -> BankWithScheduler {
-        if matches!((bank.slot(), mode), (0, SchedulingMode::BlockProduction)) {
+        if bank.slot() <= 1 && matches!(mode, SchedulingMode::BlockProduction) {
             info!(
                 "Inserting bank (slot: {}) WITHOUT scheduler into bank_forks...",
                 bank.slot()
