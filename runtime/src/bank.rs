@@ -5416,8 +5416,12 @@ impl Bank {
         self.collector_fees.load(Relaxed)
     }
 
-    pub fn slot_transactions(&self) -> u64 {
-        self.transaction_count - self.parent().map(|parent| parent.transaction_count).unwrap_or_else(|| self.transaction_count)
+    fn transaction_count(&self) -> u64 {
+        self.transaction_count.load(Relaxed)
+    }
+
+    pub fn slot_transaction_count(&self) -> Option<u64> {
+        self.transaction_count() - self.parent().map(|parent| parent.transaction_count())
     }
 
     /// The epoch accounts hash is hashed into the bank's hash once per epoch at a predefined slot.
