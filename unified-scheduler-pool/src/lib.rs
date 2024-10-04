@@ -1999,7 +1999,7 @@ impl BlockProducingUnifiedScheduler {
         if let Some(()) = self.deduper.get(transaction.message_hash()) {
             return None;
         } else {
-            self.deduper.entry(*transaction.message_hash()).or_default();
+            self.deduper.insert(*transaction.message_hash());
         }
 
         Some(SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
