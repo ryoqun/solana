@@ -13,7 +13,7 @@ use qualifier_attr::qualifiers;
 use {
     assert_matches::assert_matches,
     crossbeam_channel::{self, never, select, select_biased, Receiver, RecvError, SendError, Sender},
-    dashmap::DashMap,
+    dashmap::{DashMap, DashSet},
     derivative::Derivative,
     log::*,
     scopeguard::defer,
