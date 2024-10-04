@@ -1996,7 +1996,7 @@ impl BlockProducingUnifiedScheduler {
         &self,
         &(transaction, index): &(&SanitizedTransaction, Index),
     ) -> Option<Task> {
-        if let Some(()) = self.deduper.contains(transaction.message_hash()) {
+        if self.deduper.contains(transaction.message_hash()) {
             return None;
         } else {
             self.deduper.insert(*transaction.message_hash());
