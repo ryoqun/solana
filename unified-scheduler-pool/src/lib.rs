@@ -1975,6 +1975,7 @@ impl<TH: TaskHandler> SpawnableScheduler<TH> for PooledScheduler<TH> {
 #[derive(Clone, Debug)]
 pub struct BlockProducingUnifiedScheduler {
     usage_queue_loader: Arc<UsageQueueLoader>,
+    deduper: DashSet<Hash>,
     new_task_sender: Sender<CompactNewTaskPayload>,
 }
 
