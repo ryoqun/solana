@@ -1996,6 +1996,12 @@ impl BlockProducingUnifiedScheduler {
         &self,
         &(transaction, index): &(&SanitizedTransaction, Index),
     ) -> Option<Task> {
+        if let Some(()) = self.deduper.get(transaction.message_hash()) {
+            return None;
+        } else {
+            self.deduper.entry(*transaction.message_hash()).or_default();
+        }
+
         Some(SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.usage_queue_loader.load(pubkey)
         }))
