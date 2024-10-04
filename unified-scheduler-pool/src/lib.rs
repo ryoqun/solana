@@ -1,5 +1,5 @@
 //! Transaction scheduling code.
-//d
+//!
 //! This crate implements 3 solana-runtime traits (`InstalledScheduler`, `UninstalledScheduler` and
 //! `InstalledSchedulerPool`) to provide a concrete transaction scheduling implementation
 //! (including executing txes and committing tx results).
