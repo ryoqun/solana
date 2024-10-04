@@ -1995,10 +1995,10 @@ impl BlockProducingUnifiedScheduler {
     pub fn create_task(
         &self,
         &(transaction, index): &(&SanitizedTransaction, Index),
-    ) -> Task {
-        SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
+    ) -> Option<Task> {
+        Some(SchedulingStateMachine::create_task(transaction.clone(), index, &mut |pubkey| {
             self.usage_queue_loader.load(pubkey)
-        })
+        }))
     }
 }
 
