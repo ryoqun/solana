@@ -2174,10 +2174,26 @@ dependencies = [
 [[package]]
 name = "enum-ptr"
 version = "0.2.0-beta.0"
+dependencies = [
+ "enum-ptr-derive 0.2.0-beta.0",
+]
+
+[[package]]
+name = "enum-ptr"
+version = "0.2.0-beta.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b280676e2bb2bf8a0331a4f9bc7331092928c18cd31943502faddb893551531c"
 dependencies = [
- "enum-ptr-derive",
+ "enum-ptr-derive 0.2.0-beta.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "enum-ptr-derive"
+version = "0.2.0-beta.0"
+dependencies = [
+ "darling",
+ "quote",
+ "syn 2.0.77",
 ]
 
 [[package]]
@@ -8376,7 +8392,7 @@ dependencies = [
  "assert_matches",
  "bitfield-struct",
  "dary_heap",
- "enum-ptr",
+ "enum-ptr 0.2.0-beta.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "more-asserts",
  "rclite",
  "solana-sdk",
@@ -8393,7 +8409,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "derivative",
- "enum-ptr",
+ "enum-ptr 0.2.0-beta.0",
  "lazy_static",
  "log",
  "qualifier_attr",
