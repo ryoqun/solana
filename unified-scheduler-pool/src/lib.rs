@@ -1,5 +1,5 @@
 //! Transaction scheduling code.
-//!
+//d
 //! This crate implements 3 solana-runtime traits (`InstalledScheduler`, `UninstalledScheduler` and
 //! `InstalledSchedulerPool`) to provide a concrete transaction scheduling implementation
 //! (including executing txes and committing tx results).
@@ -33,6 +33,7 @@ use {
         vote_sender_types::ReplayVoteSender,
     },
     solana_sdk::{
+        hash::Hash,
         pubkey::Pubkey,
         scheduling::SchedulingMode,
         transaction::{Result, SanitizedTransaction, TransactionError, VersionedTransaction},
