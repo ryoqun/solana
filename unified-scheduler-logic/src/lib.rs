@@ -1010,7 +1010,7 @@ impl SchedulingStateMachine {
                         });
                     }
                     */
-                    task.with_pending_mut(&mut self.count_token, |c| {
+                    let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
                         true
                     });
                 }
