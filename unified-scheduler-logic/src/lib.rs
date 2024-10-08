@@ -485,11 +485,11 @@ struct CounterWithStatus {
     status: TaskStatus,
     //#[bits(30)]
     count: u32,
-    pending_usage_queue: HashSet<*const UsageQueueInner>,
+    pending_usage_queue: HashSet<ByAddress<UsageQueue>>,
 }
 
 impl CounterWithStatus {
-    fn new(pending_usage_queue: HashSet<*const UsageQueueInner>) -> Self {
+    fn new(pending_usage_queue: HashSet<ByAddress<UsageQueue>>) -> Self {
         Self {
             status: TaskStatus::default(),
             count: u32::default(),
