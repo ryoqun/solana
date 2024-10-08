@@ -1150,6 +1150,9 @@ impl SchedulingStateMachine {
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
                                     );
+                                    reblocked_task.with_pending_mut(&mut self.count_token, |c| {
+                                        c.pending_usage_queue.insert(ByAddress(u.clone())).then_some(()).or_else(|| panic!());
+                                    });
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
                                 } else {
