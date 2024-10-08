@@ -1342,7 +1342,7 @@ impl SchedulingStateMachine {
             .enumerate()
             .map(|(index, address)| {
                 let usage_queue = usage_queue_loader(*address);
-                pending_usage_queue.insert(usage_queue);
+                pending_usage_queue.insert(usage_queue.deref());
                 LockContext::new(
                     usage_queue,
                     if transaction.message().is_writable(index) {
