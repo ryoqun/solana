@@ -822,6 +822,7 @@ impl Default for UsageQueueInner {
     fn default() -> Self {
         Self {
             current_usage: None,
+            is_executing: false,
             // Capacity should be configurable to create with large capacity like 1024 inside the
             // (multi-threaded) closures passed to create_task(). In this way, reallocs can be
             // avoided happening in the scheduler thread. Also, this configurability is desired for
