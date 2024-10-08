@@ -701,9 +701,10 @@ impl LockContext {
     fn force_lock(
         &self,
         usage_queue_token: &mut UsageQueueToken,
+        count_token: &mut BlockedUsageCountToken,
         new_task: Task,
     ) {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), new_task) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), new_task, count_token) })
     }
 
     fn increment_executing_count(
@@ -898,7 +899,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn force_lock(&mut self, requested_usage: RequestedUsage, new_task: Task) {
+    fn force_lock(&mut self, requested_usage: RequestedUsage, new_task: Task, count_token: &mut BlockedUsageCountToken) {
         match &mut self.current_usage {
             None => {
                 unreachable!();
@@ -912,7 +913,7 @@ impl UsageQueueInner {
             },
             Some(Usage::Writable(current_task)) => { 
                 let reblocked_task = std::mem::replace(current_task, new_task);
-                reblocked_task.increment_blocked_usage_count(&mut self.count_token);
+                reblocked_task.increment_blocked_usage_count(&mut count_token);
                 /*
                 reblocked_task.with_pending_mut(&mut self.count_token, |c| {
                     c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
@@ -1101,7 +1102,7 @@ impl SchedulingStateMachine {
                         let p = task.with_pending_mut(&mut self.count_token, |c| {
                             std::mem::take(&mut c.pending_lock_contexts)
                         });
-                        p.into_iter().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone()));
+                        p.into_iter().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone(), &mut self.count_token));
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
