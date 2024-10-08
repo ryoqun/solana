@@ -864,6 +864,33 @@ impl UsageQueueInner {
         }
     }
 
+    fn try_force_lock(&mut self, requested_usage: RequestedUsage) -> LockResult {
+        match &mut self.current_usage {
+            None => {
+                match requested_usage {
+                    RequestedUsage::Readonly => {
+                        self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
+                        self.current_readonly_tasks.push(Reverse(task.clone()));
+                    },
+                    RequestedUsage::Writable => {
+                        self.current_usage = Some(Usage::Writable(task.clone()));
+                    },
+                }
+                Ok(())
+            }
+            Some(Usage::Readonly(count)) => match requested_usage {
+                RequestedUsage::Readonly => {
+                    //dbg!(&self.current_readonly_tasks.keys());
+                    self.current_readonly_tasks.push(Reverse(task.clone()));
+                    count.increment_self();
+                    Ok(())
+                }
+                RequestedUsage::Writable => Err(()),
+            },
+            Some(Usage::Writable(_current_task)) => Err(()),
+        }
+    }
+
     #[must_use]
     fn unlock(
         &mut self,
