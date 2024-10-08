@@ -586,7 +586,7 @@ impl TaskInner {
 
     fn with_pending_mut(&self, token: &mut BlockedUsageCountToken, f: impl FnOnce(&mut UsageQueueInner) -> R) {
         self.blocked_usage_count
-            .with_borrow_mut(token, f)
+            .with_borrow_mut(token, f);
     }
 
     fn mark_as_executed(&self, token: &mut BlockedUsageCountToken) {
