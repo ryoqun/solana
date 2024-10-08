@@ -584,7 +584,7 @@ impl TaskInner {
             })
     }
 
-    fn with_pending_mut(&self, token: &mut BlockedUsageCountToken, f: impl FnOnce(&mut CounterWithStatus) -> R) {
+    fn with_pending_mut<R>(&self, token: &mut BlockedUsageCountToken, f: impl FnOnce(&mut CounterWithStatus) -> R) {
         self.blocked_usage_count
             .with_borrow_mut(token, f);
     }
