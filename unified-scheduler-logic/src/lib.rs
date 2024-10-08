@@ -1393,6 +1393,10 @@ impl SchedulingStateMachine {
     pub unsafe fn exclusively_initialize_current_thread_for_scheduling_for_test() -> Self {
         Self::exclusively_initialize_current_thread_for_scheduling(SchedulingMode::BlockProduction)
     }
+
+    pub unsafe fn exclusively_initialize_current_thread_for_scheduling_for_test2() -> Self {
+        Self::exclusively_initialize_current_thread_for_scheduling(SchedulingMode::BlockProduction)
+    }
 }
 
 #[cfg(test)]
@@ -2290,6 +2294,17 @@ mod tests {
         );
         state_machine.deschedule_task(&task1);
         state_machine.deschedule_task(&task1_3);
+    }
+
+    #[test]
+    fn test_eager_scheduling() {
+        let conflicting_address1 = Pubkey::new_unique();
+        let conflicting_address2 = Pubkey::new_unique();
+        let conflicting_address3 = Pubkey::new_unique();
+
+        let mut state_machine = unsafe {
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
+        };
     }
 
     #[test]
