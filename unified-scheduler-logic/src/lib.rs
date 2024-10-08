@@ -1121,12 +1121,14 @@ impl SchedulingStateMachine {
         })
     }
 
+    /*
     pub fn rebuffer_executing_task(&mut self, task: Task) {
         self.executing_task_count.decrement_self();
         self.buffered_task_total.increment_self();
         task.mark_as_buffered(&mut self.count_token);
         self.buffered_task_queue.push(task);
     }
+    */
 
     #[must_use]
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
