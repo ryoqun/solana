@@ -704,7 +704,7 @@ impl LockContext {
         new_task: Task,
         count_token: &mut BlockedUsageCountToken,
     ) {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), self.usage_queue(), new_task, count_token) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.usage_queue(), self.requested_usage2(), new_task, count_token) })
     }
 
     fn increment_executing_count(
