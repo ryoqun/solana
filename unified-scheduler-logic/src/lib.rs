@@ -1112,6 +1112,14 @@ impl SchedulingStateMachine {
                     assert!(c.pending_usage_queue.is_empty());
                 });
                 task.mark_as_executed(&mut self.count_token);
+
+                for context in task.lock_contexts() {
+                    context.map_ref(|context| {
+                    context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
+                    })
+                    })
+                }
+
                 Some(task)
             } else {
                 self.buffered_task_total.increment_self();
