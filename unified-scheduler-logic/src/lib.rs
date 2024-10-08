@@ -480,6 +480,7 @@ struct CounterWithStatus {
     status: TaskStatus,
     //#[bits(30)]
     count: u32,
+    pending_usage_queue: HashMap<*const TaskInner>,
 }
 
 impl CounterWithStatus {
