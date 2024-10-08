@@ -239,7 +239,7 @@ mod utils {
             f(unsafe { &mut *self.0.get() })
         }
 
-        fn as_ptr(this: &Self) -> *const V {
+        pub(super) fn as_ptr(this: &Self) -> *const V {
             this.0.get()
         }
     }
