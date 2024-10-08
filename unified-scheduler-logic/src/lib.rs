@@ -485,7 +485,7 @@ struct CounterWithStatus {
 }
 
 impl CounterWithStatus {
-    fn new(pending_usage_queue: HashSet<*const TaskInner>) {
+    fn new(pending_usage_queue: HashSet<*const TaskInner>) -> Self {
         Self {
             status: TaskStatus::default(),
             count: u32::default(),
