@@ -1115,8 +1115,7 @@ impl SchedulingStateMachine {
 
                 for context in task.lock_contexts() {
                     context.map_ref(|context| {
-                    context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
-                    })
+                    context.increment_executing_count(&mut self.usage_queue_token)
                     })
                 }
 
