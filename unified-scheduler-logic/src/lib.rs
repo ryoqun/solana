@@ -1097,15 +1097,15 @@ impl SchedulingStateMachine {
     /// Note that this function takes ownership of the task to allow for future optimizations.
     #[must_use]
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
-        self.do_schedule_task(task)
+        self.do_schedule_task(task, false)
     }
 
-    pub fn do_schedule_task(&mut self, task: Task) -> Option<Task> {
+    pub fn do_schedule_task(&mut self, task: Task, force_buffer_mode: bool) -> Option<Task> {
         self.task_total.increment_self();
         self.alive_task_count.increment_self();
         self.alive_tasks.insert(task.clone()).then_some(()).or_else(|| panic!());
         self.try_lock_usage_queues(task).and_then(|task| {
-            if self.is_task_runnable() {
+            if self.is_task_runnable() && !force_buffer_mode {
                 self.executing_task_count.increment_self();
                 task.with_pending_mut(&mut self.count_token, |c| {
                     assert_eq!(c.count as usize, c.pending_usage_queue.len());
