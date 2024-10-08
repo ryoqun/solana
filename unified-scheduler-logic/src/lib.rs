@@ -486,6 +486,10 @@ impl CounterWithStatus {
         self.status
     }
 
+    fn count(&self) -> u32 {
+        self.count
+    }
+
     fn set_status(&mut self, status: TaskStatus) {
         self.status = status
     }
