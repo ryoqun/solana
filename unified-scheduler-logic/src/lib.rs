@@ -916,6 +916,7 @@ impl UsageQueueInner {
         unlocked_task_index: Index,
         token: &mut BlockedUsageCountToken,
     ) -> Option<UsageFromTask> {
+        self.executing_count.decrement_self();
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(count)) => match unlocked_task_context {
@@ -938,7 +939,6 @@ impl UsageQueueInner {
                 LockContext::Writable(_) => unreachable!(),
             },
             Some(Usage::Writable(blocking_task)) => {
-                assert!(self.executing_count.is_one());
                 assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2()), (blocking_task.index(), RequestedUsage::Writable));
                 is_unused_now = true;
             },
