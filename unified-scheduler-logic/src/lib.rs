@@ -107,6 +107,7 @@ use {
     },
 };
 use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
@@ -480,7 +481,7 @@ struct CounterWithStatus {
     status: TaskStatus,
     //#[bits(30)]
     count: u32,
-    pending_usage_queue: HashMap<*const TaskInner>,
+    pending_usage_queue: HashSet<*const TaskInner>,
 }
 
 impl CounterWithStatus {
