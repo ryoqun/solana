@@ -996,7 +996,7 @@ unsafe impl enum_ptr::Aligned for UsageQueue {
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
     buffered_task_queue:  dary_heap::OctonaryHeap<Task>,
-    alive_tasks: BTreeSet<Reverse<Task>>,
+    alive_tasks: BTreeSet<Task>,
     alive_task_count: ShortCounter,
     executing_task_count: ShortCounter,
     max_executing_task_count: u32,
@@ -1048,7 +1048,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
-                for task in self.alive_tasks.iter() {
+                for task in self.alive_tasks.rev() {
                     /*
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
@@ -1060,10 +1060,10 @@ impl SchedulingStateMachine {
                         });
                     }
                     */
-                    let lockable: bool = task.0.with_pending_mut(&mut self.count_token, |c| {
+                    let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
                         c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
                     });
-                    dbg!((task.0.index(), lockable));
+                    dbg!((task.index(), lockable));
                     //panic!("aaa");
                 }
                 false
@@ -1124,7 +1124,7 @@ impl SchedulingStateMachine {
     pub fn do_schedule_task(&mut self, task: Task, force_buffer_mode: bool) -> Option<Task> {
         self.task_total.increment_self();
         self.alive_task_count.increment_self();
-        self.alive_tasks.insert(Reverse(task.clone())).then_some(()).or_else(|| panic!());
+        self.alive_tasks.insert(task.clone()).then_some(()).or_else(|| panic!());
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() && !force_buffer_mode {
                 self.executing_task_count.increment_self();
@@ -1190,7 +1190,7 @@ impl SchedulingStateMachine {
         task.mark_as_unlocked(&mut self.count_token);
         self.executing_task_count.decrement_self();
         self.alive_task_count.decrement_self();
-        self.alive_tasks.remove(&Reverse(task.clone())).then_some(()).or_else(|| panic!());
+        self.alive_tasks.remove(task).then_some(()).or_else(|| panic!());
         self.executed_task_total.increment_self();
         self.unlock_usage_queues(task);
     }
