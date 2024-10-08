@@ -2315,7 +2315,7 @@ mod tests {
         let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
             UsageQueue::default()
         });
-        let lock_context = LockContext::new(usage_queue, RequestedUsage::Readonly);
+        let lock_context = LockContext::new(usage_queue.clone(), RequestedUsage::Readonly);
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
