@@ -897,8 +897,8 @@ impl UsageQueueInner {
         }
     }
 
-    fn force_lock(&self, requested_usage: RequestedUsage) {
-        match &self.current_usage {
+    fn force_lock(&mut self, requested_usage: RequestedUsage) {
+        match &mut self.current_usage {
             None => {
                 unreachable!();
             }
@@ -909,7 +909,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => self.executing_count.is_zero(),
             },
-            Some(Usage::Writable(_current_task)) => self.executing_count.is_zero(),
+            Some(Usage::Writable(current_task)) => { current_task = new_task },
         }
     }
 
