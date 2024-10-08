@@ -1386,6 +1386,7 @@ impl SchedulingStateMachine {
             // It's very unlikely this is desired to be configurable, like
             // `UsageQueueInner::blocked_usages_from_tasks`'s cap.
             buffered_task_queue:  dary_heap::OctonaryHeap::with_capacity(1024), // BTreeMap::new(), //VecDeque::with_capacity(1024),
+            alive_tasks: BTreeSet::default(),
             alive_task_count: ShortCounter::zero(),
             executing_task_count: ShortCounter::zero(),
             max_executing_task_count: 200,
