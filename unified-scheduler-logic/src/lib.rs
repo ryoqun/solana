@@ -698,6 +698,13 @@ impl LockContext {
         self.with_usage_queue_mut(usage_queue_token, |u| { u.is_force_lockable(self.requested_usage2()) })
     }
 
+    fn force_lock(
+        &self,
+        usage_queue_token: &mut UsageQueueToken,
+    ) -> bool {
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2()) })
+    }
+
     fn increment_executing_count(
         &self,
         usage_queue_token: &mut UsageQueueToken,
@@ -884,6 +891,22 @@ impl UsageQueueInner {
             }
             Some(Usage::Readonly(_count)) => match requested_usage {
                 RequestedUsage::Readonly => true,
+                RequestedUsage::Writable => self.executing_count.is_zero(),
+            },
+            Some(Usage::Writable(_current_task)) => self.executing_count.is_zero(),
+        }
+    }
+
+    fn force_lock(&self, requested_usage: RequestedUsage) {
+        match &self.current_usage {
+            None => {
+                unreachable!();
+            }
+            Some(Usage::Readonly(count)) => match requested_usage {
+                RequestedUsage::Readonly => {
+                    self.current_readonly_tasks.push(Reverse(task.clone()));
+                    count.increment_self();
+                }
                 RequestedUsage::Writable => self.executing_count.is_zero(),
             },
             Some(Usage::Writable(_current_task)) => self.executing_count.is_zero(),
