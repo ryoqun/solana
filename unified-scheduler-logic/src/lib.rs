@@ -909,7 +909,7 @@ impl UsageQueueInner {
                     self.current_readonly_tasks.push(Reverse(new_task));
                     count.increment_self();
                 }
-                RequestedUsage::Writable => panic!(),
+                RequestedUsage::Writable => todo!(),
             },
             Some(Usage::Writable(current_task)) => { 
                 let reblocked_task = std::mem::replace(current_task, new_task);
