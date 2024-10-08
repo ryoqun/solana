@@ -611,6 +611,8 @@ impl TaskInner {
 enum LockContext {
     Readonly(UsageQueue),
     Writable(UsageQueue),
+    Readonly2(UsageQueue),
+    Writable2(UsageQueue),
 }
 const_assert_eq!(mem::size_of::<LockContext>(), 16);
 const_assert_eq!(mem::size_of::<Compact<LockContext>>(), 8);
