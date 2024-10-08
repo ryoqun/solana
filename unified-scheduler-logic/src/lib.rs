@@ -1067,6 +1067,8 @@ impl SchedulingStateMachine {
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() {
                 self.executing_task_count.increment_self();
+                task.with_pending_mut(&mut self.count_token, || {
+                });
                 task.mark_as_executed(&mut self.count_token);
                 Some(task)
             } else {
