@@ -841,8 +841,7 @@ impl UsageQueueInner {
                 LockContext::Writable(_) => unreachable!(),
             },
             Some(Usage::Writable(blocking_task)) => {
-                let blocking_task_index = blocking_task.index();
-                assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2()), (blocking_task_index, RequestedUsage::Writable));
+                assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2()), (blocking_task.index(), RequestedUsage::Writable));
                 is_unused_now = true;
             },
             None => unreachable!(),
