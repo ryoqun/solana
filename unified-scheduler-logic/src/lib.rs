@@ -1124,7 +1124,7 @@ impl SchedulingStateMachine {
     pub fn do_schedule_task(&mut self, task: Task, force_buffer_mode: bool) -> Option<Task> {
         self.task_total.increment_self();
         self.alive_task_count.increment_self();
-        self.alive_tasks.insert(task.clone()).then_some(()).or_else(|| panic!());
+        self.alive_tasks.insert(Reverse(task.clone())).then_some(()).or_else(|| panic!());
         self.try_lock_usage_queues(task).and_then(|task| {
             if self.is_task_runnable() && !force_buffer_mode {
                 self.executing_task_count.increment_self();
