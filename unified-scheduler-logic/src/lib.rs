@@ -919,7 +919,7 @@ impl UsageQueueInner {
                 usage_queue.insert_blocked_usage_from_task(
                     UsageFromTask::Writable(reblocked_task),
                 );
-                self.reblocked_lock_total.increment_self();
+                //self.reblocked_lock_total.increment_self();
             },
         }
     }
