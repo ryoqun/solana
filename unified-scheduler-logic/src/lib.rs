@@ -958,7 +958,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
-                for task in self.alive_tasks() {
+                for task in self.alive_tasks {
                 }
             },
         }
