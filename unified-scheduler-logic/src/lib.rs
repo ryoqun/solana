@@ -486,11 +486,11 @@ struct CounterWithStatus {
     status: TaskStatus,
     //#[bits(30)]
     count: u32,
-    pending_usage_queue: HashSet<ByAddress<UsageQueue>>,
+    pending_usage_queue: HashSet<ByAddress<LockContext>>,
 }
 
 impl CounterWithStatus {
-    fn new(pending_usage_queue: HashSet<ByAddress<UsageQueue>>) -> Self {
+    fn new(pending_usage_queue: HashSet<ByAddress<LockContext>>) -> Self {
         Self {
             status: TaskStatus::default(),
             count: u32::default(),
@@ -1383,15 +1383,16 @@ impl SchedulingStateMachine {
             .enumerate()
             .map(|(index, address)| {
                 let usage_queue = usage_queue_loader(*address);
-                pending_usage_queue.insert(ByAddress(usage_queue.clone()));
-                LockContext::new(
+                let lc = LockContext::new(
                     usage_queue,
                     if transaction.message().is_writable(index) {
                         RequestedUsage::Writable
                     } else {
                         RequestedUsage::Readonly
                     },
-                ).into()
+                );
+                pending_usage_queue.insert(ByAddress(lc.clone()));
+                lc.into()
             })
             .collect();
 
