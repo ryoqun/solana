@@ -1096,7 +1096,7 @@ impl SchedulingStateMachine {
         let mut blocked_usage_count = ShortCounter::zero();
 
         for context in new_task.lock_contexts() {
-            context.map_ref(|context| {
+            context.borrow().map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
