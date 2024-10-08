@@ -952,10 +952,10 @@ impl SchedulingStateMachine {
             }
         }
         match self.mode() {
-            SchedulingMode::BlockVerification {
+            SchedulingMode::BlockVerification => {
                 false
             },
-            SchedulingMode::BlockProduction {
+            SchedulingMode::BlockProduction => {
                 false
             },
         }
