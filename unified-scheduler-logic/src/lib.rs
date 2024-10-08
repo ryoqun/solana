@@ -1047,6 +1047,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
+                dbg!(self.alive_tasks.len());
                 for task in self.alive_tasks.iter() {
                     /*
                     for context in task.lock_contexts() {
