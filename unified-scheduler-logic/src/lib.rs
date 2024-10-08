@@ -656,7 +656,7 @@ const_assert_eq!(mem::size_of::<Compact<LockContext>>(), 8);
 
 impl std::ops::Deref for LockContext {
     type Target = TokenCell<UsageQueueInner>;
-    fn deref(&self) -> &<Self as std::ops::Deref>::Target { &*self }
+    fn deref(&self) -> &<Self as std::ops::Deref>::Target { self.usage_queue() }
 }
 
 impl LockContext {
