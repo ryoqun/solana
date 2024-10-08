@@ -830,7 +830,7 @@ impl UsageQueueInner {
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(count)) => match unlocked_task_context {
-                LockContext::Readonly(_) => {
+                LockContext::Readonly(_) | LockContext::Readonly2(_) => {
                     count.decrement_self();
                     // todo test this for unbounded growth of inifnite readable only locks....
                     //dbg!(self.current_readonly_tasks.len());
