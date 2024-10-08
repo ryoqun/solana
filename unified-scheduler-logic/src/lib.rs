@@ -471,12 +471,12 @@ impl TaskStatus {
     }
 }
 
-use bitfield_struct::bitfield;
-#[bitfield(u32)]
+//use bitfield_struct::bitfield;
+//#[bitfield(u32)]
 struct CounterWithStatus {
-    #[bits(2)]
+    //#[bits(2)]
     status: TaskStatus,
-    #[bits(30)]
+    //#[bits(30)]
     count: u32,
 }
 
