@@ -691,11 +691,11 @@ impl LockContext {
         }
     }
 
-    fn is_lockable(
+    fn is_force_lockable(
         &self,
         usage_queue_token: &mut UsageQueueToken,
     ) -> bool {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.is_lockable(self.requested_usage2()) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.is_force_lockable(self.requested_usage2()) })
     }
 
     fn increment_executing_count(
@@ -877,7 +877,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn is_lockable(&self, requested_usage: RequestedUsage) -> bool {
+    fn is_force_lockable(&self, requested_usage: RequestedUsage) -> bool {
         match &self.current_usage {
             None => {
                 unreachable!();
@@ -1055,7 +1055,7 @@ impl SchedulingStateMachine {
                     }
                     */
                     let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
-                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_lockable(&mut self.usage_queue_token))
+                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
                     });
                 }
                 panic!();
