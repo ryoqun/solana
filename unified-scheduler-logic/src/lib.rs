@@ -875,7 +875,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => false,
             },
-            Some(Usage::Writable(_current_task)) => false,
+            Some(Usage::Writable(current_task)) => current_task.is_buffered(),
         }
     }
 
