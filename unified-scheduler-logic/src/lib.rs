@@ -1340,6 +1340,7 @@ impl SchedulingStateMachine {
         assert!(self.has_no_alive_task());
         assert_eq!(self.executing_task_count.current(), 0);
         assert_eq!(self.buffered_task_queue.len(), 0);
+        assert_eq!(self.alive_tasks.len(), 0);
         assert_eq!(self.blocked_task_count(), 0);
 
         self.reset_task_total();
@@ -1347,6 +1348,7 @@ impl SchedulingStateMachine {
         // nice trick to ensure all fields are handled here if new one is added.
         let Self {
             buffered_task_queue: _,
+            alive_tasks: _,
             alive_task_count,
             executing_task_count,
             max_executing_task_count: _,
