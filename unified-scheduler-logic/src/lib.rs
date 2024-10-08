@@ -475,7 +475,7 @@ impl TaskStatus {
 
 //use bitfield_struct::bitfield;
 //#[bitfield(u32)]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct CounterWithStatus {
     //#[bits(2)]
     status: TaskStatus,
@@ -485,6 +485,14 @@ struct CounterWithStatus {
 }
 
 impl CounterWithStatus {
+    fn new(pending_usage_queue: HashSet<*const TaskInner>) {
+        Self {
+            status: TaskStatus::default(),
+            count: u32::default(),
+            pending_usage_queue
+        }
+    }
+
     fn status(&self) -> TaskStatus {
         self.status
     }
