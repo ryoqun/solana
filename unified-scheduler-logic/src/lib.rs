@@ -697,7 +697,7 @@ impl LockContext {
     fn increment_executing_count(
         &self,
         usage_queue_token: &mut UsageQueueToken,
-    ) -> bool {
+    ) {
         self.with_usage_queue_mut(usage_queue_token, |u| { u.increment_executing_count(self.requested_usage2()) })
     }
 
