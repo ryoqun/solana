@@ -1149,7 +1149,6 @@ impl SchedulingStateMachine {
 
         for context in new_task.lock_contexts() {
             context.map_ref(|context| {
-            let u = context.usage_queue();
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
@@ -1160,7 +1159,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                        c.pending_usage_queue.insert(ByAddress(u.clone())).then_some(()).or_else(|| panic!());
+                                        c.pending_usage_queue.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                                     });
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
@@ -1177,7 +1176,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                        c.pending_usage_queue.insert(ByAddress(u.clone())).then_some(()).or_else(|| panic!());
+                                        c.pending_usage_queue.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                                     });
                                     usage_queue.current_readonly_tasks.push(Reverse(new_task.clone()));
                                     usage_queue.insert_blocked_usage_from_task(
@@ -1237,7 +1236,7 @@ impl SchedulingStateMachine {
                                     for reblocked_task in reblocked_tasks {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                            c.pending_usage_queue.insert(ByAddress(u.clone())).then_some(()).or_else(|| panic!());
+                                            c.pending_usage_queue.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                                         });
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask::Readonly(reblocked_task),
