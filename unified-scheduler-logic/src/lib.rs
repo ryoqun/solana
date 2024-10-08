@@ -694,6 +694,13 @@ impl LockContext {
         self.with_usage_queue_mut(usage_queue_token, |u| { u.is_lockable(self.requested_usage2()) })
     }
 
+    fn increment_executing_count(
+        &self,
+        usage_queue_token: &mut UsageQueueToken,
+    ) -> bool {
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.increment_executing_count(self.requested_usage2()) })
+    }
+
     fn with_usage_queue_mut<R>(
         &self,
         usage_queue_token: &mut UsageQueueToken,
