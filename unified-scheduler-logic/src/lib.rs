@@ -966,6 +966,7 @@ impl UsageQueueInner {
 
         self.executing_count.decrement_self();
         if is_unused_now {
+            assert!(self.executing_count.is_zero());
             self.current_usage = None;
             self.blocked_usages_from_tasks
                 .pop()
