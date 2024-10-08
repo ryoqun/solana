@@ -893,20 +893,7 @@ impl UsageQueueInner {
     }
 
     fn increment_executing_count(&mut self, requested_usage: RequestedUsage) {
-        match &mut self.current_usage {
-            None => {
-                true;
-            }
-            Some(Usage::Readonly(count)) => match requested_usage {
-                RequestedUsage::Readonly => {
-                    true;
-                }
-                RequestedUsage::Writable => {},
-            },
-            Some(Usage::Writable(current_task)) => {
-                self.is_executing = true;
-            }
-        }
+        self.executing_count.increment_self();
     }
 
     #[must_use]
