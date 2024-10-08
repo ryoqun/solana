@@ -1273,7 +1273,9 @@ impl SchedulingStateMachine {
                         &buffered_task_from_queue2.task(), /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
-                            buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |_| {});
+                            buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |c| {
+                                c.pending_usage_queue.remove(3).then_some().or_else(|| panic!());
+                            });
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
                             buffered_task_from_queue =
