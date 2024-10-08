@@ -645,7 +645,7 @@ impl TaskInner {
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
-#[derive(Debug, EnumPtr)]
+#[derive(Debug, EnumPtr, Clone)]
 #[repr(C, usize)]
 enum LockContext {
     Readonly(UsageQueue),
@@ -653,6 +653,11 @@ enum LockContext {
 }
 const_assert_eq!(mem::size_of::<LockContext>(), 16);
 const_assert_eq!(mem::size_of::<Compact<LockContext>>(), 8);
+
+impl std::ops::Deref for LockContext {
+    type Target = TokenCell<UsageQueueInner>;
+    fn deref(&self) -> &<Self as std::ops::Deref>::Target { &*self.0 }
+}
 
 impl LockContext {
     fn new(usage_queue: UsageQueue, requested_usage: RequestedUsage) -> Self {
@@ -937,10 +942,12 @@ impl UsageQueueInner {
 pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
+/*
 impl std::ops::Deref for UsageQueue {
     type Target = TokenCell<UsageQueueInner>;
     fn deref(&self) -> &<Self as std::ops::Deref>::Target { &*self.0 }
 }
+*/
 
 unsafe impl enum_ptr::Aligned for UsageQueue {
     const ALIGNMENT: usize = std::mem::align_of::<TokenCell<UsageQueueInner>>();
