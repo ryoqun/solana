@@ -687,11 +687,11 @@ impl LockContext {
         }
     }
 
-    fn try_force_lock(
+    fn is_lockable(
         &self,
         usage_queue_token: &mut UsageQueueToken,
     ) -> bool {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.try_force_lock(self.requested_usage2()) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.is_lockable(self.requested_usage2()) })
     }
 
     fn with_usage_queue_mut<R>(
@@ -864,30 +864,18 @@ impl UsageQueueInner {
         }
     }
 
-    fn try_force_lock(&mut self, requested_usage: RequestedUsage) -> LockResult {
+    fn is_lockable(&mut self, requested_usage: RequestedUsage) -> LockResult {
         match &mut self.current_usage {
             None => {
-                match requested_usage {
-                    RequestedUsage::Readonly => {
-                        self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
-                        self.current_readonly_tasks.push(Reverse(task.clone()));
-                    },
-                    RequestedUsage::Writable => {
-                        self.current_usage = Some(Usage::Writable(task.clone()));
-                    },
-                }
-                Ok(())
+                true
             }
             Some(Usage::Readonly(count)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    //dbg!(&self.current_readonly_tasks.keys());
-                    self.current_readonly_tasks.push(Reverse(task.clone()));
-                    count.increment_self();
-                    Ok(())
+                    true
                 }
-                RequestedUsage::Writable => Err(()),
+                RequestedUsage::Writable => false,
             },
-            Some(Usage::Writable(_current_task)) => Err(()),
+            Some(Usage::Writable(_current_task)) => false,
         }
     }
 
@@ -1051,7 +1039,7 @@ impl SchedulingStateMachine {
                     }
                     */
                     let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
-                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.try_force_lock(&mut self.usage_queue_token))
+                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_lockable(&mut self.usage_queue_token))
                     });
                 }
                 panic!();
