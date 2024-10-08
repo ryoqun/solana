@@ -139,6 +139,10 @@ mod utils {
             self.0 == 0
         }
 
+        pub(super) fn is_one(&self) -> bool {
+            self.0 == 1
+        }
+
         pub(super) fn current(&self) -> u32 {
             self.0
         }
