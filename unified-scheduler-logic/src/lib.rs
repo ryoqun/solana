@@ -2315,12 +2315,13 @@ mod tests {
         let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
             UsageQueue::default()
         });
+        let lock_context = LockContext::new(usage_queue, RequestedUsage::Readonly);
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 let task_index = task.index();
                 usage_queue.current_usage = Some(Usage::Writable(task));
-                let _ = usage_queue.unlock(&LockContext::new(usage_queue, RequestedUsage::Readonly), task_index, &mut state_machine.count_token);
+                let _ = usage_queue.unlock(&lock_context, task_index, &mut state_machine.count_token);
             });
     }
 
