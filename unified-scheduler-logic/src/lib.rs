@@ -1060,7 +1060,7 @@ impl SchedulingStateMachine {
                     let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
                         c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
                     });
-                    dbg!(lockable);
+                    dbg!((task.index(), lockable));
                     //panic!("aaa");
                 }
                 false
