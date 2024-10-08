@@ -206,7 +206,7 @@ mod utils {
     /// time. Finally, this restriction is traded off for restoration of Rust aliasing rule at zero
     /// runtime cost.  Without this token mechanism, there's no way to realize this.
     #[derive(Debug, Default)]
-    pub(super) struct TokenCell<V>(UnsafeCell<V>);
+    pub struct TokenCell<V>(UnsafeCell<V>);
 
     impl<V> TokenCell<V> {
         /// Creates a new `TokenCell` with the `value` typed as `V`.
