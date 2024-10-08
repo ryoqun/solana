@@ -704,7 +704,7 @@ impl LockContext {
         new_task: Task,
         count_token: &mut BlockedUsageCountToken,
     ) {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), new_task, count_token) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), self.usage_queue(), new_task, count_token) })
     }
 
     fn increment_executing_count(
@@ -899,7 +899,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn force_lock(&mut self, requested_usage: RequestedUsage, new_task: Task, count_token: &mut BlockedUsageCountToken) {
+    fn force_lock(&mut self, u: &UsageQueue, requested_usage: RequestedUsage, new_task: Task, count_token: &mut BlockedUsageCountToken) {
         match &mut self.current_usage {
             None => {
                 unreachable!();
@@ -915,7 +915,7 @@ impl UsageQueueInner {
                 let reblocked_task = std::mem::replace(current_task, new_task);
                 reblocked_task.increment_blocked_usage_count(count_token);
                 reblocked_task.with_pending_mut(count_token, |c| {
-                    c.pending_lock_contexts.insert(ByAddress(LockContext::new(self.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
+                    c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
                 });
                 self.insert_blocked_usage_from_task(
                     UsageFromTask::Writable(reblocked_task),
