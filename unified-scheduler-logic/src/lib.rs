@@ -1356,7 +1356,7 @@ impl SchedulingStateMachine {
 
         Task::new(TaskInner {
             packed_task_inner: PackedTaskInner { lock_context_and_transaction: Box::new((lock_contexts, Box::new(transaction))), index},
-            blocked_usage_count: TokenCell::new(CounterWithStatus::new()),
+            blocked_usage_count: TokenCell::new(CounterWithStatus::new(pending_usage_queue)),
         })
     }
 
