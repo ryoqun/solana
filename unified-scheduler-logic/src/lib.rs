@@ -938,6 +938,11 @@ impl UsageQueueInner {
 pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
 
+impl std::ops::Deref for UsageQueue {
+    type Target = TokenCell<UsageQueueInner>;
+    fn deref(&self) -> &<Self as std::ops::Deref>::Target { &*self.0 }
+}
+
 unsafe impl enum_ptr::Aligned for UsageQueue {
     const ALIGNMENT: usize = std::mem::align_of::<TokenCell<UsageQueueInner>>();
 }
