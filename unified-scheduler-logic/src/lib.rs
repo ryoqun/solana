@@ -701,8 +701,8 @@ impl LockContext {
     fn force_lock(
         &self,
         usage_queue_token: &mut UsageQueueToken,
-        count_token: &mut BlockedUsageCountToken,
         new_task: Task,
+        count_token: &mut BlockedUsageCountToken,
     ) {
         self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), new_task, count_token) })
     }
