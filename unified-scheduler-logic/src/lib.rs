@@ -485,6 +485,10 @@ impl CounterWithStatus {
     fn status(&self) -> &TaskStatus {
         &self.status
     }
+
+    fn set_status(&mut self, status: TaskStatus) {
+        self.status = status
+    }
 }
 
 #[repr(C, packed)]
