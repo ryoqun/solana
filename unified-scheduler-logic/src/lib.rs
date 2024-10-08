@@ -483,7 +483,7 @@ struct CounterWithStatus {
 #[repr(C, packed)]
 struct PackedTaskInner {
     index: Index,
-    lock_context_and_transaction: Box<(Vec<Compact<LockContext>>, Box<SanitizedTransaction>)>,
+    lock_context_and_transaction: Box<(Vec<Cell<Compact<LockContext>>>, Box<SanitizedTransaction>)>,
 }
 const_assert_eq!(mem::size_of::<PackedTaskInner>(), 24);
 
