@@ -2340,7 +2340,7 @@ mod tests {
                 .map(|t| t.task_index()),
             None
         );
-        assert!(!state_machine.has_buffered_task());
+        assert!(state_machine.has_buffered_task());
     }
 
     #[test]
