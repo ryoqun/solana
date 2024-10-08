@@ -958,7 +958,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
-                for task in self.alive_tasks.keys() {
+                for task in self.alive_tasks.range(..) {
                 }
                 panic!();
             },
