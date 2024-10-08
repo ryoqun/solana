@@ -1060,7 +1060,7 @@ impl SchedulingStateMachine {
         task.mark_as_unlocked(&mut self.count_token);
         self.executing_task_count.decrement_self();
         self.alive_task_count.decrement_self();
-        self.alive_tasks.remove(task);
+        assert!(self.alive_tasks.remove(task));
         self.executed_task_total.increment_self();
         self.unlock_usage_queues(task);
     }
