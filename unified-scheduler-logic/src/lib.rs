@@ -864,7 +864,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn is_lockable(&mut self, requested_usage: RequestedUsage) -> LockResult {
+    fn is_lockable(&mut self, requested_usage: RequestedUsage) -> bool {
         match &mut self.current_usage {
             None => {
                 true
