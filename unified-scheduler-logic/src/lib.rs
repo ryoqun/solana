@@ -956,7 +956,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
-                false
+                panic!();
             },
         }
     }
