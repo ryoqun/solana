@@ -1047,8 +1047,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
-                dbg!(self.alive_tasks.len());
-                for task in self.alive_tasks.iter() {
+                for task in self.alive_tasks.range(..) {
                     /*
                     for context in task.lock_contexts() {
                         context.map_ref(|context| {
@@ -1059,9 +1058,8 @@ impl SchedulingStateMachine {
                         c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
                     });
                     dbg!(lockable);
-                    panic!("aaa");
+                    //panic!("aaa");
                 }
-                panic!();
             },
         }
     }
