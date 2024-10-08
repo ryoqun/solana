@@ -1058,10 +1058,15 @@ impl SchedulingStateMachine {
                         });
                     }
                     */
-                    let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
+                    let force_lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
                         c.pending_lock_contexts.iter().all(|pending_lock_context| pending_lock_context.is_force_lockable(&mut self.usage_queue_token))
                     });
-                    dbg!((task.index(), lockable));
+                    if force_lockable {
+                        task.with_pending_mut(&mut self.count_token, |c| {
+                            c.pending_lock_contexts.drain().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token))
+                        })
+                    }
+                    //dbg!((task.index(), lockable));
                     //panic!("aaa");
                 }
                 false
