@@ -493,7 +493,7 @@ impl std::fmt::Debug for PackedTaskInner {
         let index = self.index;
         f.debug_struct("PackedTaskInner")
             .field("index", &index)
-            .field("lock_contexts", &self.lock_context_and_transaction.0)
+            //.field("lock_contexts", &self.lock_context_and_transaction.0)
             .field("transaction", &self.lock_context_and_transaction.1)
             .finish()
     }
