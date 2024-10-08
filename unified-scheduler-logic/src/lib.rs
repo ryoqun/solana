@@ -629,6 +629,8 @@ impl LockContext {
         match self {
             Self::Readonly(_) => RequestedUsage::Readonly,
             Self::Writable(_) => RequestedUsage::Writable,
+            Self::Readonly2(_) => RequestedUsage::Readonly,
+            Self::Writable2(_) => RequestedUsage::Writable,
         }
     }
 
@@ -636,6 +638,8 @@ impl LockContext {
         match self {
             Self::Readonly(_) => UsageFromTask::Readonly(task),
             Self::Writable(_) => UsageFromTask::Writable(task),
+            Self::Readonly2(_) => UsageFromTask::Readonly(task),
+            Self::Writable2(_) => UsageFromTask::Writable(task),
         }
     }
 
