@@ -1274,7 +1274,7 @@ impl SchedulingStateMachine {
                     ) {
                         LockResult::Ok(()) => {
                             buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |c| {
-                                c.pending_usage_queue.remove(3).then_some().or_else(|| panic!());
+                                c.pending_usage_queue.remove(3).then_some(()).or_else(|| panic!());
                             });
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
