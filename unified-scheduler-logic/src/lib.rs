@@ -690,7 +690,6 @@ impl LockContext {
     fn is_lockable(
         &self,
         usage_queue_token: &mut UsageQueueToken,
-        count_oken: &mut Token<CounterWithStatus>,
     ) -> bool {
         self.with_usage_queue_mut(usage_queue_token, |u| { u.is_lockable(self.requested_usage2()) })
     }
@@ -731,6 +730,7 @@ use dary_heap::PeekMut;
 #[derive(Debug)]
 pub struct UsageQueueInner {
     current_usage: Option<Usage>,
+    is_executing: bool,
     current_readonly_tasks:  dary_heap::OctonaryHeap<Reverse<Task>>,
     blocked_usages_from_tasks:  dary_heap::OctonaryHeap<Compact<UsageFromTask>>,
 }
@@ -876,7 +876,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => false,
             },
-            Some(Usage::Writable(current_task)) => current_task.is_buffered(),
+            Some(Usage::Writable(current_task)) => false,
         }
     }
 
@@ -1040,7 +1040,7 @@ impl SchedulingStateMachine {
                     }
                     */
                     let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
-                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_lockable(&mut self.usage_queue_token, &mut self.count_token))
+                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_lockable(&mut self.usage_queue_token))
                     });
                 }
                 panic!();
