@@ -1268,7 +1268,7 @@ impl SchedulingStateMachine {
                     usage_queue.insert_blocked_usage_from_task(usage_from_task.into());
                 } else {
                     new_task.with_pending_mut(&mut self.count_token, |c| {
-                        c.pending_usage_queue.remove(ByAddress::from_ref(u)).then_some(()).or_else(|| panic!());
+                        c.pending_usage_queue.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
                     });
                 }
             });
