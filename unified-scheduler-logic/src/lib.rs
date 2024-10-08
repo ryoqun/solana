@@ -951,7 +951,14 @@ impl SchedulingStateMachine {
                 return true;
             }
         }
-        false
+        match self.mode() {
+            SchedulingMode::BlockVerification {
+                false
+            },
+            SchedulingMode::BlockProduction {
+                false
+            },
+        }
     }
 
     pub fn has_runnable_task(&mut self) -> bool {
