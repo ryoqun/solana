@@ -906,6 +906,7 @@ unsafe impl enum_ptr::Aligned for UsageQueue {
 #[derive(Debug)]
 pub struct SchedulingStateMachine {
     buffered_task_queue:  dary_heap::OctonaryHeap<Task>,
+    alive_tasks: BTreeSet<Task>,
     alive_task_count: ShortCounter,
     executing_task_count: ShortCounter,
     max_executing_task_count: u32,
@@ -2349,9 +2350,9 @@ mod tests {
         );
         // now
         // addr1: task1 |
-        // addr2: task1 | task2
-        // addr3:       | task2, task3
-        // addr4:       |        task3
+        // addr2: task1 | task2, task3, task4, task5, task6, task7, task8,      , task10
+        // addr3:       | task2, task3, task4, task5, task6, task7, task8, task9,       , task11
+        // addr4:       |               task4, task5, task6, task7, task8, task9, task10
         assert!(state_machine.has_buffered_task());
     }
 
