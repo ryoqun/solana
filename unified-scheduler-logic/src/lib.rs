@@ -1048,6 +1048,9 @@ impl SchedulingStateMachine {
             },
             SchedulingMode::BlockProduction => {
                 for task in self.alive_tasks.range(..) {
+                    if !task.is_buffered() {
+                        continue;
+                    }
                     /*
                     for context in task.lock_contexts() {
                         context.map_ref(|context| {
