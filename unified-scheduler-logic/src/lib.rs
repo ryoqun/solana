@@ -1224,6 +1224,9 @@ impl SchedulingStateMachine {
                                     };
                                     for reblocked_task in reblocked_tasks {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
+                                        reblocked_task.with_pending_mut(&mut self.count_token, |c| {
+                                            c.pending_usage_queue.insert(ByAddress(u.clone())).then_some(()).or_else(|| panic!());
+                                        });
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask::Readonly(reblocked_task),
                                         );
