@@ -240,7 +240,7 @@ mod utils {
         }
 
         fn as_ptr(this: &Self) -> *const V {
-            &this.0.get()
+            this.0.get()
         }
     }
 
