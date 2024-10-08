@@ -528,7 +528,7 @@ impl TaskInner {
         self.packed_task_inner.index
     }
 
-    fn lock_contexts(&self) -> &[Compact<LockContext>] {
+    fn lock_contexts(&self) -> &[Cell<Compact<LockContext>>] {
         &self.packed_task_inner.lock_context_and_transaction.0
     }
 
