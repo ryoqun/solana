@@ -486,6 +486,10 @@ impl CounterWithStatus {
         self.status
     }
 
+    fn set_count(&mut self, count: u32) {
+        self.count = count
+    }
+
     fn count(&self) -> u32 {
         self.count
     }
