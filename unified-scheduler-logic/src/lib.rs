@@ -1030,6 +1030,7 @@ impl SchedulingStateMachine {
     }
 
     pub fn has_buffered_task(&mut self) -> bool {
+        dbg!("has");
         while let Some(task) = self.buffered_task_queue.peek_mut() {
             let status = task.status(&mut self.count_token);
             if task.has_blocked_usage(&mut self.count_token) {
