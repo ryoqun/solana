@@ -107,7 +107,7 @@ use {
     },
 };
 use std::collections::BTreeSet;
-use std::cell::Cell;
+use std::cell::RefCell;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
@@ -484,7 +484,7 @@ struct CounterWithStatus {
 #[repr(C, packed)]
 struct PackedTaskInner {
     index: Index,
-    lock_context_and_transaction: Box<(Vec<Cell<Compact<LockContext>>>, Box<SanitizedTransaction>)>,
+    lock_context_and_transaction: Box<(Vec<RefCell<Compact<LockContext>>>, Box<SanitizedTransaction>)>,
 }
 const_assert_eq!(mem::size_of::<PackedTaskInner>(), 24);
 
@@ -511,7 +511,7 @@ pub struct TaskInner {
 
 struct RcInnerDemo {
   data: TaskInner,
-  counter: std::cell::Cell<u32>,
+  counter: std::cell::RefCell<u32>,
 }
 const_assert_eq!(mem::size_of::<RcInnerDemo>(), 32);
 
@@ -528,7 +528,7 @@ impl TaskInner {
         self.packed_task_inner.index
     }
 
-    fn lock_contexts(&self) -> &[Cell<Compact<LockContext>>] {
+    fn lock_contexts(&self) -> &[RefCell<Compact<LockContext>>] {
         &self.packed_task_inner.lock_context_and_transaction.0
     }
 
