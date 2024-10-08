@@ -690,6 +690,7 @@ impl LockContext {
     fn is_lockable(
         &self,
         usage_queue_token: &mut UsageQueueToken,
+        count_oken: &mut Token<CounterWithStatus>,
     ) -> bool {
         self.with_usage_queue_mut(usage_queue_token, |u| { u.is_lockable(self.requested_usage2()) })
     }
