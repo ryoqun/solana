@@ -1288,7 +1288,6 @@ impl SchedulingStateMachine {
     fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
             context.map_ref(|context| {
-            let u = context.usage_queue();
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut buffered_task_from_queue =
                     usage_queue.unlock(context, task.index(), &mut self.count_token);
@@ -1314,7 +1313,7 @@ impl SchedulingStateMachine {
                     ) {
                         LockResult::Ok(()) => {
                             buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |c| {
-                                c.pending_usage_queue.remove(ByAddress::from_ref(u)).then_some(()).or_else(|| panic!());
+                                c.pending_usage_queue.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
                             });
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
