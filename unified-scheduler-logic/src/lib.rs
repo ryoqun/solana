@@ -880,15 +880,13 @@ impl UsageQueueInner {
     fn is_lockable(&mut self, requested_usage: RequestedUsage) -> bool {
         match &mut self.current_usage {
             None => {
-                true
+                unreachable!();
             }
-            Some(Usage::Readonly(count)) => match requested_usage {
-                RequestedUsage::Readonly => {
-                    true
-                }
-                RequestedUsage::Writable => false,
+            Some(Usage::Readonly(_count)) => match requested_usage {
+                RequestedUsage::Readonly => true 
+                RequestedUsage::Writable => self.executing_count.is_zero(),
             },
-            Some(Usage::Writable(current_task)) => false,
+            Some(Usage::Writable(_current_task)) => self.executing_count.is_zero(),
         }
     }
 
