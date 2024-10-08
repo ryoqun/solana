@@ -905,7 +905,7 @@ impl UsageQueueInner {
             }
             Some(Usage::Readonly(count)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    self.current_readonly_tasks.push(Reverse(new_task.clone()));
+                    self.current_readonly_tasks.push(Reverse(new_task));
                     count.increment_self();
                 }
                 RequestedUsage::Writable => panic!(),
