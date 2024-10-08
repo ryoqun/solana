@@ -1137,6 +1137,7 @@ impl SchedulingStateMachine {
 
         for context in new_task.lock_contexts() {
             context.map_ref(|context| {
+            let u = context.usage_queue();
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
@@ -1244,6 +1245,10 @@ impl SchedulingStateMachine {
                     blocked_usage_count.increment_self();
                     let usage_from_task = context.usage_from_task(new_task.clone());
                     usage_queue.insert_blocked_usage_from_task(usage_from_task.into());
+                } else {
+                    new_task.with_pending_mut(&mut self.count_token, |c| {
+                        c.pending_usage_queue.remove(ByAddress::from_ref(u)).then_some(()).or_else(|| panic!());
+                    });
                 }
             });
             });
