@@ -1048,7 +1048,7 @@ impl SchedulingStateMachine {
                 false
             },
             SchedulingMode::BlockProduction => {
-                for task in self.alive_tasks.range(..) {
+                for task in self.alive_tasks.iter(..) {
                     /*
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
