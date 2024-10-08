@@ -717,7 +717,7 @@ use dary_heap::PeekMut;
 /// [`Task`]s are blocked to be executed after the current task is notified to be finished via
 /// [`::deschedule_task`](`SchedulingStateMachine::deschedule_task`)
 #[derive(Debug)]
-struct UsageQueueInner {
+pub struct UsageQueueInner {
     current_usage: Option<Usage>,
     current_readonly_tasks:  dary_heap::OctonaryHeap<Reverse<Task>>,
     blocked_usages_from_tasks:  dary_heap::OctonaryHeap<Compact<UsageFromTask>>,
