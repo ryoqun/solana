@@ -473,6 +473,7 @@ impl TaskStatus {
 
 //use bitfield_struct::bitfield;
 //#[bitfield(u32)]
+#[derive(Debug)]
 struct CounterWithStatus {
     //#[bits(2)]
     status: TaskStatus,
