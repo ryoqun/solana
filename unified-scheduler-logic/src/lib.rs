@@ -481,6 +481,12 @@ struct CounterWithStatus {
     count: u32,
 }
 
+impl CounterWithStatus {
+    fn status() -> &TaskStatus {
+        &self.status
+    }
+}
+
 #[repr(C, packed)]
 struct PackedTaskInner {
     index: Index,
