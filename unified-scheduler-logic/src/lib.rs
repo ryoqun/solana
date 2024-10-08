@@ -877,8 +877,8 @@ impl UsageQueueInner {
         }
     }
 
-    fn is_lockable(&mut self, requested_usage: RequestedUsage) -> bool {
-        match &mut self.current_usage {
+    fn is_lockable(&self, requested_usage: RequestedUsage) -> bool {
+        match &self.current_usage {
             None => {
                 unreachable!();
             }
