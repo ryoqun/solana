@@ -1004,10 +1004,15 @@ impl SchedulingStateMachine {
             },
             SchedulingMode::BlockProduction => {
                 for task in self.alive_tasks.range(..) {
+                    /*
                     for context in task.lock_contexts() {
                         context.map_ref(|context| {
                         });
                     }
+                    */
+                    task.with_pending_mut(&mut self.count_token, |c| {
+                        true
+                    });
                 }
                 panic!();
             },
