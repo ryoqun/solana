@@ -107,6 +107,7 @@ use {
     },
 };
 use std::collections::BTreeSet;
+use std::cell::Cell;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
