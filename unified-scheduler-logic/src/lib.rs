@@ -1097,6 +1097,10 @@ impl SchedulingStateMachine {
     /// Note that this function takes ownership of the task to allow for future optimizations.
     #[must_use]
     pub fn schedule_task(&mut self, task: Task) -> Option<Task> {
+        self.do_schedule_task(task)
+    }
+
+    pub fn do_schedule_task(&mut self, task: Task) -> Option<Task> {
         self.task_total.increment_self();
         self.alive_task_count.increment_self();
         self.alive_tasks.insert(task.clone()).then_some(()).or_else(|| panic!());
