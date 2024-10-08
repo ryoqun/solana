@@ -737,7 +737,7 @@ use dary_heap::PeekMut;
 #[derive(Debug)]
 pub struct UsageQueueInner {
     current_usage: Option<Usage>,
-    is_executing: bool,
+    executing_count: ShortCounter,
     current_readonly_tasks:  dary_heap::OctonaryHeap<Reverse<Task>>,
     blocked_usages_from_tasks:  dary_heap::OctonaryHeap<Compact<UsageFromTask>>,
 }
