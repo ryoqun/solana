@@ -1221,7 +1221,7 @@ impl SchedulingStateMachine {
 
     fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
-            let context_mut = context.borrow_mut()
+            let context_mut = context.borrow_mut();
             context_mut.map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut buffered_task_from_queue =
