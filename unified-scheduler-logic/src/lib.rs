@@ -897,14 +897,14 @@ impl UsageQueueInner {
         }
     }
 
-    fn force_lock(&mut self, requested_usage: RequestedUsage) {
+    fn force_lock(&mut self, requested_usage: RequestedUsage, new_task: Task) {
         match &mut self.current_usage {
             None => {
                 unreachable!();
             }
             Some(Usage::Readonly(count)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    self.current_readonly_tasks.push(Reverse(task.clone()));
+                    self.current_readonly_tasks.push(Reverse(new_task.clone()));
                     count.increment_self();
                 }
                 RequestedUsage::Writable => panic!(),
