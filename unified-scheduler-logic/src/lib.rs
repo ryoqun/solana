@@ -2318,6 +2318,25 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test2()
         };
+
+        assert_matches!(
+            state_machine
+                .schedule_task(task1.clone())
+                .map(|t| t.task_index()),
+            Some(101)
+        );
+        assert_matches!(
+            state_machine
+                .schedule_task(task2.clone())
+                .map(|t| t.task_index()),
+            None
+        );
+        assert_matches!(
+            state_machine
+                .schedule_task(task3.clone())
+                .map(|t| t.task_index()),
+            None
+        );
     }
 
     #[test]
