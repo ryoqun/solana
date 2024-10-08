@@ -1068,6 +1068,7 @@ impl SchedulingStateMachine {
             if self.is_task_runnable() {
                 self.executing_task_count.increment_self();
                 task.with_pending_mut(&mut self.count_token, |c| {
+                    assert_eq!(c.count, c.pending_usage_queue.len());
                     assert!(c.pending_usage_queue.is_empty());
                 });
                 task.mark_as_executed(&mut self.count_token);
