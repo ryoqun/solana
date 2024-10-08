@@ -482,7 +482,7 @@ struct CounterWithStatus {
 }
 
 impl CounterWithStatus {
-    fn status() -> &TaskStatus {
+    fn status(&self) -> &TaskStatus {
         &self.status
     }
 }
