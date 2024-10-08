@@ -910,7 +910,7 @@ impl UsageQueueInner {
                 }
                 RequestedUsage::Writable => panic!(),
             },
-            Some(Usage::Writable(current_task)) => { current_task = new_task },
+            Some(Usage::Writable(current_task)) => { *current_task = new_task },
         }
     }
 
