@@ -2340,7 +2340,7 @@ mod tests {
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
                 let task_index = task.index();
                 usage_queue.current_usage = Some(Usage::Readonly(ShortCounter::one()));
-                let _ = usage_queue.unlock(&LockContext:new(UsageQueue::default(), RequestedUsage::Writable), task_index, &mut state_machine.count_token);
+                let _ = usage_queue.unlock(&LockContext::new(UsageQueue::default(), RequestedUsage::Writable), task_index, &mut state_machine.count_token);
             });
     }
 }
