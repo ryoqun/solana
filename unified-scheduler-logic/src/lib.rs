@@ -1099,7 +1099,7 @@ impl SchedulingStateMachine {
                         let p = task.with_pending_mut(&mut self.count_token, |c| {
                             std::mem::take(&mut c.pending_lock_contexts)
                         });
-                        p.afor_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone()));
+                        p.for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone()));
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
