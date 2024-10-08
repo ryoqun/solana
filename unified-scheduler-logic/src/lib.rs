@@ -2347,6 +2347,11 @@ mod tests {
                 .map(|t| t.task_index()),
             None
         );
+        // now
+        // addr1: task1 |
+        // addr2: task1 | task2
+        // addr3:       | task2, task3
+        // addr4:       |        task3
         assert!(state_machine.has_buffered_task());
     }
 
