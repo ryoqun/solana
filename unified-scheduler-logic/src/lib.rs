@@ -238,6 +238,10 @@ mod utils {
         ) -> R {
             f(unsafe { &mut *self.0.get() })
         }
+
+        fn as_ptr(this: &Self) -> *const V {
+            &this.0
+        }
     }
 
     // Safety: Once after a (`Send`-able) `TokenCell` is transferred to a thread from other
