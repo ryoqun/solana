@@ -919,7 +919,7 @@ impl UsageQueueInner {
                     c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                 });
                 */
-                usage_queue.insert_blocked_usage_from_task(
+                self.insert_blocked_usage_from_task(
                     UsageFromTask::Writable(reblocked_task),
                 );
                 //self.reblocked_lock_total.increment_self();
