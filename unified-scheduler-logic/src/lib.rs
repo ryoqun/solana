@@ -2301,6 +2301,19 @@ mod tests {
         let conflicting_address1 = Pubkey::new_unique();
         let conflicting_address2 = Pubkey::new_unique();
         let conflicting_address3 = Pubkey::new_unique();
+        let conflicting_address4 = Pubkey::new_unique();
+
+        let sanitized1 =
+            transaction_with_writable_address2(conflicting_address1, conflicting_address2);
+        let sanitized2 =
+            transaction_with_writable_address2(conflicting_address2, conflicting_address3);
+        let sanitized3 =
+            transaction_with_writable_address2(conflicting_address3, conflicting_address4);
+        let usage_queues = Rc::new(RefCell::new(HashMap::new()));
+        let address_loader = &mut create_address_loader(Some(usage_queues.clone()));
+        let task1 = SchedulingStateMachine::create_task(sanitized1, 101, address_loader);
+        let task2 = SchedulingStateMachine::create_task(sanitized2, 102, address_loader);
+        let task3 = SchedulingStateMachine::create_task(sanitized3, 103, address_loader);
 
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test2()
