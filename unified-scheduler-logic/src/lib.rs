@@ -687,6 +687,13 @@ impl LockContext {
         }
     }
 
+    fn try_force_lock(
+        &self,
+        usage_queue_token: &mut UsageQueueToken,
+    ) {
+        self.with_usage_queue_mut(usage_queue_token, |_| {});
+    }
+
     fn with_usage_queue_mut<R>(
         &self,
         usage_queue_token: &mut UsageQueueToken,
