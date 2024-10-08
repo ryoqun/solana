@@ -490,15 +490,15 @@ struct CounterWithStatus {
     status: TaskStatus,
     //#[bits(30)]
     count: u32,
-    pending_usage_queue: HashSet<ByAddress<LockContext>>,
+    pending_lock_contexts: HashSet<ByAddress<LockContext>>,
 }
 
 impl CounterWithStatus {
-    fn new(pending_usage_queue: HashSet<ByAddress<LockContext>>) -> Self {
+    fn new(pending_lock_contexts: HashSet<ByAddress<LockContext>>) -> Self {
         Self {
             status: TaskStatus::default(),
             count: u32::default(),
-            pending_usage_queue
+            pending_lock_contexts
         }
     }
 
@@ -1059,7 +1059,7 @@ impl SchedulingStateMachine {
                     }
                     */
                     let lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
-                        c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
+                        c.pending_lock_contexts.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
                     });
                     dbg!((task.index(), lockable));
                     //panic!("aaa");
@@ -1127,8 +1127,8 @@ impl SchedulingStateMachine {
             if self.is_task_runnable() && !force_buffer_mode {
                 self.executing_task_count.increment_self();
                 task.with_pending_mut(&mut self.count_token, |c| {
-                    assert_eq!(c.count as usize, c.pending_usage_queue.len());
-                    assert!(c.pending_usage_queue.is_empty());
+                    assert_eq!(c.count as usize, c.pending_lock_contexts.len());
+                    assert!(c.pending_lock_contexts.is_empty());
                 });
                 task.mark_as_executed(&mut self.count_token);
                 for context in task.lock_contexts() {
@@ -1220,7 +1220,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                        c.pending_usage_queue.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
+                                        c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                                     });
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
@@ -1237,7 +1237,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                        c.pending_usage_queue.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
+                                        c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                                     });
                                     usage_queue.current_readonly_tasks.push(Reverse(new_task.clone()));
                                     usage_queue.insert_blocked_usage_from_task(
@@ -1297,7 +1297,7 @@ impl SchedulingStateMachine {
                                     for reblocked_task in reblocked_tasks {
                                         reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                         reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                            c.pending_usage_queue.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
+                                            c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
                                         });
                                         usage_queue.insert_blocked_usage_from_task(
                                             UsageFromTask::Readonly(reblocked_task),
@@ -1328,7 +1328,7 @@ impl SchedulingStateMachine {
                     usage_queue.insert_blocked_usage_from_task(usage_from_task.into());
                 } else {
                     new_task.with_pending_mut(&mut self.count_token, |c| {
-                        c.pending_usage_queue.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
+                        c.pending_lock_contexts.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
                     });
                 }
             });
@@ -1373,7 +1373,7 @@ impl SchedulingStateMachine {
                     ) {
                         LockResult::Ok(()) => {
                             buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |c| {
-                                c.pending_usage_queue.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
+                                c.pending_lock_contexts.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
                             });
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
@@ -1441,7 +1441,7 @@ impl SchedulingStateMachine {
         // `Bank::prepare_unlocked_batch_from_single_tx()` as well.
         // This redundancy is known. It was just left as-is out of abundance
         // of caution.
-        let mut pending_usage_queue = HashSet::new();
+        let mut pending_lock_contexts = HashSet::new();
         let lock_contexts = transaction
             .message()
             .account_keys()
@@ -1457,14 +1457,14 @@ impl SchedulingStateMachine {
                         RequestedUsage::Readonly
                     },
                 );
-                pending_usage_queue.insert(ByAddress(lc.clone()));
+                pending_lock_contexts.insert(ByAddress(lc.clone()));
                 lc.into()
             })
             .collect();
 
         Task::new(TaskInner {
             packed_task_inner: PackedTaskInner { lock_context_and_transaction: Box::new((lock_contexts, Box::new(transaction))), index},
-            blocked_usage_count: TokenCell::new(CounterWithStatus::new(pending_usage_queue)),
+            blocked_usage_count: TokenCell::new(CounterWithStatus::new(pending_lock_contexts)),
         })
     }
 
