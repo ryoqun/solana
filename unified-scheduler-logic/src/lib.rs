@@ -913,7 +913,7 @@ impl UsageQueueInner {
             },
             Some(Usage::Writable(current_task)) => { 
                 let reblocked_task = std::mem::replace(current_task, new_task);
-                reblocked_task.increment_blocked_usage_count(&mut count_token);
+                reblocked_task.increment_blocked_usage_count(count_token);
                 /*
                 reblocked_task.with_pending_mut(&mut self.count_token, |c| {
                     c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
