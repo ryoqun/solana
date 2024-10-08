@@ -106,6 +106,7 @@ use {
         sync::Arc,
     },
 };
+use std::collections::BTreeSet;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
