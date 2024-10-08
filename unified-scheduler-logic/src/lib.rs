@@ -1147,12 +1147,12 @@ impl SchedulingStateMachine {
                                     let old_usage = std::mem::replace(current_usage, Usage::Writable(new_task.clone()));
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
-                                    usage_queue.insert_blocked_usage_from_task(
-                                        UsageFromTask::Writable(reblocked_task),
-                                    );
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
                                         c.pending_usage_queue.insert(ByAddress(u.clone())).then_some(()).or_else(|| panic!());
                                     });
+                                    usage_queue.insert_blocked_usage_from_task(
+                                        UsageFromTask::Writable(reblocked_task),
+                                    );
                                     self.reblocked_lock_total.increment_self();
                                     Some(Ok(()))
                                 } else {
