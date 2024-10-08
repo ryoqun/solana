@@ -1318,14 +1318,14 @@ impl SchedulingStateMachine {
             .iter()
             .enumerate()
             .map(|(index, address)| {
-                LockContext::new(
+                RefCell::new(LockContext::new(
                     usage_queue_loader(*address),
                     if transaction.message().is_writable(index) {
                         RequestedUsage::Writable
                     } else {
                         RequestedUsage::Readonly
                     },
-                ).into()
+                ).into())
             })
             .collect();
 
