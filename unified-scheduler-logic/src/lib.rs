@@ -903,7 +903,6 @@ impl UsageQueueInner {
         unlocked_task_index: Index,
         token: &mut BlockedUsageCountToken,
     ) -> Option<UsageFromTask> {
-        self.executing_count.decrement_self();
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(count)) => match unlocked_task_context {
@@ -932,6 +931,7 @@ impl UsageQueueInner {
             None => unreachable!(),
         }
 
+        self.executing_count.decrement_self();
         if is_unused_now {
             self.current_usage = None;
             self.blocked_usages_from_tasks
