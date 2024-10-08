@@ -1334,14 +1334,17 @@ impl SchedulingStateMachine {
         // `Bank::prepare_unlocked_batch_from_single_tx()` as well.
         // This redundancy is known. It was just left as-is out of abundance
         // of caution.
+        let mut pending_usage_queue = HashSet::new();
         let lock_contexts = transaction
             .message()
             .account_keys()
             .iter()
             .enumerate()
             .map(|(index, address)| {
+                let usage_queue = usage_queue_loader(*address);
+                pending_usage_queue.insert(usage_queue);
                 LockContext::new(
-                    usage_queue_loader(*address),
+                    usage_queue,
                     if transaction.message().is_writable(index) {
                         RequestedUsage::Writable
                     } else {
@@ -1353,7 +1356,7 @@ impl SchedulingStateMachine {
 
         Task::new(TaskInner {
             packed_task_inner: PackedTaskInner { lock_context_and_transaction: Box::new((lock_contexts, Box::new(transaction))), index},
-            blocked_usage_count: TokenCell::new(CounterWithStatus::default()),
+            blocked_usage_count: TokenCell::new(CounterWithStatus::new()),
         })
     }
 
