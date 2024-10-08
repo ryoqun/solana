@@ -1391,7 +1391,7 @@ impl SchedulingStateMachine {
     }
 
     pub unsafe fn exclusively_initialize_current_thread_for_scheduling_for_test() -> Self {
-        Self::exclusively_initialize_current_thread_for_scheduling(SchedulingMode::BlockProduction)
+        Self::exclusively_initialize_current_thread_for_scheduling(SchedulingMode::BlockVerification)
     }
 
     pub unsafe fn exclusively_initialize_current_thread_for_scheduling_for_test2() -> Self {
