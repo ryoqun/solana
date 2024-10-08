@@ -842,7 +842,7 @@ impl UsageQueueInner {
             },
             Some(Usage::Writable(blocking_task)) => {
                 let blocking_task_index = blocking_task.index();
-                assert_matches!((unlocked_task_index, unlocked_task_context), (blocking_task_index, LockContext::Writable(_)));
+                assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2()), (blocking_task_index, RequestedUsage::Writable));
                 is_unused_now = true;
             },
             None => unreachable!(),
