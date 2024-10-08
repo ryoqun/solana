@@ -701,8 +701,9 @@ impl LockContext {
     fn force_lock(
         &self,
         usage_queue_token: &mut UsageQueueToken,
+        new_task: Task,
     ) {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2()) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.force_lock(self.requested_usage2(), new_task) })
     }
 
     fn increment_executing_count(
