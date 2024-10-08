@@ -888,6 +888,9 @@ impl UsageQueueInner {
         }
     }
 
+    fn increment_executing_count(&mut self, requested_usage: RequestedUsage) {
+    }
+
     #[must_use]
     fn unlock(
         &mut self,
