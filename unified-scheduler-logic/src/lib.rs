@@ -907,7 +907,7 @@ impl UsageQueueInner {
                     self.current_readonly_tasks.push(Reverse(task.clone()));
                     count.increment_self();
                 }
-                RequestedUsage::Writable => self.executing_count.is_zero(),
+                RequestedUsage::Writable => panic!(),
             },
             Some(Usage::Writable(current_task)) => { current_task = new_task },
         }
