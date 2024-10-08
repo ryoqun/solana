@@ -1058,6 +1058,7 @@ impl SchedulingStateMachine {
                         c.pending_usage_queue.iter().all(|usage_queue| usage_queue.is_force_lockable(&mut self.usage_queue_token))
                     });
                     dbg!(lockable);
+                    panic!("aaa");
                 }
                 panic!();
             },
