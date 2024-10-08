@@ -107,7 +107,6 @@ use {
     },
 };
 use std::collections::BTreeSet;
-use std::cell::RefCell;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
@@ -484,7 +483,7 @@ struct CounterWithStatus {
 #[repr(C, packed)]
 struct PackedTaskInner {
     index: Index,
-    lock_context_and_transaction: Box<(Vec<RefCell<Compact<LockContext>>>, Box<SanitizedTransaction>)>,
+    lock_context_and_transaction: Box<(Vec<Compact<LockContext>>, Box<SanitizedTransaction>)>,
 }
 const_assert_eq!(mem::size_of::<PackedTaskInner>(), 24);
 
@@ -493,7 +492,7 @@ impl std::fmt::Debug for PackedTaskInner {
         let index = self.index;
         f.debug_struct("PackedTaskInner")
             .field("index", &index)
-            //.field("lock_contexts", &self.lock_context_and_transaction.0)
+            .field("lock_contexts", &self.lock_context_and_transaction.0)
             .field("transaction", &self.lock_context_and_transaction.1)
             .finish()
     }
@@ -511,9 +510,9 @@ pub struct TaskInner {
 
 struct RcInnerDemo {
   data: TaskInner,
-  counter: std::cell::RefCell<u32>,
+  counter: std::cell::Cell<u32>,
 }
-//const_assert_eq!(mem::size_of::<RcInnerDemo>(), 32);
+const_assert_eq!(mem::size_of::<RcInnerDemo>(), 32);
 
 impl TaskInner {
     pub fn task_index(&self) -> Index {
@@ -528,7 +527,7 @@ impl TaskInner {
         self.packed_task_inner.index
     }
 
-    fn lock_contexts(&self) -> &[RefCell<Compact<LockContext>>] {
+    fn lock_contexts(&self) -> &[Compact<LockContext>] {
         &self.packed_task_inner.lock_context_and_transaction.0
     }
 
@@ -612,8 +611,6 @@ impl TaskInner {
 enum LockContext {
     Readonly(UsageQueue),
     Writable(UsageQueue),
-    Readonly2(UsageQueue),
-    Writable2(UsageQueue),
 }
 const_assert_eq!(mem::size_of::<LockContext>(), 16);
 const_assert_eq!(mem::size_of::<Compact<LockContext>>(), 8);
@@ -630,8 +627,6 @@ impl LockContext {
         match self {
             Self::Readonly(_) => RequestedUsage::Readonly,
             Self::Writable(_) => RequestedUsage::Writable,
-            Self::Readonly2(_) => RequestedUsage::Readonly,
-            Self::Writable2(_) => RequestedUsage::Writable,
         }
     }
 
@@ -639,15 +634,12 @@ impl LockContext {
         match self {
             Self::Readonly(_) => UsageFromTask::Readonly(task),
             Self::Writable(_) => UsageFromTask::Writable(task),
-            Self::Readonly2(_) => UsageFromTask::Readonly(task),
-            Self::Writable2(_) => UsageFromTask::Writable(task),
         }
     }
 
     fn usage_queue(&self) -> &UsageQueue {
         match self {
             Self::Readonly(u) | Self::Writable(u) => &u,
-            Self::Readonly2(u) | Self::Writable2(u) => &u,
         }
     }
 
@@ -831,7 +823,7 @@ impl UsageQueueInner {
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(count)) => match unlocked_task_context {
-                LockContext::Readonly(_) | LockContext::Readonly2(_) => {
+                LockContext::Readonly(_) => {
                     count.decrement_self();
                     // todo test this for unbounded growth of inifnite readable only locks....
                     //dbg!(self.current_readonly_tasks.len());
@@ -847,7 +839,7 @@ impl UsageQueueInner {
                     }
                     //dbg!(is_unused_now);
                 }
-                LockContext::Writable(_) | LockContext::Writable2(_) => unreachable!(),
+                LockContext::Writable(_) => unreachable!(),
             },
             Some(Usage::Writable(blocking_task)) => {
                 assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2()), (blocking_task.index(), RequestedUsage::Writable));
@@ -968,7 +960,7 @@ impl SchedulingStateMachine {
             SchedulingMode::BlockProduction => {
                 for task in self.alive_tasks.range(..) {
                     for context in task.lock_contexts() {
-                        context.borrow().map_ref(|context| {
+                        context.map_ref(|context| {
                         });
                     }
                 }
@@ -1096,7 +1088,7 @@ impl SchedulingStateMachine {
         let mut blocked_usage_count = ShortCounter::zero();
 
         for context in new_task.lock_contexts() {
-            context.borrow().map_ref(|context| {
+            context.map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
@@ -1221,8 +1213,7 @@ impl SchedulingStateMachine {
 
     fn unlock_usage_queues(&mut self, task: &Task) {
         for context in task.lock_contexts() {
-            let context_mut = context.borrow_mut();
-            context_mut.map_ref(|context| {
+            context.map_ref(|context| {
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let mut buffered_task_from_queue =
                     usage_queue.unlock(context, task.index(), &mut self.count_token);
@@ -1319,14 +1310,14 @@ impl SchedulingStateMachine {
             .iter()
             .enumerate()
             .map(|(index, address)| {
-                RefCell::new(LockContext::new(
+                LockContext::new(
                     usage_queue_loader(*address),
                     if transaction.message().is_writable(index) {
                         RequestedUsage::Writable
                     } else {
                         RequestedUsage::Readonly
                     },
-                ).into())
+                ).into()
             })
             .collect();
 
