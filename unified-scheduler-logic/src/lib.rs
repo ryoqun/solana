@@ -1087,7 +1087,7 @@ impl SchedulingStateMachine {
                     });
                     if force_lockable {
                         task.with_pending_mut(&mut self.count_token, |c| {
-                            c.pending_lock_contexts.drain().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token));
+                            c.pending_lock_contexts.drain().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone()));
                         })
                     }
                     //dbg!((task.index(), lockable));
