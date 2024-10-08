@@ -690,8 +690,8 @@ impl LockContext {
     fn try_force_lock(
         &self,
         usage_queue_token: &mut UsageQueueToken,
-    ) {
-        self.with_usage_queue_mut(usage_queue_token, |_| {});
+    ) -> bool {
+        self.with_usage_queue_mut(usage_queue_token, |_| { true })
     }
 
     fn with_usage_queue_mut<R>(
