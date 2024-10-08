@@ -108,6 +108,7 @@ use {
 };
 use std::collections::BTreeSet;
 use std::collections::HashSet;
+use by_address::ByAddress;
 
 /// Internal utilities. Namely this contains [`ShortCounter`] and [`TokenCell`].
 mod utils {
