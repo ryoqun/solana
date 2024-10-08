@@ -2303,7 +2303,7 @@ mod tests {
         let conflicting_address3 = Pubkey::new_unique();
 
         let mut state_machine = unsafe {
-            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
+            SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test2()
         };
     }
 
