@@ -1117,7 +1117,8 @@ impl SchedulingStateMachine {
                         task.force_unblock(&mut self.count_token);
                         self.blocked_task_count.decrement_self();
                         self.buffered_task_total.increment_self();
-                        self.buffered_task_queue.push(task);
+                        self.buffered_task_queue.push(task.clone());
+                        return true;
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
