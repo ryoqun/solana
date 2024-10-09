@@ -1138,6 +1138,7 @@ impl SchedulingStateMachine {
                 if !self.is_task_runnable() {
                     return;
                 }
+
                 let last_scan_task = self.last_scan_task.take();
                 let Some(highest_task) = self.alive_tasks.last() else {
                     return;
