@@ -1159,8 +1159,7 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    scan_count += 1;
-                    if scan_count == 200 || Some(task) == start_task {
+                    if Some(task) == start_task {
                         break;
                     }
                     start_task = if start_task.is_none() {
@@ -1168,6 +1167,10 @@ impl SchedulingStateMachine {
                     } else {
                         start_task
                     };
+                    scan_count += 1;
+                    if scan_count == 200 {
+                        break;
+                    }
                     dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
 
                     if !task.is_buffered(&mut self.count_token) {
