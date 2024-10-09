@@ -1441,15 +1441,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                             continue;
                                         }
                                         sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
-                                        if let Some(task) = state_machine.schedule_task(task) {
-                                            if !session_pausing {
-                                                //runnable_task_sender.send_aux_payload(task).unwrap();
-                                                runnable_task_sender.send_payload(task).unwrap();
-                                                "sc_i_task"
-                                            } else {
-                                                state_machine.rebuffer_executing_task(task);
-                                                "rebuffer"
-                                            }
+                                        if let Some(task) = state_machine.do_schedule_task(task, session_pausing) {
+                                            //runnable_task_sender.send_aux_payload(task).unwrap();
+                                            runnable_task_sender.send_payload(task).unwrap();
+                                            "sc_i_task"
                                         } else {
                                             "new_b_task"
                                         }
@@ -1516,13 +1511,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                         continue;
                                     }
                                     sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
-                                    if let Some(task) = state_machine.schedule_task(task) {
-                                        if !session_pausing {
-                                            //runnable_task_sender.send_aux_payload(task).unwrap();
-                                            runnable_task_sender.send_payload(task).unwrap();
-                                        } else {
-                                            state_machine.rebuffer_executing_task(task);
-                                        }
+                                    if let Some(task) = state_machine.schedule_task(task, session_pausing) {
+                                        //runnable_task_sender.send_aux_payload(task).unwrap();
+                                        runnable_task_sender.send_payload(task).unwrap();
                                     }
                                 }
                                 "banking"
@@ -1631,9 +1622,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     break 'nonaborted_main_loop;
                                 }
                                 Ok(NewTaskPayload::Payload(task)) if matches!(state_machine.mode(), SchedulingMode::BlockProduction) => {
-                                    if let Some(task) = state_machine.schedule_task(task) {
-                                        state_machine.rebuffer_executing_task(task);
-                                    }
+                                    assert!(state_machine.do_schedule_task(task, true).is_none());
                                     if log_interval.increment() {
                                         log_scheduler!(info, "rebuffer");
                                     } else {
@@ -1662,9 +1651,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     continue;
                                 }
                                 sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
-                                if let Some(task) = state_machine.schedule_task(task) {
-                                    state_machine.rebuffer_executing_task(task);
-                                }
+                                assert!(state_machine.do_schedule_task(task, true).is_none())
                                 if log_interval.increment() {
                                     log_scheduler!(info, "rebuffer");
                                 } else {
