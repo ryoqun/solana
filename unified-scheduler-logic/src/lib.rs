@@ -1144,7 +1144,7 @@ impl SchedulingStateMachine {
                 };
                 let mut scan_count = 200;
                 let task_iter = if let Some(t) = self.last_scan_position.take() {
-                    self.alive_tasks.range(..prev_scan_task.clone()).rev()
+                    self.alive_tasks.range(..t.clone()).rev()
                 } else {
                     self.alive_tasks.range(..=l.clone()).rev()
                 };
