@@ -1159,10 +1159,8 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    if &task == start_task.get_or_insert(task) {
-                        if scan_count > 0 {
-                            break;
-                        }
+                    if &task == start_task.get_or_insert(task) && scan_count > 0 {
+                        break;
                     }
                     scan_count += 1;
                     if scan_count == 200 {
