@@ -475,6 +475,7 @@ enum TaskStatus {
     Unlocked,
 }
 
+/*
 impl TaskStatus {
     const fn into_bits(self) -> u8 {
         self as _
@@ -487,6 +488,7 @@ impl TaskStatus {
         }
     }
 }
+*/
 
 //use bitfield_struct::bitfield;
 //#[bitfield(u32)]
