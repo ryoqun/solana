@@ -1138,15 +1138,15 @@ impl SchedulingStateMachine {
                 if !self.is_task_runnable() {
                     return;
                 }
-                let Some(l) = self.alive_tasks.last() else {
+                let Some(highest_task) = self.alive_tasks.last() else {
                     self.last_scan_task = None;
                     return;
                 };
                 let mut scanned_task_count = ShortCounter::zero();
-                let mut task_iter = if let Some(t) = self.last_scan_task.take() {
-                    self.alive_tasks.range(..t).rev()
+                let mut task_iter = if let Some(last_scan_task) = self.last_scan_task.take() {
+                    self.alive_tasks.range(..last_scan_task).rev()
                 } else {
-                    self.alive_tasks.range(..=l).rev()
+                    self.alive_tasks.range(..=highest_task).rev()
                 };
                 let mut start_task = None;
                 let mut task;
