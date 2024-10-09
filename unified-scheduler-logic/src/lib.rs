@@ -1110,7 +1110,7 @@ impl SchedulingStateMachine {
                     });
                     if force_lockable {
                         let p = task.with_pending_mut(&mut self.count_token, |c| {
-                            c.pending_lock_contexts.drain()
+                            std::mem::take(&mut c.pending_lock_contexts)
                         });
                         p.into_iter().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone(), &mut self.count_token));
                     }
