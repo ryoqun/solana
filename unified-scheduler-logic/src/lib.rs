@@ -1135,7 +1135,11 @@ impl SchedulingStateMachine {
             SchedulingMode::BlockVerification => {
             },
             SchedulingMode::BlockProduction => {
+                if !self.is_task_runnable() {
+                    return;
+                }
                 if self.alive_tasks.is_empty() {
+                    self.last_scan_position = None;
                     return;
                 }
                 let mut scan_count = 200;
