@@ -1142,7 +1142,7 @@ impl SchedulingStateMachine {
                 let mut prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| self.alive_tasks.last().cloned().unwrap());
                 let mut task_iter = self.alive_tasks.range(..prev_scan_task.clone()).rev();
                 //let mut prev_task = None;
-                let task;
+                let mut task;
 
                 //for task in self.alive_tasks.range(..).rev() {
                 loop {
