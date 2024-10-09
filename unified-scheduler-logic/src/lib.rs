@@ -1155,7 +1155,7 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    if task == prev_scan_task {
+                    if *task == prev_scan_task {
                         break;
                     }
 
