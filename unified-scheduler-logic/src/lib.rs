@@ -1622,6 +1622,7 @@ impl SchedulingStateMachine {
             count_token: _,
             usage_queue_token: _,
             scheduling_mode,
+            last_scan_position,
             // don't add ".." here
         } = self;
         alive_task_count.reset_to_zero();
@@ -1630,6 +1631,7 @@ impl SchedulingStateMachine {
         reblocked_lock_total.reset_to_zero();
         eager_lock_total.reset_to_zero();
         *scheduling_mode = mode;
+        last_scan_position = None;
     }
 
     pub fn reinitialize_for_test(&mut self) {
