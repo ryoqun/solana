@@ -442,7 +442,7 @@ impl Task {
         did_unblock.then_some(self)
     }
 
-    fn force_unblock(self, blocked_count: u32, token: &mut BlockedUsageCountToken) {
+    fn force_unblock(&self, blocked_count: u32, token: &mut BlockedUsageCountToken) {
         self
             .blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
