@@ -1153,11 +1153,11 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    if *task == prev_scan_task {
-                        break;
-                    }
                     scan_count -= 1;
                     if scan_count == 0 {
+                        break;
+                    }
+                    if *task == prev_scan_task {
                         break;
                     }
 
