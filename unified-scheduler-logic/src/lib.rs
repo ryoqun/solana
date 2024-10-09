@@ -1048,6 +1048,7 @@ impl UsageQueueInner {
                 return None;
             }
         }
+        unreachable!();
     }
 
     fn has_no_blocked_usage(&self) -> bool {
