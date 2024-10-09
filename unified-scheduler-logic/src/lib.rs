@@ -1090,6 +1090,7 @@ pub struct SchedulingStateMachine {
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
     scheduling_mode: SchedulingMode,
+    last_scan_position: Option<Task>,
 }
 
 #[cfg(test)]
