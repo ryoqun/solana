@@ -1142,7 +1142,7 @@ impl SchedulingStateMachine {
                     self.last_scan_position = None;
                     return;
                 };
-                let mut scan_count = 0;
+                let mut scanned_task_count = ShortCounter::zero();
                 let mut task_iter = if let Some(t) = self.last_scan_position.take() {
                     self.alive_tasks.range(..t).rev()
                 } else {
@@ -1159,14 +1159,14 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    if &task == start_task.get_or_insert(task) && scan_count > 0 {
+                    if &task == start_task.get_or_insert(task) && !scanned_task_count.is_zero() {
                         break;
                     }
-                    scan_count += 1;
-                    if scan_count == 200 {
+                    scanned_task_count.increment_self();
+                    if scanned_task_count.current() == 200 {
                         break;
                     }
-                    dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
+                    dbg!(("hey", scanned_task_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
 
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
