@@ -942,7 +942,6 @@ impl UsageQueueInner {
                     );
                     self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
                 },
-                },
                 RequestedUsage::Writable => {
                     let reblocked_task = std::mem::replace(current_task, new_task);
                     reblocked_task.increment_blocked_usage_count(count_token);
@@ -953,7 +952,7 @@ impl UsageQueueInner {
                         UsageFromTask::Writable(reblocked_task),
                     );
                     //self.reblocked_lock_total.increment_self();
-                }
+                },
             },
         }
     }
