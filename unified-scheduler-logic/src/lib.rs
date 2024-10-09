@@ -1568,6 +1568,7 @@ impl SchedulingStateMachine {
             buffered_task_total,
             blocked_task_count: _,
             reblocked_lock_total,
+            eager_lock_total,
             task_total: _,
             count_token: _,
             usage_queue_token: _,
@@ -1578,6 +1579,7 @@ impl SchedulingStateMachine {
         executing_task_count.reset_to_zero();
         buffered_task_total.reset_to_zero();
         reblocked_lock_total.reset_to_zero();
+        eager_lock_total.reset_to_zero();
         *scheduling_mode = mode;
     }
 
