@@ -989,11 +989,15 @@ impl UsageQueueInner {
         if is_unused_now {
             assert!(self.executing_count.is_zero());
             self.current_usage = None;
-            let t = self.blocked_usages_from_tasks
-                .pop()
-                .map(|uft| uft.into());
-            assert!(t.as_ref().map(|t: &UsageFromTask| t.task().is_buffered(token)).unwrap_or(true));
-            t
+            while let Some(peeked_task) = self.blocked_usages_from_tasks.peek_mut().map(|uft| uft.into()) {
+                if !peeked_task.is_buffered(token) {
+                    PeekMut::pop(peeked_task);
+                }
+                return peeked_task;
+            }
+            //assert!(t.as_ref().map(|t: &UsageFromTask| t.task().is_buffered(token)).unwrap_or(true));
+            //t
+            None
         } else {
             None
         }
