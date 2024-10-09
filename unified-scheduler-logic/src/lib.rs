@@ -1056,7 +1056,7 @@ pub struct SchedulingStateMachine {
     buffered_task_total: ShortCounter,
     blocked_task_count: ShortCounter,
     reblocked_lock_total: ShortCounter,
-    //eager_lock_total: ShortCounter,
+    eager_lock_total: ShortCounter,
     task_total: ShortCounter,
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
@@ -1118,6 +1118,7 @@ impl SchedulingStateMachine {
                         self.blocked_task_count.decrement_self();
                         self.buffered_task_total.increment_self();
                         self.buffered_task_queue.push(task.clone());
+                        self.eager_lock_total.increment_self();
                         return true;
                     }
                     //dbg!((task.index(), lockable));
