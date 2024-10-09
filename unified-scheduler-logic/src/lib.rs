@@ -1141,14 +1141,12 @@ impl SchedulingStateMachine {
                 let mut step_count = 200;
                 let mut prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| self.alive_tasks.last().cloned().unwrap());
                 let mut task_iter = self.alive_tasks.range(..prev_scan_task.clone()).rev();
+                let mut prev_task = None;
+                let task;
 
                 //for task in self.alive_tasks.range(..).rev() {
                 loop {
-                    step_count -= 1;
-                    if step_count == 0 {
-                        break;
-                    }
-                    let task = match task_iter.next() {
+                    task = match task_iter.next() {
                         Some(task) => task,
                         None => {
                             task_iter = self.alive_tasks.range(..).rev();
@@ -1158,10 +1156,15 @@ impl SchedulingStateMachine {
                     if *task == prev_scan_task {
                         break;
                     }
+                    step_count -= 1;
+                    if step_count == 0 {
+                        break;
+                    }
 
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
                     }
+
                     let force_lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
                         if c.pending_lock_contexts.is_empty() {
                             false
@@ -1180,7 +1183,7 @@ impl SchedulingStateMachine {
                         self.buffered_task_total.increment_self();
                         self.buffered_task_queue.push(task.clone());
                         self.eager_lock_total.increment_self();
-                        return;
+                        break;
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
