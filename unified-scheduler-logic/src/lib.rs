@@ -590,10 +590,12 @@ impl TaskInner {
             })
     }
 
-    fn increment_blocked_usage_count(&self, token: &mut BlockedUsageCountToken) {
+    fn increment_blocked_usage_count(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
-                counter_with_status.set_count(counter_with_status.count() + 1)
+                let c = counter_with_status.count();
+                counter_with_status.set_count(c + 1);
+                c == 0
             })
     }
 
