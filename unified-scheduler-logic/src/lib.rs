@@ -1162,11 +1162,7 @@ impl SchedulingStateMachine {
                     if Some(task) == start_task {
                         break;
                     }
-                    start_task = if start_task.is_none() {
-                        Some(task)
-                    } else {
-                        start_task
-                    };
+                    start_task.get_or_insert(task);
                     scan_count += 1;
                     if scan_count == 200 {
                         break;
