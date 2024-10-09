@@ -1038,7 +1038,7 @@ impl UsageQueueInner {
     #[must_use]
     fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
         while let Some(peeked_task) = self.blocked_usages_from_tasks.peek_mut() {
-            if !peeked_task.is_buffered() {
+            if !peeked_task.map_ref(|t| t.is_buffered()) {
                 PeekMut::pop(peeked_task);
                 continue;
             }
