@@ -1256,7 +1256,7 @@ impl SchedulingStateMachine {
     #[must_use]
     pub fn schedule_next_buffered_task(&mut self) -> Option<Task> {
         while let Some(task) = self.buffered_task_queue.pop() {
-            if task.has_blocked_usage(&mut self.count_token) {
+            if task.has_blocked_usage(&mut self.count_token) || !task.is_buffered(&mut self.count_token) {
                 continue;
             } else {
                 self.executing_task_count.increment_self();
