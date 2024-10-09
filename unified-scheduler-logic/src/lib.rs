@@ -1146,7 +1146,7 @@ impl SchedulingStateMachine {
                 let mut task_iter = if let Some(t) = self.last_scan_position.take() {
                     self.alive_tasks.range(..t.clone()).rev()
                 } else {
-                    self.alive_tasks.range(..=l.clone()).rev()
+                    self.alive_tasks.range(..=l).rev()
                 };
                 let mut start_task = None;
                 let mut task;
