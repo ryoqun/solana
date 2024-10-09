@@ -1013,11 +1013,11 @@ impl UsageQueueInner {
         if is_unused_now {
             assert!(self.executing_count.is_zero());
             self.current_usage = None;
-            while let Some(peeked_task) = self.blocked_usages_from_tasks.pop() {
-                if !peeked_task.map_ref(|t| t.task().is_buffered(token)) {
+            while let Some(task) = self.blocked_usages_from_tasks.pop() {
+                if !task.map_ref(|t| t.task().is_buffered(token)) {
                     continue;
                 }
-                return Some(peeked_task.into());
+                return Some(task.into());
             }
             None
         } else {
@@ -1037,6 +1037,19 @@ impl UsageQueueInner {
 
     #[must_use]
     fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
+        while let Some(peeked_task) = self.blocked_usages_from_tasks.peek_mut() {
+            if !peeked_task.is_buffered() {
+                PeekMut::pop(peeked_task);
+                continue;
+            }
+            if matches!(peeked_task.usage(), RequestedUsage::Readonly) {
+                return PeekMut::pop(peeked_task);
+            } else {
+                break
+            }
+        }
+        None
+        /*
         if matches!(
             self.blocked_usages_from_tasks
                 .peek()
@@ -1049,6 +1062,7 @@ impl UsageQueueInner {
         } else {
             None
         }
+        */
     }
 
     fn has_no_blocked_usage(&self) -> bool {
