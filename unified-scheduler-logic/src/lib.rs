@@ -633,14 +633,12 @@ impl TaskInner {
             })
     }
 
-    /*
     fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
                 matches!(counter_with_status.status(), TaskStatus::Executed)
             })
     }
-    */
 
     fn is_unlocked(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
@@ -921,9 +919,11 @@ impl UsageQueueInner {
                 },
                 RequestedUsage::Writable => {
                     while let Some(Reverse(reblocked_task)) = self.current_readonly_tasks.pop() {
-                        assert!(reblocked_task.is_executed(token));
-                        if reblocked_task.is_buffered() {
+                        assert!(!reblocked_task.is_executed(token));
+                        if reblocked_task.is_unlocked(token) {
+                            continue;
                         }
+
                         reblocked_task.increment_blocked_usage_count(count_token);
                         reblocked_task.with_pending_mut(count_token, |c| {
                             c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Readonly))).then_some(()).or_else(|| panic!());
