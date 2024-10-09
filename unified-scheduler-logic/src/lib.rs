@@ -1043,7 +1043,7 @@ impl UsageQueueInner {
                 continue;
             }
             if matches!(peeked_task.map_ref(|uft| uft.usage()), RequestedUsage::Readonly) {
-                return PeekMut::pop(peeked_task);
+                return PeekMut::pop(peeked_task).into();
             } else {
                 break
             }
