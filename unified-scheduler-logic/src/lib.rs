@@ -591,7 +591,7 @@ impl TaskInner {
 
     fn set_blocked_usage_count(&self, token: &mut BlockedUsageCountToken, count: ShortCounter) {
         self.blocked_usage_count
-            .with_borrow_mut(token, |(counter_with_status)| {
+            .with_borrow_mut(token, |counter_with_status| {
                 counter_with_status.set_count(count.current());
             })
     }
