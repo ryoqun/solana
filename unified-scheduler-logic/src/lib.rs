@@ -1162,6 +1162,10 @@ impl SchedulingStateMachine {
                     if (scan_count > 0 && task == *start_task.get_or_insert(task)) {
                         break;
                     }
+                    scan_count += 1;
+                    if scan_count == 200 {
+                        break;
+                    }
                     dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
 
                     if !task.is_buffered(&mut self.count_token) {
@@ -1186,10 +1190,6 @@ impl SchedulingStateMachine {
                         self.buffered_task_total.increment_self();
                         self.buffered_task_queue.push(task.clone());
                         self.eager_lock_total.increment_self();
-                        break;
-                    }
-                    scan_count += 1;
-                    if scan_count == 200 {
                         break;
                     }
                     //dbg!((task.index(), lockable));
