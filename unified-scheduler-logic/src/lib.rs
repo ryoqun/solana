@@ -1656,7 +1656,7 @@ impl SchedulingStateMachine {
             count_token: _,
             usage_queue_token: _,
             scheduling_mode,
-            last_scan_position,
+            last_scan_task,
             // don't add ".." here
         } = self;
         alive_task_count.reset_to_zero();
@@ -1665,7 +1665,7 @@ impl SchedulingStateMachine {
         reblocked_lock_total.reset_to_zero();
         eager_lock_total.reset_to_zero();
         *scheduling_mode = mode;
-        *last_scan_position = None;
+        *last_scan_task = None;
     }
 
     pub fn reinitialize_for_test(&mut self) {
@@ -1698,7 +1698,7 @@ impl SchedulingStateMachine {
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
             scheduling_mode,
-            last_scan_position: None,
+            last_scan_task: None,
         }
     }
 
