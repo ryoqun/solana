@@ -1664,6 +1664,7 @@ impl SchedulingStateMachine {
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
             scheduling_mode,
+            last_scan_position: None,
         }
     }
 
