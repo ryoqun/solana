@@ -1252,6 +1252,7 @@ impl SchedulingStateMachine {
 
         for context in new_task.lock_contexts() {
             context.map_ref(|context| {
+            let u = context.usage_queue();
             context.with_usage_queue_mut(&mut self.usage_queue_token, |usage_queue| {
                 let lock_result = (match usage_queue.current_usage.as_mut() {
                     Some(mut current_usage) => {
@@ -1262,7 +1263,7 @@ impl SchedulingStateMachine {
                                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                                     reblocked_task.increment_blocked_usage_count(&mut self.count_token);
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
-                                        c.pending_lock_contexts.insert(ByAddress(context.clone())).then_some(()).or_else(|| panic!());
+                                        c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable)).then_some(()).or_else(|| panic!());
                                     });
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
