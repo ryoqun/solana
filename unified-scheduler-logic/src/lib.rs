@@ -1608,6 +1608,7 @@ impl SchedulingStateMachine {
             buffered_task_total: ShortCounter::zero(),
             blocked_task_count: ShortCounter::zero(),
             reblocked_lock_total: ShortCounter::zero(),
+            eager_lock_total: ShortCounter::zero(),
             task_total: ShortCounter::zero(),
             count_token: unsafe { BlockedUsageCountToken::assume_exclusive_mutating_thread() },
             usage_queue_token: unsafe { UsageQueueToken::assume_exclusive_mutating_thread() },
