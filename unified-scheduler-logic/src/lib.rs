@@ -1125,9 +1125,11 @@ impl SchedulingStateMachine {
                 return true;
             }
         }
+    }
+
+    pub fn tick_eager_scan(&mut self) {
         match self.mode() {
             SchedulingMode::BlockVerification => {
-                false
             },
             SchedulingMode::BlockProduction => {
                 for task in self.alive_tasks.range(..).rev() {
@@ -1152,12 +1154,11 @@ impl SchedulingStateMachine {
                         self.buffered_task_total.increment_self();
                         self.buffered_task_queue.push(task.clone());
                         self.eager_lock_total.increment_self();
-                        return true;
+                        return;
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
                 }
-                false
             },
         }
     }
