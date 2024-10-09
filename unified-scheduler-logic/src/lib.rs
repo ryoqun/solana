@@ -2623,6 +2623,9 @@ mod tests {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test2()
         };
         assert!(!state_machine.has_buffered_task());
+        if !state_machine.has_buffered_task() {
+            state_machine.tick_eager_scan();
+        }
 
         assert_matches!(
             state_machine
