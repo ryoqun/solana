@@ -139,10 +139,6 @@ mod utils {
             self.0 == 0
         }
 
-        pub(super) fn is_one(&self) -> bool {
-            self.0 == 1
-        }
-
         pub(super) fn current(&self) -> u32 {
             self.0
         }
@@ -661,7 +657,7 @@ impl TaskInner {
 
 /// [`Task`]'s per-address context to lock a [usage_queue](UsageQueue) with [certain kind of
 /// request](RequestedUsage).
-#[derive(Debug, EnumPtr, Clone)]
+#[derive(Debug, EnumPtr)]
 #[repr(C, usize)]
 enum LockContext {
     Readonly(UsageQueue),
