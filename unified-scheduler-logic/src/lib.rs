@@ -1143,7 +1143,7 @@ impl SchedulingStateMachine {
                     return;
                 };
                 let mut scan_count = 200;
-                let prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| l.cloned().unwrap());
+                let prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| l.clone());
                 let mut task_iter = self.alive_tasks.range(..prev_scan_task.clone()).rev();
                 let mut task;
 
