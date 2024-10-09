@@ -1124,7 +1124,7 @@ impl SchedulingStateMachine {
                         });
                         let blocked_count = p.len();
                         p.into_iter().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone(), &mut self.count_token));
-                        task.force_unblock(&mut self.count_token);
+                        task.force_unblock(blocked_count as u32, &mut self.count_token);
                         self.blocked_task_count.decrement_self();
                         self.buffered_task_total.increment_self();
                         self.buffered_task_queue.push(task.clone());
