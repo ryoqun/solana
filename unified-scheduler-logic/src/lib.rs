@@ -1524,17 +1524,16 @@ impl SchedulingStateMachine {
             .iter()
             .enumerate()
             .map(|(index, address)| {
-                let usage_queue = usage_queue_loader(*address);
-                let lc = LockContext::new(
-                    usage_queue,
-                    if transaction.message().is_writable(index) {
-                        RequestedUsage::Writable
-                    } else {
-                        RequestedUsage::Readonly
-                    },
-                );
-                pending_lock_contexts.insert(ByAddress(lc.clone()));
-                lc.into()
+                let u = usage_queue_loader(*address);
+                let ru = if transaction.message().is_writable(index) {
+                    RequestedUsage::Writable
+                } else {
+                    RequestedUsage::Readonly
+                };
+                let lc1 = LockContext::new(u, ru);
+                let lc2 = LockContext::new(u, ru);
+                pending_lock_contexts.insert(ByAddress(lc1));
+                lc2.into()
             })
             .collect();
 
