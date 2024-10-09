@@ -1159,13 +1159,15 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    if (scan_count > 0 && task == *start_task.get_or_insert(task)) {
-                        break;
-                    }
                     scan_count += 1;
-                    if scan_count == 200 {
+                    if scan_count == 200 || (scan_count > 0 && task == start_task.get_or_insert(task)) {
                         break;
                     }
+                    start_task = if start_task.is_none() {
+                        Some(task)
+                    } else {
+                        start_task
+                    };
                     dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
 
                     if !task.is_buffered(&mut self.count_token) {
