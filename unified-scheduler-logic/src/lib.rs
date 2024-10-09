@@ -928,7 +928,7 @@ impl UsageQueueInner {
                         );
                         //self.reblocked_lock_total.increment_self();
                     }
-                    self.current_usage = Usage::Writable(new_task);
+                    self.current_usage = Some(Usage::Writable(new_task));
                 },
             },
             Some(Usage::Writable(current_task)) => {
