@@ -1090,7 +1090,7 @@ pub struct SchedulingStateMachine {
     count_token: BlockedUsageCountToken,
     usage_queue_token: UsageQueueToken,
     scheduling_mode: SchedulingMode,
-    last_scan_position: Option<Task>,
+    last_scan_task: Option<Task>,
 }
 
 #[cfg(test)]
@@ -1139,11 +1139,11 @@ impl SchedulingStateMachine {
                     return;
                 }
                 let Some(l) = self.alive_tasks.last() else {
-                    self.last_scan_position = None;
+                    self.last_scan_task = None;
                     return;
                 };
                 let mut scanned_task_count = ShortCounter::zero();
-                let mut task_iter = if let Some(t) = self.last_scan_position.take() {
+                let mut task_iter = if let Some(t) = self.last_scan_task.take() {
                     self.alive_tasks.range(..t).rev()
                 } else {
                     self.alive_tasks.range(..=l).rev()
@@ -1195,7 +1195,7 @@ impl SchedulingStateMachine {
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
                 }
-                self.last_scan_position = Some(task.clone());
+                self.last_scan_task = Some(task.clone());
             },
         }
     }
