@@ -1530,7 +1530,7 @@ impl SchedulingStateMachine {
                 } else {
                     RequestedUsage::Readonly
                 };
-                let lc1 = LockContext::new(u, ru);
+                let lc1 = LockContext::new(u.clone(), ru);
                 let lc2 = LockContext::new(u, ru);
                 pending_lock_contexts.insert(ByAddress(lc1));
                 lc2.into()
