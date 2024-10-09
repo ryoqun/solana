@@ -910,7 +910,14 @@ impl UsageQueueInner {
                     count.increment_self();
                 },
                 RequestedUsage::Writable => {
-                    while let Some(blocking_task) = self.current_readonly_tasks.peek_mut() {
+                    while let Some(reblocked_task) = self.current_readonly_tasks.pop() {
+                        reblocked_task.increment_blocked_usage_count(count_token);
+                        reblocked_task.with_pending_mut(count_token, |c| {
+                            c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Readonly))).then_some(()).or_else(|| panic!());
+                        });
+                        self.insert_blocked_usage_from_task(
+                            UsageFromTask::Readonly(reblocked_task),
+                        );
                     }
                 },
             },
