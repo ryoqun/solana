@@ -1135,7 +1135,30 @@ impl SchedulingStateMachine {
             SchedulingMode::BlockVerification => {
             },
             SchedulingMode::BlockProduction => {
-                for task in self.alive_tasks.range(..).rev() {
+                if self.alive_tasks.is_empty() {
+                    return;
+                }
+                let mut step_count = 200;
+                let mut prev_scan_task = self.last_scan_position.unwrap_or_else(|| self.alive_tasks.last().unwrap());
+                let mut task_iter = self.alive_tasks.range(..prev_scan_task).rev();
+
+                //for task in self.alive_tasks.range(..).rev() {
+                loop {
+                    step_count -= 1;
+                    if step_count == 0 {
+                        break;
+                    }
+                    let task = match task_iter.next() {
+                        Some(task) => task,
+                        None => {
+                            task_iter = self.alive_tasks.range(..).rev();
+                            continue;
+                        }
+                    };
+                    if task == prev_scan_task {
+                        break;
+                    }
+
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
                     }
