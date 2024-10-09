@@ -1143,8 +1143,12 @@ impl SchedulingStateMachine {
                     return;
                 };
                 let mut scan_count = 200;
-                let prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| l.clone());
-                let mut task_iter = self.alive_tasks.range(..prev_scan_task.clone()).rev();
+                let task_iter = if let Some(t) = self.last_scan_position.take() {
+                    self.alive_tasks.range(..prev_scan_task.clone()).rev()
+                } else {
+                    self.alive_tasks.range(..=l.clone()).rev()
+                };
+                let mut start_task = None;
                 let mut task;
 
                 loop {
@@ -1155,9 +1159,14 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
+                    start_task = if start_task.is_none() {
+                        Some(task)
+                    } else {
+                        start_task
+                    };
                     dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), prev_scan_task.index()));
                     scan_count -= 1;
-                    if scan_count == 0 || *task == prev_scan_task {
+                    if scan_count == 0 || *task == start_task {
                         break;
                     }
 
