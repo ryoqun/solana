@@ -2587,6 +2587,8 @@ mod tests {
         );
         assert!(!state_machine.has_buffered_task());
         state_machine.deschedule_task(&task1);
+        assert!(!state_machine.has_buffered_task());
+        state_machine.deschedule_task(&task3);
         assert!(state_machine.has_buffered_task());
         assert_matches!(
             state_machine
