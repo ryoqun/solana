@@ -2579,6 +2579,24 @@ mod tests {
         // addr3:       | task2, task3, task4, task5, task6, task7, task8, task9,       , task11
         // addr4:       |               task4, task5, task6, task7, task8, task9, task10
         assert!(state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .schedule_next_buffered_task()
+                .map(|t| t.task_index()),
+            Some(103)
+        );
+        assert!(!state_machine.has_buffered_task());
+        state_machine.deschedule_task(&task1);
+        assert!(state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .schedule_next_buffered_task()
+                .map(|t| t.task_index()),
+            Some(102)
+        );
+        assert!(!state_machine.has_buffered_task());
+        state_machine.deschedule_task(&task2);
+        assert!(!state_machine.has_buffered_task());
     }
 
     #[test]
