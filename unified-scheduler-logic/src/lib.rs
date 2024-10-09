@@ -441,6 +441,16 @@ impl Task {
             });
         did_unblock.then_some(self)
     }
+
+    fn force_unblock(self, blocked_count: u32, token: &mut BlockedUsageCountToken) {
+        self
+            .blocked_usage_count
+            .with_borrow_mut(token, |counter_with_status| {
+                let c = counter_with_status.count();
+                assert_eq!(c, blocked_count);
+                counter_with_status.set_count(0);
+            });
+    }
 }
 
 impl std::ops::Deref for Task {
