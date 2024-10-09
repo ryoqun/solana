@@ -919,8 +919,8 @@ impl UsageQueueInner {
                 },
                 RequestedUsage::Writable => {
                     while let Some(Reverse(reblocked_task)) = self.current_readonly_tasks.pop() {
-                        assert!(!reblocked_task.is_executed(token));
-                        if reblocked_task.is_unlocked(token) {
+                        assert!(!reblocked_task.is_executed(count_token));
+                        if reblocked_task.is_unlocked(count_token) {
                             continue;
                         }
 
