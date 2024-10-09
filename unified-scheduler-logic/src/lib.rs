@@ -610,12 +610,14 @@ impl TaskInner {
             })
     }
 
+    /*
     fn mark_as_buffered(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
                 counter_with_status.set_status(TaskStatus::Buffered);
             })
     }
+    */
 
     fn mark_as_unlocked(&self, token: &mut BlockedUsageCountToken) {
         self.blocked_usage_count
@@ -631,12 +633,14 @@ impl TaskInner {
             })
     }
 
+    /*
     fn is_executed(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
             .with_borrow_mut(token, |counter_with_status| {
                 matches!(counter_with_status.status(), TaskStatus::Executed)
             })
     }
+    */
 
     fn is_unlocked(&self, token: &mut BlockedUsageCountToken) -> bool {
         self.blocked_usage_count
