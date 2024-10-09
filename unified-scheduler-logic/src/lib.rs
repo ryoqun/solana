@@ -993,7 +993,7 @@ impl UsageQueueInner {
                 if !peeked_task.map_ref(|t| t.task().is_buffered(token)) {
                     continue;
                 }
-                return peeked_task;
+                return Some(peeked_task.into());
             }
             //assert!(t.as_ref().map(|t: &UsageFromTask| t.task().is_buffered(token)).unwrap_or(true));
             //t
