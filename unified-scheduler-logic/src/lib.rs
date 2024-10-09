@@ -908,8 +908,11 @@ impl UsageQueueInner {
                 RequestedUsage::Readonly => {
                     self.current_readonly_tasks.push(Reverse(new_task));
                     count.increment_self();
-                }
-                RequestedUsage::Writable => todo!(),
+                },
+                RequestedUsage::Writable => {
+                    while let Some(blocking_task) = self.current_readonly_tasks.peek_mut() {
+                    }
+                },
             },
             Some(Usage::Writable(current_task)) => { 
                 let reblocked_task = std::mem::replace(current_task, new_task);
