@@ -1519,6 +1519,10 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 }
                                 "banking"
                             },
+                            default => {
+                                state_machine.tick_eager_scan();
+                                continue;
+                            }
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
                             is_running = true;

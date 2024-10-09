@@ -1167,7 +1167,7 @@ impl SchedulingStateMachine {
                     if scanned_task_count.current() == 200 {
                         break;
                     }
-                    dbg!(("hey", scanned_task_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
+                    //dbg!(("hey", scanned_task_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
 
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
