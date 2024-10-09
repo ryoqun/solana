@@ -1166,7 +1166,7 @@ impl SchedulingStateMachine {
                     };
                     dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), start_task.map(|t| t.index())));
                     scan_count -= 1;
-                    if scan_count == 0 || *task == start_task {
+                    if scan_count == 0 || Some(*task) == start_task {
                         break;
                     }
 
