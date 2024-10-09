@@ -1631,7 +1631,7 @@ impl SchedulingStateMachine {
         reblocked_lock_total.reset_to_zero();
         eager_lock_total.reset_to_zero();
         *scheduling_mode = mode;
-        last_scan_position = None;
+        *last_scan_position = None;
     }
 
     pub fn reinitialize_for_test(&mut self) {
