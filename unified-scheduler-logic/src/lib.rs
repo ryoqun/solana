@@ -933,14 +933,15 @@ impl UsageQueueInner {
             },
             Some(Usage::Writable(current_task)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    current_task.increment_blocked_usage_count(count_token);
-                    current_task.with_pending_mut(count_token, |c| {
+                    let old_usage = std::mem::replace(current_usage, Usage::Readonly(ShortCounter::one()));
+                    let Usage::Writable(reblocked_task) = old_usage else { panic!() };
+                    reblocked_task.increment_blocked_usage_count(count_token);
+                    reblocked_task.with_pending_mut(count_token, |c| {
                         c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
                     });
                     self.insert_blocked_usage_from_task(
-                        UsageFromTask::Writable(current_task.clone()),
+                        UsageFromTask::Writable(reblocked_task.clone()),
                     );
-                    self.current_usage = Some(Usage::Readonly(ShortCounter::one()));
                 },
                 RequestedUsage::Writable => {
                     let reblocked_task = std::mem::replace(current_task, new_task);
