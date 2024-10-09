@@ -1164,6 +1164,11 @@ impl SchedulingStateMachine {
     pub fn reblocked_lock_total(&self) -> u32 {
         self.reblocked_lock_total.current()
     }
+
+    pub fn eager_lock_total(&self) -> u32 {
+        self.eager_lock_total.current()
+    }
+
     pub fn task_total(&self) -> u32 {
         self.task_total.current()
     }
