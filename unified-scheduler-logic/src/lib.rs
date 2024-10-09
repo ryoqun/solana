@@ -1138,12 +1138,12 @@ impl SchedulingStateMachine {
                 if !self.is_task_runnable() {
                     return;
                 }
-                if self.alive_tasks.is_empty() {
+                let Some(l) = self.alive_tasks.last() else {
                     self.last_scan_position = None;
                     return;
-                }
+                };
                 let mut scan_count = 200;
-                let prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| self.alive_tasks.last().cloned().unwrap());
+                let prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| l.cloned().unwrap());
                 let mut task_iter = self.alive_tasks.range(..prev_scan_task.clone()).rev();
                 let mut task;
 
