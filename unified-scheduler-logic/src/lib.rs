@@ -720,7 +720,7 @@ impl LockContext {
         &self,
         usage_queue_token: &mut UsageQueueToken,
     ) {
-        self.with_usage_queue_mut(usage_queue_token, |u| { u.increment_executing_count(self.requested_usage2()) })
+        self.with_usage_queue_mut(usage_queue_token, |u| { u.increment_executing_count() })
     }
 
     fn with_usage_queue_mut<R>(
@@ -970,7 +970,7 @@ impl UsageQueueInner {
         }
     }
 
-    fn increment_executing_count(&mut self, requested_usage: RequestedUsage) {
+    fn increment_executing_count(&mut self) {
         self.executing_count.increment_self();
     }
 
