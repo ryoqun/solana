@@ -918,6 +918,7 @@ impl UsageQueueInner {
                         self.insert_blocked_usage_from_task(
                             UsageFromTask::Readonly(reblocked_task),
                         );
+                        //self.reblocked_lock_total.increment_self();
                     }
                 },
             },
