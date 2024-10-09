@@ -921,6 +921,9 @@ impl UsageQueueInner {
                 },
                 RequestedUsage::Writable => {
                     while let Some(Reverse(reblocked_task)) = self.current_readonly_tasks.pop() {
+                        assert!(reblocked_task.is_executed());
+                        if reblocked_task.is_buffered() {
+                        }
                         reblocked_task.increment_blocked_usage_count(count_token);
                         reblocked_task.with_pending_mut(count_token, |c| {
                             c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Readonly))).then_some(()).or_else(|| panic!());
