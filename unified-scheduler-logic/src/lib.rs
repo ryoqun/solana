@@ -933,7 +933,7 @@ impl UsageQueueInner {
             },
             Some(Usage::Writable(current_task)) => match requested_usage {
                 RequestedUsage::Readonly => {
-                    let old_usage = std::mem::replace(current_usage, Usage::Readonly(ShortCounter::one()));
+                    let old_usage = std::mem::replace(self.current_usage, Usage::Readonly(ShortCounter::one()));
                     let Usage::Writable(reblocked_task) = old_usage else { panic!() };
                     reblocked_task.increment_blocked_usage_count(count_token);
                     reblocked_task.with_pending_mut(count_token, |c| {
