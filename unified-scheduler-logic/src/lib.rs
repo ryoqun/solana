@@ -1125,6 +1125,8 @@ impl SchedulingStateMachine {
                 return true;
             }
         }
+
+        false
     }
 
     pub fn tick_eager_scan(&mut self) {
