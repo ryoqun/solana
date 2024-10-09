@@ -1188,6 +1188,7 @@ impl SchedulingStateMachine {
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
                 }
+                self.last_scan_position = Some(task);
             },
         }
     }
