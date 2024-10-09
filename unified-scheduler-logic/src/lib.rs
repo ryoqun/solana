@@ -1155,7 +1155,7 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    dbg!(("hey", scan_count, task.index(), prev_scan_task.index()));
+                    dbg!(("hey", scan_count, self.alive_tasks.len(), task.index(), prev_scan_task.index()));
                     scan_count -= 1;
                     if scan_count == 0 || *task == prev_scan_task {
                         break;
