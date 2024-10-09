@@ -1142,7 +1142,7 @@ impl SchedulingStateMachine {
                     self.last_scan_position = None;
                     return;
                 };
-                let mut scan_count = 200;
+                let mut scan_count = 0;
                 let mut task_iter = if let Some(t) = self.last_scan_position.take() {
                     self.alive_tasks.range(..t).rev()
                 } else {
@@ -1159,8 +1159,8 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
-                    scan_count -= 1;
-                    if scan_count == 0 || Some(task) == start_task {
+                    scan_count += 1;
+                    if scan_count == 200 || Some(task) == start_task {
                         break;
                     }
                     start_task = if start_task.is_none() {
