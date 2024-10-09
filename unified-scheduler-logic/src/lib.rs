@@ -930,7 +930,7 @@ impl UsageQueueInner {
                     }
                 },
             },
-            Some(Usage::Writable(current_task)) => { 
+            Some(Usage::Writable(current_task)) => {
                 let reblocked_task = std::mem::replace(current_task, new_task);
                 reblocked_task.increment_blocked_usage_count(count_token);
                 reblocked_task.with_pending_mut(count_token, |c| {
@@ -993,8 +993,6 @@ impl UsageQueueInner {
                 }
                 return Some(peeked_task.into());
             }
-            //assert!(t.as_ref().map(|t: &UsageFromTask| t.task().is_buffered(token)).unwrap_or(true));
-            //t
             None
         } else {
             None
@@ -1040,13 +1038,6 @@ impl UsageQueueInner {
 #[derive(Debug, Clone, Default)]
 pub struct UsageQueue(Arc<TokenCell<UsageQueueInner>>);
 const_assert_eq!(mem::size_of::<UsageQueue>(), 8);
-
-/*
-impl std::ops::Deref for UsageQueue {
-    type Target = TokenCell<UsageQueueInner>;
-    fn deref(&self) -> &<Self as std::ops::Deref>::Target { &*self.0 }
-}
-*/
 
 unsafe impl enum_ptr::Aligned for UsageQueue {
     const ALIGNMENT: usize = std::mem::align_of::<TokenCell<UsageQueueInner>>();
@@ -1113,12 +1104,6 @@ impl SchedulingStateMachine {
                     if !task.is_buffered(&mut self.count_token) {
                         continue;
                     }
-                    /*
-                    for context in task.lock_contexts() {
-                        context.map_ref(|context| {
-                        });
-                    }
-                    */
                     let force_lockable: bool = task.with_pending_mut(&mut self.count_token, |c| {
                         c.pending_lock_contexts.iter().all(|pending_lock_context| pending_lock_context.is_force_lockable(&mut self.usage_queue_token))
                     });
@@ -1273,7 +1258,7 @@ impl SchedulingStateMachine {
         } else if blocking_task.is_buffered(token) {
             blocked_task_count.increment_self();
             true
-        } else { 
+        } else {
             // don't reblock if no blocked usage and not buffered
             false
         }
