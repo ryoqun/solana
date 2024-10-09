@@ -1042,13 +1042,16 @@ impl UsageQueueInner {
                 PeekMut::pop(peeked_task);
                 continue;
             }
-            if matches!(peeked_task.map_ref(|uft| uft.usage()), RequestedUsage::Readonly) {
+            if matches!(
+                peeked_task.map_ref(|uft| uft.usage()),
+                RequestedUsage::Readonly
+            ) {
                 return Some(PeekMut::pop(peeked_task).into());
             } else {
-                return None;
+                break;
             }
         }
-        unreachable!();
+        None
     }
 
     fn has_no_blocked_usage(&self) -> bool {
