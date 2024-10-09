@@ -1155,6 +1155,7 @@ impl SchedulingStateMachine {
                             continue;
                         }
                     };
+                    dbg!(("hey", scan_count));
                     scan_count -= 1;
                     if scan_count == 0 || *task == prev_scan_task {
                         break;
