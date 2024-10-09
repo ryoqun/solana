@@ -1138,7 +1138,7 @@ impl SchedulingStateMachine {
                 if self.alive_tasks.is_empty() {
                     return;
                 }
-                let mut step_count = 200;
+                let mut scan_count = 200;
                 let mut prev_scan_task = self.last_scan_position.take().unwrap_or_else(|| self.alive_tasks.last().cloned().unwrap());
                 let mut task_iter = self.alive_tasks.range(..prev_scan_task.clone()).rev();
                 //let mut prev_task = None;
@@ -1156,8 +1156,8 @@ impl SchedulingStateMachine {
                     if *task == prev_scan_task {
                         break;
                     }
-                    step_count -= 1;
-                    if step_count == 0 {
+                    scan_count -= 1;
+                    if scan_count == 0 {
                         break;
                     }
 
