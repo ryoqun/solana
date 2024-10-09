@@ -1036,9 +1036,9 @@ impl UsageQueueInner {
     }
 
     #[must_use]
-    fn pop_buffered_readonly_usage_from_task(&mut self) -> Option<UsageFromTask> {
+    fn pop_buffered_readonly_usage_from_task(&mut self, token: &mut BlockedUsageCountToken) -> Option<UsageFromTask> {
         while let Some(peeked_task) = self.blocked_usages_from_tasks.peek_mut() {
-            if !peeked_task.map_ref(|uft| uft.task().is_buffered()) {
+            if !peeked_task.map_ref(|uft| uft.task().is_buffered(token)) {
                 PeekMut::pop(peeked_task);
                 continue;
             }
@@ -1498,7 +1498,7 @@ impl SchedulingStateMachine {
                             // readonly usages
                             buffered_task_from_queue =
                                 if matches!(buffered_task_from_queue2.usage(), RequestedUsage::Readonly) {
-                                    usage_queue.pop_buffered_readonly_usage_from_task()
+                                    usage_queue.pop_buffered_readonly_usage_from_task(&mut self.count_token)
                                 } else {
                                     None
                                 };
