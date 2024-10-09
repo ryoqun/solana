@@ -1045,24 +1045,9 @@ impl UsageQueueInner {
             if matches!(peeked_task.map_ref(|uft| uft.usage()), RequestedUsage::Readonly) {
                 return Some(PeekMut::pop(peeked_task).into());
             } else {
-                break
+                return None;
             }
         }
-        None
-        /*
-        if matches!(
-            self.blocked_usages_from_tasks
-                .peek()
-                .map(|uft| uft.map_ref(|u| u.usage())),
-            Some(RequestedUsage::Readonly)
-        ) {
-            self.blocked_usages_from_tasks
-                .pop()
-                .map(|uft| uft.into())
-        } else {
-            None
-        }
-        */
     }
 
     fn has_no_blocked_usage(&self) -> bool {
