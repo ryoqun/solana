@@ -1651,7 +1651,7 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                     continue;
                                 }
                                 sleepless_testing::at(CheckPoint::NewTask(task.task_index()));
-                                assert!(state_machine.do_schedule_task(task, true).is_none())
+                                assert!(state_machine.do_schedule_task(task, true).is_none());
                                 if log_interval.increment() {
                                     log_scheduler!(info, "rebuffer");
                                 } else {
