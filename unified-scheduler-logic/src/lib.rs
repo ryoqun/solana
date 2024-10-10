@@ -919,6 +919,7 @@ impl UsageQueueInner {
                     count.increment_self();
                 },
                 RequestedUsage::Writable => {
+                    let mut c = ShortCounter::zero();
                     while let Some(Reverse(reblocked_task)) = self.current_readonly_tasks.pop() {
                         assert!(!reblocked_task.is_executed(count_token));
                         if reblocked_task.is_unlocked(count_token) {
@@ -934,8 +935,10 @@ impl UsageQueueInner {
                         self.insert_blocked_usage_from_task(
                             UsageFromTask::Readonly(reblocked_task),
                         );
+                        c.increment_self();
                         //self.reblocked_lock_total.increment_self();
                     }
+                    assert_eq!(c.current() as usize, count);
                     self.current_usage = Some(Usage::Writable(new_task));
                 },
             },
