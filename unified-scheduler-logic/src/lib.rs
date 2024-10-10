@@ -2754,7 +2754,8 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
-        let usage_queue = UsageQueue::default();
+        let mut usage_queue = UsageQueue::default();
+        usage_queue.executing_count.increment_self();
         let sanitized = simplest_transaction();
         let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
             UsageQueue::default()
