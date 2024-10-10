@@ -2664,7 +2664,6 @@ mod tests {
                 .map(|t| t.task_index()),
             None
         );
-        assert!(!state_machine.has_buffered_task());
 
         assert_matches!(
             state_machine
@@ -2672,20 +2671,24 @@ mod tests {
                 .map(|t| t.task_index()),
             Some(101)
         );
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(!state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         assert_matches!(
             state_machine
                 .schedule_task(task2.clone())
                 .map(|t| t.task_index()),
             None
         );
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(!state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         assert_matches!(
             state_machine
                 .schedule_task(task3.clone())
@@ -2697,45 +2700,51 @@ mod tests {
         // addr2: task1 | task2, task3, task4, task5, task6, task7, task8,      , task10
         // addr3:       | task2, task3, task4, task5, task6, task7, task8, task9,       , task11
         // addr4:       |               task4, task5, task6, task7, task8, task9, task10
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(state_machine.has_buffered_task());
         assert_matches!(
             state_machine
-                .schedule_next_buffered_task()
+                .scan_and_schedule_next_task()
                 .map(|t| t.task_index()),
             Some(103)
         );
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(!state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         state_machine.deschedule_task(&task1);
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(!state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         state_machine.deschedule_task(&task3);
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         assert_matches!(
             state_machine
                 .schedule_next_buffered_task()
                 .map(|t| t.task_index()),
             Some(102)
         );
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(!state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         state_machine.deschedule_task(&task2);
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
-        assert!(!state_machine.has_buffered_task());
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
     }
 
     #[test]
