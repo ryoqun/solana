@@ -1137,12 +1137,12 @@ impl SchedulingStateMachine {
             },
             SchedulingMode::BlockProduction => {
                 if !self.is_task_runnable() {
-                    return;
+                    return None;
                 }
 
                 let last_scan_task = self.last_scan_task.take();
                 let Some(highest_task) = self.alive_tasks.last() else {
-                    return;
+                    return None;
                 };
 
                 let mut task_iter = if let Some(last_scan_task) = last_scan_task {
