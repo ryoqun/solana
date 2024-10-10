@@ -1522,6 +1522,7 @@ impl SchedulingStateMachine {
                         &buffered_task_from_queue2.task(), /* was `task` and had bug.. write test...*/
                     ) {
                         LockResult::Ok(()) => {
+                            assert_ne!(task.index(), buffered_task_from_queue2.task().index());
                             buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |c| {
                                 c.pending_lock_contexts.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| {
                                     panic!("remove failed: {}", c.pending_lock_contexts.len());
