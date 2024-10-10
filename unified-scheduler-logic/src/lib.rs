@@ -954,6 +954,7 @@ impl UsageQueueInner {
                     );
                 },
                 RequestedUsage::Writable => {
+                    assert_ne!(new_task.index(), current_task.index());
                     let reblocked_task = std::mem::replace(current_task, new_task);
                     if reblocked_task.increment_blocked_usage_count(count_token) {
                         blocked_task_count.increment_self();
