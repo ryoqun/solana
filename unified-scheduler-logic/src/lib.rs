@@ -919,6 +919,7 @@ impl UsageQueueInner {
                     count.increment_self();
                 },
                 RequestedUsage::Writable => {
+                    let mut cc = count.current();
                     let mut c = ShortCounter::zero();
                     while let Some(Reverse(reblocked_task)) = self.current_readonly_tasks.pop() {
                         assert!(!reblocked_task.is_executed(count_token));
@@ -938,7 +939,7 @@ impl UsageQueueInner {
                         c.increment_self();
                         //self.reblocked_lock_total.increment_self();
                     }
-                    assert_eq!(c.current(), count.current());
+                    assert_eq!(c.current(), cc);
                     self.current_usage = Some(Usage::Writable(new_task));
                 },
             },
