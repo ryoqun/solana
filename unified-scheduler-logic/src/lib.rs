@@ -901,7 +901,7 @@ impl UsageQueueInner {
                 unreachable!();
             }
             Some(Usage::Readonly(_count)) => match requested_usage {
-                RequestedUsage::Readonly => false /*true*/,
+                RequestedUsage::Readonly => true,
                 RequestedUsage::Writable => false /*self.executing_count.is_zero()*/,
             },
             Some(Usage::Writable(_current_task)) => self.executing_count.is_zero(),
