@@ -981,6 +981,7 @@ impl UsageQueueInner {
         unlocked_task_index: Index,
         token: &mut BlockedUsageCountToken,
     ) -> Option<UsageFromTask> {
+        self.executing_count.decrement_self();
         let mut is_unused_now = false;
         match &mut self.current_usage {
             Some(Usage::Readonly(count)) => match unlocked_task_context {
@@ -996,6 +997,7 @@ impl UsageQueueInner {
                         }
                     }
                     if count.is_zero() {
+                        assert_eq!((self.current_readonly_tasks.is_empty(), self.executing_count.current()), (true, 0));
                         is_unused_now = true;
                     }
                     //dbg!(is_unused_now);
@@ -1003,15 +1005,13 @@ impl UsageQueueInner {
                 LockContext::Writable(_) => unreachable!(),
             },
             Some(Usage::Writable(blocking_task)) => {
-                assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2()), (blocking_task.index(), RequestedUsage::Writable));
+                assert_eq!((unlocked_task_index, unlocked_task_context.requested_usage2(), self.executing_count.current()), (blocking_task.index(), RequestedUsage::Writable, 0));
                 is_unused_now = true;
             },
             None => unreachable!(),
         }
 
-        self.executing_count.decrement_self();
         if is_unused_now {
-            assert!(self.executing_count.is_zero());
             self.current_usage = None;
             while let Some(task) = self.blocked_usages_from_tasks.pop() {
                 if !task.map_ref(|t| t.task().is_buffered(token)) {
