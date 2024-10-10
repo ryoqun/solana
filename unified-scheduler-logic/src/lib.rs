@@ -901,8 +901,8 @@ impl UsageQueueInner {
                 unreachable!();
             }
             Some(Usage::Readonly(_count)) => match requested_usage {
-                RequestedUsage::Readonly => true,
-                RequestedUsage::Writable => self.executing_count.is_zero(),
+                RequestedUsage::Readonly => false /*true*/,
+                RequestedUsage::Writable => false /*self.executing_count.is_zero()*/,
             },
             Some(Usage::Writable(_current_task)) => self.executing_count.is_zero(),
         }
@@ -950,7 +950,7 @@ impl UsageQueueInner {
                         c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
                     });
                     assert!(self.current_readonly_tasks.is_empty());
-                    self.current_readonly_tasks.push(Reverse(reblocked_task.clone()));
+                    self.current_readonly_tasks.push(Reverse(new_task.clone()));
                     self.insert_blocked_usage_from_task(
                         UsageFromTask::Writable(reblocked_task),
                     );
@@ -1131,7 +1131,7 @@ impl SchedulingStateMachine {
         false
     }
 
-    pub fn tick_eager_scan(&mut self) {
+    pub fn tick_eager_scan(&mut self) -> Option<Task> {
         match self.mode() {
             SchedulingMode::BlockVerification => {
             },
@@ -1189,10 +1189,8 @@ impl SchedulingStateMachine {
                         p.into_iter().for_each(|pending_lock_context| pending_lock_context.force_lock(&mut self.usage_queue_token, task.clone(), &mut self.count_token, &mut self.blocked_task_count));
                         task.force_unblock(blocked_count as u32, &mut self.count_token);
                         self.blocked_task_count.decrement_self();
-                        self.buffered_task_total.increment_self();
-                        self.buffered_task_queue.push(task.clone());
                         self.eager_lock_total.increment_self();
-                        break;
+                        return Some(task);
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
@@ -1314,6 +1312,13 @@ impl SchedulingStateMachine {
             }
         }
         None
+    }
+
+    #[must_use]
+    pub fn scan_and_schedule_next_task(&mut self) -> Option<Task> {
+        self.tick_eager_scan()
+            .inspect(|task| {
+            })
     }
 
     /// Deschedules given scheduled `task`.

@@ -1520,7 +1520,9 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 "banking"
                             },
                             default => {
-                                state_machine.tick_eager_scan();
+                                if let Some(task) = state_machine.scan_and_schedule_next_task() {
+                                    runnable_task_sender.send_payload(task).unwrap();
+                                }
                                 continue;
                             }
                         };
