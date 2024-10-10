@@ -1523,7 +1523,9 @@ impl SchedulingStateMachine {
                     ) {
                         LockResult::Ok(()) => {
                             buffered_task_from_queue2.task().with_pending_mut(&mut self.count_token, |c| {
-                                c.pending_lock_contexts.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| panic!());
+                                c.pending_lock_contexts.remove(ByAddress::from_ref(context)).then_some(()).or_else(|| {
+                                    panic!("remove failed: {}", c.pending_lock_contexts.len());
+                                });
                             });
                             // Try to further schedule blocked task for parallelism in the case of
                             // readonly usages
