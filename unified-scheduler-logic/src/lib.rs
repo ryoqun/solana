@@ -949,6 +949,8 @@ impl UsageQueueInner {
                     reblocked_task.with_pending_mut(count_token, |c| {
                         c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
                     });
+                    assert!(self.current_readonly_tasks.is_empty());
+                    self.current_readonly_tasks.push(Reverse(new_task.clone()));
                     self.insert_blocked_usage_from_task(
                         UsageFromTask::Writable(reblocked_task),
                     );
@@ -1389,6 +1391,7 @@ impl SchedulingStateMachine {
                                     reblocked_task.with_pending_mut(&mut self.count_token, |c| {
                                         c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
                                     });
+                                    assert!(usage_queue.current_readonly_tasks.is_empty());
                                     usage_queue.current_readonly_tasks.push(Reverse(new_task.clone()));
                                     usage_queue.insert_blocked_usage_from_task(
                                         UsageFromTask::Writable(reblocked_task),
