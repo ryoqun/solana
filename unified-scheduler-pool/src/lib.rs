@@ -1523,7 +1523,14 @@ impl<S: SpawnableScheduler<TH>, TH: TaskHandler> ThreadManager<S, TH> {
                                 if let Some(task) = state_machine.scan_and_schedule_next_task() {
                                     runnable_task_sender.send_payload(task).unwrap();
                                 }
-                                "scan"
+                                match state_machine.mode() {
+                                    SchedulingMode::BlockVerification => {
+                                        continue;
+                                    },
+                                    SchedulingMode::BlockProduction => {
+                                        "scan"
+                                    },
+                                }
                             }
                         };
                         let force_log = if !is_running && !state_machine.has_no_alive_task() {
