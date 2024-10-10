@@ -1190,7 +1190,7 @@ impl SchedulingStateMachine {
                         task.force_unblock(blocked_count as u32, &mut self.count_token);
                         self.blocked_task_count.decrement_self();
                         self.eager_lock_total.increment_self();
-                        return Some(task);
+                        return Some(task.cloned());
                     }
                     //dbg!((task.index(), lockable));
                     //panic!("aaa");
