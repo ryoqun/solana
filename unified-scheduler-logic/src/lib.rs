@@ -2721,6 +2721,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                usage_queue.executing_count.increment_self();
                 let _ = usage_queue.unlock(&LockContext::new(UsageQueue::default(), RequestedUsage::Writable), 0, &mut state_machine.count_token);
             });
     }
@@ -2741,6 +2742,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                usage_queue.executing_count.increment_self();
                 let task_index = task.index();
                 usage_queue.current_usage = Some(Usage::Writable(task));
                 let _ = usage_queue.unlock(&lock_context, task_index, &mut state_machine.count_token);
