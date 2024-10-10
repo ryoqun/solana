@@ -1320,6 +1320,17 @@ impl SchedulingStateMachine {
     pub fn scan_and_schedule_next_task(&mut self) -> Option<Task> {
         self.tick_eager_scan()
             .inspect(|task| {
+                self.executing_task_count.increment_self();
+                task.with_pending_mut(&mut self.count_token, |c| {
+                    assert_eq!(c.count as usize, c.pending_lock_contexts.len());
+                    assert!(c.pending_lock_contexts.is_empty());
+                });
+                task.mark_as_executed(&mut self.count_token);
+                for context in task.lock_contexts() {
+                    context.map_ref(|context| {
+                    context.increment_executing_count(&mut self.usage_queue_token)
+                    })
+                }
             })
     }
 
