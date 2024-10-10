@@ -2755,7 +2755,6 @@ mod tests {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test()
         };
         let mut usage_queue = UsageQueue::default();
-        usage_queue.0.executing_count.increment_self();
         let sanitized = simplest_transaction();
         let task = SchedulingStateMachine::create_task(sanitized.clone(), 3, &mut |_| {
             UsageQueue::default()
@@ -2763,6 +2762,7 @@ mod tests {
         usage_queue
             .0
             .with_borrow_mut(&mut state_machine.usage_queue_token, |usage_queue| {
+                usage_queue.executing_count.increment_self();
                 let task_index = task.index();
                 usage_queue.current_usage = Some(Usage::Readonly(ShortCounter::one()));
                 let _ = usage_queue.unlock(&LockContext::new(UsageQueue::default(), RequestedUsage::Writable), task_index, &mut state_machine.count_token);
