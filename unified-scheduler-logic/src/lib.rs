@@ -2658,9 +2658,12 @@ mod tests {
         let mut state_machine = unsafe {
             SchedulingStateMachine::exclusively_initialize_current_thread_for_scheduling_for_test2()
         };
-        if !state_machine.has_buffered_task() {
-            state_machine.tick_eager_scan();
-        }
+        assert_matches!(
+            state_machine
+                .scan_and_schedule_next_task()
+                .map(|t| t.task_index()),
+            None
+        );
         assert!(!state_machine.has_buffered_task());
 
         assert_matches!(
