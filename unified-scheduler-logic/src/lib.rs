@@ -1157,6 +1157,7 @@ impl SchedulingStateMachine {
                     task = match task_iter.next() {
                         Some(task) => task,
                         None => {
+                            // eager can cycle count
                             task_iter = self.alive_tasks.range(..).rev();
                             continue;
                         }
