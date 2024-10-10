@@ -938,7 +938,7 @@ impl UsageQueueInner {
                         c.increment_self();
                         //self.reblocked_lock_total.increment_self();
                     }
-                    assert_eq!(c.current() as usize, count);
+                    assert_eq!(c.current(), count.current());
                     self.current_usage = Some(Usage::Writable(new_task));
                 },
             },
