@@ -950,7 +950,7 @@ impl UsageQueueInner {
                         c.pending_lock_contexts.insert(ByAddress(LockContext::new(u.clone(), RequestedUsage::Writable))).then_some(()).or_else(|| panic!());
                     });
                     self.insert_blocked_usage_from_task(
-                        UsageFromTask::Writable(reblocked_task.clone()),
+                        UsageFromTask::Writable(reblocked_task),
                     );
                 },
                 RequestedUsage::Writable => {
