@@ -1297,6 +1297,10 @@ impl SchedulingStateMachine {
                 continue;
             } else {
                 self.executing_task_count.increment_self();
+                task.with_pending_mut(&mut self.count_token, |c| {
+                    assert_eq!(c.count as usize, c.pending_lock_contexts.len());
+                    assert!(c.pending_lock_contexts.is_empty());
+                });
                 task.mark_as_executed(&mut self.count_token);
                 for context in task.lock_contexts() {
                     context.map_ref(|context| {
