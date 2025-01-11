@@ -135,6 +135,10 @@ wait_step() {
 
 all_test_steps() {
   command_step checks "ci/docker-run-default-image.sh ci/test-checks.sh" 20
+  command_step dcou-1-of-4 "ci/docker-run-default-image.sh ci/test-dev-context-only-utils.sh 1-of-4" 20
+  command_step dcou-2-of-4 "ci/docker-run-default-image.sh ci/test-dev-context-only-utils.sh 2-of-4" 20
+  command_step dcou-3-of-4 "ci/docker-run-default-image.sh ci/test-dev-context-only-utils.sh 3-of-4" 20
+  command_step dcou-4-of-4 "ci/docker-run-default-image.sh ci/test-dev-context-only-utils.sh 4-of-4" 20
   wait_step
 
   # Full test suite
