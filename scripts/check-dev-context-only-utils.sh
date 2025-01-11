@@ -152,6 +152,8 @@ fi
 # shellcheck disable=SC2155
 export RUSTFLAGS="-D warnings -Z threads=$(nproc) $RUSTFLAGS"
 unset RUSTC_WRAPPER
+# shellcheck disable=SC2155
+export CARGO_BUILD_JOBS=$"(($(nproc) * 10))"
 #export CARGO_INCREMENTAL=0
 
 if [[ $mode = "check-bins-and-lib" || $mode = "full" ]]; then
