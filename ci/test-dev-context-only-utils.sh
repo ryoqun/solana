@@ -9,6 +9,8 @@ check_dcou() {
 
 shard=$1
 shift
+echo before:
+sccache --show-stats
 case "$shard" in
   1-of-4)
     check_dcou --partition 1/9
@@ -32,3 +34,6 @@ case "$shard" in
     exit 1
     ;;
 esac
+
+echo end:
+sccache --show-stats
