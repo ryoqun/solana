@@ -11,7 +11,7 @@ shard=$1
 shift
 echo before:
 ls -ltr --full-time ./target || true
-du -shc ./target/*
+du -shc ./target/* || true
 sccache --show-stats
 case "$shard" in
   1-of-4)
@@ -39,5 +39,5 @@ esac
 
 echo end:
 ls -ltr --full-time ./target || true
-du -shc ./target/*
+du -shc ./target/* || true
 sccache --show-stats
