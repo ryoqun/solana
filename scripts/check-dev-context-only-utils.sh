@@ -155,6 +155,7 @@ export RUSTFLAGS="-D warnings -Z threads=$(nproc) $RUSTFLAGS"
 export CARGO_BUILD_JOBS="$(($(nproc) * 10))"
 # unset RUSTC_WRAPPER
 export CARGO_INCREMENTAL=0
+unset CI_COMMIT
 
 if [[ $mode = "check-bins-and-lib" || $mode = "full" ]]; then
   _ cargo "+${rust_nightly}" hack "$@" check
