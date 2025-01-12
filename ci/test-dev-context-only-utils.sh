@@ -10,7 +10,7 @@ check_dcou() {
 shard=$1
 shift
 echo before:
-ls -ltr --full-time ./target
+ls -ltr --full-time ./target || true
 du -shc ./target/*
 sccache --show-stats
 case "$shard" in
@@ -38,6 +38,6 @@ case "$shard" in
 esac
 
 echo end:
-ls -ltr --full-time ./target
+ls -ltr --full-time ./target || true
 du -shc ./target/*
 sccache --show-stats
