@@ -15,6 +15,7 @@ shard=$1
 shift
 _ echo update sccache and install mold
 # apt-get install mold clang
+(unset RUSTC_WRAPPER; cargo install --force --git https://github.com/ryoqun/cargo-hack.git --branch interleaved-partition cargo-hack)
 (unset RUSTC_WRAPPER; cargo install --force sccache)
 
 _ echo before:
