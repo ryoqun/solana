@@ -47,8 +47,8 @@ esac
 _ echo end:
 ls -ltr --full-time ./target || true
 du -shc ./target/* || true
-sccache --show-stats
 sccache --stop-server
+echo "pub type AAA = u32;" >> "sdk/src/lib.rs"
 
 _ echo before2:
 rm -rf ./target
@@ -80,5 +80,4 @@ esac
 _ echo end2:
 ls -ltr --full-time ./target || true
 du -shc ./target/* || true
-sccache --show-stats
 sccache --stop-server
