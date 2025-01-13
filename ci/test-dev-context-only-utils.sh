@@ -14,7 +14,7 @@ source ./ci/_
 shard=$1
 shift
 _ echo update sccache
-cargo install sccache
+cargo install --force sccache
 
 _ echo before:
 ls -ltr --full-time ./target || true
