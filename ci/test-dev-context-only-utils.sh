@@ -13,7 +13,8 @@ source ./ci/_
 
 shard=$1
 shift
-_ echo update sccache
+_ echo update sccache and install mold
+sudo apt-get install mold clang
 (unset RUSTC_WRAPPER; cargo install --force sccache)
 
 _ echo before:

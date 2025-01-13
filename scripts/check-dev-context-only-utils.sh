@@ -150,7 +150,7 @@ fi
 # We could selectively deny (= `-D`) them here, however, deny all warnings for
 # consistency with other CI steps and for the possibility of new similar lints.
 # shellcheck disable=SC2155
-export RUSTFLAGS="-D warnings -Z threads=$(nproc) $RUSTFLAGS"
+export RUSTFLAGS="-D warnings -Z threads=$(nproc) $RUSTFLAGS -Zshare-generics=y -Clink-arg=-fuse-ld=mold"
 # shellcheck disable=SC2155
 export CARGO_BUILD_JOBS="$(($(nproc) * 10))"
 # unset RUSTC_WRAPPER
