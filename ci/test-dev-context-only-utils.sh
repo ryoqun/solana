@@ -9,9 +9,14 @@ check_dcou() {
 
 unset SCCACHE_GCS_KEY_PATH SCCACHE_GCS_BUCKET SCCACHE_GCS_RW_MODE SCCACHE_GCS_KEY_PREFIX
 
+source ./ci/_
+
 shard=$1
 shift
-echo before:
+_ echo update sccache
+cargo install sccache
+
+_ echo before:
 ls -ltr --full-time ./target || true
 du -shc ./target/* || true
 sccache --show-stats
@@ -39,13 +44,13 @@ case "$shard" in
     ;;
 esac
 
-echo end:
+_ echo end:
 ls -ltr --full-time ./target || true
 du -shc ./target/* || true
 sccache --show-stats
 sccache --stop-server
 
-echo before2:
+_ echo before2:
 rm -rf ./target
 sccache --show-stats
 case "$shard" in
@@ -72,7 +77,7 @@ case "$shard" in
     ;;
 esac
 
-echo end2:
+_ echo end2:
 ls -ltr --full-time ./target || true
 du -shc ./target/* || true
 sccache --show-stats
