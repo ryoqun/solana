@@ -46,8 +46,7 @@ sccache --show-stats
 sccache --stop-server
 
 echo before2:
-ls -ltr --full-time ./target || true
-du -shc ./target/* || true
+rm -rf ./target
 sccache --show-stats
 case "$shard" in
   1-of-4)
