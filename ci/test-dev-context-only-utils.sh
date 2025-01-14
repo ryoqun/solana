@@ -24,16 +24,16 @@ du -shc ./target/* || true
 sccache --show-stats
 case "$shard" in
   1-of-4)
-    check_dcou --partition 1/4
+    check_dcou --partition 1/3
     ;;
   2-of-4)
-    check_dcou --partition 2/4
+    check_dcou --partition 2/3
     ;;
   3-of-4)
-    check_dcou --partition 3/4
+    check_dcou --partition 3/3
     ;;
   4-of-4)
-    check_dcou --partition 4/4
+    check_dcou
     ;;
   *)
     echo "$0: unrecognized shard: $shard";
@@ -52,16 +52,16 @@ rm -rf ./target
 sccache --show-stats
 case "$shard" in
   1-of-4)
-    check_dcou --partition 1/4
+    check_dcou --partition 1/3
     ;;
   2-of-4)
-    check_dcou --partition 2/4
+    check_dcou --partition 2/3
     ;;
   3-of-4)
-    check_dcou --partition 3/4
+    check_dcou --partition 3/3
     ;;
   4-of-4)
-    check_dcou --partition 4/4
+    check_dcou
     ;;
   *)
     echo "$0: unrecognized shard: $shard";
