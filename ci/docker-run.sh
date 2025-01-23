@@ -57,6 +57,10 @@ if [[ -n $CI ]]; then
       ARGS+=(
         --env "RUSTC_WRAPPER=/usr/local/cargo/bin/sccache"
       )
+      # experimental local sccache for dcou
+      ARGS+=(
+        --volume /var/lib/buildkite/.agave-sccache:/.cache/sccache
+      )
 
       # s3
       if [ -n "$AWS_ACCESS_KEY_ID" ]; then
