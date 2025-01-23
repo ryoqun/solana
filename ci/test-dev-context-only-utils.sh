@@ -7,7 +7,7 @@ check_dcou() {
   scripts/check-dev-context-only-utils.sh check-bins-and-lib "$@"
 }
 
-# unset SCCACHE_GCS_KEY_PATH SCCACHE_GCS_BUCKET SCCACHE_GCS_RW_MODE SCCACHE_GCS_KEY_PREFIX
+unset SCCACHE_GCS_KEY_PATH SCCACHE_GCS_BUCKET SCCACHE_GCS_RW_MODE SCCACHE_GCS_KEY_PREFIX
 
 source ./ci/_
 
