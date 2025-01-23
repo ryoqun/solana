@@ -61,6 +61,7 @@ if [[ -n $CI ]]; then
       stat /var/lib/buildkite/.agave-sccache || true
       stat /var/lib/buildkite/ || true
       stat ~/.cache/ || true
+      mkdir -p ~/.cache/sccache-for-docker/
       df -h ~/.cache/ || true
       du -sh ~/.cache/* || true
       stat ~/.cache/sccache-for-docker/ || true
