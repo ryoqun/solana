@@ -59,6 +59,7 @@ if [[ -n $CI ]]; then
       )
       # Experimental local sccache for dcou
       stat /var/lib/buildkite/.agave-sccache
+      id
       ARGS+=(
         --volume /var/lib/buildkite/.agave-sccache:/.cache/sccache
       )
