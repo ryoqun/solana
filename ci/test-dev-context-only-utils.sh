@@ -13,6 +13,7 @@ source ./ci/_
 
 _ df -h ~/.cache || true
 _ df -h ~/.cache/sccache || true
+_ du -h ~/.cache/sccache || true
 
 shard=$1
 shift
