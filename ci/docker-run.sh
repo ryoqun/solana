@@ -57,7 +57,8 @@ if [[ -n $CI ]]; then
       ARGS+=(
         --env "RUSTC_WRAPPER=/usr/local/cargo/bin/sccache"
       )
-      # experimental local sccache for dcou
+      # Experimental local sccache for dcou
+      stat /var/lib/buildkite/.agave-sccache
       ARGS+=(
         --volume /var/lib/buildkite/.agave-sccache:/.cache/sccache
       )
