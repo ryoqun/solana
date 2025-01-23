@@ -9,6 +9,9 @@ check_dcou() {
 
 # unset SCCACHE_GCS_KEY_PATH SCCACHE_GCS_BUCKET SCCACHE_GCS_RW_MODE SCCACHE_GCS_KEY_PREFIX
 
+_ df -h ~/.cache || true
+_ df -h ~/.cache/sccache || true
+
 source ./ci/_
 
 shard=$1
@@ -16,7 +19,7 @@ shift
 _ echo update sccache and install mold
 # apt-get install mold clang
 (unset RUSTC_WRAPPER; cargo install --force --git https://github.com/ryoqun/cargo-hack.git --branch interleaved-partition cargo-hack)
-(unset RUSTC_WRAPPER; cargo install --force sccache)
+#(unset RUSTC_WRAPPER; cargo install --force sccache)
 
 _ echo before:
 ls -ltr --full-time ./target || true
