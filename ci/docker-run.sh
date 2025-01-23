@@ -61,6 +61,8 @@ if [[ -n $CI ]]; then
       stat /var/lib/buildkite/.agave-sccache || true
       stat /var/lib/buildkite/ || true
       stat ~/.cache/ || true
+      df -h ~/.cache/ || true
+      du -sh ~/.cache/* || true
       stat ~/.cache/sccache-for-docker/ || true
       id
       ARGS+=(
