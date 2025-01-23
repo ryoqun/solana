@@ -66,9 +66,10 @@ if [[ -n $CI ]]; then
       du -sh ~/.cache/* || true
       stat ~/.cache/sccache-for-docker/ || true
       id
-      ARGS+=(
-        --volume /var/lib/buildkite/.agave-sccache:/.cache/sccache
-      )
+      CONTAINER_HOME="/"
+      #ARGS+=(
+      echo -- --volume "$HOME/.cache/sccache-for-docker:$CONTAINER_HOME/.cache/sccache"
+      #)
 
       # s3
       if [ -n "$AWS_ACCESS_KEY_ID" ]; then
