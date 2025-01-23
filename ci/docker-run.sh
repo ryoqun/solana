@@ -58,7 +58,10 @@ if [[ -n $CI ]]; then
         --env "RUSTC_WRAPPER=/usr/local/cargo/bin/sccache"
       )
       # Experimental local sccache for dcou
-      stat /var/lib/buildkite/.agave-sccache
+      stat /var/lib/buildkite/.agave-sccache || true
+      stat /var/lib/buildkite/ || true
+      stat ~/.cache/ || true
+      stat ~/.cache/sccache-for-docker/ || true
       id
       ARGS+=(
         --volume /var/lib/buildkite/.agave-sccache:/.cache/sccache
