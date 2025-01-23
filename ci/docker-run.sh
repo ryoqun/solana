@@ -57,7 +57,6 @@ if [[ -n $CI ]]; then
       ARGS+=(
         --env "RUSTC_WRAPPER=/usr/local/cargo/bin/sccache"
       )
-      # Experimental local sccache for dcou
       stat /var/lib/buildkite/.agave-sccache || true
       stat /var/lib/buildkite/ || true
       stat ~/.cache/ || true
@@ -66,10 +65,12 @@ if [[ -n $CI ]]; then
       du -sh ~/.cache/* || true
       stat ~/.cache/sccache-for-docker/ || true
       id
+
+      # Experimental local sccache for dcou
       CONTAINER_HOME="/"
-      #ARGS+=(
-      echo -- --volume "$HOME/.cache/sccache-for-docker:$CONTAINER_HOME/.cache/sccache"
-      #)
+      ARGS+=(
+        --volume "$HOME/.cache/sccache-for-docker:$CONTAINER_HOME/.cache/sccache"
+      )
 
       # s3
       if [ -n "$AWS_ACCESS_KEY_ID" ]; then
