@@ -9,10 +9,10 @@ check_dcou() {
 
 # unset SCCACHE_GCS_KEY_PATH SCCACHE_GCS_BUCKET SCCACHE_GCS_RW_MODE SCCACHE_GCS_KEY_PREFIX
 
+source ./ci/_
+
 _ df -h ~/.cache || true
 _ df -h ~/.cache/sccache || true
-
-source ./ci/_
 
 shard=$1
 shift
